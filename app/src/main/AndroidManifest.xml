@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.datadomeapp"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.DataDomeAPP"
+        tools:ignore="GoogleAppIndexingWarning">
+
+        <!-- Main login activity -->
+        <activity
+            android:name=".LoginActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Reset password activity -->
+        <activity
+            android:name=".ResetPasswordActivity"
+            android:exported="true" />
+
+        <!-- Admin dashboard activity -->
+        <activity
+            android:name=".AdminDashboardActivity"
+            android:exported="true" />
+
+        <!-- Manage canteen staff activity -->
+        <activity
+            android:name=".ManageCanteenStaffActivity"
+            android:exported="true" />
+
+        <!-- Canteen staff dashboard activity -->
+        <activity
+            android:name=".CanteenStaffDashboardActivity"
+            android:exported="true" />
+
+        <!-- Student dashboard activity -->
+        <activity
+            android:name=".StudentDashboardActivity"
+            android:exported="true" />
+
+        <!-- Teacher dashboard activity -->
+        <activity
+            android:name=".TeacherDashboardActivity"
+            android:exported="true" />
+
+        <!-- Manage students activity -->
+        <activity
+            android:name=".ManageStudentsActivity"
+            android:exported="true" />
+
+        <!-- Manage teachers activity -->
+        <activity
+            android:name=".ManageTeachersActivity"
+            android:exported="true" />
+
+    </application>
+
+</manifest>
