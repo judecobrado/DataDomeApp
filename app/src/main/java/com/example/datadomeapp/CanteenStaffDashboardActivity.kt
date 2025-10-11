@@ -6,6 +6,7 @@ import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.example.datadomeapp.canteen.MenuManagementActivity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -14,17 +15,21 @@ class CanteenStaffDashboardActivity : AppCompatActivity() {
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
 
-    private lateinit var tvWelcome: TextView // Declared
-    private lateinit var btnLogout: Button // Declared
+    private lateinit var tvWelcome: TextView
+    private lateinit var btnLogout: Button
+    private lateinit var btnMenu: Button
+    private lateinit var btnOrders: Button
+    private lateinit var btnReports: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.dashboard_canteen_staff)
 
-        // --- IDINAGDAG/INAYOS NA INITIALIZATION ---
-        tvWelcome = findViewById(R.id.tvWelcome) // IN-INITIALIZE
-        btnLogout = findViewById(R.id.btnLogout) // IN-INITIALIZE
-        // ------------------------------------------
+        tvWelcome = findViewById(R.id.tvWelcome)
+        btnLogout = findViewById(R.id.btnLogout)
+        btnMenu = findViewById(R.id.btnMenu)
+        btnOrders = findViewById(R.id.btnOrders)
+        btnReports = findViewById(R.id.btnReports)
 
         val currentUser = auth.currentUser
         if (currentUser == null) {
@@ -54,6 +59,20 @@ class CanteenStaffDashboardActivity : AppCompatActivity() {
             auth.signOut()
             startActivity(Intent(this, LoginActivity::class.java))
             finish()
+        }
+
+        // --- MENU MANAGEMENT ---
+        btnMenu.setOnClickListener {
+            startActivity(Intent(this, MenuManagementActivity::class.java))
+        }
+
+        // Orders and Reports buttons can be implemented later
+        btnOrders.setOnClickListener {
+            Toast.makeText(this, "Order Processing coming soon", Toast.LENGTH_SHORT).show()
+        }
+
+        btnReports.setOnClickListener {
+            Toast.makeText(this, "Sales Reports coming soon", Toast.LENGTH_SHORT).show()
         }
     }
 }

@@ -1,16 +1,12 @@
 package com.example.datadomeapp
 
-import android.app.ProgressDialog
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Button
-import android.widget.EditText
-import android.widget.TextView
-import android.widget.Toast
+import android.view.View
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Source
 
 class LoginActivity : AppCompatActivity() {
 
@@ -25,7 +21,7 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var passwordEditText: EditText
     private lateinit var loginButton: Button
     private lateinit var forgotPasswordText: TextView
-    private lateinit var progressDialog: ProgressDialog
+    private lateinit var progressBar: ProgressBar
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,11 +31,7 @@ class LoginActivity : AppCompatActivity() {
         passwordEditText = findViewById(R.id.passwordEditText)
         loginButton = findViewById(R.id.loginButton)
         forgotPasswordText = findViewById(R.id.tvForgotPassword)
-
-        progressDialog = ProgressDialog(this).apply {
-            setMessage("Logging in...")
-            setCancelable(false)
-        }
+        progressBar = findViewById(R.id.progressBar)
 
         loginButton.setOnClickListener {
             val email = emailEditText.text.toString().trim()
@@ -50,59 +42,47 @@ class LoginActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
+            // Show progress
+            progressBar.visibility = View.VISIBLE
+
             // Hardcoded admin login
             if (email == adminEmail && password == adminPassword) {
+                progressBar.visibility = View.GONE
                 Toast.makeText(this, "Welcome Admin!", Toast.LENGTH_SHORT).show()
                 startActivity(Intent(this, AdminDashboardActivity::class.java))
                 finish()
                 return@setOnClickListener
             }
 
-            // Show loading
-            progressDialog.show()
-
             // Firebase login
             auth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener { task ->
+                    progressBar.visibility = View.GONE
                     if (task.isSuccessful) {
                         val currentUser = auth.currentUser
                         if (currentUser == null) {
-                            progressDialog.dismiss()
-                            Toast.makeText(this, "User not found", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this, "Login successful but user not found", Toast.LENGTH_SHORT).show()
                             return@addOnCompleteListener
                         }
 
-                        // Try cache first to reduce delay
+                        // Open dashboard immediately
+                        startDashboard(currentUser.uid)
+
+                        // Fetch role in background
                         firestore.collection("users").document(currentUser.uid)
-                            .get(Source.CACHE)
+                            .get()
                             .addOnSuccessListener { doc ->
-                                if (doc.exists()) {
-                                    handleRole(doc.getString("role") ?: "")
-                                } else {
-                                    // fallback to server if not in cache
-                                    firestore.collection("users").document(currentUser.uid)
-                                        .get(Source.SERVER)
-                                        .addOnSuccessListener { serverDoc ->
-                                            if (serverDoc.exists()) {
-                                                handleRole(serverDoc.getString("role") ?: "")
-                                            } else {
-                                                progressDialog.dismiss()
-                                                Toast.makeText(this, "User data not found", Toast.LENGTH_SHORT).show()
-                                            }
-                                        }
-                                        .addOnFailureListener { e ->
-                                            progressDialog.dismiss()
-                                            Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                                        }
-                                }
+                                val role = doc.getString("role") ?: "unknown"
+                                // Optional: cache role in SharedPreferences
+                                getSharedPreferences("user_prefs", MODE_PRIVATE).edit()
+                                    .putString("role", role)
+                                    .apply()
                             }
                             .addOnFailureListener { e ->
-                                progressDialog.dismiss()
-                                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(this, "Error fetching user role: ${e.message}", Toast.LENGTH_SHORT).show()
                             }
 
                     } else {
-                        progressDialog.dismiss()
                         Toast.makeText(this, "Login failed: ${task.exception?.message}", Toast.LENGTH_LONG).show()
                     }
                 }
@@ -113,15 +93,20 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
-    private fun handleRole(role: String) {
-        progressDialog.dismiss()
-        when (role.lowercase()) {
-            "student" -> startActivity(Intent(this, StudentDashboardActivity::class.java))
-            "teacher" -> startActivity(Intent(this, TeacherDashboardActivity::class.java))
-            "admin" -> startActivity(Intent(this, AdminDashboardActivity::class.java))
-            "canteen_staff" -> startActivity(Intent(this, CanteenStaffDashboardActivity::class.java))
-            else -> Toast.makeText(this, "Unknown role: $role", Toast.LENGTH_SHORT).show()
+    private fun startDashboard(uid: String) {
+        // Check cached role first
+        val prefs = getSharedPreferences("user_prefs", MODE_PRIVATE)
+        val role = prefs.getString("role", "") ?: ""
+
+        val intent = when (role.lowercase()) {
+            "student" -> Intent(this, StudentDashboardActivity::class.java)
+            "teacher" -> Intent(this, TeacherDashboardActivity::class.java)
+            "admin" -> Intent(this, AdminDashboardActivity::class.java)
+            "canteen_staff" -> Intent(this, CanteenStaffDashboardActivity::class.java)
+            else -> Intent(this, StudentDashboardActivity::class.java) // default fallback
         }
+
+        startActivity(intent)
         finish()
     }
 }

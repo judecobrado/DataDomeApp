@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">DataDome APP</string>
+    <string name="menu_image_preview">Menu Item Image Preview</string>
 </resources>
