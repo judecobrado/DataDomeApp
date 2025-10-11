@@ -13,7 +13,7 @@ class StudentDashboardActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_student_dashboard)
+        setContentView(R.layout.dashboard_student)
 
         val tvDashboard = findViewById<TextView>(R.id.tvDashboard)
         tvDashboard.text = "Welcome Student!"
