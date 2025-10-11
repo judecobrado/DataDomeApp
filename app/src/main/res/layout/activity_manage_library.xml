@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <!-- Header -->
+        <TextView
+            android:text="Manage Library"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:layout_gravity="center_horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="16dp"/>
+
+        <!-- Show Add Book Inputs Button -->
+        <Button
+            android:id="@+id/btnShowAddBook"
+            android:text="Add Book"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"/>
+
+        <!-- Book Input Fields (Hidden by default) -->
+        <LinearLayout
+            android:id="@+id/layoutBookInputs"
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone">
+
+            <EditText
+                android:id="@+id/etBookTitle"
+                android:hint="Book Title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"/>
+
+            <EditText
+                android:id="@+id/etBookAuthor"
+                android:hint="Author"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"/>
+
+            <EditText
+                android:id="@+id/etBookCategory"
+                android:hint="Category"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"/>
+
+            <EditText
+                android:id="@+id/etBookIsbn"
+                android:hint="ISBN"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"/>
+
+            <EditText
+                android:id="@+id/etBookDescription"
+                android:hint="Description"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"/>
+
+            <Button
+                android:id="@+id/btnSelectPhoto"
+                android:text="Select Photo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+            <ImageView
+                android:id="@+id/ivSelectedPhoto"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_marginTop="8dp"
+                android:scaleType="centerCrop"
+                android:contentDescription="Selected Photo"/>
+
+            <Button
+                android:id="@+id/btnSelectPdf"
+                android:text="Select PDF"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"/>
+
+            <TextView
+                android:id="@+id/tvSelectedPdf"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="No PDF selected"
+                android:layout_marginTop="8dp"/>
+
+            <Button
+                android:id="@+id/btnAddBook"
+                android:text="Submit Book"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"/>
+        </LinearLayout>
+
+        <!-- Book List -->
+        <ListView
+            android:id="@+id/lvBooks"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:choiceMode="singleChoice"
+            android:layout_marginTop="12dp"/>
+
+        <!-- Delete Book -->
+        <Button
+            android:id="@+id/btnDeleteBook"
+            android:text="Delete Selected Book"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"/>
+    </LinearLayout>
+</ScrollView>

@@ -16,7 +16,7 @@
 
         <!-- Main login activity -->
         <activity
-            android:name=".CanteenStaffDashboardActivity"
+            android:name=".LoginActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -41,7 +41,7 @@
 
         <!-- Canteen staff dashboard activity -->
         <activity
-            android:name=".LoginActivity"
+            android:name=".CanteenStaffDashboardActivity"
             android:exported="true" />
 
         <!-- Menu management activity (list of menu items) -->
@@ -72,6 +72,14 @@
         <!-- Manage teachers activity -->
         <activity
             android:name=".ManageTeachersActivity"
+            android:exported="true" />
+
+        <activity
+            android:name=".ManageCoursesActivity"
+            android:exported="true" />
+
+        <activity
+            android:name=".ManageLibraryActivity"
             android:exported="true" />
 
     </application>

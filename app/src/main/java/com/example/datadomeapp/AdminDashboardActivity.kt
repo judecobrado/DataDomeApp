@@ -14,16 +14,29 @@ class AdminDashboardActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.dashboard_admin)
 
+        // Manage Students
         findViewById<Button>(R.id.btnManageStudents).setOnClickListener {
             startActivity(Intent(this, ManageStudentsActivity::class.java))
         }
 
+        // Manage Teachers
         findViewById<Button>(R.id.btnManageTeachers).setOnClickListener {
             startActivity(Intent(this, ManageTeachersActivity::class.java))
         }
 
+        // Manage Canteen Staff
         findViewById<Button>(R.id.btnManageCanteenStaff).setOnClickListener {
             startActivity(Intent(this, ManageCanteenStaffActivity::class.java))
+        }
+
+        // Manage Courses
+        findViewById<Button>(R.id.btnManageCourses).setOnClickListener {
+            startActivity(Intent(this, ManageCoursesActivity::class.java))
+        }
+
+        // Manage Library
+        findViewById<Button>(R.id.btnManageLibrary).setOnClickListener {
+            startActivity(Intent(this, ManageLibraryActivity::class.java))
         }
 
         // Logout button
