@@ -54,7 +54,7 @@
         <activity android:name=".BookDetailsActivity"/>
 
         <!-- Canteen Module -->
-        <activity android:name=".CanteenStaffDashboardActivity"/>
+        <activity android:name=".canteen.CanteenStaffDashboardActivity"/>
         <activity android:name=".canteen.MenuManagementActivity"/>
         <activity android:name=".canteen.AddEditMenuActivity"/>
 
