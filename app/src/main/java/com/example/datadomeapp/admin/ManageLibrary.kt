@@ -1,10 +1,20 @@
-package com.example.datadomeapp
+package com.example.datadomeapp.admin
 
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
-import android.widget.*
+import android.widget.ArrayAdapter
+import android.widget.Button
+import android.widget.EditText
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.ListView
+import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import com.example.datadomeapp.Book
+import com.example.datadomeapp.R
 import com.google.firebase.appcheck.FirebaseAppCheck
 import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
 import com.google.firebase.firestore.FirebaseFirestore
@@ -30,14 +40,14 @@ class ManageLibrary : AppCompatActivity() {
     private lateinit var btnAddBook: Button
 
     private val photoPicker = registerForActivityResult(
-        androidx.activity.result.contract.ActivityResultContracts.GetContent()
+        ActivityResultContracts.GetContent()
     ) { uri ->
         selectedPhotoUri = uri
         ivSelectedPhoto.setImageURI(uri)
     }
 
     private val pdfPicker = registerForActivityResult(
-        androidx.activity.result.contract.ActivityResultContracts.GetContent()
+        ActivityResultContracts.GetContent()
     ) { uri ->
         selectedPdfUri = uri
         tvSelectedPdf.text = uri?.lastPathSegment ?: "No PDF selected"

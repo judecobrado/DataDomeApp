@@ -35,22 +35,22 @@
         <activity android:name=".AlreadySubmittedActivity"/>
 
         <!-- Admin Module -->
-        <activity android:name=".AdminDashboardActivity"/>
-        <activity android:name=".ManageStudentsActivity"/>
-        <activity android:name=".ManageTeachersActivity"/>
-        <activity android:name=".ManageCoursesActivity"/>
-        <activity android:name=".ManageCanteenStaffActivity"/>
+        <activity android:name=".admin.AdminDashboardActivity"/>
+        <activity android:name=".admin.ManageStudentsActivity"/>
+        <activity android:name=".admin.ManageTeachersActivity"/>
+        <activity android:name=".admin.ManageCoursesActivity"/>
+        <activity android:name=".admin.ManageCanteenStaffActivity"/>
 
         <!-- Student Module -->
-        <activity android:name=".StudentDashboardActivity"/>
+        <activity android:name=".student.StudentDashboardActivity"/>
         <activity android:name=".UserLibraryActivity"/>
 
         <!-- Teacher Module -->
-        <activity android:name=".TeacherDashboardActivity"/>
-        <activity android:name=".VoiceDetectionActivity"/>
+        <activity android:name=".teacher.TeacherDashboardActivity"/>
+        <activity android:name=".teacher.VoiceDetectionActivity"/>
 
         <!-- Library Module -->
-        <activity android:name=".ManageLibrary"/>
+        <activity android:name=".admin.ManageLibrary"/>
         <activity android:name=".BookDetailsActivity"/>
 
         <!-- Canteen Module -->

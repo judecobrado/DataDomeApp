@@ -1,9 +1,12 @@
-package com.example.datadomeapp
+package com.example.datadomeapp.admin
 
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
+import com.example.datadomeapp.LoginActivity
+import com.example.datadomeapp.admin.ManageLibrary
+import com.example.datadomeapp.R
 import com.google.firebase.auth.FirebaseAuth
 
 class AdminDashboardActivity : AppCompatActivity() {

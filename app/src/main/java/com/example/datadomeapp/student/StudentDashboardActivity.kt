@@ -1,4 +1,4 @@
-package com.example.datadomeapp
+package com.example.datadomeapp.student
 
 import android.content.Intent
 import android.os.Bundle
@@ -6,6 +6,9 @@ import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.example.datadomeapp.LoginActivity
+import com.example.datadomeapp.R
+import com.example.datadomeapp.UserLibraryActivity
 import com.google.firebase.auth.FirebaseAuth
 
 class StudentDashboardActivity : AppCompatActivity() {

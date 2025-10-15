@@ -6,7 +6,10 @@ import android.os.Bundle
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import com.example.datadomeapp.admin.AdminDashboardActivity
 import com.example.datadomeapp.canteen.CanteenStaffDashboardActivity
+import com.example.datadomeapp.student.StudentDashboardActivity
+import com.example.datadomeapp.teacher.TeacherDashboardActivity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 

@@ -1,6 +1,7 @@
-package com.example.datadomeapp
+package com.example.datadomeapp.teacher
 
 import android.Manifest
+import android.R
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.media.AudioFormat
@@ -85,9 +86,9 @@ class VoiceDetectionActivity : AppCompatActivity() {
             // 3. APPLY COLOR AND CHECK THRESHOLD
             val isThresholdReached = dbLevel >= currentNoiseThreshold
 
-            val colorBlack = ContextCompat.getColor(this@VoiceDetectionActivity, android.R.color.black)
-            val colorAlert = if (isThresholdReached) ContextCompat.getColor(this@VoiceDetectionActivity, android.R.color.holo_red_dark) else colorBlack
-            val barColor = if (isThresholdReached) ContextCompat.getColor(this@VoiceDetectionActivity, android.R.color.holo_red_dark) else ContextCompat.getColor(this@VoiceDetectionActivity, android.R.color.holo_green_dark)
+            val colorBlack = ContextCompat.getColor(this@VoiceDetectionActivity, R.color.black)
+            val colorAlert = if (isThresholdReached) ContextCompat.getColor(this@VoiceDetectionActivity, R.color.holo_red_dark) else colorBlack
+            val barColor = if (isThresholdReached) ContextCompat.getColor(this@VoiceDetectionActivity, R.color.holo_red_dark) else ContextCompat.getColor(this@VoiceDetectionActivity, R.color.holo_green_dark)
 
             tvNoiseStatus.setTextColor(colorAlert)
             noiseProgressBar.progressTintList = ColorStateList.valueOf(barColor)
@@ -106,13 +107,13 @@ class VoiceDetectionActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_voice_detection)
+        setContentView(com.example.datadomeapp.R.layout.activity_voice_detection)
 
-        toggleDetection = findViewById(R.id.toggleDetection)
-        tvNoiseStatus = findViewById(R.id.tvNoiseStatus)
-        tvMusicStatus = findViewById(R.id.tvMusicStatus)
-        noiseProgressBar = findViewById(R.id.noiseProgressBar)
-        tvThreshold = findViewById(R.id.tvThreshold)
+        toggleDetection = findViewById(com.example.datadomeapp.R.id.toggleDetection)
+        tvNoiseStatus = findViewById(com.example.datadomeapp.R.id.tvNoiseStatus)
+        tvMusicStatus = findViewById(com.example.datadomeapp.R.id.tvMusicStatus)
+        noiseProgressBar = findViewById(com.example.datadomeapp.R.id.noiseProgressBar)
+        tvThreshold = findViewById(com.example.datadomeapp.R.id.tvThreshold)
 
         // Kunin ang naka-save na threshold
         currentNoiseThreshold = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
@@ -130,7 +131,7 @@ class VoiceDetectionActivity : AppCompatActivity() {
         audioBuffer = ShortArray(bufferSize)
 
         // Set initial color
-        noiseProgressBar.progressTintList = ColorStateList.valueOf(ContextCompat.getColor(this, android.R.color.holo_green_dark))
+        noiseProgressBar.progressTintList = ColorStateList.valueOf(ContextCompat.getColor(this, R.color.holo_green_dark))
 
         checkAndRequestPermissions()
 
@@ -158,7 +159,7 @@ class VoiceDetectionActivity : AppCompatActivity() {
             sumOfSquares += sample * sample
         }
 
-        val rms = kotlin.math.sqrt(sumOfSquares / readSize)
+        val rms = sqrt(sumOfSquares / readSize)
 
         val relativeDb = 20.0 * log10(max(1.0, rms))
 
@@ -327,7 +328,7 @@ class VoiceDetectionActivity : AppCompatActivity() {
         // ... (Music creation and playback logic dito) ...
         // Note: Tiyakin na may R.raw.noise_detection file ka
         if (noiseMediaPlayer == null) {
-            noiseMediaPlayer = MediaPlayer.create(this, R.raw.noise_detection)
+            noiseMediaPlayer = MediaPlayer.create(this, com.example.datadomeapp.R.raw.noise_detection)
             if (noiseMediaPlayer == null) {
                 Log.e("VoiceDetection", "Failed to create MediaPlayer. Check R.raw.noise_detection file.")
                 isMusicPlayingOrCooldown = false
