@@ -9,7 +9,6 @@ data class Course(
     val name: String = "",
     val code: String = "",
     val description: String = "",
-    val teacherId: String = ""
 )
 
 class ManageCoursesActivity : AppCompatActivity() {
@@ -35,19 +34,8 @@ class ManageCoursesActivity : AppCompatActivity() {
         listView.adapter = adapter
         listView.choiceMode = ListView.CHOICE_MODE_SINGLE
 
-        // Load courses
-        coursesCollection.addSnapshotListener { snapshot, error ->
-            if (error != null) {
-                Toast.makeText(this, "Failed to load courses", Toast.LENGTH_SHORT).show()
-                return@addSnapshotListener
-            }
-            courseList.clear()
-            snapshot?.documents?.forEach { doc ->
-                val name = doc.getString("name")
-                name?.let { courseList.add(it) }
-            }
-            adapter.notifyDataSetChanged()
-        }
+        // 🔹 PAGBABAGO: Gumamit ng One-Time Get() imbes na addSnapshotListener
+        loadCoursesOnce()
 
         btnAdd.setOnClickListener {
             val name = etName.text.toString().trim()
@@ -66,6 +54,8 @@ class ManageCoursesActivity : AppCompatActivity() {
                     etCode.text.clear()
                     etDescription.text.clear()
                     Toast.makeText(this, "Course added!", Toast.LENGTH_SHORT).show()
+                    // I-reload ang listahan pagkatapos mag-add
+                    loadCoursesOnce()
                 }
                 .addOnFailureListener { e ->
                     Toast.makeText(this, "Failed to add course: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -81,10 +71,28 @@ class ManageCoursesActivity : AppCompatActivity() {
                     .addOnSuccessListener { docs ->
                         for (doc in docs) doc.reference.delete()
                         Toast.makeText(this, "Course removed", Toast.LENGTH_SHORT).show()
+                        // I-reload ang listahan pagkatapos mag-delete
+                        loadCoursesOnce()
                     }
             } else {
                 Toast.makeText(this, "Select a course to delete", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    // IDINAGDAG: Function para sa one-time load ng courses
+    private fun loadCoursesOnce() {
+        coursesCollection.get()
+            .addOnSuccessListener { snapshot ->
+                courseList.clear()
+                snapshot.documents.forEach { doc ->
+                    val name = doc.getString("name")
+                    name?.let { courseList.add(it) }
+                }
+                adapter.notifyDataSetChanged()
+            }
+            .addOnFailureListener { error ->
+                Toast.makeText(this, "Failed to load courses: ${error.message}", Toast.LENGTH_SHORT).show()
+            }
     }
 }

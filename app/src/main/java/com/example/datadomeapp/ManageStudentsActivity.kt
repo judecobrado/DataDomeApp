@@ -2,123 +2,156 @@ package com.example.datadomeapp
 
 import android.os.Bundle
 import android.widget.*
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 
+// ⬅️ I-define ang Data Class (Dapat nasa labas ng ManageStudentsActivity class, o sa sariling file)
 data class Student(
-    val email: String = "",
+    val id: String = "",
     val firstName: String = "",
     val lastName: String = "",
     val birthday: String = "",
-    val role: String = "student" // para ma-identify sa login
+    val email: String = ""
 )
 
 class ManageStudentsActivity : AppCompatActivity() {
 
-    private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
-    private val studentsCollection = firestore.collection("users") // lahat ng users sa isang collection
 
-    private val studentList = ArrayList<String>()
+    private lateinit var etFirstName: EditText
+    private lateinit var etLastName: EditText
+    private lateinit var etBirthday: EditText
+    private lateinit var etEmail: EditText
+    private lateinit var btnAddStudent: Button
+    private lateinit var btnDeleteStudent: Button
+    private lateinit var lvStudents: ListView
+    private lateinit var btnBackStudents: Button
+
+    private val studentList = mutableListOf<Student>()
+    private val studentDisplayList = mutableListOf<String>()
+
     private lateinit var adapter: ArrayAdapter<String>
+    private var firestoreListener: ListenerRegistration? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContentView(R.layout.activity_manage_students)
+        setContentView(R.layout.activity_manage_students) // ⬅️ Kukunin ang layout dito
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.student_root)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
+        // ✅ Connect all your views (Tiyakin na tugma ang IDs sa XML)
+        etFirstName = findViewById(R.id.etFirstName)
+        etLastName = findViewById(R.id.etLastName)
+        etBirthday = findViewById(R.id.etBirthday)
+        etEmail = findViewById(R.id.etEmail)
+        btnAddStudent = findViewById(R.id.btnAddStudent)
+        btnDeleteStudent = findViewById(R.id.btnDeleteStudent)
+        lvStudents = findViewById(R.id.lvStudents)
+        btnBackStudents = findViewById(R.id.btnBackStudents)
+
+        adapter = ArrayAdapter(this, android.R.layout.simple_list_item_single_choice, studentDisplayList)
+        lvStudents.adapter = adapter
+        lvStudents.choiceMode = ListView.CHOICE_MODE_SINGLE
+
+        startFirestoreListener()
+
+        // ✅ Add student logic
+        btnAddStudent.setOnClickListener {
+            addStudentToFirestore()
         }
 
-        val listView = findViewById<ListView>(R.id.lvStudents)
-        val etFirstName = findViewById<EditText>(R.id.etFirstName)
-        val etLastName = findViewById<EditText>(R.id.etLastName)
-        val etBirthday = findViewById<EditText>(R.id.etBirthday)
-        val etEmail = findViewById<EditText>(R.id.etEmail)
-        val btnAdd = findViewById<Button>(R.id.btnAddStudent)
-        val btnDelete = findViewById<Button>(R.id.btnDeleteStudent)
-        val btnBack = findViewById<Button>(R.id.btnBackStudents)
+        // ✅ Delete selected student
+        btnDeleteStudent.setOnClickListener {
+            deleteStudentFromFirestore()
+        }
 
-        adapter = ArrayAdapter(this, android.R.layout.simple_list_item_single_choice, studentList)
-        listView.adapter = adapter
-        listView.choiceMode = ListView.CHOICE_MODE_SINGLE
+        btnBackStudents.setOnClickListener {
+            finish()
+        }
+    }
 
-        // Load students from Firestore
-        studentsCollection.whereEqualTo("role", "student")
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    Toast.makeText(this, "Failed to load students", Toast.LENGTH_SHORT).show()
+    override fun onDestroy() {
+        super.onDestroy()
+        firestoreListener?.remove()
+    }
+
+    private fun startFirestoreListener() {
+        firestoreListener = firestore.collection("students")
+            .addSnapshotListener { snapshot, e ->
+
+                if (e != null) {
+                    Toast.makeText(this, "Listen failed: ${e.message}", Toast.LENGTH_LONG).show()
                     return@addSnapshotListener
                 }
-                studentList.clear()
-                snapshot?.documents?.forEach { doc ->
-                    val email = doc.getString("email")
-                    email?.let { studentList.add(it) }
-                }
-                adapter.notifyDataSetChanged()
-            }
 
-        // Add student
-        btnAdd.setOnClickListener {
-            val firstName = etFirstName.text.toString().trim()
-            val lastName = etLastName.text.toString().trim()
-            val birthday = etBirthday.text.toString().trim()
-            val email = etEmail.text.toString().trim()
+                if (snapshot != null) {
+                    studentList.clear()
+                    studentDisplayList.clear()
 
-            if (firstName.isEmpty() || lastName.isEmpty() || birthday.isEmpty() || email.isEmpty()) {
-                Toast.makeText(this, "Fill all fields", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            val year = birthday.take(4)
-            val password = firstName.replace(" ", "") + year
-
-            auth.createUserWithEmailAndPassword(email, password)
-                .addOnCompleteListener { result ->
-                    if (result.isSuccessful) {
-                        val student = Student(email, firstName, lastName, birthday)
-                        studentsCollection.document(result.result?.user?.uid ?: email)
-                            .set(student)
-                            .addOnSuccessListener {
-                                etFirstName.text.clear()
-                                etLastName.text.clear()
-                                etBirthday.text.clear()
-                                etEmail.text.clear()
-                                Toast.makeText(this, "Student added!\nPassword: $password", Toast.LENGTH_LONG).show()
-                            }
-                            .addOnFailureListener { e ->
-                                Toast.makeText(this, "Failed to save info: ${e.message}", Toast.LENGTH_SHORT).show()
-                            }
-                    } else {
-                        Toast.makeText(this, "Failed to create account: ${result.exception?.message}", Toast.LENGTH_SHORT).show()
+                    for (doc in snapshot.documents) {
+                        val student = doc.toObject(Student::class.java)?.copy(id = doc.id)
+                        if (student != null) {
+                            studentList.add(student)
+                            val displayInfo = "${student.firstName} ${student.lastName}\nEmail: ${student.email}"
+                            studentDisplayList.add(displayInfo)
+                        }
                     }
+                    adapter.notifyDataSetChanged()
                 }
+            }
+    }
+
+    private fun addStudentToFirestore() {
+        val firstName = etFirstName.text.toString().trim()
+        val lastName = etLastName.text.toString().trim()
+        val birthday = etBirthday.text.toString().trim()
+        val email = etEmail.text.toString().trim()
+
+        if (firstName.isEmpty() || lastName.isEmpty() || birthday.isEmpty() || email.isEmpty()) {
+            Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show()
+            return
         }
 
-        // Delete student
-        btnDelete.setOnClickListener {
-            val pos = listView.checkedItemPosition
-            if (pos != ListView.INVALID_POSITION) {
-                val email = studentList[pos]
-                // Cannot delete from Auth in client app, but remove from Firestore
-                studentsCollection.whereEqualTo("email", email)
-                    .get()
-                    .addOnSuccessListener { docs ->
-                        for (doc in docs) doc.reference.delete()
-                        Toast.makeText(this, "Student removed from Firestore", Toast.LENGTH_SHORT).show()
-                    }
-            } else {
-                Toast.makeText(this, "Select a student to delete", Toast.LENGTH_SHORT).show()
-            }
-        }
+        val studentData = hashMapOf(
+            "firstName" to firstName,
+            "lastName" to lastName,
+            "birthday" to birthday,
+            "email" to email
+        )
 
-        btnBack.setOnClickListener { finish() }
+        firestore.collection("students").add(studentData)
+            .addOnSuccessListener {
+                Toast.makeText(this, "Student added successfully!", Toast.LENGTH_SHORT).show()
+                clearInputs()
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Error adding student: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+    }
+
+    private fun deleteStudentFromFirestore() {
+        val position = lvStudents.checkedItemPosition
+
+        if (position != ListView.INVALID_POSITION) {
+            val studentToDelete = studentList[position]
+            val studentId = studentToDelete.id
+
+            firestore.collection("students").document(studentId).delete()
+                .addOnSuccessListener {
+                    Toast.makeText(this, "Student deleted!", Toast.LENGTH_SHORT).show()
+                    lvStudents.clearChoices()
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(this, "Error deleting student: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+        } else {
+            Toast.makeText(this, "Select a student to delete", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun clearInputs() {
+        etFirstName.text.clear()
+        etLastName.text.clear()
+        etBirthday.text.clear()
+        etEmail.text.clear()
     }
 }

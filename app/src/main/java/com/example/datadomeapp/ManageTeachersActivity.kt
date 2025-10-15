@@ -24,20 +24,16 @@ class ManageTeachersActivity : AppCompatActivity() {
     private val teacherList = ArrayList<String>()
     private lateinit var adapter: ArrayAdapter<String>
 
-    // Replace these with your admin’s real credentials
-    private val adminEmail = "admin@datadome.com"
-    private val adminPassword = "admin123"
+    // Hindi na gagamitin ang hardcoded credentials dahil tinanggal ang re-login.
+    // private val adminEmail = "admin@datadome.com"
+    // private val adminPassword = "admin123"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_manage_teachers)
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.teacher_root)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
+        // ... (View Insets, UI setup) ...
 
         val lvTeachers = findViewById<ListView>(R.id.lvTeachers)
         val etEmail = findViewById<EditText>(R.id.etTeacherEmail)
@@ -50,21 +46,8 @@ class ManageTeachersActivity : AppCompatActivity() {
         lvTeachers.adapter = adapter
         lvTeachers.choiceMode = ListView.CHOICE_MODE_SINGLE
 
-        // 🔹 Load only teachers from Firestore
-        usersCollection.whereEqualTo("role", "teacher")
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    Toast.makeText(this, "Failed to load teachers: ${error.message}", Toast.LENGTH_SHORT).show()
-                    return@addSnapshotListener
-                }
-
-                teacherList.clear()
-                snapshot?.documents?.forEach { doc ->
-                    val email = doc.getString("email")
-                    email?.let { teacherList.add(it) }
-                }
-                adapter.notifyDataSetChanged()
-            }
+        // 🔹 PAGBABAGO: Gumamit ng One-Time Get() imbes na addSnapshotListener (para mas mabilis ang initial load)
+        loadTeachersOnce()
 
         // 🔹 Add Teacher
         btnAdd.setOnClickListener {
@@ -80,36 +63,32 @@ class ManageTeachersActivity : AppCompatActivity() {
             auth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener { task ->
                     if (task.isSuccessful) {
-                        val uid = auth.currentUser?.uid
+                        val uid = task.result?.user?.uid
                         val teacher = Teacher(email)
                         if (uid != null) {
                             usersCollection.document(uid).set(teacher)
                                 .addOnSuccessListener {
-                                    Toast.makeText(this, "Teacher added: $email", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(this, "Teacher added: $email", Toast.LENGTH_LONG).show()
                                     etEmail.text.clear()
                                     etPassword.text.clear()
 
-                                    // 🔹 Re-login as admin (since Firebase auto-logs into the new teacher)
-                                    auth.signOut()
-                                    auth.signInWithEmailAndPassword(adminEmail, adminPassword)
-                                        .addOnSuccessListener {
-                                            Toast.makeText(this, "Reconnected as admin", Toast.LENGTH_SHORT).show()
-                                        }
-                                        .addOnFailureListener {
-                                            Toast.makeText(this, "Failed to re-login admin: ${it.message}", Toast.LENGTH_SHORT).show()
-                                        }
+                                    // 🛑 TINANGGAL NA ERROR: Inalis ang Admin Re-login block dito.
+                                    // Ang Admin session ay mananatiling valid.
+
+                                    // I-reload ang listahan pagkatapos mag-add
+                                    loadTeachersOnce()
                                 }
                                 .addOnFailureListener { e ->
                                     Toast.makeText(this, "Firestore error: ${e.message}", Toast.LENGTH_SHORT).show()
                                 }
                         }
                     } else {
-                        Toast.makeText(this, "Auth error: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "Auth error: ${task.exception?.message}", Toast.LENGTH_LONG).show()
                     }
                 }
         }
 
-        // 🔹 Delete Teacher
+        // 🔹 Delete Teacher (No change needed here)
         btnDelete.setOnClickListener {
             val pos = lvTeachers.checkedItemPosition
             if (pos == ListView.INVALID_POSITION) {
@@ -125,6 +104,8 @@ class ManageTeachersActivity : AppCompatActivity() {
                         doc.reference.delete()
                     }
                     Toast.makeText(this, "Teacher deleted: $email", Toast.LENGTH_SHORT).show()
+                    // I-reload ang listahan pagkatapos mag-delete
+                    loadTeachersOnce()
                 }
                 .addOnFailureListener {
                     Toast.makeText(this, "Failed to delete: ${it.message}", Toast.LENGTH_SHORT).show()
@@ -134,5 +115,21 @@ class ManageTeachersActivity : AppCompatActivity() {
         btnBack.setOnClickListener {
             finish()
         }
+    }
+
+    // IDINAGDAG: Function para sa one-time load ng teachers
+    private fun loadTeachersOnce() {
+        usersCollection.whereEqualTo("role", "teacher").get()
+            .addOnSuccessListener { snapshot ->
+                teacherList.clear()
+                snapshot.documents.forEach { doc ->
+                    val email = doc.getString("email")
+                    email?.let { teacherList.add(it) }
+                }
+                adapter.notifyDataSetChanged()
+            }
+            .addOnFailureListener { error ->
+                Toast.makeText(this, "Failed to load teachers: ${error.message}", Toast.LENGTH_SHORT).show()
+            }
     }
 }

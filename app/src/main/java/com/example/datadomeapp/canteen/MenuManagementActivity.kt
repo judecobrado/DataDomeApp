@@ -8,6 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.datadomeapp.R
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 
@@ -19,6 +20,9 @@ class MenuManagementActivity : AppCompatActivity() {
     private val menuList = mutableListOf<MenuItem>()
     private lateinit var adapter: MenuAdapter
     private var menuListener: ListenerRegistration? = null
+
+    private val auth = FirebaseAuth.getInstance()
+    private var staffCanteenName: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,22 +50,31 @@ class MenuManagementActivity : AppCompatActivity() {
         recyclerView.adapter = adapter
 
         btnAddMenu.setOnClickListener {
-            startActivity(Intent(this, AddEditMenuActivity::class.java))
+            val intent = Intent(this, AddEditMenuActivity::class.java)
+            intent.putExtra("canteenName", staffCanteenName)
+            startActivity(intent)
         }
+
+        loadStaffCanteen()
     }
 
-    override fun onResume() {
-        super.onResume()
-        startMenuListener()
-    }
-
-    override fun onPause() {
-        super.onPause()
-        menuListener?.remove() // Stop listening to avoid leaks
+    private fun loadStaffCanteen() {
+        val uid = auth.currentUser?.uid ?: return
+        firestore.collection("users").document(uid)
+            .get()
+            .addOnSuccessListener { doc ->
+                staffCanteenName = doc.getString("canteenName")
+                startMenuListener()
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Failed to get staff info: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
     }
 
     private fun startMenuListener() {
+        val canteen = staffCanteenName ?: return
         menuListener = firestore.collection("canteenMenu")
+            .whereEqualTo("canteenName", canteen) // Filter menus by staff's canteen
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     Toast.makeText(this, "Error loading menu: ${error.message}", Toast.LENGTH_SHORT).show()
@@ -76,5 +89,15 @@ class MenuManagementActivity : AppCompatActivity() {
                 }
                 adapter.notifyDataSetChanged()
             }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        startMenuListener()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        menuListener?.remove()
     }
 }

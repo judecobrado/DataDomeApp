@@ -1,21 +1,123 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="24dp">
+    tools:context=".StudentDashboardActivity">
 
-    <TextView
-        android:id="@+id/tvDashboard"
-        android:text="Dashboard"
-        android:textSize="24sp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
-
-    <Button
-        android:id="@+id/btnLogout"
-        android:text="Logout"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"/>
+        android:orientation="vertical"
+        android:padding="24dp">
 
-</LinearLayout>
+        <TextView
+            android:id="@+id/tvDashboard"
+            android:text="Welcome Student!"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Quick Look"
+            android:textSize="18sp"
+            android:textStyle="italic"
+            android:layout_marginBottom="8dp"/>
+
+        <TextView
+            android:id="@+id/tvLatestAnnouncement"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📢 Announcement: Campus closed tomorrow for public holiday."
+            android:padding="12dp"
+            android:background="#E8F5E9"
+            android:textColor="#2E7D32"
+            android:layout_marginBottom="8dp"/>
+
+        <TextView
+            android:id="@+id/tvUpcomingDeadline"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="⏰ Deadline: Math Quiz 2 due on Friday (2 days left)."
+            android:padding="12dp"
+            android:background="#FFF3E0"
+            android:textColor="#FF6F00"
+            android:layout_marginBottom="8dp"/>
+
+        <TextView
+            android:id="@+id/tvNextClass"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🗓 Next Class: Physics 101 at 1:00 PM (Room 205)."
+            android:padding="12dp"
+            android:background="#E3F2FD"
+            android:textColor="#1565C0"
+            android:layout_marginBottom="16dp"/>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="?android:attr/listDivider"
+            android:layout_marginBottom="16dp"/>
+
+        <Button
+            android:id="@+id/btnAttendance"
+            android:text="Attendance Record"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"/>
+
+        <Button
+            android:id="@+id/btnAssignments"
+            android:text="Full Assessment Deadlines"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"/>
+
+        <Button
+            android:id="@+id/btnOnlineClasses"
+            android:text="Real-time Online Classes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"/>
+
+        <Button
+            android:id="@+id/btnNotes"
+            android:text="Notes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"/>
+
+        <Button
+            android:id="@+id/btnToDoList"
+            android:text="To Do List"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"/>
+
+        <Button
+            android:id="@+id/btnLibrary"
+            android:text="Library Services"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"/>
+
+        <Button
+            android:id="@+id/btnCanteen"
+            android:text="Canteen/Meal Info"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"/>
+
+        <Button
+            android:id="@+id/btnLogout"
+            android:text="Logout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+    </LinearLayout>
+</ScrollView>

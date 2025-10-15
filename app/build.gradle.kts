@@ -1,8 +1,8 @@
 plugins {
     id("com.android.application")
     id("com.google.gms.google-services")
-    alias(libs.plugins.kotlin.android)
-}
+    kotlin("android")
+    kotlin("kapt")}
 
 android {
     namespace = "com.example.datadomeapp"
@@ -43,6 +43,13 @@ dependencies {
     implementation("com.google.firebase:firebase-storage-ktx:20.2.1")
     implementation("com.squareup.picasso:picasso:2.8")
     implementation("com.google.firebase:firebase-appcheck-playintegrity:17.0.0")
+
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+
+    implementation("com.github.bumptech.glide:glide:4.15.1")
+    kapt("com.github.bumptech.glide:compiler:4.15.1")
+
+    implementation("com.google.firebase:firebase-appcheck-debug:17.0.0")
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

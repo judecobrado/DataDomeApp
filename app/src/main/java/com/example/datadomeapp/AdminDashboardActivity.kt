@@ -36,7 +36,7 @@ class AdminDashboardActivity : AppCompatActivity() {
 
         // Manage Library
         findViewById<Button>(R.id.btnManageLibrary).setOnClickListener {
-            startActivity(Intent(this, ManageLibraryActivity::class.java))
+            startActivity(Intent(this, ManageLibrary::class.java))
         }
 
         // Logout button

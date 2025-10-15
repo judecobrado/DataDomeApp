@@ -5,5 +5,6 @@ data class MenuItem(
     var name: String = "",
     var price: Double = 0.0,
     var available: Boolean = true,
-    var imageUrl: String = ""
+    var imageUrl: String = "",
+    val canteenName: String = "" // NEW: store name
 )

@@ -18,6 +18,14 @@ class TeacherDashboardActivity : AppCompatActivity() {
         val tvDashboard = findViewById<TextView>(R.id.tvDashboard)
         tvDashboard.text = "Welcome Teacher!"
 
+        //Voice Detection
+        val btnVoiceDetection = findViewById<Button>(R.id.btnVoiceDetection)
+
+        btnVoiceDetection.setOnClickListener {
+            val intent = Intent(this, VoiceDetectionActivity::class.java)
+            startActivity(intent)
+        }
+
         val btnLogout = findViewById<Button>(R.id.btnLogout)
         btnLogout.setOnClickListener {
             auth.signOut() // Logout from Firebase
