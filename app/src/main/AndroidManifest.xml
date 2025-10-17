@@ -4,7 +4,8 @@
 
     <!-- Permissions -->
     <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
 
     <application
@@ -40,10 +41,16 @@
         <activity android:name=".admin.ManageTeachersActivity"/>
         <activity android:name=".admin.ManageCoursesActivity"/>
         <activity android:name=".admin.ManageCanteenStaffActivity"/>
+        <activity android:name=".admin.ManageEnrollmentsActivity"/>
+        <activity android:name=".admin.ManageCurriculumActivity"/>
+        <activity android:name=".admin.ManageSchedulesActivity"/>
 
         <!-- Student Module -->
         <activity android:name=".student.StudentDashboardActivity"/>
         <activity android:name=".UserLibraryActivity"/>
+        <activity android:name=".student.StudentScheduleActivity"/>
+        <activity android:name=".student.StudentToDoListActivity"/>
+        <activity android:name=".student.StudentNotesActivity"/>
 
         <!-- Teacher Module -->
         <activity android:name=".teacher.TeacherDashboardActivity"/>

@@ -43,6 +43,8 @@ dependencies {
     implementation("com.google.firebase:firebase-storage-ktx:20.2.1")
     implementation("com.squareup.picasso:picasso:2.8")
     implementation("com.google.firebase:firebase-appcheck-playintegrity:17.0.0")
+    implementation("com.google.firebase:firebase-functions:21.2.1")
+    implementation("androidx.recyclerview:recyclerview:1.3.2")
 
     implementation("com.github.bumptech.glide:glide:4.16.0")
 

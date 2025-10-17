@@ -36,6 +36,15 @@ class VerifyEmailActivity : AppCompatActivity() {
         }
     }
 
+
+    private fun navigateToEnrollmentForm(email: String, docId: String? = null) {
+        val intent = Intent(this, EnrollmentActivity::class.java)
+        intent.putExtra("email", email)
+        if (docId != null) intent.putExtra("docId", docId)
+        startActivity(intent)
+    }
+
+
     private fun checkEmail(email: String) {
         // 1️⃣ Check students
         db.collection("students").whereEqualTo("email", email).get()
@@ -56,74 +65,25 @@ class VerifyEmailActivity : AppCompatActivity() {
                             val doc = pending.documents[0]
                             val status = doc.getString("status") ?: "pending"
                             when (status) {
-                                "pending" -> navigateToEnrollmentForm(email, doc.id)
-                                "submitted" -> Toast.makeText(
-                                    this,
-                                    "You have already submitted your enrollment.",
-                                    Toast.LENGTH_LONG
-                                ).show()
+                                "pending" -> sendVerificationCode(email, doc.id)
+                                "submitted" -> {
+                                    val intent = Intent(this, AlreadySubmittedActivity::class.java)
+                                    startActivity(intent)
+                                }
                             }
                         } else {
-                            // New email → go to enrollment form
-                            navigateToEnrollmentForm(email)
+                            // New email → send verification
+                            sendVerificationCode(email)
                         }
                     }
                     .addOnFailureListener { e ->
-                        Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                        //Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                     }
             }
             .addOnFailureListener { e ->
-                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                //Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
             }
     }
-
-    private fun navigateToEnrollmentForm(email: String, docId: String? = null) {
-        val intent = Intent(this, EnrollmentActivity::class.java)
-        intent.putExtra("email", email)
-        if (docId != null) intent.putExtra("docId", docId)
-        startActivity(intent)
-    }
-
-
-    //private fun checkEmail(email: String) {
-        // 1️⃣ Check students
-        //db.collection("students").whereEqualTo("email", email).get()
-            //.addOnSuccessListener { students ->
-                //if (!students.isEmpty) {
-                    //Toast.makeText(
-                        //this,
-                        //"Email already exists in system. Cannot enroll again.",
-                        //Toast.LENGTH_LONG
-                    //).show()
-                    //return@addOnSuccessListener
-                //}
-
-                // 2️⃣ Check pending enrollments
-                //db.collection("pending_enrollments").whereEqualTo("email", email).get()
-                    //.addOnSuccessListener { pending ->
-                        //if (!pending.isEmpty) {
-                            //val doc = pending.documents[0]
-                            //val status = doc.getString("status") ?: "pending"
-                            //when (status) {
-                                //"pending" -> sendVerificationCode(email, doc.id)
-                                //"submitted" -> {
-                                    //val intent = Intent(this, AlreadySubmittedActivity::class.java)
-                                    //startActivity(intent)
-                                //}
-                            //}
-                        //} else {
-                            // New email → send verification
-                            //sendVerificationCode(email)
-                        //}
-                    //}
-                    //.addOnFailureListener { e ->
-                        //Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                    //}
-            //}
-            //.addOnFailureListener { e ->
-                //Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-            //}
-    //}
 
     private fun sendVerificationCode(email: String, docId: String? = null) {
         val code = Random.nextInt(100000, 999999).toString()

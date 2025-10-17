@@ -1,44 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="16dp"
-    tools:context=".admin.ManageCoursesActivity">
+    android:padding="16dp">
 
     <TextView
-        android:layout_width="wrap_content"
+        android:id="@+id/tvSectionHeader"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Manage Courses &amp; Sections"
-        android:textSize="24sp"
+        android:text="Manage Sections"
+        android:textSize="20sp"
         android:textStyle="bold"
         android:layout_marginBottom="16dp"/>
 
-    <EditText
-        android:id="@+id/etCourseName"
+    <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Course Name (e.g., Bachelor of Science in IT)"
+        android:text="Add New Section (Year &amp; Block):"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp"/>
+
+    <Spinner
+        android:id="@+id/spnYearLevelDialog"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:minHeight="48dp"
+        android:spinnerMode="dropdown"
+        android:prompt="@string/select_year_level"
         android:layout_marginBottom="8dp"/>
 
     <EditText
-        android:id="@+id/etCourseCode"
+        android:id="@+id/etSectionBlockDialog"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Course Code (e.g., BSIT)"
+        android:hint="Section Block (e.g., A, B, C)"
         android:minHeight="48dp"
-        android:maxLength="5"
         android:inputType="textCapCharacters"
-        android:layout_marginBottom="8dp"/>
-
-    <EditText
-        android:id="@+id/etCourseDescription"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Course Description"
-        android:minHeight="48dp"
+        android:maxLength="3"
         android:layout_marginBottom="16dp"/>
 
     <LinearLayout
@@ -48,43 +47,34 @@
         android:layout_marginBottom="16dp">
 
         <Button
-            android:id="@+id/btnAddCourse"
+            android:id="@+id/btnAddSectionDialog"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Add New Course"
+            android:text="Add Section"
             android:layout_marginEnd="8dp"/>
 
         <Button
-            android:id="@+id/btnDeleteCourse"
+            android:id="@+id/btnDeleteSectionDialog"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Delete Selected Course" />
+            android:text="Delete Selected" />
     </LinearLayout>
 
     <TextView
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Existing Courses (Select to Manage Sections):"
-        android:textSize="18sp"
+        android:text="Existing Sections:"
         android:textStyle="bold"
         android:layout_marginBottom="8dp"/>
 
     <ListView
-        android:id="@+id/lvCourses"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:choiceMode="singleChoice"
-        android:background="@android:color/white"
-        android:layout_marginBottom="16dp"/>
-
-    <Button
-        android:id="@+id/btnManageSections"
+        android:id="@+id/lvSectionsDialog"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Manage Sections for Selected Course"
-        android:enabled="false"/>
+        android:choiceMode="singleChoice"
+        android:background="@android:color/white"
+        android:minHeight="150dp"/>
 
 </LinearLayout>

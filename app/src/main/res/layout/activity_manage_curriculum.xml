@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    tools:context=".admin.ManageCurriculumActivity">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Curriculum Management"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp"
+        android:gravity="center"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="8dp">
+        <Spinner
+            android:id="@+id/spnCurriculumCourse"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:minHeight="48dp"
+            android:layout_marginEnd="8dp"/>
+        <Spinner
+            android:id="@+id/spnCurriculumYear"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:minHeight="48dp"/>
+    </LinearLayout>
+
+    <EditText
+        android:id="@+id/etSubjectCode"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Subject Code (e.g., MATH101)"
+        android:minHeight="48dp"/>
+    <EditText
+        android:id="@+id/etSubjectTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Subject Title"
+        android:minHeight="48dp"/>
+    <Button
+        android:id="@+id/btnAddSubjectToCurriculum"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Add Subject to Curriculum"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Required Subjects:"
+        android:textStyle="bold"/>
+    <ListView
+        android:id="@+id/lvRequiredSubjects"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="200dp"
+        android:choiceMode="singleChoice"/>
+
+    <Button
+        android:id="@+id/btnDeleteCurriculumSubject"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Remove Selected Subject"
+        android:backgroundTint="@android:color/holo_red_dark"/>
+
+</LinearLayout>

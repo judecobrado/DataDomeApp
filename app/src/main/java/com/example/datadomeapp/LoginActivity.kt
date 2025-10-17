@@ -19,8 +19,8 @@ class LoginActivity : AppCompatActivity() {
     private val firestore = FirebaseFirestore.getInstance()
 
     // Hardcoded admin credentials
-    private val adminEmail = "1"
-    private val adminPassword = "1"
+    private val adminEmail = "q"
+    private val adminPassword = "q"
 
     private lateinit var emailEditText: EditText
     private lateinit var passwordEditText: EditText

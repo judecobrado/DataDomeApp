@@ -13,7 +13,6 @@ import com.google.firebase.auth.FirebaseAuth
 
 class StudentDashboardActivity : AppCompatActivity() {
 
-    // ✅ Logout functionality is already correctly implemented in your original code.
     private val auth = FirebaseAuth.getInstance()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -27,16 +26,14 @@ class StudentDashboardActivity : AppCompatActivity() {
         // Setup all feature buttons
         setupFeatureButtons()
 
-        // Setup Logout button (already working)
+        // Setup Logout button
         val btnLogout = findViewById<Button>(R.id.btnLogout)
         btnLogout.setOnClickListener {
-            auth.signOut() // Logout from Firebase
-            // Assuming LoginActivity exists for re-login
+            auth.signOut()
             val intent = Intent(this, LoginActivity::class.java)
-            // These flags ensure the user can't press 'back' to get to the dashboard after logging out
             intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
             startActivity(intent)
-            finish() // Close the dashboard activity
+            finish()
         }
     }
 
@@ -45,13 +42,12 @@ class StudentDashboardActivity : AppCompatActivity() {
             R.id.btnAttendance,
             R.id.btnAssignments,
             R.id.btnOnlineClasses,
-            R.id.btnNotes,
-            R.id.btnToDoList,
             R.id.btnCanteen
-            // R.id.btnLibrary is removed from this list to get its own click listener
+            // 🛑 R.id.btnLibrary is NOT in the list below.
+            // R.id.btnSchedule is also NOT in the list below.
         )
 
-        // Set up the "Coming Soon!" Toast for most buttons
+        // Set up the "Coming Soon!" Toast for the generic buttons
         for (buttonId in features) {
             findViewById<Button>(buttonId).setOnClickListener {
                 val buttonText = findViewById<Button>(buttonId).text
@@ -59,11 +55,28 @@ class StudentDashboardActivity : AppCompatActivity() {
             }
         }
 
-        // ✅ Specific setup for the Library button to navigate to LibraryActivity
+        // -----------------------------------------------------------------
+        // 🛑 NEW: Specific setup for Student Schedule (Assuming ID: btnSchedule)
+        // -----------------------------------------------------------------
+        findViewById<Button>(R.id.btnSchedule).setOnClickListener {
+            val intent = Intent(this, StudentScheduleActivity::class.java)
+            startActivity(intent)
+        }
+
+        findViewById<Button>(R.id.btnNotes).setOnClickListener {
+            val intent = Intent(this, StudentNotesActivity::class.java)
+            startActivity(intent)
+        }
+
+        findViewById<Button>(R.id.btnToDoList).setOnClickListener {
+            val intent = Intent(this, StudentToDoListActivity::class.java)
+            startActivity(intent)
+        }
+
+        // Specific setup for the Library button
         findViewById<Button>(R.id.btnLibrary).setOnClickListener {
             val intent = Intent(this, UserLibraryActivity::class.java)
             startActivity(intent)
-
         }
     }
 }

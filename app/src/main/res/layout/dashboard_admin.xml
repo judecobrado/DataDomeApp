@@ -28,6 +28,13 @@
             android:layout_marginBottom="12dp"/>
 
         <Button
+            android:id="@+id/btnManageEnrollment"
+            android:layout_width="match_parent"
+            android:text="Manage Enrollment"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"/>
+
+        <Button
             android:id="@+id/btnManageTeachers"
             android:text="Manage Teachers"
             android:layout_width="match_parent"
@@ -51,6 +58,20 @@
         <Button
             android:id="@+id/btnManageLibrary"
             android:text="Manage Library"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"/>
+
+        <Button
+            android:id="@+id/btnManageCurriculum"
+            android:text="Manage Curriculum"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"/>
+
+        <Button
+            android:id="@+id/btnManageSchedules"
+            android:text="Manage Schedules"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"/>

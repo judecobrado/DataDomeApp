@@ -1,4 +1,7 @@
 <resources>
     <string name="app_name">DataDome APP</string>
     <string name="menu_image_preview">Menu Item Image Preview</string>
+    <string name="select_section_prompt">Select Section Block</string>
+    <string name="select_year_level">Select Year Level</string>
+    @string/select_year_level
 </resources>

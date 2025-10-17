@@ -2,41 +2,41 @@ package com.example.datadomeapp.admin
 
 import android.os.Bundle
 import android.widget.*
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import com.example.datadomeapp.R
+import com.example.datadomeapp.models.AppUser // Import AppUser
+import com.example.datadomeapp.models.Teacher // Import Teacher
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-
-// Data model for Teacher
-data class Teacher(
-    val email: String = "",
-    val role: String = "teacher"
-)
+import com.google.firebase.firestore.Query
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class ManageTeachersActivity : AppCompatActivity() {
 
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
     private val usersCollection = firestore.collection("users")
+    private val teachersCollection = firestore.collection("teachers") // New Collection
 
-    private val teacherList = ArrayList<String>()
+    // Map<TeacherEmail, UID>
+    private val teacherMap = mutableMapOf<String, String>()
+    private val teacherList = ArrayList<String>() // Gagamitin ang email display
     private lateinit var adapter: ArrayAdapter<String>
 
-    // Hindi na gagamitin ang hardcoded credentials dahil tinanggal ang re-login.
-    // private val adminEmail = "admin@datadome.com"
-    // private val adminPassword = "admin123"
+    // 🛑 New variable for the Name field
+    private lateinit var etName: EditText
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContentView(R.layout.activity_manage_teachers)
-
-        // ... (View Insets, UI setup) ...
 
         val lvTeachers = findViewById<ListView>(R.id.lvTeachers)
         val etEmail = findViewById<EditText>(R.id.etTeacherEmail)
         val etPassword = findViewById<EditText>(R.id.etTeacherPassword)
+        etName = findViewById<EditText>(R.id.etTeacherName) // 🛑 Added initialization for etTeacherName
         val btnAdd = findViewById<Button>(R.id.btnAddTeacher)
         val btnDelete = findViewById<Button>(R.id.btnDeleteTeacher)
         val btnBack = findViewById<Button>(R.id.btnBackTeacher)
@@ -45,49 +45,52 @@ class ManageTeachersActivity : AppCompatActivity() {
         lvTeachers.adapter = adapter
         lvTeachers.choiceMode = ListView.CHOICE_MODE_SINGLE
 
-        // 🔹 PAGBABAGO: Gumamit ng One-Time Get() imbes na addSnapshotListener (para mas mabilis ang initial load)
         loadTeachersOnce()
 
-        // 🔹 Add Teacher
+        // 🔹 Add Teacher Logic (Multi-Collection Save)
         btnAdd.setOnClickListener {
             val email = etEmail.text.toString().trim()
             val password = etPassword.text.toString().trim()
+            val name = etName.text.toString().trim()
 
-            if (email.isEmpty() || password.isEmpty()) {
-                Toast.makeText(this, "Enter email and password", Toast.LENGTH_SHORT).show()
+            if (email.isEmpty() || password.isEmpty() || name.isEmpty()) {
+                Toast.makeText(this, "Enter email, password, and name", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            // Create new teacher account
-            auth.createUserWithEmailAndPassword(email, password)
-                .addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        val uid = task.result?.user?.uid
-                        val teacher = Teacher(email)
-                        if (uid != null) {
-                            usersCollection.document(uid).set(teacher)
-                                .addOnSuccessListener {
-                                    Toast.makeText(this, "Teacher added: $email", Toast.LENGTH_LONG).show()
-                                    etEmail.text.clear()
-                                    etPassword.text.clear()
+            CoroutineScope(Dispatchers.Main).launch {
+                try {
+                    // 1. Create Firebase Auth Account
+                    val userCredential = auth.createUserWithEmailAndPassword(email, password).await()
+                    val uid = userCredential.user?.uid
 
-                                    // 🛑 TINANGGAL NA ERROR: Inalis ang Admin Re-login block dito.
-                                    // Ang Admin session ay mananatiling valid.
+                    if (uid != null) {
+                        // 2. Generate new Teacher ID (T-0001)
+                        val newTeacherId = generateTeacherId()
 
-                                    // I-reload ang listahan pagkatapos mag-add
-                                    loadTeachersOnce()
-                                }
-                                .addOnFailureListener { e ->
-                                    Toast.makeText(this, "Firestore error: ${e.message}", Toast.LENGTH_SHORT).show()
-                                }
-                        }
-                    } else {
-                        Toast.makeText(this, "Auth error: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                        // 3. Save to 'users' collection (Authentication record)
+                        val appUser = AppUser(uid = uid, email = email, role = "teacher")
+                        usersCollection.document(uid).set(appUser).await()
+
+                        // 4. Save to 'teachers' collection (Profile record)
+                        // 🛑 Ang teacher ay mayroon na ngayong uid at teacherId
+                        val teacherProfile = Teacher(uid = uid, teacherId = newTeacherId, name = name)
+                        teachersCollection.document(newTeacherId).set(teacherProfile).await()
+
+                        Toast.makeText(this@ManageTeachersActivity, "Teacher added: $name ($newTeacherId)", Toast.LENGTH_LONG).show()
+                        etEmail.text.clear()
+                        etPassword.text.clear()
+                        etName.text.clear()
+                        loadTeachersOnce()
                     }
+                } catch (e: Exception) {
+                    // Maaaring mag-fail ito dahil sa weak password o duplicate email
+                    Toast.makeText(this@ManageTeachersActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
                 }
+            }
         }
 
-        // 🔹 Delete Teacher (No change needed here)
+        // 🔹 DELETE Teacher Logic (Multi-Collection Deletion)
         btnDelete.setOnClickListener {
             val pos = lvTeachers.checkedItemPosition
             if (pos == ListView.INVALID_POSITION) {
@@ -95,20 +98,15 @@ class ManageTeachersActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            val email = teacherList[pos]
-            usersCollection.whereEqualTo("email", email)
-                .get()
-                .addOnSuccessListener { docs ->
-                    for (doc in docs) {
-                        doc.reference.delete()
-                    }
-                    Toast.makeText(this, "Teacher deleted: $email", Toast.LENGTH_SHORT).show()
-                    // I-reload ang listahan pagkatapos mag-delete
-                    loadTeachersOnce()
-                }
-                .addOnFailureListener {
-                    Toast.makeText(this, "Failed to delete: ${it.message}", Toast.LENGTH_SHORT).show()
-                }
+            val emailToDelete = teacherList[pos]
+            val uidToDelete = teacherMap[emailToDelete] // UID from the map
+
+            if (uidToDelete != null) {
+                // 🛑 Fixed: Calling the non-suspending function
+                deleteTeacherAccount(uidToDelete, emailToDelete)
+            } else {
+                Toast.makeText(this, "Error: UID not found.", Toast.LENGTH_SHORT).show()
+            }
         }
 
         btnBack.setOnClickListener {
@@ -116,14 +114,81 @@ class ManageTeachersActivity : AppCompatActivity() {
         }
     }
 
-    // IDINAGDAG: Function para sa one-time load ng teachers
+    // ----------------------------------------------------
+    // Helper Functions
+    // ----------------------------------------------------
+
+    // New Function: Generate unique Teacher ID (Must be called in a CoroutineScope)
+    private suspend fun generateTeacherId(): String {
+        return try {
+            val snapshot = teachersCollection
+                .orderBy("teacherId", Query.Direction.DESCENDING)
+                .limit(1)
+                .get()
+                .await() // Ito ay nasa suspend function, kaya tama
+
+            val lastId = snapshot.documents.firstOrNull()?.getString("teacherId")
+            val nextNumber = if (lastId != null && lastId.startsWith("T-")) {
+                lastId.substringAfter("T-").toIntOrNull()?.plus(1) ?: 1
+            } else 1
+            "T-" + String.format("%04d", nextNumber)
+        } catch (e: Exception) {
+            "T-0001"
+        }
+    }
+
+
+    // 🔹 Delete Teacher Account (Users, Teachers, and Auth) - FIXED
+    private fun deleteTeacherAccount(uid: String, email: String) {
+
+        // 1. Hanapin ang Teacher Profile Record gamit ang UID
+        teachersCollection.whereEqualTo("uid", uid).get()
+            .addOnSuccessListener { snapshot ->
+
+                val teacherDoc = snapshot.documents.firstOrNull()
+                val teacherId = teacherDoc?.id // Ito ang Document ID (T-00xx) sa teachers collection
+
+                val batch = firestore.batch()
+
+                // 2. Delete record from 'users' collection (Auth Record)
+                batch.delete(usersCollection.document(uid))
+
+                // 3. Delete record from 'teachers' collection (Profile Record)
+                if (teacherId != null) {
+                    batch.delete(teachersCollection.document(teacherId))
+                }
+
+                // 4. Commit Batch
+                batch.commit()
+                    .addOnSuccessListener {
+                        // Success! Lahat ng record ay nabura.
+                        // Auth user deletion ay dapat gawin ng Cloud Function o Admin SDK.
+                        Toast.makeText(this, "User and Teacher records for $email deleted.", Toast.LENGTH_LONG).show()
+                        loadTeachersOnce()
+                    }
+                    .addOnFailureListener { e ->
+                        Toast.makeText(this, "Failed to commit batch delete: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Failed to find teacher profile: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+
+    // 🔹 Load Teachers (Kukunin sa 'users' collection para sa email/UID)
     private fun loadTeachersOnce() {
         usersCollection.whereEqualTo("role", "teacher").get()
             .addOnSuccessListener { snapshot ->
                 teacherList.clear()
+                teacherMap.clear()
                 snapshot.documents.forEach { doc ->
                     val email = doc.getString("email")
-                    email?.let { teacherList.add(it) }
+                    email?.let {
+                        teacherList.add(it)
+                        // Gamitin ang document ID (na siyang UID)
+                        teacherMap[it] = doc.id
+                    }
                 }
                 adapter.notifyDataSetChanged()
             }
