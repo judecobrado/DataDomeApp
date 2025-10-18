@@ -17,6 +17,7 @@ import com.example.datadomeapp.models.Teacher
 import com.example.datadomeapp.models.Curriculum
 import com.google.firebase.firestore.FirebaseFirestore
 import java.text.SimpleDateFormat
+import com.example.datadomeapp.models.ScheduleItem
 import java.util.*
 import java.util.Locale
 
@@ -51,6 +52,7 @@ class ManageSchedulesActivity : AppCompatActivity() {
 
     // Assignments for the current Course/Year (Used for Teacher Conflict Check)
     private val allAssignmentsForCourseYear = mutableListOf<ClassAssignment>()
+
     // Assignments filtered by the currently selected Section Block (Used for Matrix/Section Overlap Check)
     private val currentAssignmentsForMatrix = mutableListOf<ClassAssignment>()
 
@@ -82,10 +84,12 @@ class ManageSchedulesActivity : AppCompatActivity() {
         etEndTime = findViewById(R.id.etEndTime)
 
         // Setup Adapters
-        spnYear.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, yearLevels)
+        spnYear.adapter =
+            ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, yearLevels)
         spnDay.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, weekDays)
 
-        sectionBlockAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, sectionBlockNames)
+        sectionBlockAdapter =
+            ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, sectionBlockNames)
         spnSectionBlock.adapter = sectionBlockAdapter
 
         loadCoursesAndTeachers()
@@ -107,7 +111,8 @@ class ManageSchedulesActivity : AppCompatActivity() {
             snapshot.documents.forEach { doc ->
                 doc.getString("code")?.let { courseList.add(it) }
             }
-            spnCourse.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, courseList)
+            spnCourse.adapter =
+                ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, courseList)
         }
 
         // Load Teachers
@@ -119,16 +124,23 @@ class ManageSchedulesActivity : AppCompatActivity() {
                 teacherList.add(Teacher(uid = doc.id, teacherId = "", name = name))
             }
             val teacherNames = teacherList.map { it.name + " (UID: " + it.uid.takeLast(4) + ")" }
-            spnTeacher.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, teacherNames)
+            spnTeacher.adapter =
+                ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, teacherNames)
         }
     }
 
     private fun setupListeners() {
         // Curriculum Listener (Triggers when Course or Year changes)
         val courseYearListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
                 loadSubjectsSectionsAndAllAssignments()
             }
+
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
         spnCourse.onItemSelectedListener = courseYearListener
@@ -136,10 +148,16 @@ class ManageSchedulesActivity : AppCompatActivity() {
 
         // Section Listener (Triggers when Section Block changes)
         spnSectionBlock.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
                 filterAssignmentsAndRenderMatrix()
                 checkConflicts()
             }
+
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
 
@@ -149,13 +167,29 @@ class ManageSchedulesActivity : AppCompatActivity() {
 
         // Conflict checking listeners
         spnDay.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) { checkConflicts() }
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
+                checkConflicts()
+            }
+
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
         etStartTime.setOnFocusChangeListener { _, hasFocus -> if (!hasFocus) checkConflicts() }
         etEndTime.setOnFocusChangeListener { _, hasFocus -> if (!hasFocus) checkConflicts() }
         spnTeacher.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) { checkConflicts() }
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
+                checkConflicts()
+            }
+
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
 
@@ -165,7 +199,11 @@ class ManageSchedulesActivity : AppCompatActivity() {
     private fun showTimePicker(editText: EditText) {
         val calendar = Calendar.getInstance()
 
-        val initialTime: Date? = try { timeFormat.parse(editText.text.toString()) } catch (e: Exception) { null }
+        val initialTime: Date? = try {
+            timeFormat.parse(editText.text.toString())
+        } catch (e: Exception) {
+            null
+        }
 
         if (initialTime != null) {
             calendar.time = initialTime
@@ -215,12 +253,25 @@ class ManageSchedulesActivity : AppCompatActivity() {
                     val curriculum = doc.toObject(Curriculum::class.java)
                     curriculum?.requiredSubjects?.let { subjectEntryList.addAll(it) }
 
-                    val subjectNames = subjectEntryList.map { it.subjectCode + " - " + it.subjectTitle }
-                    spnSubject.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, subjectNames)
-                    Log.d("ScheduleLoad", "Curriculum Loaded: Found ${subjectEntryList.size} subject(s).")
+                    val subjectNames =
+                        subjectEntryList.map { it.subjectCode + " - " + it.subjectTitle }
+                    spnSubject.adapter = ArrayAdapter(
+                        this,
+                        android.R.layout.simple_spinner_dropdown_item,
+                        subjectNames
+                    )
+                    Log.d(
+                        "ScheduleLoad",
+                        "Curriculum Loaded: Found ${subjectEntryList.size} subject(s)."
+                    )
                 } else {
-                    spnSubject.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, mutableListOf("No Curriculum Found"))
-                    Toast.makeText(this, "Curriculum for $docId not found.", Toast.LENGTH_SHORT).show()
+                    spnSubject.adapter = ArrayAdapter(
+                        this,
+                        android.R.layout.simple_spinner_dropdown_item,
+                        mutableListOf("No Curriculum Found")
+                    )
+                    Toast.makeText(this, "Curriculum for $docId not found.", Toast.LENGTH_SHORT)
+                        .show()
                     Log.w("ScheduleLoad", "Curriculum document for $docId not found.")
                 }
 
@@ -229,7 +280,8 @@ class ManageSchedulesActivity : AppCompatActivity() {
 
             }
             .addOnFailureListener { e ->
-                Toast.makeText(this, "Error loading curriculum: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Error loading curriculum: ${e.message}", Toast.LENGTH_SHORT)
+                    .show()
                 Log.e("ScheduleLoad", "Curriculum fetch failed: ${e.message}")
                 // Kahit failed ang curriculum, subukan pa ring i-load ang sections
                 loadSectionBlocks(courseCode, yearLevelKey)
@@ -246,7 +298,11 @@ class ManageSchedulesActivity : AppCompatActivity() {
 
                 if (!doc.exists()) {
                     Log.w("SectionLoad", "Document sections/$courseCode DOES NOT EXIST.")
-                    Toast.makeText(this, "Section data not found. Please setup sections.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        this,
+                        "Section data not found. Please setup sections.",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
 
                 val sectionsRaw = doc.get("sections")
@@ -257,7 +313,10 @@ class ManageSchedulesActivity : AppCompatActivity() {
                         if (blocksListForYear.isEmpty()) {
                             Log.w("SectionLoad", "No blocks found for $yearLevelKey.")
                         } else {
-                            Log.d("SectionLoad", "Found ${blocksListForYear.size} block(s) for $yearLevelKey: $blocksListForYear")
+                            Log.d(
+                                "SectionLoad",
+                                "Found ${blocksListForYear.size} block(s) for $yearLevelKey: $blocksListForYear"
+                            )
                         }
                         sectionBlockNames.addAll(blocksListForYear)
                     } else {
@@ -280,7 +339,11 @@ class ManageSchedulesActivity : AppCompatActivity() {
                 loadAllAssignments()
             }
             .addOnFailureListener { e ->
-                Toast.makeText(this, "Error loading section blocks: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    this,
+                    "Error loading section blocks: ${e.message}",
+                    Toast.LENGTH_SHORT
+                ).show()
                 Log.e("SectionLoad", "Firestore fetch failed: ${e.message}")
                 loadAllAssignments() // Proceed even if failed
             }
@@ -299,13 +362,15 @@ class ManageSchedulesActivity : AppCompatActivity() {
             .addOnSuccessListener { snapshot ->
                 allAssignmentsForCourseYear.clear()
                 snapshot.documents.forEach { doc ->
-                    doc.toObject(ClassAssignment::class.java)?.let { allAssignmentsForCourseYear.add(it) }
+                    doc.toObject(ClassAssignment::class.java)
+                        ?.let { allAssignmentsForCourseYear.add(it) }
                 }
                 // I-filter at i-render ang matrix
                 filterAssignmentsAndRenderMatrix()
             }
             .addOnFailureListener { e ->
-                Toast.makeText(this, "Error fetching assignments: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Error fetching assignments: ${e.message}", Toast.LENGTH_LONG)
+                    .show()
             }
     }
 
@@ -315,7 +380,8 @@ class ManageSchedulesActivity : AppCompatActivity() {
         val yearLevel = spnYear.selectedItem?.toString() ?: return
         val yearNumber = yearLevel.substring(0, 1)
 
-        val selectedSectionBlock = spnSectionBlock.selectedItem?.toString()?.trim()?.uppercase(Locale.getDefault()) ?: ""
+        val selectedSectionBlock =
+            spnSectionBlock.selectedItem?.toString()?.trim()?.uppercase(Locale.getDefault()) ?: ""
 
         if (selectedSectionBlock.isEmpty()) {
             currentAssignmentsForMatrix.clear()
@@ -345,97 +411,120 @@ class ManageSchedulesActivity : AppCompatActivity() {
         val headerRow = TableRow(this).apply {
             addView(TextView(this@ManageSchedulesActivity).apply {
                 text = "Time"
-                setPadding(12, 12, 12, 12)
+                setTextSize(14f)
                 setTypeface(null, Typeface.BOLD)
-                setBackgroundColor(Color.LTGRAY)
-                textSize = 14f
-            })
-        }
-        weekDays.forEach { day ->
-            headerRow.addView(TextView(this).apply {
-                text = day
-                setPadding(12, 12, 12, 12)
-                setTypeface(null, Typeface.BOLD)
+                setPadding(10, 10, 10, 10)
                 setBackgroundColor(Color.LTGRAY)
                 gravity = Gravity.CENTER
-                minWidth = 150
-                textSize = 14f
             })
+            weekDays.forEach { day ->
+                addView(TextView(this@ManageSchedulesActivity).apply {
+                    text = day
+                    setTextSize(14f)
+                    setTypeface(null, Typeface.BOLD)
+                    setPadding(10, 10, 10, 10)
+                    setBackgroundColor(Color.LTGRAY)
+                    gravity = Gravity.CENTER
+                    layoutParams = TableRow.LayoutParams(
+                        0,
+                        TableRow.LayoutParams.WRAP_CONTENT,
+                        1f
+                    ) // Equal weight
+                })
+            }
         }
         tlScheduleMatrix.addView(headerRow)
 
+        // --- 2. Create Time Rows and Class Blocks ---
+        val assignmentsMatrix =
+            Array(weekDays.size) { arrayOfNulls<MutableList<ClassAssignment>>(timeSlots.count()) }
 
-        // --- 2. Create Data Rows (Time Slots) ---
-        timeSlots.forEach { hour ->
-            val row = TableRow(this).apply {
-                // Time Label (e.g., 08:00 AM)
-                addView(TextView(this@ManageSchedulesActivity).apply {
-                    val calendar = Calendar.getInstance().apply { set(Calendar.HOUR_OF_DAY, hour); set(Calendar.MINUTE, 0) }
-                    val displayTimeFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
-                    val timeDisplay = displayTimeFormat.format(calendar.time)
+        // Pre-populate the matrix with assignments
+        currentAssignmentsForMatrix.forEach { assignment ->
+            val dayIndex = weekDays.indexOf(assignment.day)
+            if (dayIndex >= 0) {
 
-                    text = timeDisplay
-                    setPadding(12, 12, 12, 12)
-                    setTypeface(null, Typeface.BOLD)
-                    setBackgroundColor(Color.parseColor("#EEEEEE"))
-                    textSize = 12f
-                })
+                // --- FIX: Gamitin ang Calendar para kunin ang oras (24-hour format) ---
+                val startCal = Calendar.getInstance().apply {
+                    time = timeFormat.parse(assignment.startTime) ?: return@forEach
+                }
+                val endCal = Calendar.getInstance().apply {
+                    time = timeFormat.parse(assignment.endTime) ?: return@forEach
+                }
+
+                // Walang deprecated warning
+                val startHour = startCal.get(Calendar.HOUR_OF_DAY)
+                val endHour = endCal.get(Calendar.HOUR_OF_DAY)
+                // ---------------------------------------------------------------------
+
+                val startSlot = startHour - timeSlots.first
+                val endSlot = endHour - timeSlots.first
+
+                // Mark all slots covered by the assignment
+                for (i in startSlot until endSlot) {
+                    if (i >= 0 && i < timeSlots.count()) {
+                        if (assignmentsMatrix[dayIndex][i] == null) {
+                            assignmentsMatrix[dayIndex][i] = mutableListOf()
+                        }
+                        assignmentsMatrix[dayIndex][i]?.add(assignment)
+                    }
+                }
             }
+        }
 
-            // Create a cell for each day
-            weekDays.forEach { day ->
-                val assignmentsInSlot = getAssignmentsForSlot(day, hour)
+        // Render the table row by row (by time slot)
+        var currentHour = timeSlots.first
+        while (currentHour <= timeSlots.last) {
+            val timeLabel =
+                String.format(Locale.getDefault(), "%02d:00-%02d:00", currentHour, currentHour + 1)
+            val row = TableRow(this)
 
-                // Content of the cell (Assignment details)
-                val cellText = if (assignmentsInSlot.isEmpty()) {
-                    "" // Empty slot
+            // Time Label Cell
+            row.addView(TextView(this).apply {
+                text = timeLabel
+                setPadding(10, 10, 10, 10)
+                gravity = Gravity.END
+                setBackgroundColor(Color.parseColor("#E0E0E0"))
+            })
+
+            // Day Cells
+            for (dayIndex in weekDays.indices) {
+                val slotIndex = currentHour - timeSlots.first
+                val assignmentsInSlot = assignmentsMatrix[dayIndex][slotIndex]
+
+                val cellText = if (assignmentsInSlot.isNullOrEmpty()) {
+                    ""
                 } else {
-                    assignmentsInSlot.joinToString("\n") {
-                        val teacherInitial = it.assignedTeacherName.split(" ").firstOrNull() ?: ""
-                        "${it.subjectCode}\n@ ${it.schedule.substringAfter(" ").substringBefore("-")}\n- ${teacherInitial}"
-                    }
+                    assignmentsInSlot.joinToString("\n") { it.subjectCode }
                 }
 
-                val isConflict = assignmentsInSlot.size > 1
-
-                val cellBackground = if (isConflict) {
-                    Color.parseColor("#FFD0D0") // Red for Conflict (Shouldn't happen with strict check)
-                } else if (assignmentsInSlot.isNotEmpty()) {
-                    Color.parseColor("#D0FFD0") // Light Green for Assigned
-                } else {
-                    Color.WHITE // White for Empty
-                }
-
-                row.addView(TextView(this@ManageSchedulesActivity).apply {
+                row.addView(TextView(this).apply {
                     text = cellText
+                    setTextSize(12f)
                     setPadding(10, 10, 10, 10)
-                    setBackgroundColor(cellBackground)
                     gravity = Gravity.CENTER
-                    minWidth = 150
-                    minHeight = 80
-                    minLines = 4
-                    textSize = 12f
-                    if (isConflict) {
-                        setTextColor(Color.RED)
-                        setTypeface(null, Typeface.BOLD)
-                    } else {
-                        setTextColor(Color.BLACK)
-                    }
+                    // Highlight the cell if a class is scheduled
+                    setBackgroundColor(if (cellText.isNotEmpty()) Color.parseColor("#C8E6C9") else Color.WHITE)
+                    layoutParams = TableRow.LayoutParams(0, TableRow.LayoutParams.WRAP_CONTENT, 1f)
                 })
             }
             tlScheduleMatrix.addView(row)
+            currentHour++
         }
     }
 
     private fun getAssignmentsForSlot(day: String, startHour: Int): List<ClassAssignment> {
-        return currentAssignmentsForMatrix.filter { assignment -> // Gumagamit ng filtered list
-            val assignmentDay = assignment.schedule.split(" ").firstOrNull() ?: "UNKNOWN"
+        return currentAssignmentsForMatrix.filter { assignment -> // 'assignment' is the ClassAssignment object
+
+            // 1. Check if the day matches
+            // Instead of assignment.schedule, use assignment.day directly
+            val assignmentDay = assignment.day
             if (assignmentDay != day) return@filter false
 
-            val timeRange = assignment.schedule.substringAfter(" ").split("-")
-            val startTimeStr = timeRange.firstOrNull() ?: return@filter false
+            // 2. Get the start time string (e.g., "08:00")
+            val startTimeStr = assignment.startTime
 
-            // Parses the HH:mm string and gets the hour in 24-hour format
+            // 3. Parses the HH:mm string and gets the hour in 24-hour format
             val scheduleHour = try {
                 val date = timeFormat.parse(startTimeStr)
                 val cal = Calendar.getInstance()
@@ -450,144 +539,172 @@ class ManageSchedulesActivity : AppCompatActivity() {
                 null
             }
 
-            return@filter scheduleHour == startHour
+            // 4. Check if the class starts exactly on the boundary of the slot (e.g., 08:00 for the 8-9 slot)
+            // OR if the class time falls within the slot's range.
+            val classStartHour = scheduleHour ?: -1
+            val classEndHour = try {
+                val date = timeFormat.parse(assignment.endTime)
+                val cal = Calendar.getInstance()
+                if (date != null) {
+                    cal.time = date
+                    cal.get(Calendar.HOUR_OF_DAY)
+                } else {
+                    -1
+                }
+            } catch (e: Exception) {
+                -1
+            }
+
+            // A class should be displayed in a slot if its start hour is <= slot start and its end hour is > slot start.
+            // Or more simply: if the class covers the 'startHour' slot.
+            return@filter classStartHour <= startHour && classEndHour > startHour
         }
     }
 
     private fun checkConflicts() {
-        tvConflictWarning.text = ""
-        tvConflictWarning.visibility = View.GONE
-        btnSave.isEnabled = false // Default disabled
+        val selectedTeacher = teacherList.getOrNull(spnTeacher.selectedItemPosition)
+        val day = spnDay.selectedItem?.toString()
+        val startTimeStr = etStartTime.text.toString()
+        val endTimeStr = etEndTime.text.toString()
+        val sectionBlock = spnSectionBlock.selectedItem?.toString()
 
-        val day = spnDay.selectedItem?.toString() ?: return
-        val startTime = etStartTime.text.toString().trim()
-        val endTime = etEndTime.text.toString().trim()
-        val sectionBlock = spnSectionBlock.selectedItem?.toString() ?: return
-
-        if (spnTeacher.selectedItem == null || startTime.isEmpty() || endTime.isEmpty()) {
-            tvConflictWarning.visibility = View.GONE
+        if (day == null || startTimeStr.isEmpty() || endTimeStr.isEmpty() || sectionBlock == "Select Section") {
+            tvConflictWarning.text = ""
+            btnSave.isEnabled = false
             return
         }
 
-        val newSchedule = "$day $startTime-$endTime"
+        try {
+            val newStart =
+                timeFormat.parse(startTimeStr)?.time ?: throw Exception("Invalid start time")
+            val newEnd = timeFormat.parse(endTimeStr)?.time ?: throw Exception("Invalid end time")
 
-        val selectedTeacher = teacherList[spnTeacher.selectedItemPosition]
+            if (newStart >= newEnd) {
+                tvConflictWarning.text = "❌ Error: Start time must be before end time."
+                btnSave.isEnabled = false
+                return
+            }
 
-        // --- 1. SECTION OVERLAP CHECK (Fatal Conflict) ---
-        val sectionConflict = currentAssignmentsForMatrix.find {
-            it.schedule.equals(newSchedule, ignoreCase = true)
+            val allConflicts = mutableListOf<String>()
+
+            // 1. Teacher Conflict Check
+            if (selectedTeacher != null) {
+                val teacherConflict = allAssignmentsForCourseYear.filter { assignment ->
+                    // Check all assignments for the *entire* course/year, regardless of section
+                    assignment.teacherUid == selectedTeacher.uid && assignment.day == day
+                }.any { existing ->
+                    // Check for time overlap
+                    val existingStart =
+                        timeFormat.parse(existing.startTime)?.time ?: return@any false
+                    val existingEnd = timeFormat.parse(existing.endTime)?.time ?: return@any false
+                    (newStart < existingEnd && newEnd > existingStart)
+                }
+                if (teacherConflict) {
+                    allConflicts.add("Teacher Conflict: ${selectedTeacher.name} is already scheduled at this time.")
+                }
+            }
+
+            // 2. Section Overlap Check (Only for the selected section block)
+            // Linya ~580
+            // 2. Section Overlap Check (Only for the selected section block)
+            val sectionConflict = currentAssignmentsForMatrix.any { existing ->
+                // 2a. Check if the day and block match the existing item.
+                val dayAndBlockMatch = (existing.day == day && existing.sectionBlock == sectionBlock)
+
+                if (dayAndBlockMatch) {
+                    // 2b. Check for time overlap using the existing item's times.
+                    val existingStart = timeFormat.parse(existing.startTime)?.time ?: return@any false
+                    val existingEnd = timeFormat.parse(existing.endTime)?.time ?: return@any false
+                    (newStart < existingEnd && newEnd > existingStart)
+                } else {
+                    false
+                }
+            }
+            if (sectionConflict) {
+                allConflicts.add("Section Conflict: ${sectionBlock} already has a class scheduled at this time.")
+            }
+
+            // --- Final Output ---
+            if (allConflicts.isNotEmpty()) {
+                tvConflictWarning.text = "⚠️ Conflicts Found:\n" + allConflicts.joinToString("\n")
+                btnSave.isEnabled = false
+            } else {
+                tvConflictWarning.text = "✅ No conflicts found. Ready to save."
+                btnSave.isEnabled = true
+            }
+
+        } catch (e: Exception) {
+            tvConflictWarning.text = "❌ Error in time format."
+            btnSave.isEnabled = false
         }
-
-        if (sectionConflict != null) {
-            tvConflictWarning.text = "❌ FATAL CONFLICT: Section Overlap!\n" +
-                    "Section $sectionBlock is already scheduled for:\n" +
-                    "${sectionConflict.subjectCode} (${sectionConflict.assignedTeacherName}) at this exact time."
-            tvConflictWarning.visibility = View.VISIBLE
-            tvConflictWarning.setTextColor(resources.getColor(android.R.color.holo_red_dark))
-            return
-        }
-
-        // --- 2. TEACHER CONFLICT CHECK (Fatal Conflict) ---
-        val teacherConflict = allAssignmentsForCourseYear.find {
-            it.assignedTeacherId == selectedTeacher.uid && it.schedule.equals(newSchedule, ignoreCase = true)
-        }
-
-        if (teacherConflict != null) {
-            tvConflictWarning.text = "❌ FATAL CONFLICT: Teacher Conflict!\n" +
-                    "${selectedTeacher.name} is already assigned to:\n" +
-                    "${teacherConflict.subjectCode} in Section ${teacherConflict.sectionName} at this time."
-            tvConflictWarning.visibility = View.VISIBLE
-            tvConflictWarning.setTextColor(resources.getColor(android.R.color.holo_red_dark))
-            return
-        }
-
-        // --- 3. PASSED CHECK ---
-        tvConflictWarning.text = "✅ No Conflicts detected. Ready to save."
-        tvConflictWarning.visibility = View.VISIBLE
-        tvConflictWarning.setTextColor(resources.getColor(android.R.color.holo_blue_dark))
-        btnSave.isEnabled = true // Payagan mag-save
     }
-
 
     private fun saveAssignment() {
-        // Input validation (Unchanged)
-        if (spnSubject.selectedItem == null || spnTeacher.selectedItem == null || subjectEntryList.isEmpty()) {
-            Toast.makeText(this, "Select a valid subject and teacher.", Toast.LENGTH_SHORT).show()
-            return
-        }
+        val courseCode = getCourseCodeFromSpinner() ?: return
+        val yearLevel = spnYear.selectedItem?.toString() ?: return
+        val subjectName = spnSubject.selectedItem?.toString() ?: return
+        val teacherSelection = spnTeacher.selectedItem?.toString() ?: return
+        val sectionBlock = spnSectionBlock.selectedItem?.toString() ?: return
         val day = spnDay.selectedItem?.toString() ?: return
-        val startTime = etStartTime.text.toString().trim()
-        val endTime = etEndTime.text.toString().trim()
-        val sectionBlock = spnSectionBlock.selectedItem?.toString()?.trim()?.uppercase(Locale.getDefault()) ?: return
-        if (startTime.isEmpty() || endTime.isEmpty()) {
-            Toast.makeText(this, "Select Start and End Time.", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val finalScheduleString = "$day $startTime-$endTime"
-        val selectedTeacher = teacherList[spnTeacher.selectedItemPosition]
-
-        // --- RE-CHECK CONFLICTS BEFORE SAVE (Crucial Security Check) ---
-
-        // 1. Check for Section Overlap (sa kasalukuyang block)
-        val sectionConflict = currentAssignmentsForMatrix.find {
-            it.schedule.equals(finalScheduleString, ignoreCase = true)
-        }
-
-        // 2. Check for Teacher Conflict (sa lahat ng assignments)
-        val teacherConflict = allAssignmentsForCourseYear.find {
-            it.assignedTeacherId == selectedTeacher.uid && it.schedule.equals(finalScheduleString, ignoreCase = true)
-        }
-
-        if (sectionConflict != null) {
-            Toast.makeText(this, "SAVE BLOCKED: Section Overlap detected for Block $sectionBlock. Cannot save.", Toast.LENGTH_LONG).show()
-            checkConflicts()
-            return
-        }
-
-        if (teacherConflict != null) {
-            Toast.makeText(this, "SAVE BLOCKED: Teacher Conflict detected for ${selectedTeacher.name}. Cannot save.", Toast.LENGTH_LONG).show()
-            checkConflicts()
-            return
-        }
-
-        // --- IF NO CONFLICTS, PROCEED TO SAVE ---
-
-        val courseCode = getCourseCodeFromSpinner() ?: return // Ito ay ALL CAPS na
-        val yearLevel = spnYear.selectedItem.toString()
-        val subjectEntry = subjectEntryList[spnSubject.selectedItemPosition]
-        val teacher = teacherList[spnTeacher.selectedItemPosition]
+        val startTimeStr = etStartTime.text.toString()
+        val endTimeStr = etEndTime.text.toString()
         val capacity = etCapacity.text.toString().toIntOrNull() ?: 50
 
-        // Gagamitin ang year number (e.g., "1st Year" -> "1") para sa Section Name Convention
-        val yearNumber = yearLevel.substring(0,1)
+        if (!btnSave.isEnabled) {
+            Toast.makeText(this, "Please resolve conflicts before saving.", Toast.LENGTH_LONG)
+                .show()
+            return
+        }
 
-        // Section Name Convention: COURSE-YEARNUMBER-BLOCK-SUBJECTCODE
-        // (E.g., BSIT-1-A-CS101) - Ito ay ginagamit na Assignment Document ID
-        val finalSectionName = "${courseCode}-${yearNumber}-${sectionBlock}-${subjectEntry.subjectCode}"
+        val selectedTeacher =
+            teacherList.firstOrNull { (it.name + " (UID: " + it.uid.takeLast(4) + ")") == teacherSelection }
+                ?: run {
+                    Toast.makeText(this, "Invalid teacher selected.", Toast.LENGTH_SHORT).show()
+                    return
+                }
+
+        val (subjectCode, subjectTitle) = subjectName.split(" - ").map { it.trim() }
+            .let { Pair(it.getOrNull(0) ?: "", it.getOrNull(1) ?: "") }
+        val yearNumber = yearLevel.substring(0, 1)
+
+        // Unique ID for the assignment document: e.g., BSIT-1-A-MON-0800
+        val assignmentId =
+            "${courseCode}-${yearNumber}-${sectionBlock}-${day}-${startTimeStr.replace(":", "")}"
+        val sectionName = "${courseCode}-${yearNumber}-${sectionBlock}"
 
         val assignment = ClassAssignment(
-            subjectCode = subjectEntry.subjectCode,
-            subjectTitle = subjectEntry.subjectTitle,
+            assignmentId = assignmentId,
             courseCode = courseCode,
             yearLevel = yearLevel,
-            sectionName = finalSectionName,
-            assignedTeacherId = teacher.uid,
-            assignedTeacherName = teacher.name,
-            schedule = finalScheduleString,
+            sectionBlock = sectionBlock,
+            sectionName = sectionName,
+            subjectCode = subjectCode,
+            subjectTitle = subjectTitle,
+            teacherUid = selectedTeacher.uid,
+            teacherName = selectedTeacher.name,
+            day = day,
+            startTime = startTimeStr,
+            endTime = endTimeStr,
             maxCapacity = capacity,
-            currentlyEnrolled = 0
+            enrolledCount = 0
         )
 
-        assignmentsCollection.document(finalSectionName).set(assignment)
+        // Linya ~657
+        // ... (Linya 657)
+        assignmentsCollection.document(assignmentId).set(assignment)
+            // TAMA: Ang .set() ay nagbabalik lang ng success (Void)
             .addOnSuccessListener {
-                Toast.makeText(this, "Class Assignment Saved: $finalSectionName", Toast.LENGTH_LONG).show()
-                // I-reload ang lahat ng data para mag-update ang matrix
-                loadSubjectsSectionsAndAllAssignments()
-                tvConflictWarning.visibility = View.GONE
+                Toast.makeText(this, "Schedule successfully saved!", Toast.LENGTH_LONG).show()
+
+                // I-refresh ang data at matrix
+                loadAllAssignments()
+                checkConflicts()
             }
             .addOnFailureListener { e ->
-                Toast.makeText(this, "Failed to save: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Failed to save schedule: ${e.message}", Toast.LENGTH_LONG)
+                    .show()
+                Log.e("ManageSchedules", "Save failed", e)
             }
-    }
-}
+    } // <--- Dito nagtatapos ang saveAssignment() function
+
+} // <--- Dito nagtatapos ang ManageSchedulesActivity class
