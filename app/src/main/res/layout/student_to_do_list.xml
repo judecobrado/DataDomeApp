@@ -8,11 +8,12 @@
     tools:context=".student.StudentToDoListActivity">
 
     <TextView
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="My To-Do List"
         android:textSize="24sp"
         android:textStyle="bold"
+        android:gravity="center"
         android:layout_marginBottom="16dp"/>
 
     <Button
@@ -22,16 +23,36 @@
         android:text="+ Add New Task"
         android:layout_marginBottom="16dp"/>
 
+    <TextView
+        android:id="@+id/tvToggleDone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="▼ Show Completed Tasks (0)"
+        android:textColor="@android:color/holo_blue_dark"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:gravity="center_vertical"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackground"
+        android:layout_marginBottom="16dp"
+        android:visibility="gone"
+        tools:visibility="visible"/>
+
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_height="match_parent">
 
         <LinearLayout
             android:id="@+id/taskContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"/>
+            android:orientation="vertical"
+            android:dividerPadding="8dp"
+            android:showDividers="middle"/>
+
     </ScrollView>
 
 </LinearLayout>

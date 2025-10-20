@@ -1,10 +1,11 @@
-package com.example.datadomeapp
+package com.example.datadomeapp.enrollment
 
 import android.content.Intent
 import android.os.Bundle
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.example.datadomeapp.R
 import com.google.firebase.firestore.FirebaseFirestore
 
 class CheckEmailActivity : AppCompatActivity() {
@@ -15,7 +16,7 @@ class CheckEmailActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_check_email)
+        setContentView(R.layout.enrollment_check_email)
 
         tvInfo = findViewById(R.id.tvInfo)
 

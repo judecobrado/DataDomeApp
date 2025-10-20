@@ -1,4 +1,4 @@
-package com.example.datadomeapp
+package com.example.datadomeapp.enrollment
 
 import android.content.Intent
 import android.os.Bundle
@@ -6,22 +6,24 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.example.datadomeapp.R
+import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlin.random.Random
-import java.util.*
 
 class VerifyEmailActivity : AppCompatActivity() {
 
     private lateinit var etEmail: EditText
     private lateinit var btnVerify: Button
 
-    private val db = FirebaseFirestore.getInstance()
-    private val CODE_LENGTH = 6
-    private val CODE_EXPIRE_MINUTES = 10L
+    private val firestore = FirebaseFirestore.getInstance()
+    // Tiyakin na ang collection name ay 'pendingEnrollments' (Tulad ng ginamit mo sa ibang files)
+    private val PENDING_COLLECTION = "pendingEnrollments"
+    private val realtimeDb = FirebaseDatabase.getInstance().reference
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_verify_email)
+        setContentView(R.layout.enrollement_verify_email)
 
         etEmail = findViewById(R.id.etEmail)
         btnVerify = findViewById(R.id.btnVerify)
@@ -36,18 +38,9 @@ class VerifyEmailActivity : AppCompatActivity() {
         }
     }
 
-
-    private fun navigateToEnrollmentForm(email: String, docId: String? = null) {
-        val intent = Intent(this, EnrollmentActivity::class.java)
-        intent.putExtra("email", email)
-        if (docId != null) intent.putExtra("docId", docId)
-        startActivity(intent)
-    }
-
-
     private fun checkEmail(email: String) {
-        // 1️⃣ Check students
-        db.collection("students").whereEqualTo("email", email).get()
+        // 1️⃣ Check students collection (Registered users)
+        firestore.collection("students").whereEqualTo("email", email).get()
             .addOnSuccessListener { students ->
                 if (!students.isEmpty) {
                     Toast.makeText(
@@ -59,54 +52,78 @@ class VerifyEmailActivity : AppCompatActivity() {
                 }
 
                 // 2️⃣ Check pending enrollments
-                db.collection("pending_enrollments").whereEqualTo("email", email).get()
+                firestore.collection(PENDING_COLLECTION).whereEqualTo("email", email).get()
                     .addOnSuccessListener { pending ->
                         if (!pending.isEmpty) {
                             val doc = pending.documents[0]
+                            val docId = doc.id
                             val status = doc.getString("status") ?: "pending"
+
                             when (status) {
-                                "pending" -> sendVerificationCode(email, doc.id)
                                 "submitted" -> {
+                                    // Status: SUBMITTED (Hindi na pwedeng i-submit ulit)
                                     val intent = Intent(this, AlreadySubmittedActivity::class.java)
                                     startActivity(intent)
                                 }
+
+                                "pending" -> {
+                                    // Status: PENDING (Verified na ang email pero hindi pa sinubmit ang form)
+                                    // Direkta na sa Enrollment Activity, hindi na kailangan ng verification code
+                                    Toast.makeText(this, "Verification already completed. Redirecting to form.", Toast.LENGTH_LONG).show()
+                                    navigateToEnrollment(email, docId)
+                                }
+
+                                else -> {
+                                    // Handle unexpected status (fallback to sending code or new enrollment logic)
+                                    sendVerificationCode(email, docId)
+                                }
                             }
                         } else {
-                            // New email → send verification
+                            // Walang existing record. Magpadala ng code para sa bagong enrollment.
                             sendVerificationCode(email)
                         }
                     }
-                    .addOnFailureListener { e ->
-                        //Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                    .addOnFailureListener {
+                        Toast.makeText(this, "Error checking pending status.", Toast.LENGTH_SHORT).show()
                     }
             }
-            .addOnFailureListener { e ->
-                //Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+            .addOnFailureListener {
+                Toast.makeText(this, "Error checking student status.", Toast.LENGTH_SHORT).show()
             }
     }
 
+    // ✅ NEW: Helper function para i-direct sa Enrollment Activity
+    private fun navigateToEnrollment(email: String, docId: String) {
+        val intent = Intent(this, EnrollmentActivity::class.java)
+        intent.putExtra("email", email)
+        intent.putExtra("docId", docId)
+        startActivity(intent)
+    }
+
+
     private fun sendVerificationCode(email: String, docId: String? = null) {
         val code = Random.nextInt(100000, 999999).toString()
-        val timestamp = Date()
+        val timestamp = System.currentTimeMillis()
+        val safeEmail = email.replace(".", "_")
 
-        val verificationData = hashMapOf(
+        val data = mapOf(
             "email" to email,
             "code" to code,
             "timestamp" to timestamp,
             "verified" to false,
-            "docId" to docId
+            "docId" to (docId ?: "")
         )
 
-        db.collection("email_verifications").document(email)
-            .set(verificationData)
+        realtimeDb.child("email_verifications").child(safeEmail)
+            .setValue(data)
             .addOnSuccessListener {
                 Toast.makeText(this, "Verification code sent to $email", Toast.LENGTH_LONG).show()
                 val intent = Intent(this, EnterCodeActivity::class.java)
                 intent.putExtra("email", email)
                 startActivity(intent)
             }
-            .addOnFailureListener { e ->
-                Toast.makeText(this, "Failed to send code: ${e.message}", Toast.LENGTH_LONG).show()
+            .addOnFailureListener {
+                Toast.makeText(this, "Failed to send code: ${it.message}", Toast.LENGTH_LONG).show()
             }
     }
 }

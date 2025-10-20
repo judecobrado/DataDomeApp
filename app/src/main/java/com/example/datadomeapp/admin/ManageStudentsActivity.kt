@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.example.datadomeapp.R
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.example.datadomeapp.models.Student
 
 // ⬅️ I-define ang Data Class (Dapat nasa labas ng ManageStudentsActivity class, o sa sariling file)
 data class Student(

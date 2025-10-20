@@ -107,7 +107,7 @@ class VoiceDetectionActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(com.example.datadomeapp.R.layout.activity_voice_detection)
+        setContentView(com.example.datadomeapp.R.layout.teacher_voice_detection)
 
         toggleDetection = findViewById(com.example.datadomeapp.R.id.toggleDetection)
         tvNoiseStatus = findViewById(com.example.datadomeapp.R.id.tvNoiseStatus)

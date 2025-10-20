@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="8dp">
+
+        <Spinner
+            android:id="@+id/spnDayEdit"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:minHeight="48dp" />
+
+        <Spinner
+            android:id="@+id/spnStartTimeEdit"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:minHeight="48dp" />
+
+        <Spinner
+            android:id="@+id/spnEndTimeEdit"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:minHeight="48dp" />
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="1. Filter Teacher Department:"
+        android:textSize="14sp"
+        android:layout_marginTop="4dp"/>
+    <Spinner
+        android:id="@+id/spnDepartmentEdit"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="48dp"
+        android:layout_marginBottom="8dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="2. Search and Select Teacher:"
+        android:textSize="14sp"
+        android:layout_marginTop="4dp"/>
+    <AutoCompleteTextView
+        android:id="@+id/actvTeacherEdit"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Type to search teacher name/UID..."
+        android:minHeight="48dp"
+        android:layout_marginBottom="8dp"
+        android:completionThreshold="1" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="8dp">
+
+        <Spinner
+            android:id="@+id/spnRoomEdit"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="2"
+            android:minHeight="48dp" />
+
+        <EditText
+            android:id="@+id/etCapacityEdit"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="Capacity"
+            android:inputType="number"
+            android:textAlignment="center"
+            android:minHeight="48dp" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvConflictWarningEdit"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:padding="8dp"
+        android:textColor="@color/design_default_color_error"
+        android:textStyle="bold"
+        android:background="#FFE0B2"
+        android:text="Checking conflicts..."/>
+
+</LinearLayout>

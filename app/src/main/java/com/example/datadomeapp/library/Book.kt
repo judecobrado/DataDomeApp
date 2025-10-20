@@ -1,4 +1,4 @@
-package com.example.datadomeapp
+package com.example.datadomeapp.library
 
 data class Book(
     var title: String = "",

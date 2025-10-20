@@ -18,7 +18,7 @@ class StudentNotesActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_student_notes)
+        setContentView(R.layout.student_notes)
 
         notesContainer = findViewById(R.id.notesContainer)
         btnAddNote = findViewById(R.id.btnAddNote)
@@ -29,7 +29,7 @@ class StudentNotesActivity : AppCompatActivity() {
     }
 
     private fun showAddEditNoteDialog(noteId: String? = null, oldTitle: String? = null, oldContent: String? = null) {
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_note, null)
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.student_addnote_dialog, null)
         val etTitle = dialogView.findViewById<EditText>(R.id.etTitle)
         val etContent = dialogView.findViewById<EditText>(R.id.etContent)
 

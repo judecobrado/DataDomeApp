@@ -11,6 +11,7 @@ import com.example.datadomeapp.R
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.FieldValue
+import com.example.datadomeapp.models.Room // Import ang Room model
 import java.util.Locale
 
 // Data class para sa Course
@@ -20,23 +21,23 @@ data class Course(
     val description: String = "",
 )
 
-// 🛑 TAMANG STRUCTURE: Map of Year Level -> List of Blocks (Array sa Firestore)
-// Ginamit ang tamang syntax: Map<String, List<String>>
+// Data class para sa Course Sections
 data class CourseSections(
     val courseCode: String = "",
     val sections: Map<String, List<String>> = emptyMap()
 )
-
 
 class ManageCoursesActivity : AppCompatActivity() {
 
     private val firestore = FirebaseFirestore.getInstance()
     private val coursesCollection = firestore.collection("courses")
     private val sectionsCollection = firestore.collection("sections")
+    private val roomsCollection = firestore.collection("rooms")
 
     // UI Elements
     private lateinit var listView: ListView
     private lateinit var btnManageSections: Button
+    private lateinit var btnManageRooms: Button
     private lateinit var etName: EditText
     private lateinit var etCode: EditText
     private lateinit var etDescription: EditText
@@ -52,9 +53,9 @@ class ManageCoursesActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_manage_courses)
+        setContentView(R.layout.admin_course_management)
 
-        // Initialize Course UI components
+        // Initialize UI components
         listView = findViewById(R.id.lvCourses)
         etName = findViewById(R.id.etCourseName)
         etCode = findViewById(R.id.etCourseCode)
@@ -62,6 +63,7 @@ class ManageCoursesActivity : AppCompatActivity() {
         val btnAdd = findViewById<Button>(R.id.btnAddCourse)
         val btnDelete = findViewById<Button>(R.id.btnDeleteCourse)
         btnManageSections = findViewById(R.id.btnManageSections)
+        btnManageRooms = findViewById(R.id.btnManageRooms)
 
         adapter = ArrayAdapter(this, android.R.layout.simple_list_item_single_choice, courseList)
         listView.adapter = adapter
@@ -73,17 +75,14 @@ class ManageCoursesActivity : AppCompatActivity() {
         listView.setOnItemClickListener { _, _, position, _ ->
             val selectedCourseDisplay = courseList[position]
             selectedCourseDocId = courseMap[selectedCourseDisplay]
-            selectedCourseCode = selectedCourseDocId // Course Code ang Doc ID
+            selectedCourseCode = selectedCourseDocId
 
             btnManageSections.isEnabled = true
             btnManageSections.text = "Manage Sections for ${selectedCourseCode ?: "..."}"
         }
 
-        // --- COURSE MANAGEMENT LOGIC (Unchanged) ---
-        btnAdd.setOnClickListener {
-            addNewCourse()
-        }
-
+        // --- MANAGEMENT ENTRY POINTS ---
+        btnAdd.setOnClickListener { addNewCourse() }
         btnDelete.setOnClickListener {
             val pos = listView.checkedItemPosition
             if (pos != ListView.INVALID_POSITION) {
@@ -104,14 +103,15 @@ class ManageCoursesActivity : AppCompatActivity() {
                 Toast.makeText(this, "Select a course to delete", Toast.LENGTH_SHORT).show()
             }
         }
-
-        // --- SECTION MANAGEMENT ENTRY POINT ---
         btnManageSections.setOnClickListener {
             if (selectedCourseCode != null) {
                 showSectionManagerDialog(selectedCourseCode!!)
             } else {
                 Toast.makeText(this, "Please select a course first.", Toast.LENGTH_SHORT).show()
             }
+        }
+        btnManageRooms.setOnClickListener {
+            showRoomManagerDialog()
         }
     }
 
@@ -205,14 +205,10 @@ class ManageCoursesActivity : AppCompatActivity() {
                 Toast.makeText(this, "Failed to load courses: ${error.message}", Toast.LENGTH_SHORT).show()
             }
     }
-    // --- End Course Management Functions ---
 
-
-    /**
-     * ✅ PINASIMPLENG Load/Save: Gumagamit ng malinis na Map<String, List<String>> structure.
-     */
+    // --- Section Management Dialog ---
     private fun showSectionManagerDialog(courseCode: String) {
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_manage_sections, null)
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.admin_section_dialog, null)
         val tvHeader = dialogView.findViewById<TextView>(R.id.tvSectionHeader)
         val lvSections = dialogView.findViewById<ListView>(R.id.lvSectionsDialog)
         val spnYear = dialogView.findViewById<Spinner>(R.id.spnYearLevelDialog)
@@ -229,41 +225,32 @@ class ManageCoursesActivity : AppCompatActivity() {
         lvSections.adapter = sectionAdapter
         lvSections.choiceMode = ListView.CHOICE_MODE_SINGLE
 
-        // Data holder: Map<YearKey, List<Blocks>>
         var currentSectionMap: MutableMap<String, List<String>> = mutableMapOf()
 
-        // 🎯 HELPER FUNCTION: Nagfi-filter at nagre-render
         val filterAndRenderList = { selectedYear: String ->
             val yearKey = selectedYear.replace(" ", "")
             sectionBlockDisplayList.clear()
             val blocksForSelectedYear = currentSectionMap[yearKey] ?: emptyList()
-            // I-display ang buong pangalan: "1st Year A"
             sectionBlockDisplayList.addAll(blocksForSelectedYear.map { "$selectedYear $it" })
             sectionBlockDisplayList.sort()
             sectionAdapter.notifyDataSetChanged()
             lvSections.clearChoices()
         }
 
-        /**
-         * 🛑 Load Sections: Gumagamit ng toObject para sa malinis na pagbasa.
-         */
         val loadSections = {
             sectionsCollection.document(courseCode).get()
                 .addOnSuccessListener { doc ->
                     currentSectionMap.clear()
 
                     if (doc.exists()) {
-                        // Diretso na ang pag-basa sa CourseSections data class
                         val sectionsDoc = doc.toObject(CourseSections::class.java)
 
                         if (sectionsDoc != null) {
                             val validKeys = yearLevels.map { it.replace(" ", "") }
-                            // Kukunin lang ang valid year keys (1stYear, 2ndYear, etc.)
                             currentSectionMap = sectionsDoc.sections.filterKeys { it in validKeys }.toMutableMap()
                         }
                     }
 
-                    // Kung hindi nag-eexist, o walang laman ang map (para mag-set up ng base structure)
                     if (currentSectionMap.isEmpty()) {
                         val baseSectionsMap = yearLevels.associate { it.replace(" ", "") to emptyList<String>() }
                         val baseDoc = CourseSections(courseCode, baseSectionsMap)
@@ -280,7 +267,6 @@ class ManageCoursesActivity : AppCompatActivity() {
         }
         loadSections()
 
-        // 🎯 SPINNER LISTENER (Unchanged)
         spnYear.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 val selectedYear = parent?.getItemAtPosition(position).toString()
@@ -290,17 +276,16 @@ class ManageCoursesActivity : AppCompatActivity() {
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
 
-        // ADD SECTION (Gamit ang ArrayUnion sa loob ng Field)
         btnAdd.setOnClickListener {
             val year = spnYear.selectedItem.toString()
-            val blockName = etSectionBlock.text.toString().trim().uppercase(Locale.getDefault()) // E.g., A
+            val blockName = etSectionBlock.text.toString().trim().uppercase(Locale.getDefault())
 
             if (blockName.isEmpty() || blockName.length > 3) {
                 Toast.makeText(this, "Enter a valid section block (1-3 uppercase chars).", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            val yearKey = year.replace(" ", "") // E.g., 1stYear
+            val yearKey = year.replace(" ", "")
             val updatePath = "sections.$yearKey"
 
             val existingBlocks = currentSectionMap[yearKey] ?: emptyList()
@@ -311,7 +296,6 @@ class ManageCoursesActivity : AppCompatActivity() {
 
 
             sectionsCollection.document(courseCode)
-                // Ang ini-store natin ay ang Block Name lang (e.g., "A") sa ilalim ng Year Key (e.g., "1stYear")
                 .update(updatePath, FieldValue.arrayUnion(blockName))
                 .addOnSuccessListener {
                     etSectionBlock.text.clear()
@@ -324,11 +308,9 @@ class ManageCoursesActivity : AppCompatActivity() {
                 }
         }
 
-        // DELETE SECTION (Gamit ang ArrayRemove sa loob ng Field)
         btnDelete.setOnClickListener {
             val pos = lvSections.checkedItemPosition
             if (pos != ListView.INVALID_POSITION) {
-                // Ang nakikita sa listahan ay "1st Year A", pero ang kailangan natin i-delete ay "A" lang.
                 val displayBlock = sectionBlockDisplayList[pos]
                 val blockToRemove = displayBlock.substringAfterLast(" ").trim().uppercase(Locale.getDefault())
 
@@ -347,6 +329,107 @@ class ManageCoursesActivity : AppCompatActivity() {
                     }
             } else {
                 Toast.makeText(this, "Select a section to delete.", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(true)
+            .setPositiveButton("Close") { dialog, _ -> dialog.dismiss() }
+            .show()
+    }
+
+
+    // --- ROOM MANAGEMENT DIALOG ---
+    // --- ROOM MANAGEMENT DIALOG ---
+    private fun showRoomManagerDialog() {
+        // I-inflate ang dialog view
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.admin_rooms_management_dialog, null)
+        val etRoomId = dialogView.findViewById<EditText>(R.id.etRoomId)
+        // ✅ TINANGGAL: etRoomName
+        val btnAddRoom = dialogView.findViewById<Button>(R.id.btnAddRoom)
+        val btnDeleteRoom = dialogView.findViewById<Button>(R.id.btnDeleteRoom)
+        val lvRooms = dialogView.findViewById<ListView>(R.id.lvRoomsDialog)
+
+        val roomDisplayList = ArrayList<String>()
+        val roomMap = mutableMapOf<String, String>() // Display Name -> Room ID
+        val roomAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_single_choice, roomDisplayList)
+        lvRooms.adapter = roomAdapter
+        lvRooms.choiceMode = ListView.CHOICE_MODE_SINGLE
+
+        // 🎯 LOAD ROOMS
+        val loadRooms = {
+            roomsCollection.get()
+                .addOnSuccessListener { snapshot ->
+                    roomDisplayList.clear()
+                    roomMap.clear()
+
+                    snapshot.documents.forEach { doc ->
+                        // Gumagamit ng Room model na mayroon lang 'id'
+                        val room = doc.toObject(Room::class.java)
+                        room?.let {
+                            val display = it.id // ✅ Display na lang ang ID
+                            roomDisplayList.add(display)
+                            roomMap[display] = it.id
+                        }
+                    }
+                    roomAdapter.notifyDataSetChanged()
+                    lvRooms.clearChoices()
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(this, "Error loading rooms: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+        }
+        loadRooms()
+
+        // 🎯 ADD ROOM
+        btnAddRoom.setOnClickListener {
+            val id = etRoomId.text.toString().trim().uppercase(Locale.getDefault())
+            // ✅ TINANGGAL: name field validation at pagkuha ng text
+
+            if (id.isEmpty()) {
+                Toast.makeText(this, "Room ID is required.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            // ✅ Gumagamit ng Room model na mayroon lang ID
+            val room = Room(id = id)
+            roomsCollection.document(id).set(room)
+                .addOnSuccessListener {
+                    etRoomId.text.clear()
+                    Toast.makeText(this, "Room $id added.", Toast.LENGTH_SHORT).show()
+                    loadRooms()
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(this, "Failed to add room: ${e.message}", Toast.LENGTH_SHORT).show()                }
+        }
+
+        // 🎯 DELETE ROOM
+        btnDeleteRoom.setOnClickListener {
+            val pos = lvRooms.checkedItemPosition
+            if (pos != ListView.INVALID_POSITION) {
+                val displayName = roomDisplayList[pos]
+                val roomIdToDelete = roomMap[displayName]
+
+                if (roomIdToDelete != null) {
+                    AlertDialog.Builder(this)
+                        .setTitle("Confirm Deletion")
+                        .setMessage("Are you sure you want to delete room '$displayName'?")
+                        .setPositiveButton("Delete") { _, _ ->
+                            roomsCollection.document(roomIdToDelete).delete()
+                                .addOnSuccessListener {
+                                    Toast.makeText(this, "Room '$roomIdToDelete' removed.", Toast.LENGTH_SHORT).show()
+                                    loadRooms()
+                                }
+                                .addOnFailureListener { e ->
+                                    Toast.makeText(this, "Failed to delete room: ${e.message}", Toast.LENGTH_SHORT).show()
+                                }
+                        }
+                        .setNegativeButton("Cancel", null)
+                        .show()
+                }
+            } else {
+                Toast.makeText(this, "Select a room to delete.", Toast.LENGTH_SHORT).show()
             }
         }
 

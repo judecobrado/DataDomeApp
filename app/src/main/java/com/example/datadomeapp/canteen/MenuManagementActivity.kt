@@ -26,7 +26,7 @@ class MenuManagementActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_menu_management)
+        setContentView(R.layout.canteen_menu_management)
 
         recyclerView = findViewById(R.id.rvMenu)
         btnAddMenu = findViewById(R.id.btnAddMenu)

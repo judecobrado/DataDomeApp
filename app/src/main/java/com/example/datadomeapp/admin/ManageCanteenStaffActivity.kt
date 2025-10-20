@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.example.datadomeapp.R
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.example.datadomeapp.models.CanteenStaff
 
 class ManageCanteenStaffActivity : AppCompatActivity() {
 
@@ -21,7 +22,7 @@ class ManageCanteenStaffActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContentView(R.layout.activity_manage_canteen_staff)
+        setContentView(R.layout.admin_canteenstaff_management)
 
         val etCanteenName = findViewById<EditText>(R.id.etCanteenName)
         val etFirstName = findViewById<EditText>(R.id.etFirstName)

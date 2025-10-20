@@ -1,4 +1,4 @@
-package com.example.datadomeapp
+package com.example.datadomeapp.enrollment
 
 import android.content.Intent
 import android.os.Bundle

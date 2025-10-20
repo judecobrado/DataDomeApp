@@ -14,7 +14,8 @@ data class Teacher(
     val uid: String = "",       // Foreign key sa AppUser (UID)
     val teacherId: String = "", // Internal Teacher ID (e.g., T-001)
     val name: String = "",
-    val phone: String = ""
+    val phone: String = "",
+    val department: String = ""
     // Maaari ring magdagdag ng ibang fields (e.g., specialization, department)
 )
 

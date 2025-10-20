@@ -33,7 +33,7 @@ class CanteenStaffDashboardActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.dashboard_canteen_staff)
+        setContentView(R.layout.canteen_dashboard)
 
         tvWelcome = findViewById(R.id.tvWelcome)
         btnLogout = findViewById(R.id.btnLogout)

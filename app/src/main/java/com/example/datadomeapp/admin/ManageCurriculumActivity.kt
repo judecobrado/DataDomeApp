@@ -29,7 +29,7 @@ class ManageCurriculumActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_manage_curriculum)
+        setContentView(R.layout.admin_curiculum_management)
 
         spnCourse = findViewById(R.id.spnCurriculumCourse)
         spnYear = findViewById(R.id.spnCurriculumYear)

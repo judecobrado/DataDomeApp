@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    tools:context=".teacher.RecordAttendanceActivity">
+
+    <TextView
+        android:id="@+id/tvAttendanceHeader"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Record Attendance for [Class Name]"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp"/>
+
+    <EditText
+        android:id="@+id/etAttendanceDate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Date (Tap to select)"
+        android:focusable="false"
+        android:clickable="true"
+        android:inputType="date"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView
+        android:id="@+id/tvNoRecords"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="No attendance records found for this date."
+        android:textSize="18sp"
+        android:textColor="@color/design_default_color_error"
+        android:padding="16dp"
+        android:visibility="gone"
+        android:gravity="center"
+        android:layout_marginBottom="16dp"/>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerViewAttendance"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginBottom="16dp"/>
+
+    <Button
+        android:id="@+id/btnSaveAttendance"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Save Attendance Records"/>
+
+</LinearLayout>

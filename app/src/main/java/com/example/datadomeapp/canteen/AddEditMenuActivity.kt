@@ -42,7 +42,7 @@ class AddEditMenuActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_add_edit_menu)
+        setContentView(R.layout.canteen_add_edit_menu)
 
         etName = findViewById(R.id.etMenuName)
         etPrice = findViewById(R.id.etMenuPrice)

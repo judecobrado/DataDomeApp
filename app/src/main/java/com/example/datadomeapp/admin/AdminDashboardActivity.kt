@@ -14,7 +14,7 @@ class AdminDashboardActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.dashboard_admin)
+        setContentView(R.layout.admin_dashboard)
 
         // Existing buttons...
         findViewById<Button>(R.id.btnManageStudents).setOnClickListener {

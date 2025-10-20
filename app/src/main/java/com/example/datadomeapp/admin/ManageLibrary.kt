@@ -13,7 +13,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import com.example.datadomeapp.Book
+import com.example.datadomeapp.library.Book
 import com.example.datadomeapp.R
 import com.google.firebase.appcheck.FirebaseAppCheck
 import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
@@ -55,7 +55,7 @@ class ManageLibrary : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_manage_library)
+        setContentView(R.layout.library_manage)
 
         // Enable App Check debug provider
         FirebaseAppCheck.getInstance()

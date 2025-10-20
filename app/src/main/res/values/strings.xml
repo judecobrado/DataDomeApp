@@ -1,7 +1,20 @@
 <resources>
     <string name="app_name">DataDome APP</string>
     <string name="menu_image_preview">Menu Item Image Preview</string>
-    <string name="select_section_prompt">Select Section Block</string>
     <string name="select_year_level">Select Year Level</string>
-    @string/select_year_level
+    <string name="select_course">Select Course</string>
+    <string name="select_year">Select Year</string>
+    <string name="select_section_block">Select Section/Block</string>
+    <string-array name="year_levels_array">
+        <item>Select Year Level</item>
+        <item>1st Year</item>
+        <item>2nd Year</item>
+        <item>3rd Year</item>
+        <item>4th Year</item>
+    </string-array>
+    <string-array name="enrollment_types_array">
+        <item>Select Type</item>
+        <item>Regular</item>
+        <item>Irregular</item>
+    </string-array>
 </resources>

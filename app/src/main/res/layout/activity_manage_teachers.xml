@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.androids.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -15,79 +17,92 @@
         android:textStyle="bold"
         android:layout_marginBottom="16dp"/>
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="8dp">
+
+        <EditText
+            android:id="@+id/etTeacherName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Full Name"
+            android:inputType="textPersonName"
+            android:minHeight="48dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Select Department/Course:"
+            android:layout_marginTop="8dp"/>
+
+        <Spinner
+            android:id="@+id/spDepartment"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:spinnerMode="dropdown"/>
+
+        <EditText
+            android:id="@+id/etTeacherEmail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Email (for login)"
+            android:inputType="textEmailAddress"
+            android:minHeight="48dp"/>
+
+        <EditText
+            android:id="@+id/etTeacherPassword"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Password (initial)"
+            android:inputType="textPassword"
+            android:minHeight="48dp"/>
+
+        <Button
+            android:id="@+id/btnAddTeacher"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Add New Teacher"
+            android:layout_marginTop="16dp"/>
+    </LinearLayout>
+
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Current Teachers:"
-        android:textSize="16sp"
-        android:textStyle="italic"/>
+        android:text="Existing Teachers:"
+        android:textSize="18sp"
+        android:layout_marginTop="16dp"/>
 
     <ListView
         android:id="@+id/lvTeachers"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
+        android:padding="8dp"
         android:choiceMode="singleChoice"
-        android:layout_marginBottom="16dp"
-        android:background="@android:color/white"
-        android:padding="8dp"/>
-
-    <Button
-        android:id="@+id/btnDeleteTeacher"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Delete Selected Teacher"
-        android:backgroundTint="?attr/colorError"
-        android:textColor="@android:color/white"
-        android:layout_marginBottom="24dp"/>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Add New Teacher:"
-        android:textSize="18sp"
-        android:textStyle="bold"
         android:layout_marginBottom="8dp"/>
 
-    <EditText
-        android:id="@+id/etTeacherName"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Full Name"
-        android:inputType="textPersonName"
-        android:minHeight="48dp"
-        android:layout_marginBottom="8dp"/>
+        android:orientation="horizontal">
 
-    <EditText
-        android:id="@+id/etTeacherEmail"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Email Address"
-        android:inputType="textEmailAddress"
-        android:minHeight="48dp"
-        android:layout_marginBottom="8dp"/>
+        <Button
+            android:id="@+id/btnDeleteTeacher"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Delete Selected"
+            android:layout_marginEnd="8dp"/>
 
-    <EditText
-        android:id="@+id/etTeacherPassword"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Temporary Password (min 6 chars)"
-        android:inputType="textPassword"
-        android:minHeight="48dp"
-        android:layout_marginBottom="16dp"/>
-
-    <Button
-        android:id="@+id/btnAddTeacher"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Add Teacher"
-        android:layout_marginBottom="16dp"/>
-
-    <Button
-        android:id="@+id/btnBackTeacher"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Back to Admin Menu"
-        style="@style/Widget.AppCompat.Button.Borderless.Colored" />
+        <Button
+            android:id="@+id/btnBackTeacher"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Back"/>
+    </LinearLayout>
 
 </LinearLayout>

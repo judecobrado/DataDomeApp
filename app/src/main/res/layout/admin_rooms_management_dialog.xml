@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/tvRoomHeader"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Manage Rooms (Using Room ID Only)"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp"/>
+
+    <EditText
+        android:id="@+id/etRoomId"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Room ID (e.g., RM-305, NB-2)"
+        android:inputType="textCapCharacters"
+        android:maxLength="10"
+        android:layout_marginBottom="16dp"/> <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:layout_marginTop="8dp"> <Button
+    android:id="@+id/btnAddRoom"
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:layout_weight="1"
+    android:text="Add Room"
+    android:layout_marginEnd="4dp"/>
+
+    <Button
+        android:id="@+id/btnDeleteRoom"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="Delete Selected"
+        android:backgroundTint="@android:color/holo_red_light"
+        android:layout_marginStart="4dp"/>
+</LinearLayout>
+
+    <ListView
+        android:id="@+id/lvRoomsDialog"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:choiceMode="singleChoice"
+        android:layout_marginTop="16dp"/>
+
+</LinearLayout>

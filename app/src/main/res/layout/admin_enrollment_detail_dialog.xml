@@ -18,6 +18,16 @@
             android:layout_marginBottom="16dp" />
 
         <TextView
+            android:id="@+id/tvApplicationType"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Application Status: [Loading...]"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/holo_blue_dark"
+            android:paddingBottom="12dp"/>
+
+        <TextView
             android:id="@+id/tvName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -77,43 +87,46 @@
             android:layout_marginBottom="4dp" />
 
         <TextView
-            android:id="@+id/tvYearLevel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Year Level Placeholder"
-            android:textStyle="italic"
-            android:layout_marginBottom="8dp" />
-
-        <TextView
             android:id="@+id/tvGuardian"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Guardian Placeholder"
             android:layout_marginBottom="16dp" />
 
-        <LinearLayout
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@android:color/darker_gray"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="1. Set Final Year Level:"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp"/>
+
+        <Spinner
+            android:id="@+id/spinnerFinalYearLevel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:spinnerMode="dropdown"
+            android:layout_marginBottom="16dp"/>
 
-            <Button
-                android:id="@+id/btnDidNotPass"
-                style="@style/Widget.AppCompat.Button.Borderless"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Reject"
-                android:textColor="@android:color/holo_red_dark" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="2. Set Final Enrollment Type:"
+            android:textSize="16sp"
+            android:textStyle="bold"/>
 
-            <Button
-                android:id="@+id/btnEnroll"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Enroll Student"
-                android:backgroundTint="?attr/colorPrimary"
-                android:textColor="@android:color/white" />
+        <Spinner
+            android:id="@+id/spinnerFinalEnrollmentType"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:spinnerMode="dropdown"
+            android:layout_marginBottom="24dp"/>
 
-        </LinearLayout>
     </LinearLayout>
 </ScrollView>

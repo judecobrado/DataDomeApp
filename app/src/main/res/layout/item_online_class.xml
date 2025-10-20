@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="8dp"
+    android:layout_marginBottom="8dp"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="2dp">
+
+    <LinearLayout
+        android:id="@+id/llClassItem"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:background="?android:attr/selectableItemBackground">
+
+        <TextView
+            android:id="@+id/tvSubjectCode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="IT 101 (Programming Fundamentals)"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#333333"/>
+
+        <TextView
+            android:id="@+id/tvSectionName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Section: BSIT 3-A"
+            android:textSize="14sp"
+            android:textColor="#666666"
+            android:paddingBottom="4dp"/>
+
+        <TextView
+            android:id="@+id/tvScheduleTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Schedule: Monday 08:00 - 10:00"
+            android:textSize="14sp"
+            android:textColor="#000000"
+            android:textStyle="normal"
+            android:paddingBottom="8dp"/>
+        <TextView
+            android:id="@+id/tvOnlineLinkStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Link Status"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:drawablePadding="8dp"
+            android:gravity="center_vertical"
+            android:paddingVertical="4dp"/>
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
