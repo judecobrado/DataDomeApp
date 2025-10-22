@@ -118,17 +118,6 @@ class MainActivity : AppCompatActivity() {
 
 
 
-    firestore.collection("appSettings").document("mainActivity")
-    .addSnapshotListener { snapshot, error ->
-        if (error != null) {
-            Log.e("MainActivity", "Failed to listen to signup toggle", error)
-            return@addSnapshotListener
-        }
-
-        val enabled = snapshot?.getBoolean("signupEnabled") ?: true
-        btnSignup.isEnabled = enabled // Enable/disable button
-        btnSignup.alpha = if (enabled) 1.0f else 0.5f // Optional: visual cue
-    }
 
 
     // --- New Logic: Same as LoginActivity's role check ---

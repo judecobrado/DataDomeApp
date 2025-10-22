@@ -26,9 +26,6 @@ class AttendanceAdapter(
 
     init {
         Log.d(TAG, "Initialized for assignment: $assignmentId with ${studentList.size} students.")
-        studentList.forEach { student ->
-            student.id?.let { attendanceStatus[it] = "Absent" } // Default all to Absent
-        }
     }
 
     class AttendanceViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -117,9 +114,8 @@ class AttendanceAdapter(
     // ✅ Pre-fill statuses from Firestore records
     fun updateStatuses(existingStatuses: Map<String, String>) {
         Log.d(TAG, "Updating from Firestore: ${existingStatuses.size} entries")
-        studentList.forEach { student ->
-            attendanceStatus[student.id] = "Absent"
-        }
+
+        attendanceStatus.clear()
 
         // Ilagay ang mga bago at existing na records
         existingStatuses.forEach { (studentId, status) ->

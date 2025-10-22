@@ -12,6 +12,10 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.datadomeapp.R
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FieldPath
+import com.google.firebase.firestore.toObject
+import kotlinx.coroutines.tasks.await
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 // ✅ IMPORTS: Tiyakin na ang mga ito ay tama sa iyong project structure
 import com.example.datadomeapp.models.ClassAssignment
@@ -100,39 +104,135 @@ class ClassDetailsActivity : AppCompatActivity() {
         }
 
         loadStudentsBySection(selectedSubjectCode, sectionNameFromHeader)
-
     }
+
+    // SA CLASS DETAILSACTIVITY.KT
+
     private fun loadStudentsBySection(selectedSubjectCode: String, selectedSectionName: String) {
-        // Ginamit ang Collection Group Query para mahanap ang lahat ng student subject documents
-        firestore.collectionGroup("subjects")
-            .whereEqualTo("subjectCode", selectedSubjectCode)
-            // 🟢 FIX: Gamitin ang tamang section name na nakuha sa header (ManageClassesActivity)
-            .whereEqualTo("sectionName", selectedSectionName)
+        // 1. Titingnan kung aling students ang may tamang section
+        firestore.collection("students")
+            .whereEqualTo("sectionId", selectedSectionName) // ⬅️ GAMITIN ANG sectionId sa Student Profile
+            .whereEqualTo("yearLevel", "1st Year")          // ⬅️ OPTIONAL: Mag-add ng yearLevel filter kung kailangan
+            .whereEqualTo("status", "Admitted")             // ⬅️ OPTIONAL: Filter for admitted students only
             .get()
-            .addOnSuccessListener { subjectsSnapshot ->
-                // Kunin ang studentId mula sa parent document reference (students/{id}/subjects/...)
-                val studentIds = subjectsSnapshot.documents.map { it.reference.parent.parent!!.id }
+            .addOnSuccessListener { studentsSnapshot ->
+
+                val studentIds = studentsSnapshot.documents.map { it.id } // Kinuha ang lahat ng Student IDs
 
                 if (studentIds.isEmpty()) {
-                    tvLoading.text = "No students enrolled in this section."
+                    tvLoading.text = "No Admitted students found in section $selectedSectionName."
                     return@addOnSuccessListener
                 }
 
-                // 3. Kuhanin ang student profile details gamit ang studentIds
-                // TANDAAN: whereIn() ay limitado sa 10 items.
-                if (studentIds.size <= 10) {
-                    fetchStudentProfiles(studentIds)
-                } else {
-                    // Mag-implement ng batching dito kung lalagpas sa 10 ang studentIds
-                    Toast.makeText(this, "Section has too many students for simple query (Max 10).", Toast.LENGTH_LONG).show()
-                    tvLoading.text = "Error: Too many students (Limit reached). Showing up to 10."
-                    fetchStudentProfiles(studentIds.take(10)) // Limitahan sa 10 para hindi mag-crash
-                }
+                // 2. I-check ang bawat student kung naka-enroll ba talaga sa Subject Code na ito.
+                checkStudentEnrollmentBatch(studentIds, selectedSubjectCode)
+
             }
             .addOnFailureListener { e ->
-                Log.e("ClassDetails", "Error querying subjects: $e")
-                tvLoading.text = "Error fetching student subject links."
+                Log.e("ClassDetails", "Error querying students by section: $e")
+                tvLoading.text = "Error fetching student profiles."
             }
+    }
+
+    private fun checkStudentEnrollmentBatch(studentIds: List<String>, subjectCode: String) {
+
+        val finalEnrolledStudents = mutableListOf<Student>()
+        studentNamesForRoulette.clear()
+
+        tvLoading.text = "Validating enrollment for ${studentIds.size} students..."
+
+        // Gumamit ng Coroutine para i-handle ang multiple asynchronous checks
+        lifecycleScope.launch {
+            try {
+                // Iterahin ang bawat student ID
+                for (studentId in studentIds) {
+
+                    // CRITICAL: Hanapin ang subject document sa ilalim ng student
+                    val subjectRef = firestore.collection("students").document(studentId)
+                        .collection("subjects").document(subjectCode)
+                    // Tandaan: Ang Document ID ng subject ay ang subjectCode (e.g., MATH101)
+
+                    val subjectSnapshot = subjectRef.get().await()
+
+                    // Kung may subject document at ito ay may tamang subject code
+                    if (subjectSnapshot.exists() && subjectSnapshot.getString("subjectCode") == subjectCode) {
+
+                        // Kuhanin ang Student Profile Document (Parent)
+                        val studentProfileSnapshot = firestore.collection("students").document(studentId).get().await()
+
+                        val student = studentProfileSnapshot.toObject(Student::class.java)
+                        if (student != null) {
+                            finalEnrolledStudents.add(student)
+                        }
+                    }
+                }
+
+                // --- UI Update Logic ---
+                if (finalEnrolledStudents.isEmpty()) {
+                    tvLoading.text = "No students enrolled in $subjectCode."
+                } else {
+                    finalEnrolledStudents.forEach { student ->
+                        studentNamesForRoulette.add("${student.lastName}, ${student.firstName}")
+                    }
+                    btnStartRoulette.text = "Roleta (${studentNamesForRoulette.size})"
+
+                    val studentAdapter = ClassStudentAdapter(finalEnrolledStudents)
+                    recyclerView.adapter = studentAdapter
+                    tvLoading.text = "✅ ${finalEnrolledStudents.size} students successfully loaded."
+                }
+
+            } catch (e: Exception) {
+                Log.e("ClassDetails", "Error validating student enrollment: ${e.message}", e)
+                tvLoading.text = "Error fetching profiles."
+            }
+        }
+    }
+
+    private fun fetchStudentProfilesBatch(studentIds: List<String>) {
+        // Hatiin ang studentIds sa chunks na may maximum na 10 ID bawat isa
+        val idChunks = studentIds.chunked(10)
+
+        val finalStudentList = mutableListOf<Student>()
+        studentNamesForRoulette.clear()
+
+        tvLoading.text = "Loading ${studentIds.size} student profiles..."
+
+        // Gumamit ng Coroutine para i-handle ang multiple asynchronous calls
+        lifecycleScope.launch {
+            try {
+                // Iterahin ang bawat chunk (batch) ng 10 IDs
+                for (chunk in idChunks) {
+                    // Gumawa ng hiwalay na query para sa bawat batch
+                    val snapshot = firestore.collection("students")
+                        .whereIn(FieldPath.documentId(), chunk)
+                        .get()
+                        .await() // Ito ang maghihintay hanggang matapos ang query (requires kotlinx-coroutines-play-services)
+
+                    // Idagdag ang students sa final list
+                    val studentsInChunk = snapshot.documents.mapNotNull { it.toObject(Student::class.java) }
+                    finalStudentList.addAll(studentsInChunk)
+                }
+
+                // --- UPDATED UI LOGIC ---
+
+                // 1. I-update ang Listahan ng Pangalan para sa Roleta
+                finalStudentList.forEach { student ->
+                    studentNamesForRoulette.add("${student.lastName}, ${student.firstName}")
+                }
+                btnStartRoulette.text = "Roleta (${studentNamesForRoulette.size})"
+
+                // 2. I-update ang RecyclerView
+                val studentAdapter = ClassStudentAdapter(finalStudentList)
+                recyclerView.adapter = studentAdapter
+
+                tvLoading.text = "✅ ${finalStudentList.size} students successfully loaded."
+
+            } catch (e: Exception) {
+                Log.e("ClassDetails", "Error fetching student profiles in batch: ${e.message}", e)
+                tvLoading.text = "Error fetching profiles. Max students: ${finalStudentList.size}"
+                Toast.makeText(this@ClassDetailsActivity, "Failed to load all student profiles.", Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
     private fun fetchStudentProfiles(studentIds: List<String>) {
