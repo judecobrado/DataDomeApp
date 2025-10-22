@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "default": "activity-1b26b",
+    "prod": "school-management-system-f07ef"
+  },
+  "targets": {},
+  "etags": {}
+}

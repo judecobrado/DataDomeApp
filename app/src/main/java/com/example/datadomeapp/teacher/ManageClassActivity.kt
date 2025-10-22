@@ -51,8 +51,8 @@ class ManageClassesActivity : AppCompatActivity() {
                 for (document in snapshot.documents) {
                     val assignment = document.toObject(ClassAssignment::class.java)
                     if (assignment != null) {
-                        // Tiyakin na ang assignmentId ay Document ID
-                        classList.add(assignment.copy(assignmentId = document.id))
+                        // FIX: Gamitin ang document ID bilang assignmentNo (Firestore Key).
+                        classList.add(assignment.copy(assignmentNo = document.id))
                     }
                 }
 
@@ -60,14 +60,14 @@ class ManageClassesActivity : AppCompatActivity() {
                     Toast.makeText(this, "You currently have no classes assigned.", Toast.LENGTH_LONG).show()
                 }
 
+                // 🟢 FIX: Gumamit ng DALAWA (2) click listeners para tugma sa ClassAdapter constructor
                 classAdapter = ClassAdapter(
                     classList,
-                    // 1st Listener (detailClickListener)
+                    // 1st Listener: detailClickListener (for View Details)
                     detailClickListener = { selectedClass ->
-                        Toast.makeText(this, "Selected: ${selectedClass.subjectCode} - ${selectedClass.sectionName}", Toast.LENGTH_SHORT).show()
                         navigateToClassDetails(selectedClass)
                     },
-                    // 2nd Listener (setLinkClickListener) - NAKAPALOOB NA ANG CALL SA BAGONG FUNCTION
+                    // 2nd Listener: setLinkClickListener (for Set Link)
                     setLinkClickListener = { selectedClass ->
                         showSetOnlineClassDialog(selectedClass)
                     }
@@ -80,39 +80,48 @@ class ManageClassesActivity : AppCompatActivity() {
             }
     }
 
+
     private fun navigateToClassDetails(assignment: ClassAssignment) {
         val intent = Intent(this, ClassDetailsActivity::class.java)
+
+        // Kukunin ang sectionBlock para sa display
+        val primarySlot = assignment.scheduleSlots.values.firstOrNull()
+        val sectionBlock = primarySlot?.sectionBlock ?: "N/A"
+
+        val onlineLink = assignment.onlineClassLink ?: ""
+        val assignmentNo = assignment.assignmentNo // Firestore Key
+
         // I-pasa ang lahat ng critical data
-        intent.putExtra("ASSIGNMENT_ID", assignment.assignmentId)
-        intent.putExtra("CLASS_NAME", "${assignment.subjectTitle} - ${assignment.sectionName}")
+        intent.putExtra("ASSIGNMENT_ID", assignmentNo)
+        intent.putExtra("CLASS_NAME", "${assignment.subjectTitle} - $sectionBlock")
         intent.putExtra("SUBJECT_CODE", assignment.subjectCode)
-        // ✅ NEW: Ipinapasa ang online class link para sa details screen
-        intent.putExtra("ONLINE_CLASS_LINK", assignment.onlineClassLink)
+        intent.putExtra("ONLINE_CLASS_LINK", onlineLink)
         startActivity(intent)
     }
 
-    // --- BAGONG FUNCTION: ONLINE CLASS LINK SETUP DIALOG ---
-
     private fun showSetOnlineClassDialog(assignment: ClassAssignment) {
+        val assignmentNo = assignment.assignmentNo
+        val currentLink = assignment.onlineClassLink ?: ""
+
+        val primarySlot = assignment.scheduleSlots.values.firstOrNull()
+        val sectionBlock = primarySlot?.sectionBlock ?: assignment.subjectCode
+
         val builder = AlertDialog.Builder(this)
-        builder.setTitle("Set Online Link for ${assignment.sectionName}")
+        builder.setTitle("Set Online Link for $sectionBlock")
 
         val input = EditText(this)
         input.hint = "Paste Meet / Zoom Link dito"
-        input.setText(assignment.onlineClassLink)
+        input.setText(currentLink)
         builder.setView(input)
 
-        // Option: BUTTON para tulungan ang user gumawa ng link
         builder.setNeutralButton("Generate Link (Meet)") { dialog, _ ->
-            // I-re-redirect sa Google Meet app
             openGoogleMeetForCreation()
         }
 
-        // Existing: Save button
         builder.setPositiveButton("Save") { dialog, _ ->
             val newLink = input.text.toString().trim()
             if (newLink.isNotEmpty()) {
-                setOnlineClassLink(assignment.assignmentId, newLink)
+                setOnlineClassLink(assignmentNo, newLink)
             } else {
                 Toast.makeText(this, "Link cannot be empty.", Toast.LENGTH_SHORT).show()
             }
@@ -123,38 +132,32 @@ class ManageClassesActivity : AppCompatActivity() {
     }
 
     private fun openGoogleMeetForCreation() {
-        // Gagamitin ang package name ng unified Google Meet app (dating Duo/Meet).
         val meetPackageName = "com.google.android.apps.tachyon"
 
         val launchIntent = packageManager.getLaunchIntentForPackage(meetPackageName)
 
         if (launchIntent != null) {
-            // May Meet app, i-launch ito.
             startActivity(launchIntent)
             Toast.makeText(this, "Opening Google Meet. Please create a new meeting and copy the link.", Toast.LENGTH_LONG).show()
         } else {
-            // Walang Meet app, i-redirect sa Play Store.
             try {
                 startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$meetPackageName")))
             } catch (e: android.content.ActivityNotFoundException) {
-                // Fallback kung walang Play Store app.
                 startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$meetPackageName")))
             }
             Toast.makeText(this, "Please install Google Meet app first.", Toast.LENGTH_LONG).show()
         }
     }
 
-    private fun setOnlineClassLink(assignmentId: String, link: String) {
-        // Ang data na i-a-update
+    private fun setOnlineClassLink(assignmentNo: String, link: String) {
         val updateData = hashMapOf<String, Any>(
             "onlineClassLink" to link
         )
 
-        firestore.collection("classAssignments").document(assignmentId)
+        firestore.collection("classAssignments").document(assignmentNo)
             .update(updateData)
             .addOnSuccessListener {
                 Toast.makeText(this, "Online Class Link successfully updated! 🔗", Toast.LENGTH_LONG).show()
-                // I-re-load ang listahan para makita ang pagbabago sa UI
                 loadAssignedClasses()
             }
             .addOnFailureListener { e ->

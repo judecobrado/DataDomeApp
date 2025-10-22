@@ -1,6 +1,7 @@
 package com.example.datadomeapp.admin
 
 import android.app.AlertDialog
+import android.content.Context
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
@@ -8,25 +9,23 @@ import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.example.datadomeapp.R
-import com.example.datadomeapp.models.ClassAssignment
-import com.example.datadomeapp.models.SubjectEntry
-import com.example.datadomeapp.models.Teacher
-import com.example.datadomeapp.models.Curriculum
-import com.example.datadomeapp.models.Room
+import com.example.datadomeapp.models.* // Import all models including TimeSlot
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Transaction
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.Locale
+import com.google.firebase.firestore.SetOptions
 
 class ManageSchedulesActivity : AppCompatActivity() {
 
     private val firestore = FirebaseFirestore.getInstance()
     private val assignmentsCollection = firestore.collection("classAssignments")
-    private val usersCollection = firestore.collection("users")
     private val teachersCollection = firestore.collection("teachers")
     private val curriculumCollection = firestore.collection("curriculums")
     private val sectionsCollection = firestore.collection("sections")
@@ -36,10 +35,8 @@ class ManageSchedulesActivity : AppCompatActivity() {
     private lateinit var spnCourse: Spinner
     private lateinit var spnYear: Spinner
     private lateinit var spnSubject: Spinner
-
     private lateinit var spnDepartment: Spinner
     private lateinit var actvTeacher: AutoCompleteTextView
-
     private lateinit var spnSectionBlock: Spinner
     private lateinit var spnRoom: Spinner
     private lateinit var etCapacity: EditText
@@ -53,16 +50,16 @@ class ManageSchedulesActivity : AppCompatActivity() {
     // Data Holders
     private val courseList = mutableListOf<String>()
     private val yearLevels = arrayOf("1st Year", "2nd Year", "3rd Year", "4th Year")
-    private val weekDays = arrayOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+    private val weekDays = arrayOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
     private val teacherList = mutableListOf<Teacher>()
     private val departmentList = mutableListOf<String>()
     private val subjectEntryList = mutableListOf<SubjectEntry>()
     private val roomList = mutableListOf<Room>()
 
-    // Assignments for the current Course/Year (Used for Teacher/Room Conflict Check)
+    // Assignments for the current Course/Year (Subject-Centric)
     private val allAssignmentsForCourseYear = mutableListOf<ClassAssignment>()
 
-    // Assignments filtered by the currently selected Section Block (Used for Matrix/Section Overlap Check)
+    // Assignments filtered by the currently selected Section Block (Subject-Centric)
     private val currentAssignmentsForMatrix = mutableListOf<ClassAssignment>()
 
     private val sectionBlockNames = mutableListOf<String>()
@@ -77,6 +74,8 @@ class ManageSchedulesActivity : AppCompatActivity() {
     private val availableTimeOptions = generateTimeSlots(7, 21, 30)
 
 
+    private var sectionBlockList = mutableListOf<String>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.admin_schedule_management)
@@ -86,7 +85,6 @@ class ManageSchedulesActivity : AppCompatActivity() {
         spnYear = findViewById(R.id.spnYear)
         spnSubject = findViewById(R.id.spnSubject)
 
-        // INITIALIZE NEW UI
         spnDepartment = findViewById(R.id.spnDepartment)
         actvTeacher = findViewById(R.id.actvTeacher)
 
@@ -165,7 +163,9 @@ class ManageSchedulesActivity : AppCompatActivity() {
             // Populate Department Spinner
             departmentList.addAll(uniqueDepartments.sorted())
             departmentList.add(0, "All Departments")
-            (spnDepartment.adapter as? ArrayAdapter<*>)?.notifyDataSetChanged()
+
+            // 🟢 FIX: Unchecked cast warning
+            (spnDepartment.adapter as? ArrayAdapter<String>)?.notifyDataSetChanged()
 
             // Initial setup: filter lahat ng guro
             filterTeachersByDepartment(actvTeacher, spnDepartment.selectedItem?.toString())
@@ -178,15 +178,13 @@ class ManageSchedulesActivity : AppCompatActivity() {
         // --- Load Rooms ---
         roomsCollection.get().addOnSuccessListener { snapshot ->
             roomList.clear()
-            roomList.add(Room(id = "Select Room"))
             snapshot.documents.forEach { doc ->
                 doc.toObject(Room::class.java)?.let {
-                    if (it.id != "Select Room") {
-                        roomList.add(it)
-                    }
+                    roomList.add(it)
                 }
             }
-            val roomNames = roomList.map { it.id }
+            val roomNames = roomList.map { it.id }.toMutableList()
+            roomNames.add(0, "Select Room")
             spnRoom.adapter =
                 ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, roomNames)
         }
@@ -303,9 +301,9 @@ class ManageSchedulesActivity : AppCompatActivity() {
 
         return times.distinct().sortedWith(compareBy {
             try {
-                displayTimeFormat.parse(it)
+                // Parse the display string back to a Date for sorting
+                displayTimeFormat.parse(it) ?: Date(0)
             } catch (e: ParseException) {
-                // Should not happen if time format is correct
                 Date(0)
             }
         })
@@ -347,7 +345,6 @@ class ManageSchedulesActivity : AppCompatActivity() {
         val yearLevelKey = yearLevel.trim().replace(" ", "")
 
         val docId = "${courseCode}_${yearLevelKey}"
-        Log.d("ScheduleLoad", "Target Course: $courseCode, Target Year Key: $yearLevelKey")
 
         // --- Load 1. Subjects (Curriculum) ---
         curriculumCollection.document(docId).get()
@@ -428,7 +425,7 @@ class ManageSchedulesActivity : AppCompatActivity() {
     }
 
 
-    // Load Lahat ng Assignments para sa Course/Year
+    // Load Lahat ng Assignments para sa Course/Year (Subject-Centric)
     private fun loadAllAssignments() {
         val courseCode = getCourseCodeFromSpinner() ?: return
         val yearLevel = spnYear.selectedItem?.toString() ?: return
@@ -436,6 +433,7 @@ class ManageSchedulesActivity : AppCompatActivity() {
         assignmentsCollection
             .whereEqualTo("courseCode", courseCode)
             .whereEqualTo("yearLevel", yearLevel)
+
             .get()
             .addOnSuccessListener { snapshot ->
                 allAssignmentsForCourseYear.clear()
@@ -461,9 +459,13 @@ class ManageSchedulesActivity : AppCompatActivity() {
         }
 
         currentAssignmentsForMatrix.clear()
+        // Kumuha ng ClassAssignments na may kahit isang TimeSlot na tumutugma sa Section Block
         currentAssignmentsForMatrix.addAll(
-            allAssignmentsForCourseYear.filter {
-                it.sectionBlock == selectedSectionBlock
+            allAssignmentsForCourseYear.filter { assignment ->
+                // Tingnan kung may kahit isang TimeSlot sa Map na tumutugma sa selectedSectionBlock
+                assignment.scheduleSlots.values.any { slot ->
+                    slot.sectionBlock == selectedSectionBlock
+                }
             }
         )
 
@@ -471,17 +473,16 @@ class ManageSchedulesActivity : AppCompatActivity() {
         checkConflicts()
     }
 
+    // 🟢 UPDATED: renderScheduleMatrix para gamitin ang scheduleSlots
     private fun renderScheduleMatrix() {
         tlScheduleMatrix.removeAllViews()
 
-        // --- 1. Create Table Headers (Days) ---
+        // --- 1. Header creation ---
         val headerRow = TableRow(this)
         headerRow.layoutParams = TableLayout.LayoutParams(
             TableLayout.LayoutParams.MATCH_PARENT,
             TableLayout.LayoutParams.WRAP_CONTENT
         )
-
-        // Empty corner cell for time column
         val cornerCell = TextView(this).apply {
             text = "Time"
             setPadding(10, 10, 10, 10)
@@ -504,24 +505,29 @@ class ManageSchedulesActivity : AppCompatActivity() {
             headerRow.addView(dayHeader)
         }
         tlScheduleMatrix.addView(headerRow)
+        // --- End of Header creation ---
+
 
         // --- 2. Create Time Rows and Class Blocks ---
         val cellHeight = 100 // Height in pixels for each time slot
         val internalHalfHourFormat = SimpleDateFormat("HH:mm")
 
+        // CRITICAL: Kumuha ng kasalukuyang Section Block para sa Matrix
+        val selectedSectionBlock = spnSectionBlock.selectedItem?.toString()?.trim() ?: ""
+
         var currentHour = timeSlots.first
         while (currentHour < timeSlots.last) {
 
-            // 🟢 TIYAKIN NA DITO NAKA-DEKLARA ANG ROW
             val row = TableRow(this)
             row.layoutParams = TableLayout.LayoutParams(
                 TableLayout.LayoutParams.MATCH_PARENT,
                 TableLayout.LayoutParams.WRAP_CONTENT
             )
 
-            // Time cell
+            // Time cell (Display format)
+            val timeDisplay = internalTimeFormat.parse("$currentHour:00")
             val timeCell = TextView(this).apply {
-                text = displayTimeFormat.format(internalTimeFormat.parse("$currentHour:00"))
+                text = if (timeDisplay != null) displayTimeFormat.format(timeDisplay) else "$currentHour:00"
                 setPadding(5, 10, 5, 10)
                 gravity = Gravity.CENTER
                 setTypeface(null, Typeface.BOLD)
@@ -533,13 +539,23 @@ class ManageSchedulesActivity : AppCompatActivity() {
             // Loop para sa bawat araw (Mon, Tue, Wed, ...)
             weekDays.forEach { day ->
                 val startInternal = internalHalfHourFormat.format(internalTimeFormat.parse("$currentHour:00"))
-                val endInternal = internalHalfHourFormat.format(internalTimeFormat.parse("${currentHour + 1}:00"))
+                val startInternalTimeMs = internalTimeFormat.parse(startInternal)?.time ?: 0L
 
-                // Hanapin ang assignment sa oras na ito
-                val assignment = currentAssignmentsForMatrix.firstOrNull { a ->
-                    a.day == day &&
-                            (parseTimeFlexibly(a.startTime)?.time ?: 0L) <= (internalTimeFormat.parse(startInternal)?.time ?: 0L) &&
-                            (parseTimeFlexibly(a.endTime)?.time ?: 0L) > (internalTimeFormat.parse(startInternal)?.time ?: 0L)
+                // 🟢 NEW LOGIC: Hanapin ang TimeSlot na pasok sa oras na ito
+                val assignedPair = currentAssignmentsForMatrix.firstNotNullOfOrNull { assignment ->
+                    // Gamitin ang .values para i-iterate ang TimeSlot objects sa Map
+                    assignment.scheduleSlots.values.firstOrNull { slot ->
+                        // ⚠️ CHECK: Siguraduhin na ang slot ay para sa kasalukuyang Section Block
+                        slot.sectionBlock == selectedSectionBlock &&
+                                slot.day == day &&
+                                // CRITICAL: Time Slot Overlap Check
+                                (parseTimeFlexibly(slot.startTime)?.time ?: 0L) <= startInternalTimeMs &&
+                                (parseTimeFlexibly(slot.endTime)?.time ?: 0L) > startInternalTimeMs
+                    }?.let { slot ->
+                        // CRITICAL: I-retrieve ang slot key para sa deletion/editing
+                        val slotKey = assignment.scheduleSlots.entries.first { it.value == slot }.key
+                        Triple(assignment, slot, slotKey)
+                    }
                 }
 
                 val cell = TextView(this).apply {
@@ -550,19 +566,28 @@ class ManageSchedulesActivity : AppCompatActivity() {
                     }
                     setBackgroundColor(Color.WHITE)
 
-                    if (assignment != null) {
-                        text = "${assignment.subjectCode}\n${assignment.teacherName.split(" ").last()}"
+                    if (assignedPair != null) {
+                        val (assignment, slot, slotKey) = assignedPair
+                        // ⚠️ Gamitin ang slot.roomLocation
+                        text = "${assignment.subjectCode}\n${assignment.teacherName.split(" ").last()}\n@${slot.roomLocation}"
                         setBackgroundColor(Color.parseColor("#BBDEFB")) // Light Blue
                         setOnClickListener {
-                            showAssignmentDetailsDialog(assignment)
+                            // CRITICAL: Ipinasa ang assignment, ang TimeSlot, at ang slotKey (para sa pag-update)
+                            showAssignmentDetailsDialog(assignment, slot, slotKey)
                         }
                     } else {
                         text = ""
                         // Cell Click Listener for adding assignment at this time
                         setOnClickListener {
+                            // Logic para i-set ang spinner sa oras na kinlik
+                            val nextHourInternalTime = internalTimeFormat.parse("${currentHour + 1}:00")
+                            val nextHourDisplay = if (nextHourInternalTime != null) displayTimeFormat.format(nextHourInternalTime) else ""
+                            // ⚠️ Siguraduhin na ang parse ng startInternal ay tama
+                            val currentHourDisplay = displayTimeFormat.format(internalTimeFormat.parse(startInternal))
+
                             spnDay.setSelection(weekDays.indexOf(day))
-                            spnStartTime.setSelection(availableTimeOptions.indexOf(displayTimeFormat.format(internalTimeFormat.parse(startInternal))))
-                            spnEndTime.setSelection(availableTimeOptions.indexOf(displayTimeFormat.format(internalTimeFormat.parse(endInternal))))
+                            spnStartTime.setSelection(availableTimeOptions.indexOf(currentHourDisplay))
+                            spnEndTime.setSelection(availableTimeOptions.indexOf(nextHourDisplay))
                             checkConflicts()
                         }
                     }
@@ -570,7 +595,6 @@ class ManageSchedulesActivity : AppCompatActivity() {
                 row.addView(cell)
             }
 
-            // 🟢 ITO ANG DAPAT ILAGAY SA LOOB NG WHILE LOOP
             tlScheduleMatrix.addView(row)
 
             currentHour++
@@ -578,32 +602,32 @@ class ManageSchedulesActivity : AppCompatActivity() {
     }
 
     /**
-     * Nagpapakita ng dialog para i-delete o i-edit ang detalye ng Assignment.
+     * Nagpapakita ng dialog para i-delete o i-edit ang detalye ng Time Slot.
      */
-    private fun showAssignmentDetailsDialog(assignment: ClassAssignment) {
-        val teacherName = teacherList.firstOrNull { it.uid == assignment.teacherUid }?.name ?: "N/A"
+    private fun showAssignmentDetailsDialog(assignment: ClassAssignment, slot: TimeSlot, slotKey: String) {
+        val teacherName = assignment.teacherName
 
         val details = """
-            Subject: ${assignment.subjectCode} - ${assignment.subjectTitle}
-            Section: ${assignment.sectionBlock}
-            Time: ${assignment.day} ${assignment.startTime} - ${assignment.endTime}
-            Room: ${assignment.roomNumber}
-            Instructor: ${teacherName}
-            Capacity: ${assignment.enrolledCount} / ${assignment.maxCapacity}
-        """.trimIndent()
+        Subject: ${assignment.subjectCode} - ${assignment.subjectTitle}
+        Section: ${slot.sectionBlock} 
+        Time Slot: ${slot.day} ${slot.startTime} - ${slot.endTime}
+        Room: ${slot.roomLocation} 
+        Instructor: ${teacherName}
+        Capacity: ${assignment.enrolledCount} / ${assignment.maxCapacity}
+    """.trimIndent()
 
         AlertDialog.Builder(this)
             .setTitle("Assignment Details")
             .setMessage(details)
-            .setPositiveButton("Edit Assignment") { _, _ ->
-                showEditAssignmentDialog(assignment)
+            .setPositiveButton("Edit Time Slot") { _, _ ->
+                showEditSlotDialog(assignment, slot, slotKey) // ⚠️ Ipinasa ang slotKey
             }
-            .setNegativeButton("Delete Assignment") { _, _ ->
+            .setNegativeButton("Delete Time Slot") { _, _ ->
                 AlertDialog.Builder(this)
                     .setTitle("Confirm Deletion")
-                    .setMessage("Are you sure you want to permanently delete this assignment?\n${assignment.subjectCode} (${assignment.sectionBlock})")
+                    .setMessage("Are you sure you want to delete this time slot?\n${assignment.subjectCode} (${slot.sectionBlock}) - ${slot.day} ${slot.startTime}")
                     .setPositiveButton("YES, Delete") { _, _ ->
-                        deleteAssignment(assignment.assignmentId)
+                        deleteTimeSlot(assignment, slotKey) // ⚠️ Ipinasa ang slotKey
                     }
                     .setNegativeButton("Cancel", null)
                     .show()
@@ -612,15 +636,72 @@ class ManageSchedulesActivity : AppCompatActivity() {
             .show()
     }
 
-    // BAGONG FUNCTION: showEditAssignmentDialog
-    private fun showEditAssignmentDialog(assignment: ClassAssignment) {
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.admin_schedule_dialog_edit, null)
+    // 🟢 UPDATED: Function para i-delete ang isang Time Slot (Gamit ang Slot Key)
+    // 🟢 FIXED: Function para i-delete ang isang Time Slot (May check na sa enrolledCount)
+    private fun deleteTimeSlot(assignment: ClassAssignment, slotKeyToDelete: String) {
+
+        // 🛑 1. CRITICAL CHECK: Tiyakin na walang enrolled na estudyante.
+        if (assignment.enrolledCount > 0) {
+            AlertDialog.Builder(this)
+                .setTitle("Deletion Blocked")
+                .setMessage("Cannot delete this schedule slot. There are currently ${assignment.enrolledCount} enrolled students. Please unenroll them first.")
+                .setPositiveButton("OK", null)
+                .show()
+            return // ⬅️ I-block ang deletion process
+        }
+
+        // 2. Gumawa ng bagong mutable map ng slots
+        val updatedSlots = assignment.scheduleSlots.toMutableMap()
+
+        // Tiyakin na ang slot na ide-delete ay talagang nandoon
+        if (!updatedSlots.containsKey(slotKeyToDelete)) {
+            Toast.makeText(this, "Error: Slot to delete not found.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // Tanggalin ang slot gamit ang key
+        updatedSlots.remove(slotKeyToDelete)
+
+        // 3. I-execute ang Deletion/Update
+        if (updatedSlots.isEmpty()) {
+            // A. Kung wala nang slots, burahin ang buong ClassAssignment document (gamit ang assignmentNo)
+            assignmentsCollection.document(assignment.assignmentNo).delete()
+                .addOnSuccessListener {
+                    Toast.makeText(this, "${assignment.subjectCode} assignment deleted completely.", Toast.LENGTH_LONG).show()
+                    loadAllAssignments()
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(this, "Failed to delete assignment: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+        } else {
+            // B. Kung may natira pang slots, i-update ang ClassAssignment document
+            // Tandaan: Maaari mong i-renumber ang keys (slot1, slot2) dito,
+            // pero mas simple kung hahayaan mo lang ang keys (slot1, slot3) at magdaragdag ka lang ng slotX
+            // kung sakaling mag-a-add ulit. Para sa simplehan, hayaan na lang ang keys.
+
+            val updatedAssignment = assignment.copy(scheduleSlots = updatedSlots)
+            assignmentsCollection.document(assignment.assignmentNo).set(updatedAssignment)
+                .addOnSuccessListener {
+                    Toast.makeText(this, "Time slot deleted successfully!", Toast.LENGTH_LONG).show()
+                    loadAllAssignments()
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(this, "Failed to delete time slot: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+        }
+    }
+
+    // 🟢 NEW: Function para i-edit ang isang Time Slot
+    private fun showEditSlotDialog(assignment: ClassAssignment, slotToEdit: TimeSlot, slotKeyToEdit: String) {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.admin_schedule_dialog_edit, null) // Assuming ito ang tamang layout file name
+        // ⚠️ CRITICAL: NEW SPINNER
+        //val spnSectionBlockEdit = dialogView.findViewById<TextView>(R.id.spnSectionBlockEdit) // Assume ito ang ID na ginamit mo
+
         val spnDayEdit = dialogView.findViewById<Spinner>(R.id.spnDayEdit)
         val spnStartTimeEdit = dialogView.findViewById<Spinner>(R.id.spnStartTimeEdit)
         val spnEndTimeEdit = dialogView.findViewById<Spinner>(R.id.spnEndTimeEdit)
         val spnRoomEdit = dialogView.findViewById<Spinner>(R.id.spnRoomEdit)
 
-        // NEW: Edit Dialog UI components
         val spnDepartmentEdit = dialogView.findViewById<Spinner>(R.id.spnDepartmentEdit)
         val actvTeacherEdit = dialogView.findViewById<AutoCompleteTextView>(R.id.actvTeacherEdit)
 
@@ -638,7 +719,7 @@ class ManageSchedulesActivity : AppCompatActivity() {
         val timeAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, availableTimeOptions)
         spnStartTimeEdit.adapter = timeAdapter
         spnEndTimeEdit.adapter = timeAdapter
-        val roomNames = roomList.map { it.id }
+        val roomNames = roomList.map { it.id }.toMutableList().apply { add(0, "Select Room") }
         spnRoomEdit.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, roomNames)
 
         // Department Adapter for Edit
@@ -648,26 +729,26 @@ class ManageSchedulesActivity : AppCompatActivity() {
         actvTeacherEdit.setAdapter(teacherAutoCompleteAdapterEdit)
 
         // Set current values
-        spnDayEdit.setSelection(weekDays.indexOf(assignment.day))
-        spnStartTimeEdit.setSelection(availableTimeOptions.indexOf(assignment.startTime))
-        spnEndTimeEdit.setSelection(availableTimeOptions.indexOf(assignment.endTime))
-        spnRoomEdit.setSelection(roomNames.indexOf(assignment.roomNumber))
+        spnDayEdit.setSelection(weekDays.indexOf(slotToEdit.day))
+        spnStartTimeEdit.setSelection(availableTimeOptions.indexOf(slotToEdit.startTime))
+        spnEndTimeEdit.setSelection(availableTimeOptions.indexOf(slotToEdit.endTime))
+        spnRoomEdit.setSelection(roomNames.indexOf(slotToEdit.roomLocation))
         etCapacityEdit.setText(assignment.maxCapacity.toString())
+
+        // ⚠️ CRITICAL: Set initial Section Block (Gamit ang slotToEdit)
+        val initialSection = slotToEdit.sectionBlock // ⬅️ FIX: Line 746/747 - Kinukuha na sa slotToEdit
 
         // Set Department and Teacher
         val currentDepartment = currentTeacher?.department ?: "All Departments"
         spnDepartmentEdit.setSelection(departmentList.indexOf(currentDepartment))
-
-        // 1. Initial filter must run to populate actvTeacherEdit
         filterTeachersByDepartment(actvTeacherEdit, currentDepartment)
-
-        // 2. Set the current teacher value in the AutoCompleteTextView
         actvTeacherEdit.setText(currentTeacherDisplay, false)
 
 
         // Create the AlertDialog
+        // ⚠️ CRITICAL: UPDATED TITLE (gamit ang slotToEdit.sectionBlock)
         val dialog = AlertDialog.Builder(this)
-            .setTitle("Edit Assignment: ${assignment.subjectCode} (${assignment.sectionBlock})")
+            .setTitle("Edit Slot for: ${assignment.subjectCode} (${slotToEdit.sectionBlock})")
             .setView(dialogView)
             .setPositiveButton("Save Changes", null)
             .setNegativeButton("Cancel", null)
@@ -682,17 +763,20 @@ class ManageSchedulesActivity : AppCompatActivity() {
                 val newStartTimeStr = spnStartTimeEdit.selectedItem?.toString() ?: ""
                 val newEndTimeStr = spnEndTimeEdit.selectedItem?.toString() ?: ""
                 val newRoom = spnRoomEdit.selectedItem?.toString() ?: ""
+                val newSection = slotToEdit.sectionBlock // Gagamitin ang original section
+                val newCapacity = etCapacityEdit.text.toString().toIntOrNull() ?: 50
 
-                // Get selected teacher from Autocomplete
+                // Get selected teacher from Autocomplete (for checking)
                 val newTeacher = getSelectedTeacherFromAutocomplete(actvTeacherEdit)
 
                 var conflictMessage = ""
                 var hasConflict = false
 
-                if (newDay.isEmpty() || newStartTimeStr.isEmpty() || newEndTimeStr.isEmpty() || newRoom.isEmpty() || newTeacher == null) {
+                if (newDay.isEmpty() || newStartTimeStr.isEmpty() || newEndTimeStr.isEmpty() || newRoom == "Select Room" || newTeacher == null || newSection == "Select Section" || newSection.isEmpty()) {
                     conflictMessage = "⚠️ Please complete all fields."
                     hasConflict = true
                 } else {
+                    // ... (Time comparison logic)
                     val getTimeInMs: (String) -> Long = { timeStr ->
                         val parsedTime = parseTimeFlexibly(timeStr)
                         if (parsedTime != null) {
@@ -710,50 +794,18 @@ class ManageSchedulesActivity : AppCompatActivity() {
                             conflictMessage = "❌ Error: Start time must be before end time."
                             hasConflict = true
                         } else {
-                            val otherAssignments = allAssignmentsForCourseYear.filter { it.assignmentId != assignment.assignmentId }
+                            // 🟢 NEW CONFLICT CHECK LOGIC (May sectionBlock na)
+                            val newSlot = TimeSlot(newDay, newStartTimeStr, newEndTimeStr, newRoom, newSection) // ⚠️ May sectionBlock na
 
-                            // 1. Teacher Conflict
-                            val teacherConflict = otherAssignments.filter { a ->
-                                a.teacherUid == newTeacher.uid && a.day == newDay
-                            }.any { existing ->
-                                val existingStart = getTimeInMs(existing.startTime)
-                                val existingEnd = getTimeInMs(existing.endTime)
-                                (newStartInternal < existingEnd && newEndInternal > existingStart)
-                            }
-                            if (teacherConflict) {
-                                conflictMessage += "Teacher Conflict: ${newTeacher.name} is scheduled.\n"
+                            val allConflicts = checkSlotConflicts(
+                                newSlot = newSlot,
+                                targetTeacherUid = newTeacher.uid,
+                                assignmentToExcludeId = assignment.assignmentNo // Huwag i-check ang sarili niyang document
+                            )
+
+                            if (allConflicts.isNotEmpty()) {
+                                conflictMessage = allConflicts.joinToString("\n")
                                 hasConflict = true
-                            }
-
-                            // 2. Room Conflict
-                            val roomConflict = otherAssignments.filter { a ->
-                                a.roomNumber == newRoom && a.day == newDay
-                            }.any { existing ->
-                                val existingStart = getTimeInMs(existing.startTime)
-                                val existingEnd = getTimeInMs(existing.endTime)
-                                (newStartInternal < existingEnd && newEndInternal > existingStart)
-                            }
-                            if (roomConflict) {
-                                conflictMessage += "Room Conflict: Room $newRoom is occupied.\n"
-                                hasConflict = true
-                            }
-
-                            // 3. Section Conflict
-                            if (assignment.sectionBlock != "Select Section") {
-                                val sectionConflict = currentAssignmentsForMatrix.filter { it.assignmentId != assignment.assignmentId }.any { existing ->
-                                    val dayMatch = existing.day == newDay
-                                    if (dayMatch) {
-                                        val existingStart = getTimeInMs(existing.startTime)
-                                        val existingEnd = getTimeInMs(existing.endTime)
-                                        (newStartInternal < existingEnd && newEndInternal > existingStart)
-                                    } else {
-                                        false
-                                    }
-                                }
-                                if (sectionConflict) {
-                                    conflictMessage += "Section Conflict: ${assignment.sectionBlock} already has a class scheduled at this time.\n"
-                                    hasConflict = true
-                                }
                             }
                         }
                     } catch (e: Exception) {
@@ -766,26 +818,15 @@ class ManageSchedulesActivity : AppCompatActivity() {
                 saveButton.isEnabled = !hasConflict
             }
 
-            // Department Listener for Edit Dialog (filters the list)
-            spnDepartmentEdit.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                    val selectedDept = spnDepartmentEdit.selectedItem.toString()
-                    filterTeachersByDepartment(actvTeacherEdit, selectedDept)
-                    checkEditConflicts()
-                }
-                override fun onNothingSelected(parent: AdapterView<*>?) {}
-            }
-
-            // Autocomplete Listener for Edit Dialog (selects teacher and checks conflict)
-            actvTeacherEdit.setOnItemClickListener { _, _, _, _, ->
-                checkEditConflicts()
-            }
-
-            // Other listeners to check for conflicts on change
-            spnDayEdit.onItemSelectedListener = createConflictListener(checkEditConflicts)
-            spnStartTimeEdit.onItemSelectedListener = createConflictListener(checkEditConflicts)
-            spnEndTimeEdit.onItemSelectedListener = createConflictListener(checkEditConflicts)
-            spnRoomEdit.onItemSelectedListener = createConflictListener(checkEditConflicts)
+            // Listeners to check for conflicts on change
+            spnDepartmentEdit.onItemSelectedListener = createConflictListener { filterTeachersByDepartment(actvTeacherEdit, spnDepartmentEdit.selectedItem?.toString()); checkEditConflicts() }
+            actvTeacherEdit.setOnItemClickListener { _, _, _, _, -> checkEditConflicts() }
+            spnDayEdit.onItemSelectedListener = createConflictListener { checkEditConflicts() }
+            spnStartTimeEdit.onItemSelectedListener = createConflictListener { checkEditConflicts() }
+            spnEndTimeEdit.onItemSelectedListener = createConflictListener { checkEditConflicts() }
+            spnRoomEdit.onItemSelectedListener = createConflictListener { checkEditConflicts() }
+            etCapacityEdit.setOnFocusChangeListener { _, hasFocus -> if (!hasFocus) checkEditConflicts() }
+            etCapacityEdit.setOnClickListener { checkEditConflicts() } // Add click listener too
 
             // Initial check
             checkEditConflicts()
@@ -796,43 +837,34 @@ class ManageSchedulesActivity : AppCompatActivity() {
                     val newStartTimeStrDisplay = spnStartTimeEdit.selectedItem.toString()
                     val newEndTimeStrDisplay = spnEndTimeEdit.selectedItem.toString()
                     val newRoom = spnRoomEdit.selectedItem.toString()
+                    val newSection = slotToEdit.sectionBlock
                     val newCapacity = etCapacityEdit.text.toString().toIntOrNull() ?: 50
-
-                    // Get selected teacher
                     val newTeacher = getSelectedTeacherFromAutocomplete(actvTeacherEdit) ?: return@setOnClickListener
 
-                    val parsedTime = parseTimeFlexibly(newStartTimeStrDisplay) ?: return@setOnClickListener
-                    val internalStartTime = internalTimeFormat.format(parsedTime)
+                    // 1. Gumawa ng updated ClassAssignment document
+                    // ⚠️ CRITICAL FIX: Paggamit ng Map at slotKeyToEdit
+                    val newSlot = TimeSlot(newDay, newStartTimeStrDisplay, newEndTimeStrDisplay, newRoom, newSection) // ⚠️ May section block na
 
-                    // Gumawa ng bagong Assignment ID
-                    val newAssignmentId = "${assignment.courseCode}-${assignment.sectionBlock}-${newDay}-${internalStartTime.replace(":", "")}"
+                    // ⚠️ CRITICAL FIX: Map logic (Line 839 errors addressed)
+                    val updatedSlots = assignment.scheduleSlots.toMutableMap()
+                    updatedSlots[slotKeyToEdit] = newSlot // ⬅️ I-update ang slot gamit ang KEY
 
                     val updatedAssignment = assignment.copy(
-                        assignmentId = newAssignmentId,
                         teacherUid = newTeacher.uid,
                         teacherName = newTeacher.name,
-                        day = newDay,
-                        startTime = newStartTimeStrDisplay,
-                        endTime = newEndTimeStrDisplay,
-                        roomNumber = newRoom,
-                        maxCapacity = newCapacity
+                        maxCapacity = newCapacity,
+                        scheduleSlots = updatedSlots // ⬅️ Ipinasa ang updated Map
                     )
 
-                    // 1. Delete the old document if the ID has changed
-                    if (assignment.assignmentId != newAssignmentId) {
-                        assignmentsCollection.document(assignment.assignmentId).delete()
-                            .addOnFailureListener { e -> Log.e("Edit", "Failed to delete old ID: ${assignment.assignmentId}", e) }
-                    }
-
-                    // 2. Save the new/updated document
-                    assignmentsCollection.document(newAssignmentId).set(updatedAssignment)
+                    // 2. I-save ang in-update na document
+                    assignmentsCollection.document(assignment.assignmentNo).set(updatedAssignment) // ⬅️ FIX: assignmentId -> assignmentNo
                         .addOnSuccessListener {
-                            Toast.makeText(this, "Assignment updated successfully!", Toast.LENGTH_LONG).show()
+                            Toast.makeText(this, "Time Slot updated successfully!", Toast.LENGTH_LONG).show()
                             dialog.dismiss()
-                            loadAllAssignments()
+                            loadAllAssignments() // Refresh Matrix
                         }
                         .addOnFailureListener { e ->
-                            Toast.makeText(this, "Failed to update assignment: ${e.message}", Toast.LENGTH_LONG).show()
+                            Toast.makeText(this, "Failed to update time slot: ${e.message}", Toast.LENGTH_LONG).show()
                         }
                 }
             }
@@ -840,41 +872,15 @@ class ManageSchedulesActivity : AppCompatActivity() {
         dialog.show()
     }
 
+
     /**
-     * Nagde-delete ng schedule mula sa Firestore gamit ang Assignment ID.
+     * Helper function para mag-check ng conflict sa isang TimeSlot
      */
-    private fun deleteAssignment(assignmentId: String) {
-        assignmentsCollection.document(assignmentId).delete()
-            .addOnSuccessListener {
-                Toast.makeText(this, "Assignment '$assignmentId' successfully deleted.", Toast.LENGTH_LONG).show()
-                loadAllAssignments()
-                checkConflicts()
-            }
-            .addOnFailureListener { e ->
-                Toast.makeText(this, "Failed to delete assignment: ${e.message}", Toast.LENGTH_LONG).show()
-                Log.e("ManageSchedules", "Delete failed", e)
-            }
-    }
+    private fun checkSlotConflicts(newSlot: TimeSlot, targetTeacherUid: String?, assignmentToExcludeId: String? = null): List<String> {
+        // ⚠️ Palitan ang roomNumber ng roomLocation
+        if (targetTeacherUid == null || newSlot.roomLocation == "Select Room") return listOf("⚠️ Missing teacher or room details.")
 
-
-    private fun checkConflicts() {
-        // NEW: Get teacher from Autocomplete
-        val selectedTeacher = getSelectedTeacherFromAutocomplete(actvTeacher)
-
-        val day = spnDay.selectedItem?.toString()
-        val startTimeStrDisplay = spnStartTime.selectedItem?.toString() ?: ""
-        val endTimeStrDisplay = spnEndTime.selectedItem?.toString() ?: ""
-        val sectionBlock = spnSectionBlock.selectedItem?.toString()?.trim()
-        val roomNumber = spnRoom.selectedItem?.toString()?.trim()
-
-        if (day == null || startTimeStrDisplay.isEmpty() || endTimeStrDisplay.isEmpty() ||
-            selectedTeacher == null || sectionBlock == null || sectionBlock == "Select Section" ||
-            roomNumber == null || roomNumber == "Select Room"
-        ) {
-            tvConflictWarning.text = "⚠️ Please complete all schedule details."
-            btnSave.isEnabled = false
-            return
-        }
+        val allConflicts = mutableListOf<String>()
 
         val getTimeInMs: (String) -> Long = { timeStr ->
             val parsedTime = parseTimeFlexibly(timeStr)
@@ -885,147 +891,217 @@ class ManageSchedulesActivity : AppCompatActivity() {
             }
         }
 
+        val newStartInternal = internalTimeFormat.parse(internalTimeFormat.format(parseTimeFlexibly(newSlot.startTime) ?: Date(0)))?.time ?: 0L
+        val newEndInternal = internalTimeFormat.parse(internalTimeFormat.format(parseTimeFlexibly(newSlot.endTime) ?: Date(0)))?.time ?: 0L
 
-        try {
-            val newStartInternal = getTimeInMs(startTimeStrDisplay)
-            val newEndInternal = getTimeInMs(endTimeStrDisplay)
+        if (newStartInternal >= newEndInternal) {
+            return listOf("❌ Error: Start time must be before end time.")
+        }
 
+        // Iterahin ang lahat ng assignments na na-load (maliban sa sarili kung nag-e-edit)
+        // ⚠️ Gumamit ng assignmentNo para i-exclude
+        allAssignmentsForCourseYear.filter { it.assignmentNo != assignmentToExcludeId }.forEach { existingAssignment ->
 
-            if (newStartInternal == 0L || newEndInternal == 0L) {
-                tvConflictWarning.text = "❌ Error: Invalid time selected."
-                btnSave.isEnabled = false
-                return
-            }
+            // ⚠️ Gamitin ang .values para i-iterate ang TimeSlot objects sa Map
+            existingAssignment.scheduleSlots.values.forEach { existingSlot ->
 
-            if (newStartInternal >= newEndInternal) {
-                tvConflictWarning.text = "❌ Error: Start time must be before end time."
-                btnSave.isEnabled = false
-                return
-            }
+                if (existingSlot.day == newSlot.day) {
 
-            val allConflicts = mutableListOf<String>()
+                    val existingStart = internalTimeFormat.parse(internalTimeFormat.format(parseTimeFlexibly(existingSlot.startTime) ?: Date(0)))?.time ?: 0L
+                    val existingEnd = internalTimeFormat.parse(internalTimeFormat.format(parseTimeFlexibly(existingSlot.endTime) ?: Date(0)))?.time ?: 0L
 
-            // 1. Teacher Conflict Check
-            val teacherConflict = allAssignmentsForCourseYear.filter { assignment ->
-                assignment.teacherUid == selectedTeacher.uid && assignment.day == day
-            }.any { existing ->
-                val existingStart = getTimeInMs(existing.startTime)
-                val existingEnd = getTimeInMs(existing.endTime)
-                (newStartInternal < existingEnd && newEndInternal > existingStart)
-            }
-            if (teacherConflict) {
-                allConflicts.add("Teacher Conflict: ${selectedTeacher.name} is already scheduled at this time.")
-            }
+                    // Check Overlap: (A < D && C > B)
+                    val isOverlapping = (newStartInternal < existingEnd && newEndInternal > existingStart)
 
+                    if (isOverlapping) {
+                        // 1. Teacher Conflict Check (Walang pagbabago)
+                        if (existingAssignment.teacherUid == targetTeacherUid) {
+                            allConflicts.add("Teacher Conflict: ${existingAssignment.teacherName} is scheduled in ${existingSlot.sectionBlock} at ${existingSlot.startTime} in ${existingSlot.roomLocation}.")
+                        }
 
-            // 2. Section Overlap Check
-            val sectionConflict = currentAssignmentsForMatrix.any { existing ->
-                val dayMatch = existing.day == day
-                if (dayMatch) {
-                    val existingStart = getTimeInMs(existing.startTime)
-                    val existingEnd = getTimeInMs(existing.endTime)
-                    (newStartInternal < existingEnd && newEndInternal > existingStart)
-                } else {
-                    false
+                        // 2. Room Conflict Check (⚠️ Palitan ang field name)
+                        if (existingSlot.roomLocation == newSlot.roomLocation) {
+                            allConflicts.add("Room Conflict: Room ${newSlot.roomLocation} is occupied by ${existingAssignment.subjectCode} (${existingSlot.sectionBlock}) at ${existingSlot.startTime}.")
+                        }
+
+                        // 3. Section Conflict Check (⚠️ Palitan: Gamitin ang sectionBlock sa TimeSlot)
+                        if (existingSlot.sectionBlock == newSlot.sectionBlock) {
+                            allConflicts.add("Section Conflict: ${newSlot.sectionBlock} has ${existingAssignment.subjectCode} at ${existingSlot.startTime}.")
+                        }
+                    }
                 }
             }
-            if (sectionConflict) {
-                allConflicts.add("Section Conflict: ${sectionBlock} already has a class scheduled at this time.")
-            }
+        }
 
-            // 3. Room Conflict Check
-            val roomConflict = allAssignmentsForCourseYear.filter { assignment ->
-                assignment.roomNumber == roomNumber && assignment.day == day
-            }.any { existing ->
-                val existingStart = getTimeInMs(existing.startTime)
-                val existingEnd = getTimeInMs(existing.endTime)
-                (newStartInternal < existingEnd && newEndInternal > existingStart)
-            }
-            if (roomConflict) {
-                allConflicts.add("Room Conflict: Room $roomNumber is already occupied at this time.")
-            }
+        return allConflicts.distinct()
+    }
 
-            // --- Final Output ---
-            if (allConflicts.isNotEmpty()) {
-                tvConflictWarning.text = "⚠️ Conflicts Found:\n" + allConflicts.joinToString("\n")
-                btnSave.isEnabled = false
-            } else {
-                tvConflictWarning.text = "✅ No conflicts found. Ready to save."
-                btnSave.isEnabled = true
-            }
 
-        } catch (e: Exception) {
-            tvConflictWarning.text = "❌ Error in time format/parsing: ${e.message}"
+    // 🟢 UPDATED: checkConflicts para gamitin ang checkSlotConflicts
+    private fun checkConflicts() {
+        val selectedTeacher = getSelectedTeacherFromAutocomplete(actvTeacher)
+        val day = spnDay.selectedItem?.toString()
+        val startTimeStrDisplay = spnStartTime.selectedItem?.toString() ?: ""
+        val endTimeStrDisplay = spnEndTime.selectedItem?.toString() ?: ""
+        val sectionBlock = spnSectionBlock.selectedItem?.toString()?.trim() // Kukunin ang Section Block
+        val roomLocation = spnRoom.selectedItem?.toString()?.trim() // ⚠️ roomLocation na
+        val subjectName = spnSubject.selectedItem?.toString() ?: ""
+
+        if (day == null || startTimeStrDisplay.isEmpty() || endTimeStrDisplay.isEmpty() ||
+            selectedTeacher == null || sectionBlock == null || sectionBlock == "Select Section" ||
+            roomLocation == "Select Room" || roomLocation == null || subjectName == "No Curriculum Found" || subjectName.isEmpty()
+        ) {
+            tvConflictWarning.text = "⚠️ Please complete all schedule details."
             btnSave.isEnabled = false
+            return
+        }
+
+        // ⚠️ Gumawa ng TimeSlot object (may sectionBlock na)
+        val newSlot = TimeSlot(day, startTimeStrDisplay, endTimeStrDisplay, roomLocation, sectionBlock)
+
+        val allConflicts = checkSlotConflicts(
+            newSlot = newSlot,
+            targetTeacherUid = selectedTeacher.uid,
+            assignmentToExcludeId = null // Walang i-e-exclude dahil INSERT ang ginagawa
+        )
+
+        // --- Final Output ---
+        if (allConflicts.isNotEmpty()) {
+            tvConflictWarning.text = "⚠️ Conflicts Found:\n" + allConflicts.joinToString("\n")
+            btnSave.isEnabled = false
+        } else {
+            tvConflictWarning.text = "✅ No conflicts found. Ready to save."
+            btnSave.isEnabled = true
         }
     }
 
+    // 🟢 UPDATED: saveAssignment para gumawa ng Upsert (Subject-Centric)
+    // 🟢 FINAL & CORRECTED: saveAssignment para gumawa ng Upsert (Subject/Teacher/Section-Centric)
     private fun saveAssignment() {
         val courseCode = getCourseCodeFromSpinner() ?: return
         val yearLevel = spnYear.selectedItem?.toString() ?: return
         val subjectName = spnSubject.selectedItem?.toString() ?: return
-        // NEW: Get selected teacher
-        val selectedTeacher = getSelectedTeacherFromAutocomplete(actvTeacher) ?: run {
-            Toast.makeText(this, "Please select a valid teacher.", Toast.LENGTH_SHORT).show()
-            return
-        }
+        val selectedTeacher = getSelectedTeacherFromAutocomplete(actvTeacher) ?: return
 
         val sectionBlock = spnSectionBlock.selectedItem?.toString()?.trim() ?: return
-        val roomNumber = spnRoom.selectedItem?.toString()?.trim() ?: return
+        val roomLocation = spnRoom.selectedItem?.toString()?.trim() ?: return
         val day = spnDay.selectedItem?.toString() ?: return
         val startTimeStrDisplay = spnStartTime.selectedItem?.toString() ?: return
         val endTimeStrDisplay = spnEndTime.selectedItem?.toString() ?: return
         val capacity = etCapacity.text.toString().toIntOrNull() ?: 50
 
         if (!btnSave.isEnabled) {
-            Toast.makeText(this, "Please resolve conflicts before saving.", Toast.LENGTH_LONG)
-                .show()
+            Toast.makeText(this, "Please resolve conflicts before saving.", Toast.LENGTH_LONG).show()
             return
         }
 
         val (subjectCode, subjectTitle) = subjectName.split(" - ").map { it.trim() }
             .let { Pair(it.getOrNull(0) ?: "", it.getOrNull(1) ?: "") }
-        val yearNumber = yearLevel.substring(0, 1)
 
-        val parsedTime = parseTimeFlexibly(startTimeStrDisplay) ?: return
-        val internalStartTime = internalTimeFormat.format(parsedTime)
+        // 2. Gumawa ng bagong TimeSlot object
+        val newSlot = TimeSlot(day, startTimeStrDisplay, endTimeStrDisplay, roomLocation, sectionBlock)
 
+        // 3. Simulan ang Firestore Query: Hanapin kung may existing document na tumutugma sa key:
+        // [Course, Year, Subject, Teacher, SectionBlock]
+        assignmentsCollection
+            .whereEqualTo("courseCode", courseCode)
+            .whereEqualTo("yearLevel", yearLevel)
+            .whereEqualTo("subjectCode", subjectCode)
+            .whereEqualTo("teacherUid", selectedTeacher.uid)
+            // ⚠️ CRITICAL: I-check kung may existing slot sa sectionBlock na ito
+            .whereEqualTo("scheduleSlots.slot1.sectionBlock", sectionBlock)
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                val existingDocId = querySnapshot.documents.firstOrNull()?.id // Kunin ang Firestore ID
 
-        val assignmentId =
-            "${courseCode}-${yearNumber}-${sectionBlock}-${day}-${internalStartTime.replace(":", "")}"
-        val sectionName = "${courseCode}-${yearNumber}-${sectionBlock}"
+                // Simulan ang Transaction (Para sa Atomic Update/Insert)
+                firestore.runTransaction { transaction ->
 
-        val assignment = ClassAssignment(
-            assignmentId = assignmentId,
-            courseCode = courseCode,
-            yearLevel = yearLevel,
-            sectionBlock = sectionBlock,
-            sectionName = sectionName,
-            subjectCode = subjectCode,
-            subjectTitle = subjectTitle,
-            teacherUid = selectedTeacher.uid, // Use UID from the object
-            teacherName = selectedTeacher.name, // Use name from the object
-            day = day,
-            startTime = startTimeStrDisplay,
-            endTime = endTimeStrDisplay,
-            roomNumber = roomNumber,
-            maxCapacity = capacity,
-            enrolledCount = 0
-        )
+                    val assignmentRef = if (existingDocId != null) {
+                        // UPDATE path: Gamitin ang existing ID
+                        assignmentsCollection.document(existingDocId)
+                    } else {
+                        // INSERT path: Mag-generate lang ng temporary reference
+                        assignmentsCollection.document()
+                    }
 
-        assignmentsCollection.document(assignmentId).set(assignment)
-            .addOnSuccessListener {
-                Toast.makeText(this, "Schedule successfully saved!", Toast.LENGTH_LONG).show()
+                    val snapshot = transaction.get(assignmentRef)
 
-                clearScheduleInputs()
+                    if (snapshot.exists() && existingDocId != null) {
+                        // ============== UPDATE LOGIC (May existing document) ==============
+                        val existingAssignment = snapshot.toObject(ClassAssignment::class.java)!!
 
-                loadAllAssignments()
-                checkConflicts()
+                        // Check for duplicate slot (oras, araw, at room ay pareho)
+                        if (existingAssignment.scheduleSlots.values.any { it == newSlot }) {
+                            throw Exception("Duplicate time slot detected: Slot already exists for this subject.")
+                        }
+
+                        val updatedSlots = existingAssignment.scheduleSlots.toMutableMap()
+                        // Idagdag ang new slot gamit ang bagong key (e.g., "slotX")
+                        val newSlotKey = "slot${updatedSlots.size + 1}"
+                        updatedSlots[newSlotKey] = newSlot
+
+                        val updatedAssignment = existingAssignment.copy(
+                            maxCapacity = capacity, // I-update ang capacity
+                            scheduleSlots = updatedSlots
+                        )
+                        transaction.set(assignmentRef, updatedAssignment)
+
+                    } else {
+                        // ============== INSERT LOGIC (Bagong document) ==============
+
+                        // 1. Basahin at i-increment ang Counter Document (Atomic Operation)
+                        val counterRef = firestore.collection("systemCounters").document("assignmentNoCounter")
+                        val counterSnapshot = transaction.get(counterRef)
+
+                        val currentValue = (counterSnapshot.get("currentValue") as? Number)?.toLong() ?: 0L
+                        val nextValue = currentValue + 1
+
+                        // ✅ FIX: Gumamit ng SET at MERGE (Para sa Upsert ng Counter)
+                        transaction.set(counterRef, mapOf("currentValue" to nextValue), SetOptions.merge())
+
+                        // 2. Gumawa ng Unique Sequential ID (e.g., "0001")
+                        val shortReadableNo = String.format("%04d", nextValue)
+
+                        // ⚠️ KRITIKAL: Gumamit ng BAGONG REFERENCE na may sequential ID bilang Document ID
+                        val newAssignmentRef = assignmentsCollection.document(shortReadableNo)
+
+                        val newAssignment = ClassAssignment(
+                            assignmentNo = shortReadableNo, // Ang arbitrary ID
+                            academicYear = "2025-2026", // ⚠️ Palitan ito ng actual input
+                            semester = "1st Semester",   // ⚠️ Palitan ito ng actual input
+                            courseCode = courseCode,
+                            yearLevel = yearLevel,
+                            subjectCode = subjectCode,
+                            subjectTitle = subjectTitle,
+                            teacherUid = selectedTeacher.uid,
+                            teacherName = selectedTeacher.name,
+                            maxCapacity = capacity,
+                            enrolledCount = 0,
+                            scheduleSlots = mapOf("slot1" to newSlot) // Bagong Map structure
+                        )
+                        transaction.set(newAssignmentRef, newAssignment)
+                    }
+                    null // Return null to commit the transaction
+                }
+                    .addOnSuccessListener {
+                        // ... (Success Handler)
+                        Toast.makeText(this, "Time slot successfully saved/updated!", Toast.LENGTH_LONG).show()
+                        clearScheduleInputs()
+                        loadAllAssignments()
+                        checkConflicts()
+                    }.addOnFailureListener { e ->
+                        // ... (Failure Handler)
+                        if (e.message?.contains("Duplicate time slot") == true) {
+                            Toast.makeText(this, e.message, Toast.LENGTH_LONG).show()
+                        } else {
+                            Toast.makeText(this, "Failed to save schedule: ${e.message}", Toast.LENGTH_LONG).show()
+                        }
+                        Log.e("ManageSchedules", "Save failed", e)
+                    }
             }
             .addOnFailureListener { e ->
-                Toast.makeText(this, "Failed to save schedule: ${e.message}", Toast.LENGTH_LONG)
-                    .show()
-                Log.e("ManageSchedules", "Save failed", e)
+                Toast.makeText(this, "Error querying existing assignments: ${e.message}", Toast.LENGTH_LONG).show()
             }
     }
 
@@ -1041,5 +1117,4 @@ class ManageSchedulesActivity : AppCompatActivity() {
         tvConflictWarning.text = ""
         btnSave.isEnabled = false
     }
-
 }

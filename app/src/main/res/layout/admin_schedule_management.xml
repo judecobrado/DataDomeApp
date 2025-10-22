@@ -80,7 +80,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Add New Assignment:"
+            android:text="Add New Time Slot to Subject:"
             android:textSize="18sp"
             android:textStyle="bold"
             android:layout_marginBottom="8dp"/>
@@ -95,7 +95,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="1. Select Teacher Department:"
+            android:text="1. Filter Teacher Department:"
             android:textSize="14sp"
             android:layout_marginTop="8dp"/>
         <Spinner
@@ -175,7 +175,7 @@
             android:id="@+id/tvConflictWarning"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="@color/design_default_color_error"
+            android:textColor="@android:color/holo_red_dark"
             android:padding="8dp"
             android:textStyle="bold"
             android:layout_marginTop="8dp"
@@ -186,7 +186,7 @@
             android:id="@+id/btnSaveAssignment"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Save Schedule Assignment"
+            android:text="Add Time Slot to Subject Assignment"
             android:layout_marginTop="16dp"
             android:enabled="false"/>
 

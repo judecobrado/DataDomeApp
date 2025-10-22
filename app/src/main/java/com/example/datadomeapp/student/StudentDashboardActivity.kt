@@ -22,6 +22,15 @@ import com.google.firebase.firestore.Query
 import java.text.SimpleDateFormat
 import java.util.*
 
+// 🛑 Import para sa LibraryActivity (nasa root package: com.example.datadomeapp)
+import com.example.datadomeapp.LibraryActivity
+// Import para sa ibang activities na nasa com.example.datadomeapp.student package
+import com.example.datadomeapp.student.StudentFullScheduleActivity
+import com.example.datadomeapp.student.StudentNotesActivity
+import com.example.datadomeapp.student.StudentOnlineClassesActivity
+import com.example.datadomeapp.student.StudentToDoListActivity
+
+
 class StudentDashboardActivity : AppCompatActivity() {
 
     private val auth = FirebaseAuth.getInstance()
@@ -231,10 +240,10 @@ class StudentDashboardActivity : AppCompatActivity() {
         }
 
         // I-set up ang mga button na may "Coming Soon" Toast
+        // 🛑 Inalis ang R.id.btnLibrary sa listahan.
         val comingSoonIds = listOf(
             R.id.btnAttendance,
             R.id.btnAssignments,
-            R.id.btnLibrary,
             R.id.btnCanteen
         )
 
@@ -243,6 +252,12 @@ class StudentDashboardActivity : AppCompatActivity() {
                 val buttonText = findViewById<Button>(id).text
                 Toast.makeText(this, "$buttonText: Coming Soon!", Toast.LENGTH_SHORT).show()
             }
+        }
+
+        // 🛑 FIXED: Library Button (pumunta na sa LibraryActivity)
+        findViewById<Button>(R.id.btnLibrary).setOnClickListener {
+            val intent = Intent(this, LibraryActivity::class.java)
+            startActivity(intent)
         }
 
         findViewById<Button>(R.id.btnOnlineClasses).setOnClickListener {
@@ -264,8 +279,8 @@ class StudentDashboardActivity : AppCompatActivity() {
             }
             // Tiyakin na tama ang target activity
             val intent = Intent(this, StudentFullScheduleActivity::class.java)
-            // Gamitin ang Student ID sa pagpasa ng data, hindi ang Section ID
-            intent.putExtra("STUDENT_ID", studentId)
+            // Gamitin ang Student ID bilang "USER_ID" para sa schedule activity
+            intent.putExtra("USER_ID", studentId)
             startActivity(intent)
         }
 

@@ -79,27 +79,34 @@ class ClassDetailsActivity : AppCompatActivity() {
     }
 
     private fun loadClassDetails(assignmentId: String) {
-        // 1. Kuhanin ang assignment details para sa sectionName
-        firestore.collection("classAssignments").document(assignmentId).get()
-            .addOnSuccessListener { doc ->
-                val assignment = doc.toObject(ClassAssignment::class.java)
-                if (assignment != null) {
-                    // 2. Kuhanin ang mga estudyante batay sa subject code at section name
-                    loadStudentsBySection(assignment.subjectCode, assignment.sectionName)
-                } else {
-                    tvLoading.text = "Error: Class assignment not found."
-                }
-            }
-            .addOnFailureListener { e ->
-                Log.e("ClassDetails", "Error loading assignment: $e")
-                tvLoading.text = "Error loading class details."
-            }
-    }
+        // Ang Subject Code at ang Class Name ay nakuha na natin sa Intent/onCreate.
+        // Ang Class Name (hal: "CS101 - 1A") ay naglalaman ng section name.
 
+        val selectedSubjectCode = subjectCode
+        val classNameHeader = className
+
+        if (selectedSubjectCode.isNullOrEmpty() || classNameHeader.isNullOrEmpty()) {
+            tvLoading.text = "Error: Missing required class details."
+            return
+        }
+
+        // 1. Kukunin ang Section Name mula sa className header (e.g., "CS101 - 1A" -> "1A")
+        // NOTE: Ina-assume na ang section name ay palaging huling item pagkatapos ng ' - '
+        val sectionNameFromHeader = classNameHeader.split(" - ").lastOrNull()
+
+        if (sectionNameFromHeader.isNullOrEmpty()) {
+            tvLoading.text = "Error: Cannot determine section name."
+            return
+        }
+
+        loadStudentsBySection(selectedSubjectCode, sectionNameFromHeader)
+
+    }
     private fun loadStudentsBySection(selectedSubjectCode: String, selectedSectionName: String) {
         // Ginamit ang Collection Group Query para mahanap ang lahat ng student subject documents
         firestore.collectionGroup("subjects")
             .whereEqualTo("subjectCode", selectedSubjectCode)
+            // 🟢 FIX: Gamitin ang tamang section name na nakuha sa header (ManageClassesActivity)
             .whereEqualTo("sectionName", selectedSectionName)
             .get()
             .addOnSuccessListener { subjectsSnapshot ->

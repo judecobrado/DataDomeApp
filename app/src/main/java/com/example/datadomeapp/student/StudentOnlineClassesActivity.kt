@@ -57,7 +57,7 @@ class StudentOnlineClassesActivity : AppCompatActivity() {
                 }
 
                 // ✅ KRITIKAL: Dito kukunin ang sectionName. Tiyakin na ito ang tamang field name sa Firestore
-                val studentSectionName = document.getString("sectionName")
+                val studentSectionName = document.getString("sectionId")
 
                 if (!studentSectionName.isNullOrEmpty()) {
                     Log.i("SECTION_DEBUG", "SUCCESS: Found sectionName: $studentSectionName")

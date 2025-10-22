@@ -15,12 +15,28 @@ import com.example.datadomeapp.R
 import com.google.firebase.firestore.FirebaseFirestore
 import androidx.appcompat.app.AlertDialog
 import com.example.datadomeapp.models.Student
+import com.google.firebase.firestore.Query
 import java.text.SimpleDateFormat
 import java.util.*
+
+// 🟢 FIX 1: NEW Data Model para sa ISANG document lang kada araw
+// Ilagay ito sa labas ng Activity class, ideal sa isang 'models' package.
+// Hindi ito ang iyong lumang 'AttendanceRecord' na para sa Batch Write.
+data class DailyAttendanceRecord(
+    val assignmentId: String = "",
+    val subjectCode: String = "",
+    val date: String = "",
+    // Ang lahat ng statuses ay nasa isang Map: studentId -> status
+    val statuses: Map<String, String> = emptyMap()
+)
+
 
 class RecordAttendanceActivity : AppCompatActivity() {
 
     private val firestore = FirebaseFirestore.getInstance()
+    // 🟢 Bagong Collection Name
+    private val ATTENDANCE_COLLECTION = "dailyAttendanceRecords"
+
     private lateinit var tvAttendanceHeader: TextView
     private lateinit var etAttendanceDate: EditText
     private lateinit var recyclerView: RecyclerView
@@ -41,12 +57,11 @@ class RecordAttendanceActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.teacher_record_attendance)
 
-        Log.d("AttendanceActivity", "Activity created.")
+        // ... (View Binding at Intent Data retrieval, walang pagbabago dito) ...
 
         // --- Get Intent Data ---
         assignmentId = intent.getStringExtra("ASSIGNMENT_ID")
         className = intent.getStringExtra("CLASS_NAME")
-        Log.d("AttendanceActivity", "Intent received: Assignment ID=$assignmentId, Class Name=$className")
 
         // --- View Binding ---
         tvAttendanceHeader = findViewById(R.id.tvAttendanceHeader)
@@ -61,13 +76,11 @@ class RecordAttendanceActivity : AppCompatActivity() {
         // Set default date to today and check its status
         val today = dateFormat.format(Date())
         etAttendanceDate.setText(today)
-        Log.d("AttendanceActivity", "Setting default date to $today")
         updateUIForDate(today)
 
         etAttendanceDate.setOnClickListener { showOptionsForDateSelection() }
 
         if (assignmentId.isNullOrEmpty()) {
-            Log.e("AttendanceActivity", "FATAL: Assignment ID is null or empty.")
             Toast.makeText(this, "Error: Missing class assignment ID.", Toast.LENGTH_LONG).show()
             finish()
             return
@@ -97,18 +110,10 @@ class RecordAttendanceActivity : AppCompatActivity() {
                 val newDate = dateFormat.format(selectedDate.time)
 
                 etAttendanceDate.setText(newDate)
-
-                // 🌟 FIX 1: Tiyakin na ang UI/Editable state ay na-a-update muna
                 updateUIForDate(newDate)
 
-                // 🌟 FIX 2: Tiyakin na na-initialize na ang adapter BAGO mag-load
                 if (::attendanceAdapter.isInitialized) {
-                    // Ito na ang magre-refresh ng status batay sa bagong petsa at editable state
                     loadExistingAttendance(assignmentId!!, newDate)
-                } else {
-                    // Kung hindi pa initialized, tatawagin ito sa loob ng fetchStudentProfiles.
-                    // Para sa kasiguraduhan, i-log natin ito.
-                    Log.w("AttendanceDate", "Adapter not yet initialized. Data will load after students are fetched.")
                 }
             },
             calendar.get(Calendar.YEAR),
@@ -123,25 +128,13 @@ class RecordAttendanceActivity : AppCompatActivity() {
     private fun updateUIForDate(dateString: String) {
         try {
             val selectedDate = dateFormat.parse(dateString)!!
-
-            // 🛑 FIX: I-parse ulit ang "today" para alisin ang time component.
-            // (Kung ginawa mo na ito, okay lang, pero tiyakin na walang isyu sa time)
             val today = dateFormat.parse(dateFormat.format(Date()))!!
 
-            // Check if selected date is strictly before today
             isPreviousDay = selectedDate.before(today)
-
-            Log.d("AttendanceDate", "Selected date: $dateString. Is previous day: $isPreviousDay. Is editable: ${!isPreviousDay}")
-
-            // I-adjust ang UI
             btnSaveAttendance.visibility = if (isPreviousDay) View.GONE else View.VISIBLE
 
-            // 🌟 CRITICAL FIX: I-update ang adapter **kung initialized**
             if (::attendanceAdapter.isInitialized) {
-                Log.d("AdapterState", "Setting adapter editable state to: ${!isPreviousDay}")
                 attendanceAdapter.setEditable(!isPreviousDay)
-            } else {
-                Log.d("AdapterState", "Adapter is not initialized yet. Skipping setEditable.")
             }
 
         } catch (e: Exception) {
@@ -150,52 +143,47 @@ class RecordAttendanceActivity : AppCompatActivity() {
         }
     }
 
-    // --- Load Students and Get SubjectCode ---
-    private fun loadStudentList(assignmentId: String) {
-        Log.d("AttendanceLoader", "Starting load for assignment ID: $assignmentId")
+    // ... (loadStudentList at fetchStudentProfiles, walang major change maliban sa pagtawag ng loadExistingAttendance) ...
 
-        // Step A: Get Class Assignment Details
+    private fun loadStudentList(assignmentId: String) {
         firestore.collection("classAssignments").document(assignmentId).get()
             .addOnSuccessListener { doc ->
                 val fetchedSubjectCode = doc.getString("subjectCode")
                 val sectionName = doc.getString("sectionName")
 
                 if (fetchedSubjectCode == null || sectionName == null) {
-                    Log.e("AttendanceLoader", "Error: Class details incomplete for $assignmentId.")
                     Toast.makeText(this, "Error: Class details incomplete.", Toast.LENGTH_LONG).show()
                     return@addOnSuccessListener
                 }
 
                 this.subjectCode = fetchedSubjectCode
-                Log.d("AttendanceLoader", "Fetched SubjectCode: $fetchedSubjectCode, Section: $sectionName")
 
-                // Step B: Get Student IDs via Collection Group Query
                 firestore.collectionGroup("subjects")
                     .whereEqualTo("subjectCode", fetchedSubjectCode)
                     .whereEqualTo("sectionName", sectionName)
                     .get()
                     .addOnSuccessListener { subjectsSnapshot ->
-                        val studentIds = subjectsSnapshot.documents.map { it.reference.parent.parent!!.id }
+                        val studentIds = subjectsSnapshot.documents.mapNotNull {
+                            it.reference.parent.parent?.id
+                        }
 
                         if (studentIds.isEmpty()) {
-                            Log.w("AttendanceLoader", "No students found in this class.")
                             Toast.makeText(this, "No students found in this class.", Toast.LENGTH_LONG).show()
                             return@addOnSuccessListener
                         }
 
-                        // Step C: Fetch Student Profiles
-                        fetchStudentProfiles(studentIds.take(10), assignmentId)
+                        // Limitan ang pagkuha ng student IDs para maiwasan ang malaking array sa 'whereIn'
+                        fetchStudentProfiles(studentIds.take(30), assignmentId)
                     }
             }
             .addOnFailureListener { e ->
-                Log.e("AttendanceLoader", "Error loading assignment details: $e")
                 Toast.makeText(this, "Failed to load class list.", Toast.LENGTH_SHORT).show()
             }
     }
 
-    private fun fetchStudentProfiles(studentIds: List<String>, assignmentId: String) {
-        Log.d("AttendanceLoader", "Fetching profiles for ${studentIds.size} students.")
+    // ... (fetchStudentProfiles, walang pagbabago) ...
 
+    private fun fetchStudentProfiles(studentIds: List<String>, assignmentId: String) {
         firestore.collection("students")
             .whereIn("id", studentIds)
             .orderBy("lastName")
@@ -205,17 +193,13 @@ class RecordAttendanceActivity : AppCompatActivity() {
                 val students = studentsSnapshot.documents.mapNotNull { it.toObject(Student::class.java) }
                 currentStudentList.addAll(students)
 
-                Log.i("AttendanceLoader", "Successfully fetched ${currentStudentList.size} student profiles.")
-
-                // Initialize Adapter
                 attendanceAdapter = AttendanceAdapter(
                     studentList = currentStudentList,
                     assignmentId = assignmentId,
-                    isEditable = true // 🛑 CRITICAL FIX: Ipinasa ang editable status
+                    isEditable = !isPreviousDay
                 )
                 recyclerView.adapter = attendanceAdapter
 
-                // I-load ang existing attendance record
                 loadExistingAttendance(assignmentId, etAttendanceDate.text.toString())
             }
             .addOnFailureListener { e ->
@@ -223,103 +207,100 @@ class RecordAttendanceActivity : AppCompatActivity() {
             }
     }
 
-    // --- Load Existing Attendance ---
+
+    // --- 🟢 FIX 2: Load Existing Attendance (Aggregated) ---
     private fun loadExistingAttendance(assignmentId: String, date: String) {
-        Log.d("AttendanceLoader", "Checking for existing attendance on $date.")
+        Log.d("AttendanceLoader", "Checking for existing attendance on $date (Aggregated Method).")
 
-        // 1. I-reset ang visibility state
         tvNoRecords.visibility = View.GONE
-        recyclerView.visibility = View.VISIBLE // Default: Ipakita ang listahan
+        recyclerView.visibility = View.VISIBLE
 
-        firestore.collection("attendance")
-            .whereEqualTo("assignmentId", assignmentId)
-            .whereEqualTo("date", date)
+        // 🟢 Gumamit ng Direct Document ID
+        val recordId = "${assignmentId}_$date"
+
+        firestore.collection(ATTENDANCE_COLLECTION).document(recordId)
             .get()
-            .addOnSuccessListener { snapshot ->
-                Log.i("AttendanceLoader", "Found ${snapshot.size()} existing records.")
+            .addOnSuccessListener { documentSnapshot ->
+                // Check kung may document
+                if (documentSnapshot.exists()) {
+                    Log.i("AttendanceLoader", "Found existing aggregated record.")
 
-                val existingAttendance = snapshot.documents.associate {
-                    it.getString("studentId")!! to it.getString("status")!!
-                }
+                    // Kukunin ang statuses Map mula sa document
+                    val existingAttendance = documentSnapshot.get("statuses") as? Map<String, String> ?: emptyMap()
 
-                // 2. CHECK LOGIC: Kung kailan itatago ang RecyclerView
-                if (snapshot.isEmpty) {
-                    // Kung walang nakitang records:
+                    tvNoRecords.visibility = View.GONE
+                    recyclerView.visibility = View.VISIBLE
+                    attendanceAdapter.updateStatuses(existingAttendance)
+
+                } else {
+                    Log.w("AttendanceLoader", "No aggregated record found for $recordId.")
+
                     if (isPreviousDay) {
-                        // Kaso A: Nakaraan ang petsa AT walang records (Display message only)
                         tvNoRecords.text = "No attendance records found for this date."
                         tvNoRecords.visibility = View.VISIBLE
-                        recyclerView.visibility = View.GONE // 🛑 ITAGO ANG STUDENT LIST
+                        recyclerView.visibility = View.GONE
 
-                        // Kailangan pa ring i-reset ang adapter statuses para walang lumang data
+                        // Kailangan pa ring i-reset ang adapter statuses
                         attendanceAdapter.updateStatuses(emptyMap())
-                        return@addOnSuccessListener // Tapusin na ang function dito
+                    } else {
+                        // Kung Today at walang record, ipapakita ang listahan na may default 'Absent'
+                        tvNoRecords.visibility = View.GONE
+                        recyclerView.visibility = View.VISIBLE
+                        attendanceAdapter.updateStatuses(emptyMap()) // I-reset sa default status
                     }
-                    // Kaso B: Today AT walang records (Normal, ipapakita ang listahan na may default 'Absent')
                 }
-
-                // 3. Kung may records o Today ang petsa:
-                tvNoRecords.visibility = View.GONE
-                recyclerView.visibility = View.VISIBLE // Ipakita ang student list
-
-                attendanceAdapter.updateStatuses(existingAttendance)
             }
             .addOnFailureListener {
-                Log.e("AttendanceLoader", "Failed to query existing attendance.", it)
-                // Error handling: Itago ang listahan at magpakita ng error
+                Log.e("AttendanceLoader", "Failed to get existing attendance record.", it)
                 tvNoRecords.text = "Error loading records. Please check connection."
                 tvNoRecords.visibility = View.VISIBLE
-                recyclerView.visibility = View.GONE // 🛑 ITAGO ANG STUDENT LIST
+                recyclerView.visibility = View.GONE
             }
     }
 
-    // --- Save Attendance ---
+    // --- 🟢 FIX 3: Save Attendance (Aggregated) ---
     private fun saveAttendance() {
         val dateToSave = etAttendanceDate.text.toString()
 
         if (dateToSave.isEmpty() || subjectCode.isNullOrEmpty()) {
-            Log.e("AttendanceSaver", "Validation failed. Date: $dateToSave, SubjectCode: $subjectCode")
             Toast.makeText(this, "Error: Date or Subject Code is missing. Cannot save.", Toast.LENGTH_LONG).show()
             return
         }
 
+        // 1. Kukunin ang attendance map mula sa adapter
         val attendanceMap = attendanceAdapter.getAttendanceMap()
-        Log.d("AttendanceSaver", "Starting save process for date: $dateToSave. Saving ${attendanceMap.size} records.")
 
-        val batch = firestore.batch()
+        // 2. Gumawa ng composite document ID (Assignment ID + Date)
+        val recordId = "${assignmentId}_$dateToSave"
 
-        for ((studentId, status) in attendanceMap) {
-            val recordId = "${assignmentId}_${dateToSave}_${studentId}"
-            val recordRef = firestore.collection("attendance").document(recordId)
+        // 3. Gumawa ng isang DailyAttendanceRecord object
+        val dailyRecord = DailyAttendanceRecord(
+            assignmentId = assignmentId!!,
+            subjectCode = subjectCode!!,
+            date = dateToSave,
+            statuses = attendanceMap // I-assign ang buong Map!
+        )
 
-            val record = AttendanceRecord(
-                studentId = studentId,
-                assignmentId = assignmentId!!,
-                subjectCode = subjectCode!!,
-                date = dateToSave,
-                status = status
-            )
-
-            batch.set(recordRef, record)
-        }
-
-        batch.commit()
+        // 4. I-save bilang ISANG document
+        firestore.collection(ATTENDANCE_COLLECTION).document(recordId)
+            .set(dailyRecord)
             .addOnSuccessListener {
-                Log.i("AttendanceSaver", "Batch commit SUCCESSFUL for $dateToSave.")
-                Toast.makeText(this, "Attendance saved successfully for $dateToSave.", Toast.LENGTH_LONG).show()
+                Log.i("AttendanceSaver", "Attendance saved as single aggregated record for $dateToSave. Document ID: $recordId")
+                Toast.makeText(this, "Attendance saved successfully for $dateToSave! 💾", Toast.LENGTH_LONG).show()
                 finish()
             }
             .addOnFailureListener { e ->
-                Log.e("AttendanceSaver", "Batch commit FAILED: ${e.message}", e)
+                Log.e("AttendanceSaver", "Save FAILED: ${e.message}", e)
                 Toast.makeText(this, "Failed to save attendance: ${e.message}", Toast.LENGTH_LONG).show()
             }
     }
 
+    // ... (showOptionsForDateSelection, walang pagbabago) ...
+
     private fun showOptionsForDateSelection() {
         AlertDialog.Builder(this)
             .setTitle("Pumili ng Petsa")
-            // ✅ FIX: Alisin ang explicit type declarations (dialog: DialogInterface, which: Int)
-            .setItems(arrayOf("Pumili sa Kalendaryo...", "Tingnan ang mga Nakaraang Attendance")) { dialog, which ->
+            .setItems(arrayOf("Pumili sa Kalendaryo...", "Tingnan ang mga Nakaraang Attendance")) { _, which ->
                 if (which == 0) {
                     showDatePickerDialog()
                 } else {
@@ -329,13 +310,15 @@ class RecordAttendanceActivity : AppCompatActivity() {
             .show()
     }
 
+    // --- 🟢 FIX 4: Fetch Existing Attendance Dates (Aggregated) ---
     private fun fetchExistingAttendanceDates(assignmentId: String) {
         if (assignmentId.isNullOrEmpty()) return
 
-        // I-query ang lahat ng records para sa Assignment ID at i-order para sa mas magandang user view
-        firestore.collection("attendance")
+        // 🟢 I-query ang bagong Collection. Kailangan ng Query dahil walang 'DISTINCT' sa Firestore.
+        // Tanging 'assignmentId' lang ang kailangan i-filter.
+        firestore.collection(ATTENDANCE_COLLECTION)
             .whereEqualTo("assignmentId", assignmentId)
-            .orderBy("date", com.google.firebase.firestore.Query.Direction.DESCENDING)
+            .orderBy("date", Query.Direction.DESCENDING)
             .get()
             .addOnSuccessListener { snapshot ->
                 if (snapshot.isEmpty) {
@@ -343,11 +326,10 @@ class RecordAttendanceActivity : AppCompatActivity() {
                     return@addOnSuccessListener
                 }
 
-                // Kuhanin ang lahat ng 'date' at alisin ang duplicates (DISTINCT)
+                // 🟢 Kuhanin ang lahat ng 'date' mula sa mga aggregated document
                 val uniqueDates = snapshot.documents
                     .mapNotNull { it.getString("date") }
-                    .distinct()
-                    .toList()
+                    .toList() // Hindi na kailangan ng .distinct() dahil ang result ay 1 document per date na.
 
                 showExistingDatesDialog(uniqueDates)
             }
@@ -357,23 +339,23 @@ class RecordAttendanceActivity : AppCompatActivity() {
             }
     }
 
+    // ... (showExistingDatesDialog, walang pagbabago sa logic, pero ngayon tumatawag na ng aggregated load) ...
+
     private fun showExistingDatesDialog(dates: List<String>) {
         val datesArray = dates.toTypedArray()
 
         AlertDialog.Builder(this)
             .setTitle("Pumili ng Petsa ng Attendance")
-            // ✅ FIX 1: Alisin ang explicit type declarations (dialog: DialogInterface, which: Int)
             .setItems(datesArray) { dialog, which ->
                 val selectedDate = datesArray[which]
 
-                // CRITICAL: Ito ang nawawalang logic para gumana ang selection
                 etAttendanceDate.setText(selectedDate)
                 updateUIForDate(selectedDate)
+                // 🟢 Ito ay tumatawag na sa bagong aggregated load function
                 loadExistingAttendance(assignmentId!!, selectedDate)
 
                 dialog.dismiss()
             }
-            // ✅ FIX 2: Alisin ang explicit type declarations (dialog: DialogInterface, _)
             .setNegativeButton("Cancel") { dialog, _ ->
                 dialog.dismiss()
             }

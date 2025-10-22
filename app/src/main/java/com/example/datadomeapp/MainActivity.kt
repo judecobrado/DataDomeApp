@@ -6,10 +6,11 @@ import android.os.Bundle
 import android.util.Log // Added for debugging
 import android.widget.Button
 import android.widget.Toast
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import com.example.datadomeapp.admin.AdminDashboardActivity
 import com.example.datadomeapp.canteen.CanteenStaffDashboardActivity
-import com.example.datadomeapp.enrollment.VerifyEmailActivity
+import com.example.datadomeapp.enrollment.ChooseStudentTypeActivity
 import com.example.datadomeapp.student.StudentDashboardActivity
 import com.example.datadomeapp.teacher.TeacherDashboardActivity
 import com.google.firebase.auth.FirebaseAuth
@@ -47,9 +48,88 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnSignup.setOnClickListener {
-            startActivity(Intent(this, VerifyEmailActivity::class.java))
+            startActivity(Intent(this, ChooseStudentTypeActivity::class.java))
         }
+
+        // Add this inside onCreate(), after btnSignup is initialized
+        firestore.collection("appSettings").document("mainActivity")
+            .get()
+            .addOnSuccessListener { doc ->
+                val signupEnabled = doc?.getBoolean("signupEnabled") ?: true
+                if (signupEnabled) {
+                    btnSignup.visibility = View.VISIBLE
+                    btnSignup.setOnClickListener {
+                        startActivity(Intent(this, ChooseStudentTypeActivity::class.java))
+                    }
+                } else {
+                    btnSignup.visibility = View.GONE // completely hides the button
+                }
+            }
+            .addOnFailureListener { e ->
+                // Default behavior if Firestore fails
+                btnSignup.visibility = View.VISIBLE
+                btnSignup.setOnClickListener {
+                    startActivity(Intent(this, ChooseStudentTypeActivity::class.java))
+                }
+            }// Inside onCreate() AFTER setContentView(...)
+        btnSignup = findViewById(R.id.btnSignup)
+
+// Real-time listener for signup toggle
+        firestore.collection("appSettings").document("mainActivity")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    // Firestore failed, default to showing button
+                    btnSignup.visibility = View.VISIBLE
+                    btnSignup.setOnClickListener {
+                        startActivity(Intent(this, ChooseStudentTypeActivity::class.java))
+                    }
+                    return@addSnapshotListener
+                }
+
+                val signupEnabled = snapshot?.getBoolean("signupEnabled") ?: true
+                if (signupEnabled) {
+                    btnSignup.visibility = View.VISIBLE
+                    btnSignup.setOnClickListener {
+                        startActivity(Intent(this, ChooseStudentTypeActivity::class.java))
+                    }
+                } else {
+                    btnSignup.visibility = View.GONE
+                }
+            }
+
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    firestore.collection("appSettings").document("mainActivity")
+    .addSnapshotListener { snapshot, error ->
+        if (error != null) {
+            Log.e("MainActivity", "Failed to listen to signup toggle", error)
+            return@addSnapshotListener
+        }
+
+        val enabled = snapshot?.getBoolean("signupEnabled") ?: true
+        btnSignup.isEnabled = enabled // Enable/disable button
+        btnSignup.alpha = if (enabled) 1.0f else 0.5f // Optional: visual cue
+    }
+
 
     // --- New Logic: Same as LoginActivity's role check ---
 

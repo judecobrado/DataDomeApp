@@ -14,7 +14,6 @@ import com.example.datadomeapp.R
 import com.example.datadomeapp.models.ClassAssignment
 import com.example.datadomeapp.models.Curriculum
 import com.example.datadomeapp.models.Enrollment
-import com.example.datadomeapp.models.StudentSubject
 import com.example.datadomeapp.models.SubjectEntry
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -24,8 +23,18 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import com.google.firebase.Timestamp // Import para sa Timestamp.now()
+import com.google.firebase.Timestamp
 import java.util.*
+
+// 🟢 NEW MODEL: Para sa pag-iimbak ng reference key sa record ng estudyante
+data class StudentAssignmentReference(
+    val subjectCode: String = "",
+    val assignmentNo: String = "", // ⬅️ CRITICAL: Reference sa ClassAssignment
+    val subjectTitle: String = "",
+    val sectionBlock: String = "", // Para sa mabilis na display
+    val onlineLink: String = "" // <--- IDAGDAG ITO!
+)
+
 
 class ManageEnrollmentsActivity : AppCompatActivity() {
 
@@ -43,6 +52,7 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
     private val finalYearLevels = listOf("Select Year Level", "1st Year", "2nd Year", "3rd Year", "4th Year")
     private val finalEnrollmentTypes = listOf("Select Type", "Regular", "Irregular")
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.admin_enrollment_management)
@@ -59,10 +69,39 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
         recyclerView.adapter = adapter
 
         loadPendingEnrollments()
+
+        val btnToggleSignup = findViewById<Button>(R.id.btnToggleSignup)
+
+// Load current state from Firestore
+        firestore.collection("appSettings").document("mainActivity")
+            .get()
+            .addOnSuccessListener { doc ->
+                val enabled = doc.getBoolean("signupEnabled") ?: true
+                btnToggleSignup.text = if (enabled) "Disable Signup Button" else "Enable Signup Button"
+            }
+            .addOnFailureListener {
+                btnToggleSignup.text = "Toggle Signup Button"
+            }
+
+// Toggle button click
+        btnToggleSignup.setOnClickListener {
+            firestore.collection("appSettings").document("mainActivity")
+                .get()
+                .addOnSuccessListener { doc ->
+                    val enabled = doc.getBoolean("signupEnabled") ?: true
+                    val newState = !enabled
+                    firestore.collection("appSettings").document("mainActivity")
+                        .set(mapOf("signupEnabled" to newState))
+                        .addOnSuccessListener {
+                            btnToggleSignup.text = if (newState) "Disable Signup Button" else "Enable Signup Button"
+                            Toast.makeText(this, "Signup button updated!", Toast.LENGTH_SHORT).show()
+                        }
+                }
+        }
     }
 
+
     private fun loadPendingEnrollments() {
-        // ... (No changes needed here) ...
         firestore.collection("pendingEnrollments")
             .whereEqualTo("status", "submitted")
             .orderBy("timestamp", Query.Direction.ASCENDING)
@@ -84,7 +123,6 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
 
 
     fun showEnrollmentDetailDialog(e: Enrollment) {
-        // ... (No changes needed here) ...
         val dialogView = LayoutInflater.from(this).inflate(R.layout.admin_enrollment_detail_dialog, null)
 
         val tvName = dialogView.findViewById<TextView>(R.id.tvName)
@@ -227,9 +265,6 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
     // ----------------------------------------------------
     // Interactive Subject Assignment Dialog
     // ----------------------------------------------------
-    // ----------------------------------------------------
-    // Interactive Subject Assignment Dialog (FINAL LOGIC: Single Section vs. Per-Subject)
-    // ----------------------------------------------------
     private fun showInteractiveAssignmentDialog(
         studentEmail: String, pendingEnrollmentId: String,
         requiredSubjects: List<SubjectEntry>, finalYearLevel: String, finalEnrollmentType: String, courseCode: String
@@ -250,9 +285,10 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
 
         // 🛑 REGULAR STUDENT LOGIC: SINGLE SECTION SELECTION
         if (finalEnrollmentType == "Regular") {
-            // Kukunin ang lahat ng UNIQUE section names na available para sa course/year na ito
+            // 🟢 FIX: Kukunin ang Section Block mula sa TimeSlot
             val allUniqueSections = availableSectionsMap.values.flatten()
-                .map { it.sectionName }
+                .flatMap { it.scheduleSlots.values } // Kukunin ang lahat ng TimeSlot objects
+                .map { it.sectionBlock } // Kukunin ang Section Block
                 .distinct()
                 .sorted()
 
@@ -269,7 +305,7 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
             }
 
             val tvLabel = TextView(this).apply {
-                text = "Select Final Section for All Subjects (Regular)"
+                text = "Select Final Section Block for All Subjects (Regular)"
                 textSize = 16f
                 setPadding(0, 10, 0, 0)
             }
@@ -285,27 +321,28 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
             // I-handle ang selection ng section
             sectionSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                    finalSelections.clear() // I-clear ang lahat ng previous selections
+                    finalSelections.clear()
 
                     if (position > 0) {
-                        val selectedSectionName = parent?.getItemAtPosition(position).toString()
+                        val selectedSectionBlock = parent?.getItemAtPosition(position).toString()
 
                         // Awtomatikong itatala ang lahat ng subjects sa napiling section na ito
                         requiredSubjects.forEach { subject ->
-                            // Kukunin ang ClassAssignment na tumutugma sa subject code AT section name
+                            // 🟢 FIX: Hahanapin ang ClassAssignment na may TimeSlot na tumutugma sa Section Block
                             val assignment = availableSectionsMap[subject.subjectCode]
-                                ?.find { it.sectionName == selectedSectionName }
+                                ?.find { assign ->
+                                    assign.scheduleSlots.values.any { slot -> slot.sectionBlock == selectedSectionBlock }
+                                }
 
                             if (assignment != null) {
                                 finalSelections[subject.subjectCode] = assignment
                             } else {
                                 // Kapag walang assignment na nakita (Missing Subject in Section)
                                 finalSelections[subject.subjectCode] = null
-                                Log.w("EnrollmentDebug", "WARNING: Subject ${subject.subjectCode} is missing in Section $selectedSectionName.")
+                                Log.w("EnrollmentDebug", "WARNING: Subject ${subject.subjectCode} is missing in Section $selectedSectionBlock.")
                             }
                         }
                     } else {
-                        // Kung "Select Section..." ang napili
                         finalSelections.clear()
                     }
                 }
@@ -313,7 +350,7 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
             }
 
         } else {
-            // 🛑 IRREGULAR STUDENT LOGIC: PER-SUBJECT SELECTION (Existing Code)
+            // 🛑 IRREGULAR STUDENT LOGIC: PER-SUBJECT SELECTION
             requiredSubjects.forEach { subject ->
                 val textView = TextView(this).apply {
                     text = "${subject.subjectCode} - ${subject.subjectTitle}"
@@ -322,30 +359,65 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                 }
 
                 val sections = availableSectionsMap[subject.subjectCode] ?: emptyList()
+
+                val availableAssignments = sections.filter { it.enrolledCount < it.maxCapacity }
+                val fullAssignments = sections.filter { it.enrolledCount >= it.maxCapacity }
+
+                val sectionDisplay = mutableListOf<String>()
+
+                // 🟢 FIX: Kukunin ang Schedule details mula sa TimeSlot
+                if (availableAssignments.isNotEmpty()) {
+                    sectionDisplay.addAll(availableAssignments.map { assignment ->
+                        val firstSlot = assignment.scheduleSlots.values.firstOrNull()
+                        val scheduleTime = if (firstSlot != null) {
+                            // 🟢 FIX: Gumamit ng roomLocation
+                            "${firstSlot.day} ${firstSlot.startTime}-${firstSlot.endTime} @${firstSlot.roomLocation}"
+                        } else {
+                            "N/A Schedule"
+                        }
+                        // 🟢 FIX: Gumamit ng sectionBlock
+                        "${firstSlot?.sectionBlock ?: "N/A Section"} (${assignment.teacherName} - $scheduleTime) [${assignment.enrolledCount}/${assignment.maxCapacity}]"
+                    })
+                }
+
+                // Optionally show full sections at the end
+                sectionDisplay.addAll(fullAssignments.map { assignment ->
+                    val firstSlot = assignment.scheduleSlots.values.firstOrNull()
+                    val scheduleTime = if (firstSlot != null) {
+                        "${firstSlot.day} ${firstSlot.startTime}-${firstSlot.endTime} @${firstSlot.roomLocation}"
+                    } else {
+                        "N/A Schedule"
+                    }
+                    "${firstSlot?.sectionBlock ?: "N/A Section"} (${assignment.teacherName} - $scheduleTime) [FULL]"
+                })
+
+                sectionDisplay.add(0, "SKIP SUBJECT (Irregular)")
+
+                // Spinner
                 val spinner = Spinner(this).apply {
-
-                    val sectionDisplay = sections.map {
-                        val scheduleTime = "${it.day} ${it.startTime}-${it.endTime}"
-                        "${it.sectionName} (${it.teacherName} - ${scheduleTime}) [${it.enrolledCount}/${it.maxCapacity}]"
-                    }.toMutableList()
-
-                    // Dito lang may SKIP option
-                    sectionDisplay.add(0, "SKIP SUBJECT (Irregular)")
-
-
-                    adapter = ArrayAdapter(this@ManageEnrollmentsActivity, android.R.layout.simple_spinner_dropdown_item, sectionDisplay)
+                    adapter = ArrayAdapter(
+                        this@ManageEnrollmentsActivity,
+                        android.R.layout.simple_spinner_dropdown_item,
+                        sectionDisplay
+                    )
                     setSelection(0)
                     finalSelections[subject.subjectCode] = null
 
-
                     onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                        override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                            if (position == 0) {
-                                finalSelections[subject.subjectCode] = null
-                            } else {
-                                finalSelections[subject.subjectCode] = sections[position - 1]
-                            }
+                        override fun onItemSelected(
+                            parent: AdapterView<*>?,
+                            view: View?,
+                            position: Int,
+                            id: Long
+                        ) {
+                            finalSelections[subject.subjectCode] =
+                                if (position == 0 || availableAssignments.isEmpty()) null
+                                else {
+                                    if (position - 1 < availableAssignments.size) availableAssignments[position - 1]
+                                    else null
+                                }
                         }
+
                         override fun onNothingSelected(parent: AdapterView<*>?) {}
                     }
                 }
@@ -354,36 +426,35 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                 selectionList.addView(spinner)
             }
         }
-        // ----------------------------------------------------------------------
-
 
         btnFinalize.setOnClickListener {
             val assignmentsToSave = finalSelections.values.filterNotNull()
 
-            // CRITICAL VALIDATION 1: Tiyakin na may napiling section ang Regular
+            Log.d("EnrollmentDebug", "===== FINAL SELECTIONS =====")
+            finalSelections.forEach { (subjectCode, assignment) ->
+                if (assignment != null) {
+                    val firstSlot = assignment.scheduleSlots.values.firstOrNull()
+                    Log.d("EnrollmentDebug", "Subject: $subjectCode | Section: ${firstSlot?.sectionBlock} | Teacher: ${assignment.teacherName} | Slots: ${assignment.scheduleSlots.size}")
+                } else {
+                    Log.d("EnrollmentDebug", "Subject: $subjectCode | Section: NONE (Skipped or Missing)")
+                }
+            }
+
+            // ... (Validation code) ...
             if (finalEnrollmentType == "Regular" && assignmentsToSave.size < requiredSubjects.size) {
                 if (finalSelections.isEmpty()) {
-                    Toast.makeText(this, "ERROR: Please select a single Section for the Regular Enrollment.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, "ERROR: Please select a single Section Block for the Regular Enrollment.", Toast.LENGTH_LONG).show()
                 } else {
-                    // Kung may napili, pero may subjects na nawawala sa section na 'yon
                     Toast.makeText(this, "WARNING: The selected section is missing ${requiredSubjects.size - assignmentsToSave.size} required subject(s). Please choose a complete section.", Toast.LENGTH_LONG).show()
                 }
                 return@setOnClickListener
             }
 
-            // CRITICAL VALIDATION 2: Hindi pwedeng walang assignment ang Irregular, maliban kung nag-skip lahat
-            if (finalEnrollmentType == "Irregular" && assignmentsToSave.isEmpty()) {
-                Toast.makeText(this, "ERROR: Irregular student must select at least one subject. Otherwise, the enrollment should be rejected.", Toast.LENGTH_LONG).show()
-                return@setOnClickListener
-            }
-
-
-            // SCHEDULE CONFLICT CHECKER (Importante pa rin, lalo na sa Irregular)
-            if (checkForScheduleConflicts(assignmentsToSave)) {
+            // 🟢 FIX: Check conflict gamit ang UPDATED logic
+            if (assignmentsToSave.isNotEmpty() && checkForScheduleConflicts(assignmentsToSave)) {
                 Toast.makeText(this, "Schedule Conflict: Two subjects have the same time and day. Please adjust selections.", Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
-
 
             dialog.dismiss()
             // FINALIZATION
@@ -400,23 +471,36 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
         dialog.show()
     }
 
+
     // ----------------------------------------------------
-    // SCHEDULE CONFLICT CHECKER
+    // SCHEDULE CONFLICT CHECKER (UPDATED for Map<String, TimeSlot>)
     // ----------------------------------------------------
     private fun checkForScheduleConflicts(assignments: List<ClassAssignment>): Boolean {
-        // ... (No changes needed here) ...
         val occupiedSlots = mutableSetOf<String>()
         for (assignment in assignments) {
-            val scheduleKey = "${assignment.day}_${assignment.startTime}_${assignment.endTime}"
-            if (occupiedSlots.contains(scheduleKey)) {
-                Log.e("EnrollmentDebug", "Conflict found for slot: $scheduleKey")
-                return true
+            // I-iterate ang lahat ng TimeSlot sa Assignment
+            for (slot in assignment.scheduleSlots.values) {
+                val day = slot.day
+                val start = slot.startTime
+                val end = slot.endTime
+
+                if (day.isEmpty() || start.isEmpty() || end.isEmpty()) {
+                    Log.w("EnrollmentDebug", "Skipping conflict check for incomplete slot: ${assignment.subjectCode}")
+                    continue
+                }
+
+                // Ang scheduleKey ay dapat unique para sa bawat oras/araw.
+                val scheduleKey = "${day}_${start}_${end}"
+
+                if (occupiedSlots.contains(scheduleKey)) {
+                    Log.e("EnrollmentDebug", "Conflict found for slot: $scheduleKey")
+                    return true
+                }
+                occupiedSlots.add(scheduleKey)
             }
-            occupiedSlots.add(scheduleKey)
         }
         return false
     }
-
 
     // ----------------------------------------------------
     // Finalization with Auth Creation and Firestore Transaction (SECURE)
@@ -425,10 +509,9 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
         studentEmail: String, pendingEnrollmentId: String,
         selectedAssignments: List<ClassAssignment>, finalYearLevel: String, finalEnrollmentType: String, courseCode: String
     ) {
-        // --- Step 1: Generate Student ID ---
+        // ... (Step 1 & 2: Generate Student ID & Get Enrollment Data) ...
         generateStudentId { studentId ->
 
-            // --- Step 2: Get Enrollment Data to retrieve Last Name and DOB (for password) ---
             firestore.collection("pendingEnrollments").document(pendingEnrollmentId).get()
                 .addOnSuccessListener { doc ->
                     val e = doc.toObject(Enrollment::class.java)
@@ -439,7 +522,7 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                     val finalPassword = generatePassword(e.lastName, e.dateOfBirth)
 
 
-                    // --- Step 3: Firebase Auth User Creation (CRITICAL: Delay until here) ---
+                    // --- Step 3: Firebase Auth User Creation ---
                     auth.createUserWithEmailAndPassword(studentEmail.trim(), finalPassword.trim())
                         .addOnSuccessListener { authResult ->
                             val userUid = authResult.user!!.uid
@@ -448,29 +531,32 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                             // --- Step 4: START FIRESTORE TRANSACTION (Capacity Check) ---
                             firestore.runTransaction { transaction ->
 
-                                // READ PHASE (All reads must be done first)
+                                // READ PHASE
                                 val snapshots = mutableMapOf<String, com.google.firebase.firestore.DocumentSnapshot>()
                                 for (assignment in selectedAssignments) {
-                                    val ref = firestore.collection("classAssignments").document(assignment.assignmentId)
-                                    val snapshot = transaction.get(ref) // READ
-                                    snapshots[assignment.assignmentId] = snapshot
+                                    // Ginamit ang assignmentRef at assignment.assignmentNo para maiwasan ang conflict
+                                    val assignmentRef = firestore.collection("classAssignments").document(assignment.assignmentNo)
+                                    val snapshot = transaction.get(assignmentRef) // READ
+                                    snapshots[assignment.assignmentNo] = snapshot
                                 }
 
-                                // VALIDATION PHASE (Based on the reads)
+                                // VALIDATION PHASE
                                 for (assignment in selectedAssignments) {
-                                    val snapshot = snapshots[assignment.assignmentId]!!
+                                    val snapshot = snapshots[assignment.assignmentNo]!!
                                     val currentCount = (snapshot.get("enrolledCount") as? Number)?.toInt() ?: 0
                                     val maxCapacity = (snapshot.get("maxCapacity") as? Number)?.toInt() ?: 50
 
+                                    // FIX: Gumamit ng Section Block sa error message
+                                    val sectionBlock = assignment.scheduleSlots.values.firstOrNull()?.sectionBlock ?: assignment.subjectCode
                                     if (currentCount >= maxCapacity) {
-                                        throw Exception("Section ${assignment.sectionName} is full. Aborting Enrollment.")
+                                        throw Exception("Section $sectionBlock is full. Aborting Enrollment.")
                                     }
                                 }
 
-                                // WRITE PHASE (All writes after all reads)
+                                // WRITE PHASE
                                 for (assignment in selectedAssignments) {
-                                    val ref = firestore.collection("classAssignments").document(assignment.assignmentId)
-                                    val currentCount = (snapshots[assignment.assignmentId]!!.get("enrolledCount") as? Number)?.toInt() ?: 0
+                                    val ref = firestore.collection("classAssignments").document(assignment.assignmentNo)
+                                    val currentCount = (snapshots[assignment.assignmentNo]!!.get("enrolledCount") as? Number)?.toInt() ?: 0
                                     transaction.update(ref, "enrolledCount", currentCount + 1) // WRITE
                                 }
 
@@ -480,19 +566,18 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
 
                                 val batch = firestore.batch()
 
-                                // --- CRITICAL FIX START: Determine Administrative Section ID ---
-                                val assignedSectionName = if (finalEnrollmentType == "Regular") {
-                                    // Para sa Regular: Kunin ang section name mula sa pinakaunang napiling subject.
-                                    selectedAssignments.firstOrNull()?.sectionName
-                                        ?: "${courseCode}_${finalYearLevel.take(1)}A" // Fallback sa Default Section 'A'
+                                // --- CRITICAL FIX: Determine Administrative Section ID (Gumagamit ng Section Block) ---
+                                val assignedSectionBlock = if (finalEnrollmentType == "Regular") {
+                                    // Para sa Regular: Kunin ang Section Block mula sa UNANG TimeSlot ng UNANG Assignment.
+                                    selectedAssignments.firstOrNull()?.scheduleSlots?.values?.firstOrNull()?.sectionBlock
+                                        ?: "${courseCode}_${finalYearLevel.take(1)}A"
                                 } else {
-                                    // Para sa Irregular: Gumamit ng malinaw na identifier na may Course at Year
                                     "${courseCode}_IRREG_${finalYearLevel.take(1)}"
                                 }
                                 // --- CRITICAL FIX END ---
 
 
-                                // 2. CREATE/UPDATE USER RECORD (Minimal Auth Data)
+                                // 2. CREATE/UPDATE USER RECORD (No change needed)
                                 val userRef = firestore.collection("users").document(userUid)
                                 batch.set(userRef, mapOf(
                                     "email" to studentEmail,
@@ -503,42 +588,41 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                                     "enrollmentType" to finalEnrollmentType
                                 ))
 
-                                // 3. SAVE ASSIGNMENTS to Student Record
+                                // 3. SAVE ASSIGNMENTS to Student Record (UPDATED: Storing Assignment Reference Key)
                                 for (assignment in selectedAssignments) {
-                                    val scheduleString = "${assignment.day} ${assignment.startTime}-${assignment.endTime}"
-                                    val studentSubject = StudentSubject(
+
+                                    val primarySectionBlock = assignment.scheduleSlots.values.firstOrNull()?.sectionBlock ?: assignedSectionBlock
+
+                                    val studentAssignmentRef = StudentAssignmentReference(
                                         subjectCode = assignment.subjectCode,
+                                        assignmentNo = assignment.assignmentNo, // ⬅️ CRITICAL: Reference Key
                                         subjectTitle = assignment.subjectTitle,
-                                        sectionName = assignment.sectionName,
-                                        teacherId = assignment.teacherUid,
-                                        teacherName = assignment.teacherName,
-                                        schedule = scheduleString
+                                        sectionBlock = primarySectionBlock,
+                                        onlineLink = assignment.onlineClassLink,
                                     )
-                                    val ref = firestore.collection("students").document(studentId).collection("subjects").document(assignment.subjectCode)
-                                    batch.set(ref, studentSubject)
+
+                                    // Gumamit ng subjectRef para maiwasan ang conflict
+                                    val subjectRef = firestore.collection("students").document(studentId).collection("subjects").document(assignment.subjectCode)
+                                    batch.set(subjectRef, studentAssignmentRef)
                                 }
 
-                                // 4. CREATE/UPDATE STUDENT MASTER RECORD (All Profile Data)
+                                // 4. CREATE/UPDATE STUDENT MASTER RECORD
                                 val masterRef = firestore.collection("students").document(studentId)
 
-                                // ✅ I-SAVE ANG ASIGNED SECTION ID dito
                                 batch.set(masterRef, mapOf(
-                                    // --- CRITICAL IDENTIFIERS & AUDIT ---
+                                    // ... (Personal and Enrollment status data) ...
                                     "id" to studentId,
                                     "userUid" to userUid,
                                     "dateEnrolled" to Timestamp.now(),
                                     "academicYear" to "2025-2026",
                                     "semester" to "1st Semester",
-
-                                    // --- ADMINISTRATIVE / ACADEMIC STATUS ---
                                     "courseCode" to courseCode,
                                     "status" to "Admitted",
                                     "isEnrolled" to true,
                                     "yearLevel" to finalYearLevel,
                                     "enrollmentType" to finalEnrollmentType,
-                                    "sectionId" to assignedSectionName, // ⬅️ ITO ang Fix! Ito ang babasahin ng Dashboard!
+                                    "sectionId" to assignedSectionBlock, // ⬅️ FIX: Gumamit ng Section Block ID dito
 
-                                    // --- PERSONAL INFORMATION (Galing sa Enrollment object 'e') ---
                                     "firstName" to e.firstName,
                                     "lastName" to e.lastName,
                                     "middleName" to e.middleName,
@@ -547,8 +631,6 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                                     "address" to e.address,
                                     "dateOfBirth" to e.dateOfBirth,
                                     "gender" to e.gender,
-
-                                    // --- GUARDIAN INFORMATION ---
                                     "guardianName" to e.guardianName,
                                     "guardianPhone" to e.guardianPhone,
                                     "guardianRelationship" to "Unknown"
@@ -569,14 +651,12 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                                     .addOnFailureListener { batchError ->
                                         Toast.makeText(this, "Batch Setup Error: ${batchError.message}. Deleting created Auth user.", Toast.LENGTH_LONG).show()
                                         Log.e("Enrollment", "Batch commit failed.", batchError)
-                                        // If batch fails, delete the Auth user
                                         auth.currentUser?.delete()
                                     }
 
                             }.addOnFailureListener { transactionError ->
                                 Toast.makeText(this, "ENROLLMENT FAILED (Capacity Check): ${transactionError.message}. Deleting created Auth user.", Toast.LENGTH_LONG).show()
                                 Log.e("Enrollment", "Transaction failed.", transactionError)
-                                // If transaction fails, delete the Auth user
                                 auth.currentUser?.delete()
                             }
                         }
@@ -597,7 +677,6 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
     // Mark as Not Passed (Reject)
     // -----------------------------
     private fun markAsNotPassed(e: Enrollment) {
-        // ... (No changes needed here) ...
         firestore.collection("notPassedEnrollments").document(e.id).set(e)
         firestore.collection("pendingEnrollments").document(e.id).delete()
 
@@ -616,7 +695,6 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
     // Generate unique student ID safely
     // -----------------------------
     private fun generateStudentId(callback: (String) -> Unit) {
-        // ... (No changes needed here) ...
         firestore.collection("students")
             .orderBy("id", Query.Direction.DESCENDING)
             .limit(1)
@@ -634,20 +712,18 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
     }
 
     private fun generatePassword(lastName: String, dob: String): String {
-        // ... (No changes needed here) ...
         val cleaned = dob.replace("/", "").replace("-", "")
         return "${lastName.lowercase().take(3)}$cleaned"
     }
 }
 
 // -----------------------------
-// RecyclerView Adapter
+// RecyclerView Adapter (No changes needed)
 // -----------------------------
 class EnrollmentAdapter(
     private val items: List<Enrollment>,
     private val clickListener: (Enrollment) -> Unit
 ) : RecyclerView.Adapter<EnrollmentAdapter.EnrollmentViewHolder>() {
-    // ... (No changes needed here) ...
     inner class EnrollmentViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvName: TextView = view.findViewById(R.id.tvName)
         val tvEmail: TextView = view.findViewById(R.id.tvEmail)

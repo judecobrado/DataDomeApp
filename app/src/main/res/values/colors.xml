@@ -4,4 +4,31 @@
     <color name="white">#FFFFFFFF</color>
     <color name="design_default_color_error">#B00020</color>
     <color name="design_default_color_primary">#6200EE</color>
+
+
+
+
+
+
+    <color name="blue_primary">#1E3A8A</color> <!-- Deep Navy Blue -->
+    <color name="blue_secondary">#3B82F6</color> <!-- Soft Sky Blue -->
+    <color name="blue_light">#E0E7FF</color> <!-- Very Light Blue -->
+
+    <!-- 💛 Golden Accent Shades -->
+    <color name="gold_primary">#CA8A04</color> <!-- Royal Gold -->
+    <color name="gold_secondary">#FACC15</color> <!-- Soft Gold -->
+    <color name="gold_light">#FEF9C3</color> <!-- Light Golden Background -->
+
+    <!-- 🌸 Extra Accent Colors (optional) -->
+    <color name="gray_text">#374151</color>
+    <color name="divider_blue">#1E40AF</color>
+    <color name="elegantBlue">#0A1E3F</color> <!-- Deep navy blue for background -->
+    <color name="royalBlue">#123E73</color> <!-- Slightly lighter blue for contrast -->
+    <color name="gold">#D4AF37</color> <!-- Classic gold -->
+    <color name="softGold">#F5E6B3</color> <!-- Soft gold for lighter accents -->
+    <color name="darkText">#EDEDED</color>
+
+
+
+
 </resources>

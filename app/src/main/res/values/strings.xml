@@ -17,4 +17,8 @@
         <item>Regular</item>
         <item>Irregular</item>
     </string-array>
+
+    <string name="book_image">Book cover image</string>
+
+
 </resources>

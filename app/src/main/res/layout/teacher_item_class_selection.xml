@@ -59,7 +59,7 @@
             android:text="Status: 🚫 No Link Set"/>
 
         <Button
-            android:id="@+id/btnSetOnlineLink"
+            android:id="@+id/btnSetLink"
             android:layout_width="wrap_content"
             android:layout_height="40dp"
             android:layout_marginTop="4dp"

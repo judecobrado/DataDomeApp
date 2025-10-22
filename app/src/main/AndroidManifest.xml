@@ -26,6 +26,7 @@
             </intent-filter>
         </activity>
 
+
         <!-- Authentication -->
         <activity android:name=".LoginActivity"/>
         <activity android:name=".ResetPasswordActivity"/>
@@ -34,6 +35,8 @@
         <activity android:name=".enrollment.EnterCodeActivity"/>
         <activity android:name=".enrollment.EnrollmentActivity"/>
         <activity android:name=".enrollment.AlreadySubmittedActivity"/>
+        <activity android:name=".enrollment.ChooseStudentTypeActivity"/>
+        <activity android:name=".enrollment.EnrollExistingStudentActivity"/>
 
         <!-- Admin Module -->
         <activity android:name=".admin.AdminDashboardActivity"/>
@@ -55,6 +58,14 @@
         <activity android:name=".student.StudentFullScheduleActivity"/>
         <activity android:name=".student.StudentOnlineClassesActivity"/>
 
+        <activity
+            android:name=".LibraryActivity"
+            android:exported="false"
+            android:label="Digital Library"
+            android:theme="@style/Theme.DataDomeAPP" />
+
+        <activity android:name=".BookDetailsActivity" />
+
         <!-- Teacher Module -->
         <activity android:name=".teacher.TeacherDashboardActivity"/>
         <activity android:name=".teacher.VoiceDetectionActivity"/>
@@ -67,7 +78,6 @@
 
         <!-- Library Module -->
         <activity android:name=".admin.ManageLibrary"/>
-        <activity android:name=".library.BookDetailsActivity"/>
 
         <!-- Canteen Module -->
         <activity android:name=".canteen.CanteenStaffDashboardActivity"/>
