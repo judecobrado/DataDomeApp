@@ -1,17 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
-    tools:context=".student.StudentOnlineClassesActivity">
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/tvNoClasses"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="No Online Classes Found"
+        android:textSize="16sp"
+        android:textColor="@android:color/holo_red_dark"
+        android:gravity="center"
+        android:visibility="gone"
+        android:padding="12dp" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewOnlineClasses"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        tools:listitem="@layout/item_online_class"/>
+        android:layout_height="match_parent"/>
 
 </LinearLayout>
