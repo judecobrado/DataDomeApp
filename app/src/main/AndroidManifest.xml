@@ -16,6 +16,12 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.DataDomeAPP">
 
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyA8EXAMPLE-12345YOURREALAPIKEY67890" />
+        <!-- ⬆️ Replace with your real Google Maps API key from Google Cloud Console -->
+
+
         <!-- Launcher / Main -->
         <activity
             android:name=".MainActivity"
@@ -37,7 +43,7 @@
         <activity android:name=".enrollment.AlreadySubmittedActivity"/>
         <activity android:name=".enrollment.ChooseStudentTypeActivity"/>
         <activity android:name=".enrollment.EnrollExistingStudentActivity"/>
-
+        <activity android:name="SchoolMapActivity"/>
         <!-- Admin Module -->
         <activity android:name=".admin.AdminDashboardActivity"/>
         <activity android:name=".admin.ManageStudentsActivity"/>
@@ -75,6 +81,10 @@
         <activity android:name=".teacher.ManageGradesActivity"/>
         <activity android:name=".teacher.TeacherScheduleMatrixActivity"/>
         <activity android:name=".teacher.RouletteActivity"/>
+        <activity android:name=".teacher.CreateQuizActivity"/>
+        <activity android:name=".teacher.TeacherQuizManagerActivity"/>
+        <activity android:name=".teacher.TeacherQuizListActivity"/>
+
 
         <!-- Library Module -->
         <activity android:name=".admin.ManageLibrary"/>

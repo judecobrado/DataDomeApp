@@ -30,6 +30,8 @@ class ClassDetailsActivity : AppCompatActivity() {
     private lateinit var tvClassNameHeader: TextView
     private lateinit var tvLoading: TextView
     private lateinit var recyclerView: RecyclerView
+    private lateinit var btnCreateQuiz: Button
+    private lateinit var btnCreateAssessment: Button
     private lateinit var btnTakeAttendance: Button
     private lateinit var btnManageGrades: Button
     private lateinit var btnStartRoulette: Button
@@ -52,6 +54,7 @@ class ClassDetailsActivity : AppCompatActivity() {
         tvClassNameHeader = findViewById(R.id.tvClassNameHeader)
         tvLoading = findViewById(R.id.tvLoading)
         recyclerView = findViewById(R.id.recyclerViewStudents)
+        btnCreateQuiz = findViewById(R.id.btnCreateQuiz)
         btnTakeAttendance = findViewById(R.id.btnTakeAttendance)
         btnManageGrades = findViewById(R.id.btnManageGrades)
         btnStartRoulette = findViewById(R.id.btnStartRoulette)
@@ -68,6 +71,21 @@ class ClassDetailsActivity : AppCompatActivity() {
         loadClassDetails(assignmentId!!)
 
         // --- Button Click Listeners ---
+        //btnCreateQuiz.setOnClickListener {
+          //  if (!assignmentId.isNullOrEmpty() && !subjectCode.isNullOrEmpty()) {
+            //    val intent = Intent(this, TeacherQuizListActivity::class.java)
+              //  intent.putExtra("assignmentId", assignmentId)
+                //intent.putExtra("subjectCode", subjectCode)
+                //startActivity(intent)
+            //} else {
+              //  Toast.makeText(this, "Assignment ID or Subject Code is missing", Toast.LENGTH_SHORT).show()
+            //}
+        //}
+
+        //btnCreateAssessment.setOnClickListener {
+          //  navigateToAttendance(assignmentId!!, subjectCode!!)
+        //}
+
         btnTakeAttendance.setOnClickListener {
             navigateToAttendance(assignmentId!!, subjectCode!!)
         }

@@ -56,7 +56,11 @@
             android:layout_height="wrap_content"
             android:textSize="14sp"
             android:textStyle="italic"
+            android:clickable="true"
+            android:focusable="true"
+            android:padding="2dp"
             android:text="Status: 🚫 No Link Set"/>
+
 
         <Button
             android:id="@+id/btnSetLink"

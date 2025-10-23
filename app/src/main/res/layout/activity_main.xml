@@ -9,33 +9,37 @@
     android:paddingEnd="32dp"
     android:paddingTop="64dp"
     android:paddingBottom="32dp"
-    android:background="#0A1833"> <ImageView
-    android:id="@+id/vMainIllustration"
-    android:layout_width="150dp"
-    android:layout_height="150dp"
-    android:src="@raw/logo_white"
-    android:scaleType="fitCenter"
-    android:contentDescription="Black and White App Logo"
-    app:layout_constraintTop_toTopOf="parent"
-    app:layout_constraintBottom_toTopOf="@id/tvBranding"
-    app:layout_constraintStart_toStartOf="parent"
-    app:layout_constraintEnd_toEndOf="parent"
-    android:layout_marginBottom="32dp"
-    app:layout_constraintVertical_chainStyle="packed"
-    app:tint="#D4AF37" /> <TextView
-    android:id="@+id/tvBranding"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:fontFamily="sans-serif-light"
-    android:text="DATA DOME"
-    android:letterSpacing="0.1"
-    android:textColor="#FFFFFF" android:textSize="24sp"
-    android:textStyle="bold"
-    app:layout_constraintBottom_toTopOf="@+id/tvMainHeader"
-    app:layout_constraintEnd_toEndOf="parent"
-    app:layout_constraintStart_toStartOf="parent"
-    app:layout_constraintTop_toBottomOf="@+id/vMainIllustration"
-    android:layout_marginBottom="8dp"/>
+    android:background="#0A1833">
+
+    <ImageView
+        android:id="@+id/vMainIllustration"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        android:src="@raw/logo_white"
+        android:scaleType="fitCenter"
+        android:contentDescription="Black and White App Logo"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/tvBranding"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="32dp"
+        app:layout_constraintVertical_chainStyle="packed"
+        app:tint="#D4AF37" />
+
+    <TextView
+        android:id="@+id/tvBranding"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-light"
+        android:text="DATA DOME"
+        android:letterSpacing="0.1"
+        android:textColor="#FFFFFF" android:textSize="24sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@+id/tvMainHeader"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/vMainIllustration"
+        android:layout_marginBottom="8dp"/>
 
     <TextView
         android:id="@+id/tvMainHeader"
@@ -63,19 +67,17 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvMainHeader"
-        android:layout_marginBottom="60dp"/>
-
-    <Button
-        android:id="@+id/btnLogin"
-        android:layout_width="0dp"
-        android:layout_height="56dp"
-        android:text="ACCESS PORTAL" android:textSize="17sp"
-        android:textStyle="bold"
-        android:backgroundTint="#D4AF37" android:textColor="#0A1833" app:cornerRadius="4dp"
-        app:layout_constraintBottom_toTopOf="@id/btnSignup"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="12dp"/>
+        android:layout_marginBottom="40dp"/> <Button
+    android:id="@+id/btnLogin"
+    android:layout_width="0dp"
+    android:layout_height="56dp"
+    android:text="ACCESS PORTAL" android:textSize="17sp"
+    android:textStyle="bold"
+    android:backgroundTint="#D4AF37" android:textColor="#0A1833" app:cornerRadius="4dp"
+    app:layout_constraintBottom_toTopOf="@id/btnSignup"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintEnd_toEndOf="parent"
+    android:layout_marginBottom="12dp"/>
 
     <Button
         android:id="@+id/btnSignup"
@@ -88,10 +90,25 @@
         android:textColor="#92C4F7" app:strokeColor="#92C4F7"
         app:strokeWidth="2dp"
         app:cornerRadius="4dp"
+        app:layout_constraintBottom_toTopOf="@id/btnViewMap"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="12dp"/>
+
+    <Button
+        android:id="@+id/btnViewMap"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:text="VIEW SCHOOL LOCATION"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:backgroundTint="@android:color/transparent"
+        android:textColor="#FFFFFF"
+        app:cornerRadius="4dp"
         app:layout_constraintBottom_toTopOf="@id/tvFooter"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="32dp"/>
+        android:layout_marginBottom="16dp"/>
 
     <TextView
         android:id="@+id/tvFooter"
