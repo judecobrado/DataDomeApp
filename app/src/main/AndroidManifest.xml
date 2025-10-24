@@ -82,8 +82,9 @@
         <activity android:name=".teacher.TeacherScheduleMatrixActivity"/>
         <activity android:name=".teacher.RouletteActivity"/>
         <activity android:name=".teacher.CreateQuizActivity"/>
-        <activity android:name=".teacher.TeacherQuizManagerActivity"/>
-        <activity android:name=".teacher.TeacherQuizListActivity"/>
+        <activity android:name=".teacher.CreateQuizActivity"/>
+        <activity android:name=".teacher.ManageQuizzesActivity"/>
+        <activity android:name=".teacher.QuizEditorActivity"/>
 
 
         <!-- Library Module -->

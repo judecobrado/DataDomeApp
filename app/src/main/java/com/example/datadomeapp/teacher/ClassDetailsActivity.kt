@@ -71,6 +71,13 @@ class ClassDetailsActivity : AppCompatActivity() {
 
         loadClassDetails(assignmentId!!)
 
+        btnCreateQuiz.setOnClickListener {
+            val intent = Intent(this, ManageQuizzesActivity::class.java)
+            intent.putExtra("ASSIGNMENT_ID", assignmentId)
+            intent.putExtra("CLASS_NAME", className)
+            startActivity(intent)
+        }
+
         // --- Button Click Listeners ---
         // (Wala akong inalis o binago dito. Hayaan na lang ang mga commented-out codes.)
 
