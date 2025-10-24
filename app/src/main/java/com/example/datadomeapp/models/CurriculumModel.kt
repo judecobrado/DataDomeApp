@@ -43,5 +43,6 @@ data class Curriculum(
 data class SubjectEntry(
     val subjectCode: String = "",
     val subjectTitle: String = "",
-    val units: Int = 3
+    val units: Int = 3,
+    val credits: Int = 3
 )

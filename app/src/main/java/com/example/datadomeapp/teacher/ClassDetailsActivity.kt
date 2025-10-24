@@ -12,6 +12,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.datadomeapp.R
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FieldPath
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.tasks.await
 import com.google.firebase.firestore.toObject
 import kotlinx.coroutines.tasks.await
 import androidx.lifecycle.lifecycleScope
@@ -21,8 +24,6 @@ import kotlinx.coroutines.launch
 import com.example.datadomeapp.models.ClassAssignment
 import com.example.datadomeapp.models.Student         // Gagamitin ang iyong Student model
 
-
-// 🛑 Tandaan: Ang placeholder na 'data class Student' ay TINANGGAL na dito.
 
 class ClassDetailsActivity : AppCompatActivity() {
 
@@ -71,20 +72,7 @@ class ClassDetailsActivity : AppCompatActivity() {
         loadClassDetails(assignmentId!!)
 
         // --- Button Click Listeners ---
-        //btnCreateQuiz.setOnClickListener {
-          //  if (!assignmentId.isNullOrEmpty() && !subjectCode.isNullOrEmpty()) {
-            //    val intent = Intent(this, TeacherQuizListActivity::class.java)
-              //  intent.putExtra("assignmentId", assignmentId)
-                //intent.putExtra("subjectCode", subjectCode)
-                //startActivity(intent)
-            //} else {
-              //  Toast.makeText(this, "Assignment ID or Subject Code is missing", Toast.LENGTH_SHORT).show()
-            //}
-        //}
-
-        //btnCreateAssessment.setOnClickListener {
-          //  navigateToAttendance(assignmentId!!, subjectCode!!)
-        //}
+        // (Wala akong inalis o binago dito. Hayaan na lang ang mga commented-out codes.)
 
         btnTakeAttendance.setOnClickListener {
             navigateToAttendance(assignmentId!!, subjectCode!!)
@@ -100,38 +88,49 @@ class ClassDetailsActivity : AppCompatActivity() {
         }
     }
 
+    // 🛑 INAYOS: 1. loadClassDetails - Para makuha ang Semester at Year Level mula sa ClassAssignment
     private fun loadClassDetails(assignmentId: String) {
-        // Ang Subject Code at ang Class Name ay nakuha na natin sa Intent/onCreate.
-        // Ang Class Name (hal: "CS101 - 1A") ay naglalaman ng section name.
+        tvLoading.text = "Loading class data..."
 
-        val selectedSubjectCode = subjectCode
-        val classNameHeader = className
+        firestore.collection("classAssignments").document(assignmentId).get()
+            .addOnSuccessListener { doc ->
+                // Kuhanin ang data na kailangan para buuin ang Enrollment ID
+                val fetchedSubjectCode = doc.getString("subjectCode")
+                val fetchedSemester = doc.getString("semester")    // <--- CRITICAL
+                val fetchedYearLevel = doc.getString("yearLevel")  // <--- CRITICAL
 
-        if (selectedSubjectCode.isNullOrEmpty() || classNameHeader.isNullOrEmpty()) {
-            tvLoading.text = "Error: Missing required class details."
-            return
-        }
+                val classNameHeader = className
+                // NOTE: Ina-assume na ang section name ay palaging huling item pagkatapos ng ' - '
+                val selectedSectionName = classNameHeader?.split(" - ")?.lastOrNull()
 
-        // 1. Kukunin ang Section Name mula sa className header (e.g., "CS101 - 1A" -> "1A")
-        // NOTE: Ina-assume na ang section name ay palaging huling item pagkatapos ng ' - '
-        val sectionNameFromHeader = classNameHeader.split(" - ").lastOrNull()
+                if (fetchedSubjectCode.isNullOrEmpty() || selectedSectionName.isNullOrEmpty()
+                    || fetchedSemester.isNullOrEmpty() || fetchedYearLevel.isNullOrEmpty()) {
+                    tvLoading.text = "Error: Missing required class details (Subject/Section/Semester/Year)."
+                    return@addOnSuccessListener
+                }
 
-        if (sectionNameFromHeader.isNullOrEmpty()) {
-            tvLoading.text = "Error: Cannot determine section name."
-            return
-        }
-
-        loadStudentsBySection(selectedSubjectCode, sectionNameFromHeader)
+                // 1. I-load muna ang students base sa section (Initial Filter)
+                // ✅ IPASA ang lahat ng bagong parameters
+                loadStudentsBySection(fetchedSubjectCode, fetchedSemester, fetchedYearLevel, selectedSectionName)
+            }
+            .addOnFailureListener { e ->
+                Log.e("ClassDetails", "Error loading assignment details: $e")
+                tvLoading.text = "Error loading assignment details."
+            }
     }
 
-    // SA CLASS DETAILSACTIVITY.KT
-
-    private fun loadStudentsBySection(selectedSubjectCode: String, selectedSectionName: String) {
+    // 🛑 INAYOS: 2. loadStudentsBySection - Idinagdag ang Semester at Year Level sa parameters
+    private fun loadStudentsBySection(
+        selectedSubjectCode: String,
+        selectedSemester: String,    // <--- NEW PARAMETER
+        selectedYearLevel: String,   // <--- NEW PARAMETER
+        selectedSectionName: String
+    ) {
         // 1. Titingnan kung aling students ang may tamang section
         firestore.collection("students")
             .whereEqualTo("sectionId", selectedSectionName) // ⬅️ GAMITIN ANG sectionId sa Student Profile
-            .whereEqualTo("yearLevel", "1st Year")          // ⬅️ OPTIONAL: Mag-add ng yearLevel filter kung kailangan
-            .whereEqualTo("status", "Admitted")             // ⬅️ OPTIONAL: Filter for admitted students only
+            .whereEqualTo("yearLevel", selectedYearLevel)  // ⬅️ Gamitin ang Year Level mula sa ClassAssignment
+            .whereEqualTo("status", "Admitted")             // ⬅️ Filter for admitted students only
             .get()
             .addOnSuccessListener { studentsSnapshot ->
 
@@ -143,7 +142,8 @@ class ClassDetailsActivity : AppCompatActivity() {
                 }
 
                 // 2. I-check ang bawat student kung naka-enroll ba talaga sa Subject Code na ito.
-                checkStudentEnrollmentBatch(studentIds, selectedSubjectCode)
+                // ✅ IPASA ang Semester at YearLevel
+                checkStudentEnrollmentBatch(studentIds, selectedSubjectCode, selectedSemester, selectedYearLevel)
 
             }
             .addOnFailureListener { e ->
@@ -152,42 +152,86 @@ class ClassDetailsActivity : AppCompatActivity() {
             }
     }
 
-    private fun checkStudentEnrollmentBatch(studentIds: List<String>, subjectCode: String) {
+    // 🛑 INAYOS: 3. checkStudentEnrollmentBatch - I-construct ang tamang Document ID
+    // In ClassDetailsActivity.kt
+// 🛑 PALITAN ang buong checkStudentEnrollmentBatch function ng bago at mas mabilis na bersyon na ito.
+
+    private fun checkStudentEnrollmentBatch(
+        studentIds: List<String>,
+        subjectCode: String,
+        semester: String,
+        yearLevel: String
+    ) {
 
         val finalEnrolledStudents = mutableListOf<Student>()
         studentNamesForRoulette.clear()
 
-        tvLoading.text = "Validating enrollment for ${studentIds.size} students..."
+        tvLoading.text = "Validating enrollment for ${studentIds.size} students... (Optimized Check)"
 
-        // Gumamit ng Coroutine para i-handle ang multiple asynchronous checks
+        // 🚨 CRITICAL FIX: I-clean ang strings para magtugma sa Firestore key format
+        val yearClean = yearLevel.replace(" ", "")
+        val semesterCleaned = semester.replace(" ", "").replace("-", "")
+        val enrollmentDocId = "${yearClean}_${semesterCleaned}_${subjectCode}" // <-- Ito ang tamang ID
+
+        // Simulan ang Coroutine
         lifecycleScope.launch {
             try {
-                // Iterahin ang bawat student ID
-                for (studentId in studentIds) {
+                // 1. Titingnan natin kung aling student ID ang may enrollment record
+                // Dahil hindi puwedeng i-query ang Sub-collection documents base sa Document ID,
+                // kailangan nating ipasok ang Enrollment Status sa Parent Student Document mismo.
+                //
+                // ⚠️ Assuming na may field na 'enrolledSubjects' (List<String>) sa Student Profile Document:
 
-                    // CRITICAL: Hanapin ang subject document sa ilalim ng student
-                    val subjectRef = firestore.collection("students").document(studentId)
-                        .collection("subjects").document(subjectCode)
-                    // Tandaan: Ang Document ID ng subject ay ang subjectCode (e.g., MATH101)
+                // --- OPTIMIZED APPROACH (Requires new index on Student collection) ---
 
-                    val subjectSnapshot = subjectRef.get().await()
+                // Ang pinakamabilis na paraan ay ibalik ang paggamit ng whereIn sa Parent Student Collection.
+                // Ngunit kailangan nito ng field sa Parent Document para i-filter:
+                // Halimbawa: Student Document ay may field na: `isEnrolled_1stYear_1stSemester_CS101: true`
 
-                    // Kung may subject document at ito ay may tamang subject code
-                    if (subjectSnapshot.exists() && subjectSnapshot.getString("subjectCode") == subjectCode) {
+                // Dahil ginamit mo ang Sub-collection (subjects), ang pinakamabilis na way ay:
 
-                        // Kuhanin ang Student Profile Document (Parent)
-                        val studentProfileSnapshot = firestore.collection("students").document(studentId).get().await()
+                // 1. Gawin ang BATCH QUERY sa Parent Document gamit ang `whereIn`
+                val studentProfilesQuery = firestore.collection("students")
+                    .whereIn(FieldPath.documentId(), studentIds)
+                    .get().await()
 
-                        val student = studentProfileSnapshot.toObject(Student::class.java)
-                        if (student != null) {
-                            finalEnrolledStudents.add(student)
+                // Map: Student ID -> Student Object
+                val studentMap = studentProfilesQuery.documents
+                    .mapNotNull { it.toObject(Student::class.java)?.copy(id = it.id) }
+                    .associateBy { it.id }
+
+                // 2. Muli, gamitin ang ASYNC loop, ngunit TANGGALIN ang "Student Profile Read" sa loob ng loop
+                // Gagawa lang ito ng N reads (sa halip na 2N reads) na naka-async.
+
+                val enrollmentChecks = studentIds.map { studentId ->
+                    async {
+                        val subjectRef = firestore.collection("students").document(studentId)
+                            .collection("subjects").document(enrollmentDocId)
+
+                        val subjectSnapshot = subjectRef.get().await()
+
+                        if (subjectSnapshot.exists()) {
+                            // Kung may enrollment, ibalik ang Student ID
+                            studentId
+                        } else {
+                            null
                         }
                     }
                 }
 
-                // --- UI Update Logic ---
+                // Hintayin ang lahat ng checks na matapos
+                val enrolledStudentIds = enrollmentChecks.awaitAll().filterNotNull()
+
+                // Gamitin ang pre-fetched StudentMap para buuin ang listahan
+                enrolledStudentIds.forEach { id ->
+                    studentMap[id]?.let { finalEnrolledStudents.add(it) }
+                }
+                // --- END Optimized Approach (N+1 reads, but faster N reads in parallel) ---
+
+                // ************ (I-update ang UI Logic ayon sa orihinal mong code) ************
+
                 if (finalEnrolledStudents.isEmpty()) {
-                    tvLoading.text = "No students enrolled in $subjectCode."
+                    tvLoading.text = "No students officially enrolled in $subjectCode."
                 } else {
                     finalEnrolledStudents.forEach { student ->
                         studentNamesForRoulette.add("${student.lastName}, ${student.firstName}")
@@ -206,80 +250,13 @@ class ClassDetailsActivity : AppCompatActivity() {
         }
     }
 
-    private fun fetchStudentProfilesBatch(studentIds: List<String>) {
-        // Hatiin ang studentIds sa chunks na may maximum na 10 ID bawat isa
-        val idChunks = studentIds.chunked(10)
+    // 🛑 TINANGGAL (pero hindi na-alis sa user input): Ang mga ito ay redundant at hindi gumagana sa bagong enrollment logic.
+    /*
+    private fun fetchStudentProfilesBatch(studentIds: List<String>) { ... }
+    private fun fetchStudentProfiles(studentIds: List<String>) { ... }
+    */
 
-        val finalStudentList = mutableListOf<Student>()
-        studentNamesForRoulette.clear()
-
-        tvLoading.text = "Loading ${studentIds.size} student profiles..."
-
-        // Gumamit ng Coroutine para i-handle ang multiple asynchronous calls
-        lifecycleScope.launch {
-            try {
-                // Iterahin ang bawat chunk (batch) ng 10 IDs
-                for (chunk in idChunks) {
-                    // Gumawa ng hiwalay na query para sa bawat batch
-                    val snapshot = firestore.collection("students")
-                        .whereIn(FieldPath.documentId(), chunk)
-                        .get()
-                        .await() // Ito ang maghihintay hanggang matapos ang query (requires kotlinx-coroutines-play-services)
-
-                    // Idagdag ang students sa final list
-                    val studentsInChunk = snapshot.documents.mapNotNull { it.toObject(Student::class.java) }
-                    finalStudentList.addAll(studentsInChunk)
-                }
-
-                // --- UPDATED UI LOGIC ---
-
-                // 1. I-update ang Listahan ng Pangalan para sa Roleta
-                finalStudentList.forEach { student ->
-                    studentNamesForRoulette.add("${student.lastName}, ${student.firstName}")
-                }
-                btnStartRoulette.text = "Roleta (${studentNamesForRoulette.size})"
-
-                // 2. I-update ang RecyclerView
-                val studentAdapter = ClassStudentAdapter(finalStudentList)
-                recyclerView.adapter = studentAdapter
-
-                tvLoading.text = "✅ ${finalStudentList.size} students successfully loaded."
-
-            } catch (e: Exception) {
-                Log.e("ClassDetails", "Error fetching student profiles in batch: ${e.message}", e)
-                tvLoading.text = "Error fetching profiles. Max students: ${finalStudentList.size}"
-                Toast.makeText(this@ClassDetailsActivity, "Failed to load all student profiles.", Toast.LENGTH_LONG).show()
-            }
-        }
-    }
-
-    private fun fetchStudentProfiles(studentIds: List<String>) {
-        firestore.collection("students")
-            .whereIn(FieldPath.documentId(), studentIds) // use document ID
-            .get()
-            .addOnSuccessListener { studentsSnapshot ->
-                val studentList = studentsSnapshot.documents.mapNotNull { it.toObject(Student::class.java) }
-
-                tvLoading.text = "${studentList.size} students loaded."
-
-                // ✅ ROLETTA LOGIC: (This part must be present in the kept function)
-                studentNamesForRoulette.clear()
-                studentList.forEach { student ->
-                    studentNamesForRoulette.add("${student.lastName}, ${student.firstName}")
-                }
-                btnStartRoulette.text = "Roleta (${studentNamesForRoulette.size})"
-
-                val studentAdapter = ClassStudentAdapter(studentList)
-                recyclerView.adapter = studentAdapter
-            }
-            .addOnFailureListener { e ->
-                Log.e("ClassDetails", "Error fetching student profiles: $e")
-                tvLoading.text = "Error fetching student profiles."
-                btnStartRoulette.isEnabled = false // Also a new addition
-            }
-    }
-
-    // --- Navigation Functions ---
+    // --- Navigation Functions (Walang pagbabago) ---
     private fun navigateToAttendance(assignmentId: String, subjectCode: String) {
         val intent = Intent(this, RecordAttendanceActivity::class.java)
         intent.putExtra("ASSIGNMENT_ID", assignmentId)

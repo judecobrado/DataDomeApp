@@ -53,7 +53,7 @@ class ManageCoursesActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.admin_course_management)
+        setContentView(R.layout.admin_manage_course)
 
         // Initialize UI components
         listView = findViewById(R.id.lvCourses)

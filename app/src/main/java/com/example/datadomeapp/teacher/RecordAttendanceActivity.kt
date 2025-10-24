@@ -13,6 +13,12 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.datadomeapp.R
 import com.google.firebase.firestore.FirebaseFirestore
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.tasks.await
+import com.google.firebase.firestore.FieldPath // <--- Kailangan para sa whereIn query
 import androidx.appcompat.app.AlertDialog
 import com.example.datadomeapp.models.Student
 import com.example.datadomeapp.models.TimeSlot
@@ -176,13 +182,14 @@ class RecordAttendanceActivity : AppCompatActivity() {
             .addOnSuccessListener { doc ->
                 val fetchedSubjectCode = doc.getString("subjectCode")
                 val fetchedYearLevel = doc.getString("yearLevel")
+                // 🟢 CRITICAL: Kunin ang Semester
+                val fetchedSemester = doc.getString("semester")
 
-                // 🛑 NEW: Kumuha ng schedule slots (assuming TimeSlot is imported or declared)
+                // 🛑 Kumuha ng schedule slots
                 val slotsMap = doc.get("scheduleSlots") as? Map<String, Map<String, String>>
 
                 // Convert Map<String, Map<String, String>> to Map<String, TimeSlot>
                 this.scheduleSlots = slotsMap?.mapValues { (_, value) ->
-                    // Note: Tiyakin na ang TimeSlot model ay may tama ring fields
                     TimeSlot(
                         day = value["day"] ?: "",
                         startTime = value["startTime"] ?: "",
@@ -192,10 +199,10 @@ class RecordAttendanceActivity : AppCompatActivity() {
                     )
                 }
 
-                if (fetchedSubjectCode == null || fetchedYearLevel == null || scheduleSlots.isNullOrEmpty()) {
+                if (fetchedSubjectCode == null || fetchedYearLevel == null || fetchedSemester == null || scheduleSlots.isNullOrEmpty()) {
                     Toast.makeText(
                         this,
-                        "Error: Class details or schedule slots missing.",
+                        "Error: Class details (Subject/Year/Semester) or schedule slots missing.",
                         Toast.LENGTH_LONG
                     ).show()
                     return@addOnSuccessListener
@@ -210,7 +217,7 @@ class RecordAttendanceActivity : AppCompatActivity() {
 
                 this.subjectCode = fetchedSubjectCode
 
-                // 1. Kukunin ang listahan ng students base sa Year Level (Mas simple at mas mabilis)
+                // 1. Kukunin ang listahan ng students base sa Year Level
                 firestore.collection("students")
                     .whereEqualTo("yearLevel", fetchedYearLevel)
                     .whereEqualTo("status", "Admitted") // I-filter lang ang Admitted
@@ -227,8 +234,9 @@ class RecordAttendanceActivity : AppCompatActivity() {
                             return@addOnSuccessListener
                         }
 
-                        // 2. I-check ang enrollment ng bawat student sa subject na ito (Batch Check)
-                        checkStudentEnrollmentBatch(allStudentIds, fetchedSubjectCode, assignmentId)
+                        // 2. I-check ang enrollment
+                        // 🟢 IPASA ang Semester at Year Level
+                        checkStudentEnrollmentBatch(allStudentIds, fetchedSubjectCode, fetchedSemester, fetchedYearLevel)
                     }
                     .addOnFailureListener { e ->
                         Toast.makeText(
@@ -276,37 +284,53 @@ class RecordAttendanceActivity : AppCompatActivity() {
     private fun checkStudentEnrollmentBatch(
         allStudentIds: List<String>,
         subjectCode: String,
-        assignmentId: String
+        semester: String,    // 🟢 NEW PARAMETER
+        yearLevel: String    // 🟢 NEW PARAMETER
     ) {
 
         val finalEnrolledStudents = mutableListOf<Student>()
 
-        // I-display ang loading status
-        tvNoRecords.text = "Checking enrollment status for ${allStudentIds.size} students..."
+        tvNoRecords.text = "Checking enrollment status for ${allStudentIds.size} students... (Optimized Check)"
         tvNoRecords.visibility = View.VISIBLE
+
+        // 🚨 CRITICAL: I-clean ang strings at I-construct ang Enrollment Doc ID
+        val yearClean = yearLevel.replace(" ", "")
+        val semesterCleaned = semester.replace(" ", "").replace("-", "")
+        val enrollmentDocId = "${yearClean}_${semesterCleaned}_${subjectCode}"
+        Log.d("AttendanceLoader", "Using Enrollment Doc ID: $enrollmentDocId")
 
         // Simulan ang Coroutine
         lifecycleScope.launch {
             try {
-                for (studentId in allStudentIds) {
-                    // 1. Direktang pumunta sa subject document
-                    val subjectRef = firestore.collection("students").document(studentId)
-                        .collection("subjects").document(subjectCode)
+                // 1. I-pre-fetch ang lahat ng Student Profiles (Mas mabilis na 1 read)
+                val studentProfilesQuery = firestore.collection("students")
+                    .whereIn(FieldPath.documentId(), allStudentIds)
+                    .get().await()
 
-                    val subjectSnapshot = subjectRef.get().await() // Hihintayin ang result
+                // Map: Student ID -> Student Object
+                val studentMap = studentProfilesQuery.documents
+                    .mapNotNull { doc -> doc.toObject(Student::class.java)?.copy(id = doc.id) }
+                    .associateBy { it.id }
 
-                    // 2. I-check kung may enrollment record para sa subject na ito
-                    if (subjectSnapshot.exists() && subjectSnapshot.getString("subjectCode") == subjectCode) {
+                // 2. Gawin ang LAHAT ng Enrollment Checks nang magkasabay (in parallel)
+                val enrollmentChecks = allStudentIds.map { studentId ->
+                    async {
+                        val subjectRef = firestore.collection("students").document(studentId)
+                            .collection("subjects").document(enrollmentDocId)
 
-                        // 3. Kunin ang Parent Profile (para makuha ang buong Student object)
-                        val studentProfileSnapshot =
-                            firestore.collection("students").document(studentId).get().await()
+                        val subjectSnapshot = subjectRef.get().await()
 
-                        val student = studentProfileSnapshot.toObject(Student::class.java)
-                        if (student != null) {
-                            finalEnrolledStudents.add(student)
-                        }
+                        // Kung may enrollment record, ibalik ang Student ID
+                        if (subjectSnapshot.exists()) studentId else null
                     }
+                }
+
+                // 3. Hintayin ang resulta ng lahat ng parallel checks
+                val enrolledStudentIds = enrollmentChecks.awaitAll().filterNotNull()
+
+                // 4. Buuin ang final list gamit ang pre-fetched map
+                enrolledStudentIds.forEach { id ->
+                    studentMap[id]?.let { finalEnrolledStudents.add(it) }
                 }
 
                 // --- UI Update Logic ---
@@ -315,7 +339,7 @@ class RecordAttendanceActivity : AppCompatActivity() {
 
                 if (currentStudentList.isEmpty()) {
                     tvNoRecords.text =
-                        "No students are enrolled in $subjectCode with Assignment ID $assignmentId."
+                        "No students are officially enrolled in $subjectCode for $yearLevel $semester."
                     tvNoRecords.visibility = View.VISIBLE
                     recyclerView.visibility = View.GONE
                 } else {
@@ -325,13 +349,13 @@ class RecordAttendanceActivity : AppCompatActivity() {
                     // CRITICAL: Initialize and set the adapter here!
                     attendanceAdapter = AttendanceAdapter(
                         studentList = currentStudentList,
-                        assignmentId = assignmentId,
+                        assignmentId = assignmentId!!,
                         isEditable = !isPreviousDay
                     )
                     recyclerView.adapter = attendanceAdapter
 
                     // I-load ang existing attendance pagkatapos ng adapter setup
-                    loadExistingAttendance(assignmentId, etAttendanceDate.text.toString())
+                    loadExistingAttendance(assignmentId!!, etAttendanceDate.text.toString())
                 }
 
             } catch (e: Exception) {
@@ -341,8 +365,6 @@ class RecordAttendanceActivity : AppCompatActivity() {
             }
         }
     }
-
-    // ... (fetchStudentProfiles, walang pagbabago) ...
 
     private fun fetchStudentProfiles(studentIds: List<String>, assignmentId: String) {
         firestore.collection("students")

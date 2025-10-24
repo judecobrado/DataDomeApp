@@ -20,8 +20,8 @@ class MenuManagementActivity : AppCompatActivity() {
     private val menuList = mutableListOf<MenuItem>()
     private lateinit var adapter: MenuAdapter
     private var menuListener: ListenerRegistration? = null
-
     private val auth = FirebaseAuth.getInstance()
+    private var staffUid: String? = null
     private var staffCanteenName: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -30,11 +30,37 @@ class MenuManagementActivity : AppCompatActivity() {
 
         recyclerView = findViewById(R.id.rvMenu)
         btnAddMenu = findViewById(R.id.btnAddMenu)
+        staffUid = auth.currentUser?.uid
 
+        loadStaffCanteen()
+        setupRecyclerView()
+
+        btnAddMenu.setOnClickListener {
+            val intent = Intent(this, AddEditMenuActivity::class.java)
+            intent.putExtra("canteenName", staffCanteenName)
+            startActivity(intent)
+        }
+    }
+
+    private fun loadStaffCanteen() {
+        val uid = staffUid ?: return
+        firestore.collection("users").document(uid)
+            .get()
+            .addOnSuccessListener { doc ->
+                staffCanteenName = doc.getString("canteenName")
+                startMenuListener()
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Failed to get staff info: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    private fun setupRecyclerView() {
         adapter = MenuAdapter(menuList,
             onEditClick = { menu ->
                 val intent = Intent(this, AddEditMenuActivity::class.java)
                 intent.putExtra("menuId", menu.id)
+                intent.putExtra("canteenName", menu.canteenName)
                 startActivity(intent)
             },
             onDeleteClick = { menu ->
@@ -48,33 +74,14 @@ class MenuManagementActivity : AppCompatActivity() {
 
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
-
-        btnAddMenu.setOnClickListener {
-            val intent = Intent(this, AddEditMenuActivity::class.java)
-            intent.putExtra("canteenName", staffCanteenName)
-            startActivity(intent)
-        }
-
-        loadStaffCanteen()
-    }
-
-    private fun loadStaffCanteen() {
-        val uid = auth.currentUser?.uid ?: return
-        firestore.collection("users").document(uid)
-            .get()
-            .addOnSuccessListener { doc ->
-                staffCanteenName = doc.getString("canteenName")
-                startMenuListener()
-            }
-            .addOnFailureListener { e ->
-                Toast.makeText(this, "Failed to get staff info: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
     }
 
     private fun startMenuListener() {
-        val canteen = staffCanteenName ?: return
+        val uid = staffUid ?: return
+        menuListener?.remove() // remove previous listener
+
         menuListener = firestore.collection("canteenMenu")
-            .whereEqualTo("canteenName", canteen) // Filter menus by staff's canteen
+            .whereEqualTo("staffUid", uid)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     Toast.makeText(this, "Error loading menu: ${error.message}", Toast.LENGTH_SHORT).show()

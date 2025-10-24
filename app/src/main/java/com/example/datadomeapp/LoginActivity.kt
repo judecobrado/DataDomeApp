@@ -3,6 +3,7 @@ package com.example.datadomeapp
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
@@ -15,10 +16,11 @@ import com.google.firebase.firestore.FirebaseFirestore
 
 class LoginActivity : AppCompatActivity() {
 
+    // IMPORTANT: Replace with actual Firebase setup in a real app
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
 
-    // Hardcoded admin credentials
+    // Hardcoded admin credentials for development bypass
     private val adminEmail = "q"
     private val adminPassword = "q"
 
@@ -28,20 +30,23 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var forgotPasswordText: TextView
     private lateinit var progressBar: ProgressBar
 
+    // Tag for logging
+    private val TAG = "LoginActivity"
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Ensure you have R.layout.activity_login defined with the correct IDs
         setContentView(R.layout.activity_login)
 
+        // Initialize UI elements
         emailEditText = findViewById(R.id.etEmail)
         passwordEditText = findViewById(R.id.etPassword)
         loginButton = findViewById(R.id.btnLogin)
         forgotPasswordText = findViewById(R.id.tvForgotPassword)
         progressBar = findViewById(R.id.progressBar)
 
-        // 1. Forgot Password Navigation Fix
         forgotPasswordText.setOnClickListener {
             startActivity(Intent(this, ResetPasswordActivity::class.java))
-            // Hindi na kailangan i-finish() ang LoginActivity dito
         }
 
         loginButton.setOnClickListener {
@@ -53,34 +58,38 @@ class LoginActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            // 2. KRITIKAL: I-disable ang UI at I-show ang progress bar AGAD
             showLoading()
 
-            // Hardcoded admin login
+            // Hardcoded admin login (Development Bypass)
             if (email == adminEmail && password == adminPassword) {
+                // *** UPDATED LOGIC HERE: Save "admin" role to SharedPreferences ***
+                getSharedPreferences("user_prefs", Context.MODE_PRIVATE).edit()
+                    .putString("role", "admin")
+                    .apply()
+                // ***************************************************************
+
                 hideLoading()
-                Toast.makeText(this, "Welcome Admin!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Welcome Admin (Hardcoded)!", Toast.LENGTH_SHORT).show()
                 startActivity(Intent(this, AdminDashboardActivity::class.java))
                 finish()
                 return@setOnClickListener
             }
 
-            // Firebase login
+            // Standard Firebase login
             auth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener { task ->
                     if (task.isSuccessful) {
                         val currentUser = auth.currentUser
                         if (currentUser == null) {
-                            // I-reset ang UI sa error path
                             resetUI()
-                            Toast.makeText(this, "Login successful but user not found", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this, "Login successful but user data is temporarily unavailable.", Toast.LENGTH_LONG).show()
                             return@addOnCompleteListener
                         }
-                        // Magpapatuloy sa Firestore fetch (fetchUserRoleAndStartDashboard)
+                        // Continue to Firestore fetch
                         fetchUserRoleAndStartDashboard(currentUser.uid)
 
                     } else {
-                        // Kung FAILED ang Auth, i-reset ang UI
+                        // Auth failed
                         resetUI()
                         Toast.makeText(this, "Login failed: ${task.exception?.message}", Toast.LENGTH_LONG).show()
                     }
@@ -89,58 +98,75 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun fetchUserRoleAndStartDashboard(uid: String) {
+        // Fetch the role from the 'users' collection in Firestore
         firestore.collection("users").document(uid)
             .get()
             .addOnSuccessListener { doc ->
-                // KRITIKAL: Dito lang i-hide ang progress bar at i-enable ang button
-                hideLoading()
+                if (!doc.exists()) {
+                    resetUI()
+                    Log.e(TAG, "User document does not exist for UID: $uid")
+                    Toast.makeText(this, "User data setup incomplete. Please contact admin.", Toast.LENGTH_LONG).show()
+                    auth.signOut()
+                    return@addOnSuccessListener
+                }
 
-                val role = doc.getString("role") ?: "unknown"
+                val role = doc.getString("role")
 
+                // CRITICAL DEBUG LOGGING
+                Log.d(TAG, "Fetched role from Firestore: $role")
+
+                val finalRole = role ?: "unknown"
+
+                // Save role to shared preferences for later use in the app
                 getSharedPreferences("user_prefs", Context.MODE_PRIVATE).edit()
-                    .putString("role", role)
+                    .putString("role", finalRole)
                     .apply()
 
-                startDashboard(role)
+                hideLoading()
+                startDashboard(finalRole)
             }
             .addOnFailureListener { e ->
-                // I-reset ang UI kapag may error sa Firestore
+                // Firestore fetch failed
                 resetUI()
+                Log.e(TAG, "Error fetching user role for UID $uid: ${e.message}")
                 Toast.makeText(this, "Error fetching user role: ${e.message}", Toast.LENGTH_SHORT).show()
                 auth.signOut()
             }
     }
 
     private fun startDashboard(role: String) {
+        // Use lowercase to match roles consistently
+        val roleLower = role.lowercase()
 
-        val intent = when (role.lowercase()) {
+        val intent = when (roleLower) {
             "student" -> Intent(this, StudentDashboardActivity::class.java)
             "teacher" -> Intent(this, TeacherDashboardActivity::class.java)
             "admin" -> Intent(this, AdminDashboardActivity::class.java)
             "canteen_staff" -> Intent(this, CanteenStaffDashboardActivity::class.java)
             else -> {
-                Toast.makeText(this, "Role not recognized. Defaulting to MainActivity.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Role '$role' not recognized. Defaulting to main screen.", Toast.LENGTH_LONG).show()
                 Intent(this, MainActivity::class.java)
             }
         }
 
         startActivity(intent)
-        finish()
+        finish() // Prevent returning to the LoginActivity
     }
 
-    // --- Utility functions for faster UI handling ---
+    // --- Utility functions for UI handling ---
     private fun showLoading() {
         progressBar.visibility = View.VISIBLE
-        loginButton.isEnabled = false // Disable ang button
+        loginButton.isEnabled = false
+        forgotPasswordText.isEnabled = false
     }
 
     private fun hideLoading() {
         progressBar.visibility = View.GONE
-        loginButton.isEnabled = true // Enable ulit
+        loginButton.isEnabled = true
+        forgotPasswordText.isEnabled = true
     }
 
     private fun resetUI() {
-        // Ginagamit sa error path
         hideLoading()
     }
 }

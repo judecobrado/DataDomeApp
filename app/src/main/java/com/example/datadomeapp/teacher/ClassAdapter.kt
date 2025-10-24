@@ -47,7 +47,7 @@ class ClassAdapter(
         val sectionName = primarySlot?.sectionBlock ?: "A"
         holder.tvSection.text = "Course: $courseName - $sectionName"
 
-        holder.tvSubject.text = currentItem.subjectTitle
+        holder.tvSubject.text = "${currentItem.subjectCode ?: "N/A"} - ${currentItem.subjectTitle}"
         holder.tvSchedule.text = "Schedule: $scheduleDetail"
 
         // Online link display

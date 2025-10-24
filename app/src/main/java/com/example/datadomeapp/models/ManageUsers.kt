@@ -44,11 +44,15 @@ data class AdminTeacher(
 
 // 👩‍🍳 Canteen Staff model
 data class CanteenStaff(
-    val email: String = "",
-    val firstName: String = "",
-    val lastName: String = "",
-    val canteenName: String = "",
+    var email: String = "",
+    var role: String = "",
+    var canteenName: String = "",
+    var firstName: String = "",
+    var middleName: String = "",
+    var lastName: String = "",
     var uid: String? = null,
-    val role: String = "canteen_staff"
+    var storeImageUrl: String = "",
+    var canteenStaffId: String = "",
+    var firestoreId: String? = null    // <-- Add this
 )
 

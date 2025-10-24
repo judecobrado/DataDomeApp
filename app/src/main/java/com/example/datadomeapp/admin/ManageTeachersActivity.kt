@@ -40,7 +40,7 @@ class ManageTeachersActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_manage_teachers)
+        setContentView(R.layout.admin_manage_teachers)
 
         // UI Initialization
         val lvTeachers = findViewById<ListView>(R.id.lvTeachers)

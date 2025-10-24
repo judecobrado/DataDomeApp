@@ -27,12 +27,22 @@ import com.google.firebase.Timestamp
 import java.util.*
 
 // 🟢 NEW MODEL: Para sa pag-iimbak ng reference key sa record ng estudyante
-data class StudentAssignmentReference(
+// 🟢 REVISED MODEL: Para sa pag-iimbak ng kumpletong Subject/Grade record ng estudyante
+data class StudentAssignmentRecord(
     val subjectCode: String = "",
-    val assignmentNo: String = "", // ⬅️ CRITICAL: Reference sa ClassAssignment
     val subjectTitle: String = "",
-    val sectionBlock: String = "", // Para sa mabilis na display
-    val onlineLink: String = "" // <--- IDAGDAG ITO!
+    val assignmentNo: String = "", // ⬅️ CRITICAL: Reference sa ClassAssignment ID
+    val teacherName: String = "", // Idinagdag: Guro
+    val sectionBlock: String = "",
+    val onlineLink: String = "",
+    val credits: Int = 3,         // Idinagdag: Credits (Default 3)
+    val prelim: Int? = null,      // Idinagdag: Grades (Nullable)
+    val midterm: Int? = null,
+    val final: Int? = null,
+    val gwa: String = "",         // Idinagdag: Letter Grade/GWA
+    val semester: String = "",      // Idinagdag: Semester
+    val academicYear: String = "",  // Idinagdag: Academic Year
+    val yearLevel: String = ""      // Idinagdag: Year Level
 )
 
 
@@ -566,6 +576,10 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
 
                                 val batch = firestore.batch()
 
+                                // ⚠️ PLACEHOLDER: Kunin ang actual current semester/AY mula sa app settings
+                                val currentSemester = "1st Semester"
+                                val currentAcademicYear = "2025-2026"
+
                                 // --- CRITICAL FIX: Determine Administrative Section ID (Gumagamit ng Section Block) ---
                                 val assignedSectionBlock = if (finalEnrollmentType == "Regular") {
                                     // Para sa Regular: Kunin ang Section Block mula sa UNANG TimeSlot ng UNANG Assignment.
@@ -577,7 +591,7 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                                 // --- CRITICAL FIX END ---
 
 
-                                // 2. CREATE/UPDATE USER RECORD (No change needed)
+                                // 2. CREATE/UPDATE USER RECORD (Walang pagbabago)
                                 val userRef = firestore.collection("users").document(userUid)
                                 batch.set(userRef, mapOf(
                                     "email" to studentEmail,
@@ -588,25 +602,40 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                                     "enrollmentType" to finalEnrollmentType
                                 ))
 
-                                // 3. SAVE ASSIGNMENTS to Student Record (UPDATED: Storing Assignment Reference Key)
+                                // 3. SAVE ASSIGNMENTS to Student Record (UPDATED: Storing COMPLETE Subject Record)
                                 for (assignment in selectedAssignments) {
 
                                     val primarySectionBlock = assignment.scheduleSlots.values.firstOrNull()?.sectionBlock ?: assignedSectionBlock
+                                    val subjectEntry = requiredSubjectsMap[assignment.subjectCode] // Kunin ang SubjectEntry para sa credits
 
-                                    val studentAssignmentRef = StudentAssignmentReference(
+                                    // 🟢 Gamitin ang REVISED MODEL (StudentAssignmentRecord)
+                                    val studentAssignmentRecord = StudentAssignmentRecord(
                                         subjectCode = assignment.subjectCode,
-                                        assignmentNo = assignment.assignmentNo, // ⬅️ CRITICAL: Reference Key
                                         subjectTitle = assignment.subjectTitle,
+                                        assignmentNo = assignment.assignmentNo, // Dapat ClassAssignment document ID
+                                        teacherName = assignment.teacherName,
                                         sectionBlock = primarySectionBlock,
                                         onlineLink = assignment.onlineClassLink,
+                                        credits = subjectEntry?.credits ?: 3, // Kunin ang Credits mula sa Curriculum SubjectEntry
+                                        prelim = null,
+                                        midterm = null,
+                                        final = null,
+                                        gwa = "",
+                                        semester = currentSemester,
+                                        academicYear = currentAcademicYear,
+                                        yearLevel = finalYearLevel
                                     )
 
-                                    // Gumamit ng subjectRef para maiwasan ang conflict
-                                    val subjectRef = firestore.collection("students").document(studentId).collection("subjects").document(assignment.subjectCode)
-                                    batch.set(subjectRef, studentAssignmentRef)
+                                    // 🟢 Hierarchy Logic: Gawing Document ID ang "Year_Semester_SubjectCode"
+                                    val yearClean = finalYearLevel.replace(" ", "") // e.g., "1stYear"
+                                    val semClean = currentSemester.replace(" ", "") // e.g., "1stSemester"
+                                    val subjectDocId = "${yearClean}_${semClean}_${assignment.subjectCode}"
+
+                                    val subjectRef = firestore.collection("students").document(studentId).collection("subjects").document(subjectDocId)
+                                    batch.set(subjectRef, studentAssignmentRecord)
                                 }
 
-                                // 4. CREATE/UPDATE STUDENT MASTER RECORD
+                                // 4. CREATE/UPDATE STUDENT MASTER RECORD (In-update ang AY/Semester)
                                 val masterRef = firestore.collection("students").document(studentId)
 
                                 batch.set(masterRef, mapOf(
@@ -614,15 +643,15 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                                     "id" to studentId,
                                     "userUid" to userUid,
                                     "dateEnrolled" to Timestamp.now(),
-                                    "academicYear" to "2025-2026",
-                                    "semester" to "1st Semester",
+                                    "academicYear" to currentAcademicYear, // Gamitin ang variable
+                                    "semester" to currentSemester, // Gamitin ang variable
                                     "courseCode" to courseCode,
                                     "status" to "Admitted",
                                     "isEnrolled" to true,
                                     "yearLevel" to finalYearLevel,
                                     "enrollmentType" to finalEnrollmentType,
-                                    "sectionId" to assignedSectionBlock, // ⬅️ FIX: Gumamit ng Section Block ID dito
-
+                                    "sectionId" to assignedSectionBlock,
+                                    // ... (Rest of personal data from Enrollment object 'e') ...
                                     "firstName" to e.firstName,
                                     "lastName" to e.lastName,
                                     "middleName" to e.middleName,
