@@ -12,14 +12,30 @@ data class Quiz(
 
 
 sealed class Question {
+    abstract val questionText: String
+    abstract val type: String
+
     data class TrueFalse(
-        val questionText: String = "",
-        val answer: Boolean = true
-    ) : Question()
+        override val questionText: String,
+        val answer: Boolean
+    ) : Question() {
+        override val type = "TF"
+    }
+
+    data class MultipleChoice(
+        override val questionText: String,
+        val options: List<String>,
+        val correctAnswerIndex: Int
+    ) : Question() {
+        override val type = "MC"
+    }
 
     data class Matching(
-        val questionText: String = "",
-        val options: List<String> = emptyList(),  // left side
-        val matches: List<String> = emptyList()   // right side
-    ) : Question()
+        override val questionText: String,
+        val options: List<String>,
+        val matches: List<String>
+    ) : Question() {
+        override val type = "MATCHING"
+    }
 }
+

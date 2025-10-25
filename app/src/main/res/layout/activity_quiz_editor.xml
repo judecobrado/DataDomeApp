@@ -1,13 +1,14 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:padding="16dp"
+    android:orientation="vertical"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:padding="16dp">
 
     <EditText
         android:id="@+id/etQuizTitle"
-        android:hint="Quiz Title"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:hint="Quiz Title" />
 
     <LinearLayout
         android:orientation="horizontal"
@@ -15,8 +16,27 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp">
 
-        <Button android:id="@+id/btnAddTF" android:text="Add TF" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-        <Button android:id="@+id/btnAddMatching" android:text="Add Matching" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp"/>
+        <Button
+            android:id="@+id/btnAddTF"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="Add True/False" />
+
+        <Button
+            android:id="@+id/btnAddMatching"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="Add Matching" />
+
+        <Button
+            android:id="@+id/btnAddMC"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="Add Multiple Choice" />
+
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
@@ -28,8 +48,8 @@
 
     <Button
         android:id="@+id/btnSaveQuiz"
-        android:text="Save Quiz"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:text="Save Quiz"
         android:layout_marginTop="8dp"/>
 </LinearLayout>

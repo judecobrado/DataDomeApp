@@ -1,36 +1,59 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
-    android:padding="16dp"
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <EditText
-        android:id="@+id/quizTitleEditText"
-        android:hint="Quiz Title"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
 
-    <Button
-        android:id="@+id/addTFButton"
-        android:text="Add True/False Question"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        <EditText
+            android:id="@+id/etQuizTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Quiz Title" />
 
-    <Button
-        android:id="@+id/addMatchingButton"
-        android:text="Add Matching Question"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        <EditText
+            android:id="@+id/etQuizDescription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Description" />
 
-    <Button
-        android:id="@+id/saveQuizButton"
-        android:text="Save Quiz"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        <!-- Question Type Buttons -->
+        <Button
+            android:id="@+id/btnAddTF"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Add True/False Question"
+            android:layout_marginTop="8dp"/>
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/quizQuestionsRecyclerView"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"/>
-</LinearLayout>
+        <Button
+            android:id="@+id/btnAddMC"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Add Multiple Choice Question"
+            android:layout_marginTop="8dp"/>
+
+        <Button
+            android:id="@+id/btnAddMatching"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Add Matching Question"
+            android:layout_marginTop="8dp"/>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerViewQuestions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp" />
+
+        <Button
+            android:id="@+id/btnSaveQuiz"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Save Quiz"
+            android:layout_marginTop="16dp" />
+    </LinearLayout>
+</ScrollView>

@@ -22,6 +22,7 @@ class CreateQuizActivity : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var btnAddTF: Button
     private lateinit var btnAddMatching: Button
+    private lateinit var btnAddMC: Button
     private lateinit var btnSaveQuiz: Button
     private lateinit var etQuizTitle: EditText
 
@@ -35,113 +36,66 @@ class CreateQuizActivity : AppCompatActivity() {
         recyclerView = findViewById(R.id.recyclerViewQuestions)
         btnAddTF = findViewById(R.id.btnAddTF)
         btnAddMatching = findViewById(R.id.btnAddMatching)
+        btnAddMC = findViewById(R.id.btnAddMC)
         btnSaveQuiz = findViewById(R.id.btnSaveQuiz)
         etQuizTitle = findViewById(R.id.etQuizTitle)
 
         recyclerView.layoutManager = LinearLayoutManager(this)
         adapter = QuestionAdapter(
             questionList,
-            editClickListener = { question -> editQuestion(question) },
-            deleteClickListener = { question -> deleteQuestion(question) }
+            editClickListener = { editQuestion(it) },
+            deleteClickListener = { deleteQuestion(it) }
         )
         recyclerView.adapter = adapter
 
         btnAddTF.setOnClickListener { addTFQuestion() }
         btnAddMatching.setOnClickListener { addMatchingQuestion() }
+        btnAddMC.setOnClickListener { addMCQuestion() }
         btnSaveQuiz.setOnClickListener { saveQuiz() }
     }
 
-    private fun addTFQuestion() {
-        val input = EditText(this).apply { hint = "Enter True/False question" }
+    // ------------------ True/False ------------------
+    private fun addTFQuestion(existing: Question.TrueFalse? = null) {
+        val input = EditText(this).apply {
+            setText(existing?.questionText ?: "")
+            hint = "Enter True/False question"
+        }
         AlertDialog.Builder(this)
-            .setTitle("Add True/False Question")
+            .setTitle(if (existing != null) "Edit TF Question" else "Add True/False Question")
             .setView(input)
             .setPositiveButton("Next") { dialog, _ ->
                 val text = input.text.toString().trim()
-                if (text.isNotEmpty()) askTFAnswer(text)
+                if (text.isNotEmpty()) askTFAnswer(text, existing)
                 dialog.dismiss()
             }
             .setNegativeButton("Cancel", null)
             .show()
     }
 
-    private fun askTFAnswer(questionText: String) {
+    private fun askTFAnswer(questionText: String, existing: Question.TrueFalse? = null) {
         val options = arrayOf("True", "False")
         AlertDialog.Builder(this)
             .setTitle("Select Correct Answer")
             .setItems(options) { _, which ->
                 val answer = options[which] == "True"
-                questionList.add(Question.TrueFalse(questionText, answer))
-                adapter.notifyDataSetChanged()
+                val newQuestion = Question.TrueFalse(questionText, answer)
+                updateQuestion(existing, newQuestion)
             }.show()
     }
 
-    private fun addMatchingQuestion() {
+    // ------------------ Matching ------------------
+    private fun addMatchingQuestion(existing: Question.Matching? = null) {
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_matching_question, null)
         val etLeft = view.findViewById<EditText>(R.id.etLeft)
         val etRight = view.findViewById<EditText>(R.id.etRight)
 
-        AlertDialog.Builder(this)
-            .setTitle("Add Matching Question")
-            .setView(view)
-            .setPositiveButton("Add") { dialog, _ ->
-                val left = etLeft.text.toString().split(",").map { it.trim() }.filter { it.isNotEmpty() }
-                val right = etRight.text.toString().split(",").map { it.trim() }.filter { it.isNotEmpty() }
-
-                if (left.size != right.size || left.isEmpty()) {
-                    Toast.makeText(this, "Both sides must have same number of items", Toast.LENGTH_SHORT).show()
-                    return@setPositiveButton
-                }
-
-                questionList.add(Question.Matching("Matching Question", left, right))
-                adapter.notifyDataSetChanged()
-                dialog.dismiss()
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    private fun editQuestion(question: Question) {
-        when (question) {
-            is Question.TrueFalse -> editTFQuestion(question)
-            is Question.Matching -> editMatchingQuestion(question)
+        existing?.let {
+            etLeft.setText(it.options.joinToString(","))
+            etRight.setText(it.matches.joinToString(","))
         }
-    }
-
-    private fun editTFQuestion(question: Question.TrueFalse) {
-        val input = EditText(this).apply { setText(question.questionText) }
-        AlertDialog.Builder(this)
-            .setTitle("Edit True/False Question")
-            .setView(input)
-            .setPositiveButton("Next") { dialog, _ ->
-                val newText = input.text.toString().trim()
-                if (newText.isNotEmpty()) {
-                    val options = arrayOf("True", "False")
-                    AlertDialog.Builder(this)
-                        .setTitle("Select Correct Answer")
-                        .setItems(options) { _, which ->
-                            val index = questionList.indexOf(question)
-                            if (index != -1) {
-                                questionList[index] = Question.TrueFalse(newText, options[which] == "True")
-                                adapter.notifyItemChanged(index)
-                            }
-                        }.show()
-                }
-                dialog.dismiss()
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    private fun editMatchingQuestion(question: Question.Matching) {
-        val view = LayoutInflater.from(this).inflate(R.layout.dialog_matching_question, null)
-        val etLeft = view.findViewById<EditText>(R.id.etLeft)
-        val etRight = view.findViewById<EditText>(R.id.etRight)
-        etLeft.setText(question.options.joinToString(","))
-        etRight.setText(question.matches.joinToString(","))
 
         AlertDialog.Builder(this)
-            .setTitle("Edit Matching Question")
+            .setTitle(if (existing != null) "Edit Matching Question" else "Add Matching Question")
             .setView(view)
             .setPositiveButton("Save") { dialog, _ ->
                 val left = etLeft.text.toString().split(",").map { it.trim() }.filter { it.isNotEmpty() }
@@ -152,15 +106,80 @@ class CreateQuizActivity : AppCompatActivity() {
                     return@setPositiveButton
                 }
 
-                val index = questionList.indexOf(question)
-                if (index != -1) {
-                    questionList[index] = Question.Matching(question.questionText, left, right)
-                    adapter.notifyItemChanged(index)
-                }
+                val newQuestion = Question.Matching(existing?.questionText ?: "Matching Question", left, right)
+                updateQuestion(existing, newQuestion)
                 dialog.dismiss()
             }
             .setNegativeButton("Cancel", null)
             .show()
+    }
+
+    // ------------------ Multiple Choice ------------------
+    private fun addMCQuestion(existing: Question.MultipleChoice? = null) {
+        val view = LayoutInflater.from(this).inflate(R.layout.dialog_multiple_choice, null)
+
+        val etQuestion = view.findViewById<EditText>(R.id.etQuestion)
+        val et1 = view.findViewById<EditText>(R.id.etOption1)
+        val et2 = view.findViewById<EditText>(R.id.etOption2)
+        val et3 = view.findViewById<EditText>(R.id.etOption3)
+        val et4 = view.findViewById<EditText>(R.id.etOption4)
+
+        val rb1 = view.findViewById<RadioButton>(R.id.rbOption1)
+        val rb2 = view.findViewById<RadioButton>(R.id.rbOption2)
+        val rb3 = view.findViewById<RadioButton>(R.id.rbOption3)
+        val rb4 = view.findViewById<RadioButton>(R.id.rbOption4)
+
+        existing?.let {
+            etQuestion.setText(it.questionText)
+            it.options.getOrNull(0)?.let { s -> et1.setText(s) }
+            it.options.getOrNull(1)?.let { s -> et2.setText(s) }
+            it.options.getOrNull(2)?.let { s -> et3.setText(s) }
+            it.options.getOrNull(3)?.let { s -> et4.setText(s) }
+            when (it.correctAnswerIndex) {
+                0 -> rb1.isChecked = true
+                1 -> rb2.isChecked = true
+                2 -> rb3.isChecked = true
+                3 -> rb4.isChecked = true
+            }
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle(if (existing != null) "Edit Multiple Choice" else "Add Multiple Choice")
+            .setView(view)
+            .setPositiveButton("Save") { dialog, _ ->
+                val questionText = etQuestion.text.toString().trim()
+                val options = listOf(et1.text.toString(), et2.text.toString(), et3.text.toString(), et4.text.toString())
+                    .map { it.trim() }
+                    .filter { it.isNotEmpty() }
+
+                val correctIndex = when {
+                    rb1.isChecked -> 0
+                    rb2.isChecked -> 1
+                    rb3.isChecked -> 2
+                    rb4.isChecked -> 3
+                    else -> -1
+                }
+
+                if (questionText.isEmpty() || options.size < 2 || correctIndex !in options.indices) {
+                    Toast.makeText(this, "Provide question, at least 2 options, and select the correct answer", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+
+                val newQuestion = Question.MultipleChoice(questionText, options, correctIndex)
+                updateQuestion(existing, newQuestion)
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    // ------------------ Edit / Delete ------------------
+    private fun editQuestion(question: Question) {
+        when (question) {
+            is Question.TrueFalse -> addTFQuestion(question)
+            is Question.Matching -> addMatchingQuestion(question)
+            is Question.MultipleChoice -> addMCQuestion(question)
+        }
     }
 
     private fun deleteQuestion(question: Question) {
@@ -171,6 +190,20 @@ class CreateQuizActivity : AppCompatActivity() {
         }
     }
 
+    private fun updateQuestion(existing: Question?, newQuestion: Question) {
+        if (existing != null) {
+            val index = questionList.indexOf(existing)
+            if (index != -1) {
+                questionList[index] = newQuestion
+                adapter.notifyItemChanged(index)
+                return
+            }
+        }
+        questionList.add(newQuestion)
+        adapter.notifyItemInserted(questionList.size - 1)
+    }
+
+    // ------------------ Save ------------------
     private fun saveQuiz() {
         val title = etQuizTitle.text.toString().trim()
         if (title.isEmpty() || questionList.isEmpty()) {
@@ -181,7 +214,7 @@ class CreateQuizActivity : AppCompatActivity() {
         val id = db.child("quizzes").push().key ?: return
         val quiz = Quiz(
             quizId = id,
-            assignmentId = "", // optional
+            assignmentId = "",
             teacherUid = auth.currentUser?.uid ?: "",
             title = title,
             questions = questionList.toList(),

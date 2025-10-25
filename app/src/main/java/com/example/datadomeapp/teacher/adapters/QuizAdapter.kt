@@ -12,7 +12,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class QuizAdapter(
-    private val quizzes: List<Quiz>,
+    private val quizzes: MutableList<Quiz>, // Make mutable to allow updates
     private val editClickListener: (Quiz) -> Unit,
     private val deleteClickListener: (Quiz) -> Unit,
     private val publishClickListener: (Quiz) -> Unit,
@@ -20,17 +20,31 @@ class QuizAdapter(
 ) : RecyclerView.Adapter<QuizAdapter.QuizViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): QuizViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_quiz, parent, false)
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_quiz, parent, false)
         return QuizViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: QuizViewHolder, position: Int) {
-        val quiz = quizzes[position]
-        holder.bind(quiz)
+        holder.bind(quizzes[position])
     }
 
     override fun getItemCount(): Int = quizzes.size
+
+    fun updateQuiz(updatedQuiz: Quiz) {
+        val index = quizzes.indexOfFirst { it.quizId == updatedQuiz.quizId }
+        if (index != -1) {
+            quizzes[index] = updatedQuiz
+            notifyItemChanged(index)
+        }
+    }
+
+    fun removeQuiz(quiz: Quiz) {
+        val index = quizzes.indexOf(quiz)
+        if (index != -1) {
+            quizzes.removeAt(index)
+            notifyItemRemoved(index)
+        }
+    }
 
     inner class QuizViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val tvTitle: TextView = itemView.findViewById(R.id.tvQuizTitle)
@@ -42,20 +56,24 @@ class QuizAdapter(
 
         fun bind(quiz: Quiz) {
             tvTitle.text = quiz.title
-
-            // Display scheduled time nicely
-            tvDateTime.text = if (quiz.scheduledDateTime > 0L) {
-                val sdf = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
-                sdf.format(Date(quiz.scheduledDateTime))
-            } else {
-                "No time set"
-            }
+            tvDateTime.text = formatDateTime(quiz.scheduledDateTime)
 
             btnEdit.setOnClickListener { editClickListener(quiz) }
             btnDelete.setOnClickListener { deleteClickListener(quiz) }
-            btnPublish.text = if (quiz.isPublished) "Unpublish" else "Publish"
-            btnPublish.setOnClickListener { publishClickListener(quiz) }
+            btnPublish.apply {
+                text = if (quiz.isPublished) "Unpublish" else "Publish"
+                setOnClickListener { publishClickListener(quiz) }
+            }
             btnSetTime.setOnClickListener { setTimeClickListener(quiz) }
+        }
+
+        private fun formatDateTime(timeMillis: Long): String {
+            return if (timeMillis > 0L) {
+                val sdf = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
+                sdf.format(Date(timeMillis))
+            } else {
+                "No time set"
+            }
         }
     }
 }
