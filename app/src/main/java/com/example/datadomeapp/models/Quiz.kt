@@ -32,7 +32,7 @@ sealed class Question {
 
     data class Matching(
         override val questionText: String,
-        val options: List<String>,
+        val options: List<String>, // [ "Paris", "Tokyo" ]
         val matches: List<String>
     ) : Question() {
         override val type = "MATCHING"

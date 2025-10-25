@@ -8,27 +8,28 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Left Side (comma separated)"
-            android:textStyle="bold"/>
         <EditText
-            android:id="@+id/etLeft"
+            android:id="@+id/etMatchingQuestionTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Option1, Option2, Option3"/>
+            android:hint="Enter the title for this Matching Question (e.g., Match the capitals to countries)"
+            android:layout_marginBottom="8dp"/>
 
         <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Right Side (comma separated)"
-            android:textStyle="bold"
-            android:paddingTop="12dp"/>
-        <EditText
-            android:id="@+id/etRight"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Match1, Match2, Match3"/>
+            android:text="Terms (Left) and Matches (Right)"/>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerViewMatchingPairs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <Button
+            android:id="@+id/btnAddPair"
+            android:text="Add New Pair"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"/>
     </LinearLayout>
 </ScrollView>

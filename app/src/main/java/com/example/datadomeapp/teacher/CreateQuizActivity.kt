@@ -12,6 +12,7 @@ import com.example.datadomeapp.models.Question
 import com.example.datadomeapp.models.Quiz
 import com.example.datadomeapp.teacher.adapters.QuestionAdapter
 import com.google.firebase.auth.FirebaseAuth
+import com.example.datadomeapp.teacher.adapters.MatchingPairAdapter
 import com.google.firebase.database.*
 
 class CreateQuizActivity : AppCompatActivity() {
@@ -129,35 +130,68 @@ class CreateQuizActivity : AppCompatActivity() {
 
     private fun addMatchingQuestion(existing: Question.Matching? = null) {
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_matching_question, null)
-        val etLeft = view.findViewById<EditText>(R.id.etLeft)
-        val etRight = view.findViewById<EditText>(R.id.etRight)
+
+        // UI Elements based on the new structure
+        val recyclerViewPairs = view.findViewById<RecyclerView>(R.id.recyclerViewMatchingPairs)
+        val btnAddPair = view.findViewById<Button>(R.id.btnAddPair)
+
+        val questionTitleEditText = view.findViewById<EditText>(R.id.etMatchingQuestionTitle) // I-assume na idinagdag mo ito sa XML
+
+        val pairList = mutableListOf<MatchingPair>()
 
         // Populate if editing
         existing?.let {
-            etLeft.setText(it.options.joinToString(", "))
-            etRight.setText(it.matches.joinToString(", "))
+            questionTitleEditText.setText(it.questionText)
+            it.options.zip(it.matches).forEach { (left, right) ->
+                pairList.add(MatchingPair(left, right))
+            }
+        }
+
+        // Default na 3 pares kung walang laman
+        if (pairList.isEmpty()) { repeat(3) { pairList.add(MatchingPair()) } }
+
+        // Callback para sa pagtanggal ng pares
+        val removeCallback: (Int) -> Unit = { position ->
+            pairList.removeAt(position)
+            recyclerViewPairs.adapter?.notifyItemRemoved(position)
+        }
+
+        // I-setup ang Adapter
+        val pairAdapter = MatchingPairAdapter(pairList, removeCallback)
+        recyclerViewPairs.layoutManager = LinearLayoutManager(this)
+        recyclerViewPairs.adapter = pairAdapter
+
+        // I-set up ang Add Pair button
+        btnAddPair.setOnClickListener {
+            pairList.add(MatchingPair())
+            pairAdapter.notifyItemInserted(pairList.size - 1)
+            recyclerViewPairs.scrollToPosition(pairList.size - 1)
         }
 
         AlertDialog.Builder(this)
             .setTitle(if (existing != null) "Edit Matching Question" else "Add Matching Question")
             .setView(view)
             .setPositiveButton("Save") { dialog, _ ->
-                val left = etLeft.text.toString().split(",").map { it.trim() }.filter { it.isNotEmpty() }
-                val right = etRight.text.toString().split(",").map { it.trim() }.filter { it.isNotEmpty() }
 
-                if (left.isEmpty() || left.size != right.size) {
-                    Toast.makeText(this, "Both sides must have same number of items", Toast.LENGTH_SHORT).show()
+                // Kolektahin ang data mula sa adapter at i-filter ang mga walang laman
+                val finalPairs = pairList.filter { it.leftTerm.isNotBlank() && it.rightMatch.isNotBlank() }
+                val questionText = questionTitleEditText.text.toString().trim()
+
+                if (finalPairs.isEmpty() || questionText.isEmpty()) {
+                    Toast.makeText(this, "Quiz must have a question title and at least one complete matching pair.", Toast.LENGTH_SHORT).show()
                     return@setPositiveButton
                 }
 
-                val newQuestion = Question.Matching(existing?.questionText ?: "Matching Question", left, right)
+                val leftOptions = finalPairs.map { it.leftTerm }
+                val rightMatches = finalPairs.map { it.rightMatch }
+
+                val newQuestion = Question.Matching(questionText, leftOptions, rightMatches)
                 updateQuestion(existing, newQuestion)
                 dialog.dismiss()
             }
             .setNegativeButton("Cancel", null)
             .show()
     }
-
 
     private fun addMCQuestion(existing: Question.MultipleChoice? = null) {
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_multiple_choice, null)
@@ -250,3 +284,9 @@ class CreateQuizActivity : AppCompatActivity() {
             .addOnFailureListener { e -> Toast.makeText(this, "Failed: ${e.message}", Toast.LENGTH_LONG).show() }
     }
 }
+
+// Sa loob ng CreateQuizActivity.kt o sa sariling file, kasama ng models
+data class MatchingPair(
+    var leftTerm: String = "",
+    var rightMatch: String = ""
+)
