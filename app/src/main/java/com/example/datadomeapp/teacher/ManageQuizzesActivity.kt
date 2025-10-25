@@ -13,11 +13,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.datadomeapp.R
+import com.example.datadomeapp.models.Question
 import com.example.datadomeapp.models.Quiz
 import com.example.datadomeapp.teacher.adapters.QuizAdapter
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
-
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -43,9 +43,8 @@ class ManageQuizzesActivity : AppCompatActivity() {
 
         recyclerView.layoutManager = LinearLayoutManager(this)
         adapter = QuizAdapter(
-            quizList,
-            editClickListener = { quiz ->
-                (quiz) },
+            quizzes = quizList,
+            editClickListener = { quiz -> openQuizEditor(quiz) },
             deleteClickListener = { quiz -> deleteQuiz(quiz) },
             publishClickListener = { quiz -> togglePublish(quiz) },
             setTimeClickListener = { quiz -> setScheduledTime(quiz) }
@@ -71,25 +70,32 @@ class ManageQuizzesActivity : AppCompatActivity() {
                         val isPublished = child.child("isPublished").getValue(Boolean::class.java) ?: false
                         val scheduledDateTime = child.child("scheduledDateTime").getValue(Long::class.java) ?: 0L
 
+                        // ---------------- Questions ----------------
                         val questionsSnapshot = child.child("questions")
-                        val questionsList = mutableListOf<com.example.datadomeapp.models.Question>()
+                        val questionsList = mutableListOf<Question>()
                         for (qSnap in questionsSnapshot.children) {
                             val type = qSnap.child("type").getValue(String::class.java)
                             val questionText = qSnap.child("questionText").getValue(String::class.java) ?: ""
-                            when (type) {
-                                "truefalse" -> {
+
+                            when (type?.lowercase()) {
+                                "tf", "truefalse" -> {
                                     val answer = qSnap.child("answer").getValue(Boolean::class.java) ?: true
-                                    questionsList.add(com.example.datadomeapp.models.Question.TrueFalse(questionText, answer))
+                                    questionsList.add(Question.TrueFalse(questionText, answer))
                                 }
                                 "matching" -> {
-                                    val options = qSnap.child("options").getValue(object : GenericTypeIndicator<List<String>>() {}) ?: emptyList()
-                                    val matches = qSnap.child("matches").getValue(object : GenericTypeIndicator<List<String>>() {}) ?: emptyList()
-                                    questionsList.add(com.example.datadomeapp.models.Question.Matching(questionText, options, matches))
+                                    val options = qSnap.child("options").getValue(object: GenericTypeIndicator<List<String>>() {}) ?: emptyList()
+                                    val matches = qSnap.child("matches").getValue(object: GenericTypeIndicator<List<String>>() {}) ?: emptyList()
+                                    questionsList.add(Question.Matching(questionText, options, matches))
+                                }
+                                "mc", "multiplechoice" -> {
+                                    val options = qSnap.child("options").getValue(object: GenericTypeIndicator<List<String>>() {}) ?: emptyList()
+                                    val correctIndex = qSnap.child("correctAnswerIndex").getValue(Int::class.java) ?: 0
+                                    questionsList.add(Question.MultipleChoice(questionText, options, correctIndex))
                                 }
                             }
                         }
 
-                        val quiz = com.example.datadomeapp.models.Quiz(
+                        val quiz = Quiz(
                             quizId = quizId,
                             assignmentId = assignmentId,
                             teacherUid = teacherUid,
@@ -98,7 +104,6 @@ class ManageQuizzesActivity : AppCompatActivity() {
                             isPublished = isPublished,
                             scheduledDateTime = scheduledDateTime
                         )
-
                         quizList.add(quiz)
                     }
                     adapter.notifyDataSetChanged()
@@ -110,7 +115,6 @@ class ManageQuizzesActivity : AppCompatActivity() {
                 }
             })
     }
-
 
     private fun toggleEmptyMessage() {
         if (quizList.isEmpty()) {
@@ -134,9 +138,7 @@ class ManageQuizzesActivity : AppCompatActivity() {
         fade.duration = 300
         fade.setAnimationListener(object : android.view.animation.Animation.AnimationListener {
             override fun onAnimationStart(animation: android.view.animation.Animation?) {}
-            override fun onAnimationEnd(animation: android.view.animation.Animation?) {
-                view.visibility = View.GONE
-            }
+            override fun onAnimationEnd(animation: android.view.animation.Animation?) { view.visibility = View.GONE }
             override fun onAnimationRepeat(animation: android.view.animation.Animation?) {}
         })
         view.startAnimation(fade)
@@ -150,53 +152,32 @@ class ManageQuizzesActivity : AppCompatActivity() {
 
     private fun deleteQuiz(quiz: Quiz) {
         db.child("quizzes").child(quiz.quizId).removeValue()
-            .addOnSuccessListener {
-                Toast.makeText(this, "Quiz deleted", Toast.LENGTH_SHORT).show()
-            }
-            .addOnFailureListener {
-                Toast.makeText(this, "Failed to delete quiz", Toast.LENGTH_SHORT).show()
-            }
+            .addOnSuccessListener { Toast.makeText(this, "Quiz deleted", Toast.LENGTH_SHORT).show() }
+            .addOnFailureListener { Toast.makeText(this, "Failed to delete quiz", Toast.LENGTH_SHORT).show() }
     }
 
     private fun togglePublish(quiz: Quiz) {
         val newStatus = !quiz.isPublished
         db.child("quizzes").child(quiz.quizId).child("isPublished").setValue(newStatus)
-            .addOnSuccessListener {
-                Toast.makeText(this, if (newStatus) "Quiz Published" else "Quiz Unpublished", Toast.LENGTH_SHORT).show()
-            }
-            .addOnFailureListener {
-                Toast.makeText(this, "Failed to update publish status", Toast.LENGTH_SHORT).show()
-            }
+            .addOnSuccessListener { Toast.makeText(this, if (newStatus) "Quiz Published" else "Quiz Unpublished", Toast.LENGTH_SHORT).show() }
+            .addOnFailureListener { Toast.makeText(this, "Failed to update publish status", Toast.LENGTH_SHORT).show() }
     }
 
     private fun setScheduledTime(quiz: Quiz) {
         val calendar = Calendar.getInstance()
-
-        DatePickerDialog(
-            this,
-            { _, year, month, dayOfMonth ->
-                TimePickerDialog(
-                    this,
-                    { _, hourOfDay, minute ->
-                        calendar.set(year, month, dayOfMonth, hourOfDay, minute)
+        DatePickerDialog(this,
+            { _, year, month, day ->
+                TimePickerDialog(this,
+                    { _, hour, minute ->
+                        calendar.set(year, month, day, hour, minute)
                         val timestamp = calendar.timeInMillis
                         db.child("quizzes").child(quiz.quizId).child("scheduledDateTime").setValue(timestamp)
                             .addOnSuccessListener {
-                                val format = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
-                                Toast.makeText(this, "Quiz scheduled: ${format.format(Date(timestamp))}", Toast.LENGTH_SHORT).show()
+                                val sdf = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
+                                Toast.makeText(this, "Quiz scheduled: ${sdf.format(Date(timestamp))}", Toast.LENGTH_SHORT).show()
                             }
-                            .addOnFailureListener { e ->
-                                Toast.makeText(this, "Failed to set time: ${e.message}", Toast.LENGTH_LONG).show()
-                            }
-                    },
-                    calendar.get(Calendar.HOUR_OF_DAY),
-                    calendar.get(Calendar.MINUTE),
-                    true
-                ).show()
-            },
-            calendar.get(Calendar.YEAR),
-            calendar.get(Calendar.MONTH),
-            calendar.get(Calendar.DAY_OF_MONTH)
-        ).show()
+                            .addOnFailureListener { e -> Toast.makeText(this, "Failed: ${e.message}", Toast.LENGTH_LONG).show() }
+                    }, calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE), true).show()
+            }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show()
     }
 }

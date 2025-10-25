@@ -30,7 +30,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Options"
+            android:text="Options (select correct)"
             android:textStyle="bold"
             android:paddingTop="16dp"
             android:paddingBottom="4dp"/>
@@ -48,12 +48,10 @@
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:paddingBottom="8dp">
-
                 <RadioButton
                     android:id="@+id/rbOption1"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"/>
-
                 <EditText
                     android:id="@+id/etOption1"
                     android:layout_width="0dp"
@@ -70,12 +68,10 @@
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:paddingBottom="8dp">
-
                 <RadioButton
                     android:id="@+id/rbOption2"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"/>
-
                 <EditText
                     android:id="@+id/etOption2"
                     android:layout_width="0dp"
@@ -92,12 +88,10 @@
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:paddingBottom="8dp">
-
                 <RadioButton
                     android:id="@+id/rbOption3"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"/>
-
                 <EditText
                     android:id="@+id/etOption3"
                     android:layout_width="0dp"
@@ -112,14 +106,11 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingBottom="8dp">
-
+                android:gravity="center_vertical">
                 <RadioButton
                     android:id="@+id/rbOption4"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"/>
-
                 <EditText
                     android:id="@+id/etOption4"
                     android:layout_width="0dp"
@@ -128,7 +119,6 @@
                     android:hint="Option 4 (optional)"
                     android:paddingStart="8dp"/>
             </LinearLayout>
-
         </RadioGroup>
     </LinearLayout>
 </ScrollView>

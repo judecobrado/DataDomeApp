@@ -12,7 +12,7 @@ import com.example.datadomeapp.models.Question
 import com.example.datadomeapp.models.Quiz
 import com.example.datadomeapp.teacher.adapters.QuestionAdapter
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.*
 
 class CreateQuizActivity : AppCompatActivity() {
 
@@ -29,6 +29,8 @@ class CreateQuizActivity : AppCompatActivity() {
     private val questionList = mutableListOf<Question>()
     private lateinit var adapter: QuestionAdapter
 
+    private var editingQuizId: String? = null  // for editing existing quiz
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_create_quiz)
@@ -41,57 +43,99 @@ class CreateQuizActivity : AppCompatActivity() {
         etQuizTitle = findViewById(R.id.etQuizTitle)
 
         recyclerView.layoutManager = LinearLayoutManager(this)
-        adapter = QuestionAdapter(
-            questionList,
+        adapter = QuestionAdapter(questionList,
             editClickListener = { editQuestion(it) },
-            deleteClickListener = { deleteQuestion(it) }
-        )
+            deleteClickListener = { deleteQuestion(it) })
         recyclerView.adapter = adapter
 
         btnAddTF.setOnClickListener { addTFQuestion() }
         btnAddMatching.setOnClickListener { addMatchingQuestion() }
         btnAddMC.setOnClickListener { addMCQuestion() }
         btnSaveQuiz.setOnClickListener { saveQuiz() }
+
+        // ----------------- Check if editing -----------------
+        editingQuizId = intent.getStringExtra("QUIZ_ID")
+        editingQuizId?.let { loadExistingQuiz(it) }
     }
 
-    // ------------------ True/False ------------------
-    private fun addTFQuestion(existing: Question.TrueFalse? = null) {
-        val input = EditText(this).apply {
-            setText(existing?.questionText ?: "")
-            hint = "Enter True/False question"
+    private fun loadExistingQuiz(quizId: String) {
+        db.child("quizzes").child(quizId).get().addOnSuccessListener { snapshot ->
+            val title = snapshot.child("title").getValue(String::class.java) ?: ""
+            etQuizTitle.setText(title)
+
+            val questionsSnapshot = snapshot.child("questions")
+            questionList.clear()
+            for (qSnap in questionsSnapshot.children) {
+                val type = qSnap.child("type").getValue(String::class.java)
+                val text = qSnap.child("questionText").getValue(String::class.java) ?: ""
+
+                when (type?.lowercase()) {
+                    "tf", "truefalse" -> {
+                        val answer = qSnap.child("answer").getValue(Boolean::class.java) ?: true
+                        questionList.add(Question.TrueFalse(text, answer))
+                    }
+                    "matching" -> {
+                        val options = qSnap.child("options").getValue(object : GenericTypeIndicator<List<String>>() {}) ?: emptyList()
+                        val matches = qSnap.child("matches").getValue(object : GenericTypeIndicator<List<String>>() {}) ?: emptyList()
+                        questionList.add(Question.Matching(text, options, matches))
+                    }
+                    "mc", "multiplechoice" -> {
+                        val options = qSnap.child("options").getValue(object : GenericTypeIndicator<List<String>>() {}) ?: emptyList()
+                        val correctIndex = qSnap.child("correctAnswerIndex").getValue(Int::class.java) ?: 0
+                        questionList.add(Question.MultipleChoice(text, options, correctIndex))
+                    }
+                }
+            }
+            adapter.notifyDataSetChanged()
         }
+    }
+
+    // -------------------- Add / Edit Questions --------------------
+    private fun addTFQuestion(existing: Question.TrueFalse? = null) {
+        val view = LayoutInflater.from(this).inflate(R.layout.dialog_true_false, null)
+        val etQuestion = view.findViewById<EditText>(R.id.etTFQuestion)
+        val rbTrue = view.findViewById<RadioButton>(R.id.rbTrue)
+        val rbFalse = view.findViewById<RadioButton>(R.id.rbFalse)
+
+        // Populate if editing
+        existing?.let {
+            etQuestion.setText(it.questionText)
+            if (it.answer) rbTrue.isChecked = true else rbFalse.isChecked = true
+        }
+
         AlertDialog.Builder(this)
-            .setTitle(if (existing != null) "Edit TF Question" else "Add True/False Question")
-            .setView(input)
-            .setPositiveButton("Next") { dialog, _ ->
-                val text = input.text.toString().trim()
-                if (text.isNotEmpty()) askTFAnswer(text, existing)
+            .setTitle(if (existing != null) "Edit True/False Question" else "Add True/False Question")
+            .setView(view)
+            .setPositiveButton("Save") { dialog, _ ->
+                val questionText = etQuestion.text.toString().trim()
+                val answer = when {
+                    rbTrue.isChecked -> true
+                    rbFalse.isChecked -> false
+                    else -> null
+                }
+
+                if (questionText.isEmpty() || answer == null) {
+                    Toast.makeText(this, "Enter question and select answer", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+
+                val newQuestion = Question.TrueFalse(questionText, answer)
+                updateQuestion(existing, newQuestion)
                 dialog.dismiss()
             }
             .setNegativeButton("Cancel", null)
             .show()
     }
 
-    private fun askTFAnswer(questionText: String, existing: Question.TrueFalse? = null) {
-        val options = arrayOf("True", "False")
-        AlertDialog.Builder(this)
-            .setTitle("Select Correct Answer")
-            .setItems(options) { _, which ->
-                val answer = options[which] == "True"
-                val newQuestion = Question.TrueFalse(questionText, answer)
-                updateQuestion(existing, newQuestion)
-            }.show()
-    }
-
-    // ------------------ Matching ------------------
     private fun addMatchingQuestion(existing: Question.Matching? = null) {
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_matching_question, null)
         val etLeft = view.findViewById<EditText>(R.id.etLeft)
         val etRight = view.findViewById<EditText>(R.id.etRight)
 
+        // Populate if editing
         existing?.let {
-            etLeft.setText(it.options.joinToString(","))
-            etRight.setText(it.matches.joinToString(","))
+            etLeft.setText(it.options.joinToString(", "))
+            etRight.setText(it.matches.joinToString(", "))
         }
 
         AlertDialog.Builder(this)
@@ -101,7 +145,7 @@ class CreateQuizActivity : AppCompatActivity() {
                 val left = etLeft.text.toString().split(",").map { it.trim() }.filter { it.isNotEmpty() }
                 val right = etRight.text.toString().split(",").map { it.trim() }.filter { it.isNotEmpty() }
 
-                if (left.size != right.size || left.isEmpty()) {
+                if (left.isEmpty() || left.size != right.size) {
                     Toast.makeText(this, "Both sides must have same number of items", Toast.LENGTH_SHORT).show()
                     return@setPositiveButton
                 }
@@ -114,7 +158,7 @@ class CreateQuizActivity : AppCompatActivity() {
             .show()
     }
 
-    // ------------------ Multiple Choice ------------------
+
     private fun addMCQuestion(existing: Question.MultipleChoice? = null) {
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_multiple_choice, null)
 
@@ -128,19 +172,16 @@ class CreateQuizActivity : AppCompatActivity() {
         val rb2 = view.findViewById<RadioButton>(R.id.rbOption2)
         val rb3 = view.findViewById<RadioButton>(R.id.rbOption3)
         val rb4 = view.findViewById<RadioButton>(R.id.rbOption4)
-
         val radioButtons = listOf(rb1, rb2, rb3, rb4)
 
-        // Manual single-selection (needed because RadioButtons are inside LinearLayouts)
+        // Manual single selection
         radioButtons.forEachIndexed { index, rb ->
             rb.setOnClickListener {
-                radioButtons.forEachIndexed { i, otherRb ->
-                    otherRb.isChecked = i == index
-                }
+                radioButtons.forEachIndexed { i, otherRb -> otherRb.isChecked = i == index }
             }
         }
 
-        // Populate fields if editing
+        // Populate if editing
         existing?.let {
             etQuestion.setText(it.questionText)
             it.options.getOrNull(0)?.let { s -> et1.setText(s) }
@@ -160,31 +201,22 @@ class CreateQuizActivity : AppCompatActivity() {
             .setView(view)
             .setPositiveButton("Save") { dialog, _ ->
                 val questionText = etQuestion.text.toString().trim()
-                val options = listOf(et1, et2, et3, et4)
-                    .map { it.text.toString().trim() }
-                    .filter { it.isNotEmpty() }
-
+                val options = listOf(et1, et2, et3, et4).map { it.text.toString().trim() }.filter { it.isNotEmpty() }
                 val correctIndex = radioButtons.indexOfFirst { it.isChecked }
 
                 if (questionText.isEmpty() || options.size < 2 || correctIndex == -1) {
-                    Toast.makeText(this, "Fill question, at least 2 options, and select correct answer", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Enter question, at least 2 options, and select correct answer", Toast.LENGTH_SHORT).show()
                     return@setPositiveButton
                 }
 
-                val mcQuestion = Question.MultipleChoice(
-                    questionText = questionText,
-                    options = options,
-                    correctAnswerIndex = correctIndex
-                )
-                updateQuestion(existing, mcQuestion)
+                val newQuestion = Question.MultipleChoice(questionText, options, correctIndex)
+                updateQuestion(existing, newQuestion)
                 dialog.dismiss()
             }
             .setNegativeButton("Cancel", null)
             .show()
     }
 
-
-    // ------------------ Edit / Delete ------------------
     private fun editQuestion(question: Question) {
         when (question) {
             is Question.TrueFalse -> addTFQuestion(question)
@@ -195,51 +227,26 @@ class CreateQuizActivity : AppCompatActivity() {
 
     private fun deleteQuestion(question: Question) {
         val index = questionList.indexOf(question)
-        if (index != -1) {
-            questionList.removeAt(index)
-            adapter.notifyItemRemoved(index)
-        }
+        if (index != -1) { questionList.removeAt(index); adapter.notifyItemRemoved(index) }
     }
 
     private fun updateQuestion(existing: Question?, newQuestion: Question) {
         if (existing != null) {
             val index = questionList.indexOf(existing)
-            if (index != -1) {
-                questionList[index] = newQuestion
-                adapter.notifyItemChanged(index)
-                return
-            }
+            if (index != -1) { questionList[index] = newQuestion; adapter.notifyItemChanged(index); return }
         }
         questionList.add(newQuestion)
         adapter.notifyItemInserted(questionList.size - 1)
     }
 
-    // ------------------ Save ------------------
     private fun saveQuiz() {
         val title = etQuizTitle.text.toString().trim()
-        if (title.isEmpty() || questionList.isEmpty()) {
-            Toast.makeText(this, "Quiz must have a title and at least one question", Toast.LENGTH_SHORT).show()
-            return
-        }
+        if (title.isEmpty() || questionList.isEmpty()) { Toast.makeText(this, "Quiz must have a title and at least one question", Toast.LENGTH_SHORT).show(); return }
 
-        val id = db.child("quizzes").push().key ?: return
-        val quiz = Quiz(
-            quizId = id,
-            assignmentId = "",
-            teacherUid = auth.currentUser?.uid ?: "",
-            title = title,
-            questions = questionList.toList(),
-            isPublished = false,
-            scheduledDateTime = 0L
-        )
-
-        db.child("quizzes").child(id).setValue(quiz)
-            .addOnSuccessListener {
-                Toast.makeText(this, "Quiz saved successfully!", Toast.LENGTH_SHORT).show()
-                finish()
-            }
-            .addOnFailureListener { e ->
-                Toast.makeText(this, "Failed to save quiz: ${e.message}", Toast.LENGTH_LONG).show()
-            }
+        val quizId = editingQuizId ?: db.child("quizzes").push().key ?: return
+        val quiz = Quiz(quizId = quizId, assignmentId = "", teacherUid = auth.currentUser?.uid ?: "", title = title, questions = questionList.toList(), isPublished = false, scheduledDateTime = 0L)
+        db.child("quizzes").child(quizId).setValue(quiz)
+            .addOnSuccessListener { Toast.makeText(this, "Quiz saved successfully!", Toast.LENGTH_SHORT).show(); finish() }
+            .addOnFailureListener { e -> Toast.makeText(this, "Failed: ${e.message}", Toast.LENGTH_LONG).show() }
     }
 }
