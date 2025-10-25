@@ -26,7 +26,7 @@ class CreateQuizActivity : AppCompatActivity() {
     private lateinit var btnAddMC: Button
     private lateinit var btnSaveQuiz: Button
     private lateinit var etQuizTitle: EditText
-
+    private var currentAssignmentId: String? = null
     private val questionList = mutableListOf<Question>()
     private lateinit var adapter: QuestionAdapter
 
@@ -44,7 +44,8 @@ class CreateQuizActivity : AppCompatActivity() {
         etQuizTitle = findViewById(R.id.etQuizTitle)
 
         recyclerView.layoutManager = LinearLayoutManager(this)
-        adapter = QuestionAdapter(questionList,
+        adapter = QuestionAdapter(
+            questionList,
             editClickListener = { editQuestion(it) },
             deleteClickListener = { deleteQuestion(it) })
         recyclerView.adapter = adapter
@@ -56,7 +57,15 @@ class CreateQuizActivity : AppCompatActivity() {
 
         // ----------------- Check if editing -----------------
         editingQuizId = intent.getStringExtra("QUIZ_ID")
+        currentAssignmentId = intent.getStringExtra("ASSIGNMENT_ID")
         editingQuizId?.let { loadExistingQuiz(it) }
+
+        if (currentAssignmentId.isNullOrEmpty() && editingQuizId.isNullOrEmpty()) {
+            Toast.makeText(this, "Error: Quiz must be associated with a class.", Toast.LENGTH_LONG)
+                .show()
+            finish()
+            return
+        }
     }
 
     private fun loadExistingQuiz(quizId: String) {
@@ -75,14 +84,23 @@ class CreateQuizActivity : AppCompatActivity() {
                         val answer = qSnap.child("answer").getValue(Boolean::class.java) ?: true
                         questionList.add(Question.TrueFalse(text, answer))
                     }
+
                     "matching" -> {
-                        val options = qSnap.child("options").getValue(object : GenericTypeIndicator<List<String>>() {}) ?: emptyList()
-                        val matches = qSnap.child("matches").getValue(object : GenericTypeIndicator<List<String>>() {}) ?: emptyList()
+                        val options = qSnap.child("options")
+                            .getValue(object : GenericTypeIndicator<List<String>>() {})
+                            ?: emptyList()
+                        val matches = qSnap.child("matches")
+                            .getValue(object : GenericTypeIndicator<List<String>>() {})
+                            ?: emptyList()
                         questionList.add(Question.Matching(text, options, matches))
                     }
+
                     "mc", "multiplechoice" -> {
-                        val options = qSnap.child("options").getValue(object : GenericTypeIndicator<List<String>>() {}) ?: emptyList()
-                        val correctIndex = qSnap.child("correctAnswerIndex").getValue(Int::class.java) ?: 0
+                        val options = qSnap.child("options")
+                            .getValue(object : GenericTypeIndicator<List<String>>() {})
+                            ?: emptyList()
+                        val correctIndex =
+                            qSnap.child("correctAnswerIndex").getValue(Int::class.java) ?: 0
                         questionList.add(Question.MultipleChoice(text, options, correctIndex))
                     }
                 }
@@ -123,11 +141,19 @@ class CreateQuizActivity : AppCompatActivity() {
 
                 // *** VALIDATION LOGIC FOR TRUE/FALSE (Question: min 2 chars) ***
                 if (questionText.length < 2) {
-                    Toast.makeText(this, "Question must have at least 2 characters.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this,
+                        "Question must have at least 2 characters.",
+                        Toast.LENGTH_SHORT
+                    ).show()
                     return@setOnClickListener // Don't close dialog
                 }
                 if (answer == null) {
-                    Toast.makeText(this, "Please select either True or False as the answer.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this,
+                        "Please select either True or False as the answer.",
+                        Toast.LENGTH_SHORT
+                    ).show()
                     return@setOnClickListener // Don't close dialog
                 }
                 // ***************************************
@@ -160,7 +186,9 @@ class CreateQuizActivity : AppCompatActivity() {
         }
 
         // Default na 3 pares (o minPairs kung mas mataas) kung walang laman
-        if (pairList.isEmpty()) { repeat(minPairs) { pairList.add(MatchingPair()) } }
+        if (pairList.isEmpty()) {
+            repeat(minPairs) { pairList.add(MatchingPair()) }
+        }
 
         val removeCallback: (Int) -> Unit = { position ->
             pairList.removeAt(position)
@@ -180,7 +208,11 @@ class CreateQuizActivity : AppCompatActivity() {
                 recyclerViewPairs.scrollToPosition(pairList.size - 1)
                 btnAddPair.isEnabled = pairList.size < maxPairs
             } else {
-                Toast.makeText(this, "Maximum of $maxPairs matching pairs reached.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    this,
+                    "Maximum of $maxPairs matching pairs reached.",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
 
@@ -198,17 +230,26 @@ class CreateQuizActivity : AppCompatActivity() {
 
                 // Kolektahin ang data mula sa adapter at i-filter ang mga walang laman
                 // Validation for Left/Right: at least 1 character
-                val finalPairs = pairList.filter { it.leftTerm.length >= 1 && it.rightMatch.length >= 1 }
+                val finalPairs =
+                    pairList.filter { it.leftTerm.length >= 1 && it.rightMatch.length >= 1 }
 
                 // *** VALIDATION LOGIC FOR MATCHING ***
                 if (questionText.length < 2) {
-                    Toast.makeText(this, "Question title must have at least 2 characters.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this,
+                        "Question title must have at least 2 characters.",
+                        Toast.LENGTH_SHORT
+                    ).show()
                     return@setOnClickListener
                 }
 
                 // I-check kung naabot ang minimum na 2 pares
                 if (finalPairs.size < minPairs) {
-                    Toast.makeText(this, "Matching Quiz must have at least $minPairs complete matching pairs (1 character min per term).", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this,
+                        "Matching Quiz must have at least $minPairs complete matching pairs (1 character min per term).",
+                        Toast.LENGTH_SHORT
+                    ).show()
                     return@setOnClickListener
                 }
 
@@ -251,7 +292,11 @@ class CreateQuizActivity : AppCompatActivity() {
             rb.setOnClickListener {
                 val optionText = etOptions[index].text.toString().trim()
                 if (optionText.length < minOptionChars) {
-                    Toast.makeText(this, "The selected option must have at least $minOptionChars character.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this,
+                        "The selected option must have at least $minOptionChars character.",
+                        Toast.LENGTH_SHORT
+                    ).show()
                     rb.isChecked = false // Prevent selecting if invalid
                 } else {
                     // Allow single selection
@@ -267,7 +312,11 @@ class CreateQuizActivity : AppCompatActivity() {
                     val text = et.text.toString().trim()
                     if (text.length < minOptionChars && radioButtons[index].isChecked) {
                         radioButtons[index].isChecked = false
-                        Toast.makeText(this, "The option is too short and has been unchecked.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            this,
+                            "The option is too short and has been unchecked.",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 }
             }
@@ -306,15 +355,24 @@ class CreateQuizActivity : AppCompatActivity() {
 
                 // *** VALIDATION LOGIC FOR MULTIPLE CHOICE (Question: min 2 chars; Options: min 1 char) ***
                 if (questionText.length < 2) {
-                    Toast.makeText(this, "Question must have at least 2 characters.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this,
+                        "Question must have at least 2 characters.",
+                        Toast.LENGTH_SHORT
+                    ).show()
                     return@setOnClickListener
                 }
                 if (validOptions.size < 2) {
-                    Toast.makeText(this, "You need at least 2 valid options (min $minOptionChars character each).", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this,
+                        "You need at least 2 valid options (min $minOptionChars character each).",
+                        Toast.LENGTH_SHORT
+                    ).show()
                     return@setOnClickListener
                 }
                 if (correctIndex == -1) {
-                    Toast.makeText(this, "Please select the correct answer.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Please select the correct answer.", Toast.LENGTH_SHORT)
+                        .show()
                     return@setOnClickListener
                 }
 
@@ -322,13 +380,18 @@ class CreateQuizActivity : AppCompatActivity() {
                 val newCorrectIndex = validOptions.indexOf(allOptions[correctIndex])
                 if (newCorrectIndex == -1) {
                     // This means the selected radio button corresponds to an option that is now invalid
-                    Toast.makeText(this, "Correct answer is invalid or too short. Please re-select.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this,
+                        "Correct answer is invalid or too short. Please re-select.",
+                        Toast.LENGTH_SHORT
+                    ).show()
                     radioButtons[correctIndex].isChecked = false // Uncheck it
                     return@setOnClickListener
                 }
                 // *******************************************
 
-                val newQuestion = Question.MultipleChoice(questionText, validOptions, newCorrectIndex)
+                val newQuestion =
+                    Question.MultipleChoice(questionText, validOptions, newCorrectIndex)
                 updateQuestion(existing, newQuestion)
                 dialog.dismiss()
             }
@@ -346,13 +409,17 @@ class CreateQuizActivity : AppCompatActivity() {
 
     private fun deleteQuestion(question: Question) {
         val index = questionList.indexOf(question)
-        if (index != -1) { questionList.removeAt(index); adapter.notifyItemRemoved(index) }
+        if (index != -1) {
+            questionList.removeAt(index); adapter.notifyItemRemoved(index)
+        }
     }
 
     private fun updateQuestion(existing: Question?, newQuestion: Question) {
         if (existing != null) {
             val index = questionList.indexOf(existing)
-            if (index != -1) { questionList[index] = newQuestion; adapter.notifyItemChanged(index); return }
+            if (index != -1) {
+                questionList[index] = newQuestion; adapter.notifyItemChanged(index); return
+            }
         }
         questionList.add(newQuestion)
         adapter.notifyItemInserted(questionList.size - 1)
@@ -360,21 +427,69 @@ class CreateQuizActivity : AppCompatActivity() {
 
     private fun saveQuiz() {
         val title = etQuizTitle.text.toString().trim()
-        // Quiz Title validation remains 2 characters
+
         if (title.isEmpty() || title.length < 2) {
-            Toast.makeText(this, "Quiz title must have at least 2 characters.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Quiz title must have at least 2 characters.", Toast.LENGTH_SHORT)
+                .show();
             return
         }
         if (questionList.isEmpty()) {
-            Toast.makeText(this, "Quiz must have at least one question.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Quiz must have at least one question.", Toast.LENGTH_SHORT)
+                .show();
             return
         }
 
         val quizId = editingQuizId ?: db.child("quizzes").push().key ?: return
-        val quiz = Quiz(quizId = quizId, assignmentId = "", teacherUid = auth.currentUser?.uid ?: "", title = title, questions = questionList.toList(), isPublished = false, scheduledDateTime = 0L)
-        db.child("quizzes").child(quizId).setValue(quiz)
-            .addOnSuccessListener { Toast.makeText(this, "Quiz saved successfully!", Toast.LENGTH_SHORT).show(); finish() }
-            .addOnFailureListener { e -> Toast.makeText(this, "Failed: ${e.message}", Toast.LENGTH_LONG).show() }
+
+        // 🚨 CRITICAL FIX: I-check muna ang Assignment ID na ipinasa sa Intent.
+        // Dapat may laman ito dahil ni-require na ito sa onCreate.
+        val intentAssignmentId = currentAssignmentId ?: ""
+        if (intentAssignmentId.isEmpty() && editingQuizId == null) {
+            Toast.makeText(
+                this,
+                "Error: Cannot save quiz without a class assignment ID.",
+                Toast.LENGTH_LONG
+            ).show()
+            return
+        }
+
+        db.child("quizzes").child(quizId).get().addOnSuccessListener { snapshot ->
+
+            // Kunin ang lumang data.
+            val oldIsPublished =
+                snapshot.child("isPublished").getValue(Boolean::class.java) ?: false
+            val oldScheduledDateTime =
+                snapshot.child("scheduledDateTime").getValue(Long::class.java) ?: 0L
+            val oldScheduledEndDateTime =
+                snapshot.child("scheduledEndDateTime").getValue(Long::class.java) ?: 0L
+
+            // 🎯 ANG PINAKAMAHALAGANG PAGBABAGO:
+            // Gamitin ang lumang assignmentId KUNG mayroon, kung WALA, gamitin ang assignmentId na galing sa Intent.
+            val finalAssignmentId = snapshot.child("assignmentId").getValue(String::class.java)
+                .takeIf { !it.isNullOrEmpty() }
+                ?: intentAssignmentId
+
+            val quiz = Quiz(
+                quizId = quizId,
+                // ✅ GAMITIN ANG FINAL ASSIGNMENT ID
+                assignmentId = finalAssignmentId,
+                teacherUid = auth.currentUser?.uid ?: "",
+                title = title,
+                questions = questionList.toList(),
+                isPublished = oldIsPublished,
+                scheduledDateTime = oldScheduledDateTime,
+                scheduledEndDateTime = oldScheduledEndDateTime
+            )
+            // ... (rest of the save logic) ...
+            db.child("quizzes").child(quizId).setValue(quiz)
+                .addOnSuccessListener {
+                    Toast.makeText(this, "Quiz saved successfully!", Toast.LENGTH_SHORT).show()
+                    finish()
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(this, "Failed: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+        }
     }
 }
 

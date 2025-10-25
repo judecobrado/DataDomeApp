@@ -38,12 +38,12 @@
         android:textSize="18sp" />
 
     <Button
-        android:id="@+id/btnManageGrades"
+        android:id="@+id/btnManageAllQuizzes"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="10dp"
         android:padding="15dp"
-        android:text="Manage Grades"
+        android:text="Manage Quiz"
         android:textSize="18sp" />
 
     <Button

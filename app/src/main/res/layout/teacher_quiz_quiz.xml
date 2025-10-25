@@ -6,7 +6,8 @@
     android:layout_margin="8dp"
     app:cardCornerRadius="12dp"
     app:cardElevation="4dp"
-    android:background="@drawable/bg_card">
+    >
+    <!-- Tandaan: Ang background="@drawable/bg_card" ay kailangan ng isang existing drawable resource. -->
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -14,32 +15,38 @@
         android:orientation="vertical"
         android:padding="12dp">
 
+        <!-- 1. QUIZ TITLE -->
         <TextView
             android:id="@+id/tvQuizTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Quiz Title"
+            android:text="Quiz Title Placeholder"
             android:textSize="18sp"
             android:textStyle="bold"
             android:textColor="@android:color/black" />
 
+        <!-- 2. DATE, TIME, and STATUS (Ito ang tvQuizDateTime na ginagamit natin) -->
         <TextView
             android:id="@+id/tvQuizDateTime"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="No time set"
+            android:text="Status: 📝 DRAFT (No Time Set)"
             android:textSize="14sp"
             android:textColor="@android:color/darker_gray"
-            android:paddingTop="4dp" />
+            android:paddingTop="4dp"
+            android:maxLines="3"
+            android:ellipsize="end"/>
 
+        <!-- 3. ACTION BUTTONS -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="end"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="12dp"
             android:weightSum="4">
 
+            <!-- EDIT / VIEW Button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnEditQuiz"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
@@ -49,6 +56,7 @@
                 android:text="Edit"
                 android:layout_marginEnd="4dp" />
 
+            <!-- SET TIME / UPDATE TIME Button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSetTime"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
@@ -58,6 +66,7 @@
                 android:text="Set Time"
                 android:layout_marginEnd="4dp" />
 
+            <!-- PUBLISH / UNPUBLISH Button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnPublishToggle"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
@@ -67,6 +76,7 @@
                 android:text="Publish"
                 android:layout_marginEnd="4dp" />
 
+            <!-- DELETE Button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnDeleteQuiz"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"

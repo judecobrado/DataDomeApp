@@ -20,7 +20,7 @@ class QuizAdapter(
 ) : RecyclerView.Adapter<QuizAdapter.QuizViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): QuizViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_quiz, parent, false)
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.teacher_quiz_quiz, parent, false)
         return QuizViewHolder(view)
     }
 
@@ -48,55 +48,97 @@ class QuizAdapter(
 
     inner class QuizViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val tvTitle: TextView = itemView.findViewById(R.id.tvQuizTitle)
-        private val tvDateTime: TextView = itemView.findViewById(R.id.tvQuizDateTime)
+        // ✅ Ginamit ang tamang ID mula sa XML
+        private val tvDateTimeStatus: TextView = itemView.findViewById(R.id.tvQuizDateTime)
         private val btnEdit: Button = itemView.findViewById(R.id.btnEditQuiz)
         private val btnDelete: Button = itemView.findViewById(R.id.btnDeleteQuiz)
         private val btnPublish: Button = itemView.findViewById(R.id.btnPublishToggle)
         private val btnSetTime: Button = itemView.findViewById(R.id.btnSetTime)
 
+        // Helper functions (Inilipat ang mga ito sa loob ng ViewHolder para sa mas madaling paggamit)
+        private fun isQuizFinished(quiz: Quiz): Boolean {
+            val currentTime = System.currentTimeMillis()
+            val endTime = quiz.scheduledEndDateTime
+            return quiz.isPublished && endTime > 0L && currentTime > endTime
+        }
+
+        private fun isQuizOngoing(quiz: Quiz): Boolean {
+            val currentTime = System.currentTimeMillis()
+            val startTime = quiz.scheduledDateTime
+            val endTime = quiz.scheduledEndDateTime
+            return quiz.isPublished && startTime > 0L && endTime > 0L && currentTime >= startTime && currentTime <= endTime
+        }
+        // End of Helper functions
+
         fun bind(quiz: Quiz) {
+            val isOngoing = isQuizOngoing(quiz)
+            val isFinished = isQuizFinished(quiz)
+            val isViewMode = isOngoing || isFinished // True if Ongoing or Finished
+            val canDelete = !isViewMode
+            val canTogglePublish = !isOngoing
+            val isPublished = quiz.isPublished
+
             tvTitle.text = quiz.title
+            tvDateTimeStatus.text = formatDateTimeRange(quiz.scheduledDateTime, quiz.scheduledEndDateTime, isOngoing, isFinished, isPublished)
 
-            // Gumamit ng bagong format para i-display ang Start at End Time
-            tvDateTime.text = formatDateTimeRange(quiz.scheduledDateTime, quiz.scheduledEndDateTime)
-
-            btnEdit.setOnClickListener { editClickListener(quiz) }
-            btnDelete.setOnClickListener { deleteClickListener(quiz) }
-
-            // I-set ang Publish/Unpublish text
-            btnPublish.apply {
-                text = if (quiz.isPublished) "Unpublish" else "Publish"
-                setOnClickListener { publishClickListener(quiz) }
+            // --- EDIT / VIEW BUTTON LOGIC ---
+            btnEdit.apply {
+                // VIEW button lang kapag Ongoing o Finished, pero laging VISIBLE
+                text = if (isViewMode) "VIEW" else "Edit"
+                isEnabled = true
+                alpha = 1.0f // Tiyaking visible
+                setOnClickListener { editClickListener(quiz) }
             }
 
-            // ✅ I-set ang SET TIME / UPDATE TIME text
+            // --- DELETE BUTTON LOGIC ---
+            btnDelete.apply {
+                // ✅ Ngayon ay GONE na kapag hindi pwedeng i-delete
+                visibility = if (canDelete) View.VISIBLE else View.GONE
+                setOnClickListener { if (canDelete) deleteClickListener(quiz) }
+            }
+
+            // --- SET TIME BUTTON LOGIC ---
             btnSetTime.apply {
+                val canSetTime = isPublished && !isViewMode
                 text = if (quiz.scheduledDateTime > 0L) "UPDATE TIME" else "SET TIME"
-                setOnClickListener { setTimeClickListener(quiz) }
+                // ✅ Ngayon ay GONE na kapag hindi pwedeng i-set ang time
+                visibility = if (canSetTime) View.VISIBLE else View.GONE
+                setOnClickListener { if (canSetTime) setTimeClickListener(quiz) }
+            }
+
+            // --- PUBLISH BUTTON LOGIC ---
+            btnPublish.apply {
+                // ✅ Ngayon ay GONE na kapag Ongoing
+                text = if (isPublished) "Unpublish" else "Publish"
+                visibility = if (canTogglePublish) View.VISIBLE else View.GONE
+                setOnClickListener { if (canTogglePublish) publishClickListener(quiz) }
             }
         }
 
         /**
-         * 💡 PAGBABAGO: I-format ang start at end time sa 12-hour format.
+         * I-format ang start at end time at isama ang status, checking ang isPublished status.
          */
-        private fun formatDateTimeRange(startTimeMillis: Long, endTimeMillis: Long): String {
-            if (startTimeMillis <= 0L) {
-                return "No time set"
-            }
+        private fun formatDateTimeRange(startTimeMillis: Long, endTimeMillis: Long, isOngoing: Boolean, isFinished: Boolean, isPublished: Boolean): String {
 
-            val startSdf = SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.getDefault())
-            val endSdf = SimpleDateFormat("hh:mm a", Locale.getDefault())
-
-            val startDate = Date(startTimeMillis)
-            val endDate = Date(endTimeMillis)
-
-            return if (endTimeMillis > 0L) {
-                // I-display ang range: Date Start Time - End Time
-                "${startSdf.format(startDate)} - ${endSdf.format(endDate)}"
+            val timeDetails = if (startTimeMillis > 0L) {
+                val startSdf = SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.getDefault())
+                val endSdf = SimpleDateFormat("hh:mm a", Locale.getDefault())
+                val timeRange = "${startSdf.format(Date(startTimeMillis))} - ${endSdf.format(Date(endTimeMillis))}"
+                timeRange
             } else {
-                // Kung may start time pero walang end time (shouldn't happen with our current logic)
-                "Scheduled: ${startSdf.format(startDate)}"
+                "No Time Set"
             }
+
+            // Status Check Logic (Pinagsama ang isPublished at Time check)
+            val statusText = when {
+                isOngoing -> "Status: 🟢 ONGOING"
+                isFinished -> "Status: 🏁 FINISHED"
+                isPublished && startTimeMillis > 0L -> "Status: 🗓️ SCHEDULED"
+                !isPublished && startTimeMillis > 0L -> "Status: 🕒 DRAFT (Time Set)"
+                else -> "Status: 📝 DRAFT (No Time Set)"
+            }
+
+            return "$statusText\n$timeDetails"
         }
     }
 }

@@ -9,7 +9,6 @@ import com.example.datadomeapp.LoginActivity
 import com.example.datadomeapp.R
 import com.google.firebase.auth.FirebaseAuth
 
-// ✅ NEW: Import ang mga bagong Activity (Assumed na gagawin mo ang mga ito)
 
 class TeacherDashboardActivity : AppCompatActivity() {
 
@@ -45,9 +44,9 @@ class TeacherDashboardActivity : AppCompatActivity() {
         }
 
         // 3. Manage Grades Button
-        val btnManageGrades = findViewById<Button>(R.id.btnManageGrades)
-        btnManageGrades.setOnClickListener {
-            val intent = Intent(this, ManageGradesActivity::class.java)
+        val btnManageAllQuizzes = findViewById<Button>(R.id.btnManageAllQuizzes)
+        btnManageAllQuizzes.setOnClickListener {
+            val intent = Intent(this, ManageQuizzesActivity::class.java)
             startActivity(intent)
         }
 
