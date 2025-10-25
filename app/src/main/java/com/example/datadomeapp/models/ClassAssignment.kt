@@ -13,6 +13,7 @@ data class ClassAssignment(
     val subjectTitle: String = "",
     val courseCode: String = "",
     val yearLevel: String = "",
+    val section: String = "",
 
     // Teacher and Capacity
     val teacherUid: String = "",

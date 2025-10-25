@@ -40,3 +40,8 @@ sealed class Question {
     }
 }
 
+data class ClassDisplayDetails(
+    val sectionId: String,
+    val subjectTitle: String
+)
+

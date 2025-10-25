@@ -1076,9 +1076,10 @@ class ManageSchedulesActivity : AppCompatActivity() {
                             subjectTitle = subjectTitle,
                             teacherUid = selectedTeacher.uid,
                             teacherName = selectedTeacher.name,
+                            section = sectionBlock,
                             maxCapacity = capacity,
                             enrolledCount = 0,
-                            scheduleSlots = mapOf("slot1" to newSlot) // Bagong Map structure
+                            scheduleSlots = mapOf("slot1" to newSlot)
                         )
                         transaction.set(newAssignmentRef, newAssignment)
                     }

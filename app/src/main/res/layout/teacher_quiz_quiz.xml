@@ -25,6 +25,17 @@
             android:textStyle="bold"
             android:textColor="@android:color/black" />
 
+        <TextView
+            android:id="@+id/tvQuizClassDetails"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="[Section] Subject Title (Course)"
+            android:textSize="14sp"
+            android:textColor="@color/design_default_color_primary_dark"
+            android:textStyle="italic"
+            android:paddingTop="2dp"
+            android:ellipsize="end"/>
+
         <!-- 2. DATE, TIME, and STATUS (Ito ang tvQuizDateTime na ginagamit natin) -->
         <TextView
             android:id="@+id/tvQuizDateTime"

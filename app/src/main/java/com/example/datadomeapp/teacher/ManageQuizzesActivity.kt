@@ -17,6 +17,8 @@ import com.example.datadomeapp.R
 import com.example.datadomeapp.models.Quiz
 import com.example.datadomeapp.teacher.adapters.QuizAdapter
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.example.datadomeapp.models.ClassDisplayDetails
 import com.google.firebase.database.*
 import java.text.SimpleDateFormat
 import java.util.*
@@ -25,6 +27,7 @@ class ManageQuizzesActivity : BaseActivity() {
 
     private val db = FirebaseDatabase.getInstance().reference
     private val auth = FirebaseAuth.getInstance()
+    private val firestore = FirebaseFirestore.getInstance()
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var btnAddQuiz: Button
@@ -35,6 +38,8 @@ class ManageQuizzesActivity : BaseActivity() {
     private val quizList = mutableListOf<Quiz>()
     private lateinit var adapter: QuizAdapter
 
+    private val classDetailsMap = mutableMapOf<String, ClassDisplayDetails>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_manage_quizzes)
@@ -44,29 +49,88 @@ class ManageQuizzesActivity : BaseActivity() {
         currentAssignmentId = intent.getStringExtra("ASSIGNMENT_ID")
         currentClassName = intent.getStringExtra("CLASS_NAME")
 
-        if (currentAssignmentId.isNullOrEmpty()) {
-            Toast.makeText(this, "Error: Missing class assignment ID.", Toast.LENGTH_LONG).show()
-            finish()
-            return
-        }
 
         recyclerView = findViewById(R.id.recyclerViewQuizzes)
         btnAddQuiz = findViewById(R.id.btnAddQuiz)
         tvNoQuizzes = findViewById(R.id.tvNoQuizzes)
 
+        if (currentAssignmentId.isNullOrEmpty()) {
+            // Kung Global View, itago ang Add Quiz button
+            btnAddQuiz.visibility = View.GONE
+        } else {
+            // Kung Class View, tiyaking visible ito (default na ito, pero mas maganda kung explicit)
+            btnAddQuiz.visibility = View.VISIBLE
+        }
+
         recyclerView.layoutManager = LinearLayoutManager(this)
         adapter = QuizAdapter(
             quizzes = quizList,
+            classDetailsMap = classDetailsMap,
             editClickListener = { quiz -> openQuizEditor(quiz) },
             deleteClickListener = { quiz -> deleteQuiz(quiz) },
             publishClickListener = { quiz -> togglePublish(quiz) },
-            setTimeClickListener = { quiz -> setScheduledTime(quiz) }
+            setTimeClickListener = { quiz -> setScheduledTime(quiz)
+            }
         )
         recyclerView.adapter = adapter
 
         btnAddQuiz.setOnClickListener { openQuizEditor(null) }
 
+        loadAllClassDetails(auth.currentUser?.uid ?: "")
+
         loadQuizzes()
+    }
+
+    private fun loadAllClassDetails(teacherUid: String) {
+        if (teacherUid.isEmpty()) return
+
+        firestore.collection("classAssignments")
+            .whereEqualTo("teacherUid", teacherUid)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                classDetailsMap.clear()
+                for (doc in snapshot.documents) {
+                    val assignmentId = doc.id
+
+                    // --- PAGKUHA NG RAW DATA ---
+                    var subjectTitle = doc.getString("subjectTitle") ?: "N/A Subject"
+                    val subjectCode = doc.getString("subjectCode") ?: "N/A"
+                    val yearLevelRaw = doc.getString("yearLevel") ?: "N/A"
+                    val couseCodeRow = doc.getString("courseCode") ?: "N/A"
+                    var sectionBlock = doc.getString("section") ?: ""
+
+                    // Kukunin ang Section Block mula sa slot kung mas detalyado
+                    val scheduleSlots = doc.get("scheduleSlots") as? Map<*, *>
+                    if (scheduleSlots != null && scheduleSlots.isNotEmpty()) {
+                        val firstSlotMap = scheduleSlots.values.first() as? Map<String, Any>
+                        sectionBlock = (firstSlotMap?.get("sectionBlock") as? String) ?: sectionBlock
+                    }
+
+                    // --- ASSEMBLE NEW sectionId STRING ---
+
+                    // 1. I-normalize ang Year Level (E.g., "1st Year" -> "1")
+                    val yearNumber = yearLevelRaw.filter { it.isDigit() }.ifEmpty { "N/A" }
+
+                    // 2. FIX: I-assume natin na ang Course Code ay ang mga letters ng Subject Code.
+                    // **Kailangan mong palitan ang logic na ito kung alam mo kung saan kukunin ang totoong BSIT/BSED, etc.**
+                    val courseCode = couseCodeRow.uppercase(Locale.ROOT)
+
+                    // 3. I-construct ang Section String.
+                    // Format: SUBJECTCODE|COURSECODE|YEAR|SECTION (Gamit ang '|' bilang separator)
+                    val constructedSectionId = "$subjectCode|$courseCode|$yearNumber|$sectionBlock"
+                    // --- END OF NEW FETCHING LOGIC ---
+
+                    val details = ClassDisplayDetails(
+                        sectionId = constructedSectionId,
+                        subjectTitle = subjectTitle
+                    )
+                    classDetailsMap[assignmentId] = details
+                }
+                adapter.notifyDataSetChanged()
+            }
+            .addOnFailureListener {
+                // Handle error
+            }
     }
 
     override fun getLoadingProgressBar(): ProgressBar? = progressBarLoading
@@ -75,8 +139,10 @@ class ManageQuizzesActivity : BaseActivity() {
 
     private fun loadQuizzes() {
         val teacherUid = auth.currentUser?.uid ?: return
-        val assignmentIdToFilter = currentAssignmentId ?: return // Stop kung walang ID
+        val assignmentIdToFilter = currentAssignmentId
         showLoading()
+
+        val isGlobalView = assignmentIdToFilter.isNullOrEmpty()
 
         // 1. I-query ang LAHAT ng quizzes ng teacher.
         db.child("quizzes").orderByChild("teacherUid").equalTo(teacherUid)
@@ -92,8 +158,31 @@ class ManageQuizzesActivity : BaseActivity() {
                         val assignmentId = child.child("assignmentId").getValue(String::class.java) ?: ""
 
                         // 2. Client-Side Filtering: I-skip ang quiz na hindi tugma sa current class
-                        if (assignmentId != assignmentIdToFilter) {
+                        if (assignmentIdToFilter != null && assignmentId != assignmentIdToFilter) {
                             continue
+                        }
+
+                        if (isGlobalView) {
+                            // Kailangan muna i-construct ang Quiz object para ma-check ang status
+                            val isPublished = child.child("isPublished").getValue(Boolean::class.java) ?: false
+                            val scheduledDateTime = child.child("scheduledDateTime").getValue(Long::class.java) ?: 0L
+                            val scheduledEndDateTime = child.child("scheduledEndDateTime").getValue(Long::class.java) ?: 0L
+
+                            val tempQuiz = Quiz(
+                                quizId = quizId,
+                                assignmentId = assignmentId,
+                                teacherUid = teacherUid,
+                                title = "", // Hindi kailangan ang title para sa status check
+                                questions = emptyList(),
+                                isPublished = isPublished,
+                                scheduledDateTime = scheduledDateTime,
+                                scheduledEndDateTime = scheduledEndDateTime
+                            )
+
+                            // Haharangin ang Drafts at Scheduled (hindi pa Ongoing o Finished)
+                            if (!isQuizOngoing(tempQuiz) && !isQuizFinished(tempQuiz)) {
+                                continue
+                            }
                         }
 
                         // Kung nakapasa sa filter, ituloy ang pag-construct ng Quiz object
@@ -443,9 +532,9 @@ class ManageQuizzesActivity : BaseActivity() {
             return
         }
 
-        if (currentAssignmentId.isNullOrEmpty()) {
-            Toast.makeText(this, "Class ID is required to create a quiz.", Toast.LENGTH_SHORT).show()
-            return
+        if (currentAssignmentId.isNullOrEmpty() && quiz == null) {
+            Toast.makeText(this, "Please select a specific class to create a new quiz.", Toast.LENGTH_SHORT).show()
+            return // Haharangin ang pag-create
         }
 
         // EDIT MODE: Kung Draft, Scheduled, o walang quiz (Add New)

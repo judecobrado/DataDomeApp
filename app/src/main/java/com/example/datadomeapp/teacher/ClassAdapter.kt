@@ -12,6 +12,7 @@ import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
 import com.example.datadomeapp.R
 import com.example.datadomeapp.models.ClassAssignment
+import com.example.datadomeapp.utils.StringUtils
 
 class ClassAdapter(
     private val items: List<ClassAssignment>,
@@ -36,21 +37,25 @@ class ClassAdapter(
     override fun onBindViewHolder(holder: ClassViewHolder, position: Int) {
         val currentItem = items[position]
 
-        // Schedule display
+        // --- Display course with year first digit + section ---
+        val primarySlot = currentItem.scheduleSlots.values.firstOrNull()
+        val displayCourse = currentItem.courseCode.ifEmpty { "BSIT" } // fallback if empty
+        val displayYear = currentItem.yearLevel?.take(1) ?: ""         // first digit only
+        val displaySection = primarySlot?.sectionBlock ?: "A"          // fallback
+        val displayClass = if (displayYear.isNotEmpty()) "$displayYear$displaySection" else displaySection
+        holder.tvSection.text = "Course: $displayCourse - $displayClass"
+
+        // --- Schedule display ---
         val scheduleDetail = currentItem.scheduleSlots.values.joinToString(" / ") { slot ->
             "${slot.day} ${slot.startTime}-${slot.endTime} (${slot.roomLocation})"
         }
-
-        // Course & Section display
-        val primarySlot = currentItem.scheduleSlots.values.firstOrNull()
-        val courseName = currentItem.courseCode ?: "N/A"
-        val sectionName = primarySlot?.sectionBlock ?: "A"
-        holder.tvSection.text = "Course: $courseName - $sectionName"
-
-        holder.tvSubject.text = "${currentItem.subjectCode ?: "N/A"} - ${currentItem.subjectTitle}"
         holder.tvSchedule.text = "Schedule: $scheduleDetail"
 
-        // Online link display
+        // --- Subject display ---
+        val formattedTitle = StringUtils.toTitleCaseWithExceptions(currentItem.subjectTitle ?: "N/A")
+        holder.tvSubject.text = "${currentItem.subjectCode ?: "N/A"} - $formattedTitle"
+
+        // --- Online link display ---
         val onlineLinkText = if (currentItem.onlineClassLink.isNullOrEmpty()) {
             "Status: 🚫 No Link Set"
         } else {
@@ -58,14 +63,14 @@ class ClassAdapter(
         }
         holder.tvOnlineLinkStatus.text = onlineLinkText
 
-        // Set link button text dynamically
+        // --- Set link button text dynamically ---
         holder.btnSetLink.text = if (currentItem.onlineClassLink.isNullOrEmpty()) {
             "Set Online Link"
         } else {
             "Update"
         }
 
-        // Click to open online link
+        // --- Click to open online link ---
         holder.tvOnlineLinkStatus.setOnClickListener {
             val rawLink = currentItem.onlineClassLink?.trim()
             if (rawLink.isNullOrEmpty()) {
@@ -94,12 +99,12 @@ class ClassAdapter(
             }
         }
 
-        // Item click
+        // --- Item click ---
         holder.itemView.setOnClickListener {
             detailClickListener(currentItem)
         }
 
-        // Set/Update link button click
+        // --- Set/Update link button click ---
         holder.btnSetLink.setOnClickListener {
             setLinkClickListener(currentItem)
         }
@@ -107,7 +112,7 @@ class ClassAdapter(
 
     override fun getItemCount(): Int = items.size
 
-    // Validate link
+    // --- Validate online link ---
     private fun isValidOnlineLink(link: String): Boolean {
         val normalized = link.trim()
         return normalized.contains("meet.google.com") || normalized.contains("zoom.us/j")

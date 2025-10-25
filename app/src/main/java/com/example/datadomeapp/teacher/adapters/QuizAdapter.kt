@@ -8,11 +8,13 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.datadomeapp.R
 import com.example.datadomeapp.models.Quiz
+import com.example.datadomeapp.models.ClassDisplayDetails
 import java.text.SimpleDateFormat
 import java.util.*
 
 class QuizAdapter(
     private val quizzes: MutableList<Quiz>,
+    private val classDetailsMap: Map<String, ClassDisplayDetails>,
     private val editClickListener: (Quiz) -> Unit,
     private val deleteClickListener: (Quiz) -> Unit,
     private val publishClickListener: (Quiz) -> Unit,
@@ -48,8 +50,8 @@ class QuizAdapter(
 
     inner class QuizViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val tvTitle: TextView = itemView.findViewById(R.id.tvQuizTitle)
-        // ✅ Ginamit ang tamang ID mula sa XML
         private val tvDateTimeStatus: TextView = itemView.findViewById(R.id.tvQuizDateTime)
+        private val tvClassDetails: TextView = itemView.findViewById(R.id.tvQuizClassDetails)
         private val btnEdit: Button = itemView.findViewById(R.id.btnEditQuiz)
         private val btnDelete: Button = itemView.findViewById(R.id.btnDeleteQuiz)
         private val btnPublish: Button = itemView.findViewById(R.id.btnPublishToggle)
@@ -75,11 +77,43 @@ class QuizAdapter(
             val isFinished = isQuizFinished(quiz)
             val isViewMode = isOngoing || isFinished // True if Ongoing or Finished
             val canDelete = !isViewMode
-            val canTogglePublish = !isOngoing
+            val canTogglePublish = !isOngoing && !isFinished
             val isPublished = quiz.isPublished
 
             tvTitle.text = quiz.title
             tvDateTimeStatus.text = formatDateTimeRange(quiz.scheduledDateTime, quiz.scheduledEndDateTime, isOngoing, isFinished, isPublished)
+            val details = classDetailsMap[quiz.assignmentId]
+
+            if (details != null) {
+                // sectionId format: SUBJECTCODE|COURSECODE|YEAR|SECTION (e.g., "MATH101|BSIT|1|A")
+                val sectionId = details.sectionId.trim().uppercase(Locale.ROOT)
+
+                // 1. I-split gamit ang '|' separator
+                val parts = sectionId.split('|', limit = 4).map { it.trim() }
+
+                val subjectCode = parts.getOrNull(0) ?: "N/A Code"
+                val courseCode = parts.getOrNull(1) ?: "N/A Course"
+                val yearLevel = parts.getOrNull(2) ?: "N/A Year"
+                val sectionBlock = parts.getOrNull(3) ?: "N/A Section"
+
+                // 2. I-construct ang Year-Section display (E.g., 1-A)
+                val displayYearSection = when {
+                    yearLevel.filter { it.isDigit() }.isNotEmpty() && sectionBlock.filter { it.isLetterOrDigit() }.isNotEmpty()
+                        -> "${yearLevel.filter { it.isDigit() }}-${sectionBlock.filter { it.isLetterOrDigit() }}"
+                    yearLevel.filter { it.isDigit() }.isNotEmpty() -> yearLevel.filter { it.isDigit() }
+                    else -> "N/A Section"
+                }
+
+                // 3. I-construct ang Final Display Format:
+                // Target: [Course Code] [Year]-[Section] - [Subject Title] ([Subject Code])
+
+                tvClassDetails.text =
+                    "$courseCode $displayYearSection - ${details.subjectTitle} ($subjectCode)"
+
+            } else {
+                // ... (rest of the fallback logic) ...
+                tvClassDetails.text = "Class ID: ${quiz.assignmentId}"
+            }
 
             // --- EDIT / VIEW BUTTON LOGIC ---
             btnEdit.apply {
