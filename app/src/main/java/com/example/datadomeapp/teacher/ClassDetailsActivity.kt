@@ -60,7 +60,12 @@ class ClassDetailsActivity : AppCompatActivity() {
         btnManageGrades = findViewById(R.id.btnManageGrades)
         btnStartRoulette = findViewById(R.id.btnStartRoulette)
 
-        tvClassNameHeader.text = className ?: "Class Details"
+        val formattedClassName = className?.split(" - ")?.mapIndexed { index, part ->
+            if (index == 1) toTitleCaseWithExceptions(part) else part
+        }?.joinToString(" - ") ?: "Class Details"
+
+        tvClassNameHeader.text = formattedClassName
+
         recyclerView.layoutManager = LinearLayoutManager(this)
 
         if (assignmentId.isNullOrEmpty() || subjectCode.isNullOrEmpty()) {
@@ -257,13 +262,20 @@ class ClassDetailsActivity : AppCompatActivity() {
         }
     }
 
-    // 🛑 TINANGGAL (pero hindi na-alis sa user input): Ang mga ito ay redundant at hindi gumagana sa bagong enrollment logic.
-    /*
-    private fun fetchStudentProfilesBatch(studentIds: List<String>) { ... }
-    private fun fetchStudentProfiles(studentIds: List<String>) { ... }
-    */
+    private fun toTitleCaseWithExceptions(input: String): String {
+        val exceptions = setOf("the", "on", "in", "of", "and", "a", "an", "for", "to", "at", "by", "from")
+        return input
+            .split(" ")
+            .mapIndexed { index, word ->
+                if (index == 0 || word.lowercase() !in exceptions) {
+                    word.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+                } else {
+                    word.lowercase()
+                }
+            }
+            .joinToString(" ")
+    }
 
-    // --- Navigation Functions (Walang pagbabago) ---
     private fun navigateToAttendance(assignmentId: String, subjectCode: String) {
         val intent = Intent(this, RecordAttendanceActivity::class.java)
         intent.putExtra("ASSIGNMENT_ID", assignmentId)
