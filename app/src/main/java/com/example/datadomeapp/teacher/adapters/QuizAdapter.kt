@@ -12,7 +12,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class QuizAdapter(
-    private val quizzes: MutableList<Quiz>, // Make mutable to allow updates
+    private val quizzes: MutableList<Quiz>,
     private val editClickListener: (Quiz) -> Unit,
     private val deleteClickListener: (Quiz) -> Unit,
     private val publishClickListener: (Quiz) -> Unit,
@@ -56,23 +56,46 @@ class QuizAdapter(
 
         fun bind(quiz: Quiz) {
             tvTitle.text = quiz.title
-            tvDateTime.text = formatDateTime(quiz.scheduledDateTime)
+
+            // Gumamit ng bagong format para i-display ang Start at End Time
+            tvDateTime.text = formatDateTimeRange(quiz.scheduledDateTime, quiz.scheduledEndDateTime)
 
             btnEdit.setOnClickListener { editClickListener(quiz) }
             btnDelete.setOnClickListener { deleteClickListener(quiz) }
+
+            // I-set ang Publish/Unpublish text
             btnPublish.apply {
                 text = if (quiz.isPublished) "Unpublish" else "Publish"
                 setOnClickListener { publishClickListener(quiz) }
             }
-            btnSetTime.setOnClickListener { setTimeClickListener(quiz) }
+
+            // ✅ I-set ang SET TIME / UPDATE TIME text
+            btnSetTime.apply {
+                text = if (quiz.scheduledDateTime > 0L) "UPDATE TIME" else "SET TIME"
+                setOnClickListener { setTimeClickListener(quiz) }
+            }
         }
 
-        private fun formatDateTime(timeMillis: Long): String {
-            return if (timeMillis > 0L) {
-                val sdf = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
-                sdf.format(Date(timeMillis))
+        /**
+         * 💡 PAGBABAGO: I-format ang start at end time sa 12-hour format.
+         */
+        private fun formatDateTimeRange(startTimeMillis: Long, endTimeMillis: Long): String {
+            if (startTimeMillis <= 0L) {
+                return "No time set"
+            }
+
+            val startSdf = SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.getDefault())
+            val endSdf = SimpleDateFormat("hh:mm a", Locale.getDefault())
+
+            val startDate = Date(startTimeMillis)
+            val endDate = Date(endTimeMillis)
+
+            return if (endTimeMillis > 0L) {
+                // I-display ang range: Date Start Time - End Time
+                "${startSdf.format(startDate)} - ${endSdf.format(endDate)}"
             } else {
-                "No time set"
+                // Kung may start time pero walang end time (shouldn't happen with our current logic)
+                "Scheduled: ${startSdf.format(startDate)}"
             }
         }
     }

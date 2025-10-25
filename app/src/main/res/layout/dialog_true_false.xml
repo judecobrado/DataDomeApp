@@ -1,0 +1,48 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Question"
+        android:textStyle="bold"/>
+    <EditText
+        android:id="@+id/etTFQuestion"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter True/False question"
+        android:minLines="2"
+        android:inputType="textMultiLine"
+        android:padding="8dp"
+        android:background="@android:drawable/edit_text"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Select Correct Answer"
+        android:textStyle="bold"
+        android:paddingTop="12dp"/>
+
+    <RadioGroup
+        android:id="@+id/rgTF"
+        android:orientation="horizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <RadioButton
+            android:id="@+id/rbTrue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="True"/>
+
+        <RadioButton
+            android:id="@+id/rbFalse"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="False"
+            android:layout_marginStart="16dp"/>
+    </RadioGroup>
+</LinearLayout>

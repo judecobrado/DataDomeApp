@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingTop="4dp"
+    android:paddingBottom="4dp">
+
+    <EditText
+        android:id="@+id/etLeftTerm"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:hint="Left Term"
+        android:inputType="text"
+        android:maxLines="1"
+        android:textSize="14sp"
+        android:layout_marginEnd="4dp"/>
+
+    <EditText
+        android:id="@+id/etRightMatch"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:hint="Right Match"
+        android:inputType="text"
+        android:maxLines="1"
+        android:textSize="14sp"
+        android:layout_marginEnd="4dp"/>
+
+    <TextView
+        android:id="@+id/btnRemovePair"
+        android:layout_width="36dp"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:text="❌"
+        android:textSize="20sp"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackgroundBorderless"/>
+
+</LinearLayout>

@@ -2,12 +2,13 @@ package com.example.datadomeapp.models
 
 data class Quiz(
     val quizId: String = "",
-    val assignmentId: String = "",        // Para i-link sa class
+    val assignmentId: String = "",
     val teacherUid: String = "",
     val title: String = "",
     val questions: List<Question> = emptyList(),
-    var isPublished: Boolean = false,     // Publish / Unpublish
-    var scheduledDateTime: Long = 0L      // Epoch millis ng quiz taking time
+    var isPublished: Boolean = false,
+    val scheduledDateTime: Long = 0L,
+    val scheduledEndDateTime: Long = 0L
 )
 
 

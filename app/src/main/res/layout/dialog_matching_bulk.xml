@@ -1,0 +1,24 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:id="@+id/llPairs"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:clipToPadding="false">
+
+        <!-- Dynamic rows will be added programmatically -->
+
+        <Button
+            android:id="@+id/btnAddRow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="+ Add Row"
+            android:layout_marginTop="12dp"
+            android:textColor="@android:color/white"/>
+    </LinearLayout>
+</ScrollView>

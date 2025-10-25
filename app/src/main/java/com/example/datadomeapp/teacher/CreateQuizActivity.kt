@@ -104,40 +104,52 @@ class CreateQuizActivity : AppCompatActivity() {
             if (it.answer) rbTrue.isChecked = true else rbFalse.isChecked = true
         }
 
-        AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(this)
             .setTitle(if (existing != null) "Edit True/False Question" else "Add True/False Question")
             .setView(view)
-            .setPositiveButton("Save") { dialog, _ ->
+            .setPositiveButton("Save", null) // Set null listener initially
+            .setNegativeButton("Cancel", null)
+            .create()
+
+        dialog.setOnShowListener {
+            val positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            positiveButton.setOnClickListener {
                 val questionText = etQuestion.text.toString().trim()
-                val answer = when {
+                val answer: Boolean? = when {
                     rbTrue.isChecked -> true
                     rbFalse.isChecked -> false
                     else -> null
                 }
 
-                if (questionText.isEmpty() || answer == null) {
-                    Toast.makeText(this, "Enter question and select answer", Toast.LENGTH_SHORT).show()
-                    return@setPositiveButton
+                // *** VALIDATION LOGIC FOR TRUE/FALSE (Question: min 2 chars) ***
+                if (questionText.length < 2) {
+                    Toast.makeText(this, "Question must have at least 2 characters.", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener // Don't close dialog
                 }
+                if (answer == null) {
+                    Toast.makeText(this, "Please select either True or False as the answer.", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener // Don't close dialog
+                }
+                // ***************************************
 
                 val newQuestion = Question.TrueFalse(questionText, answer)
                 updateQuestion(existing, newQuestion)
-                dialog.dismiss()
+                dialog.dismiss() // Close dialog on success
             }
-            .setNegativeButton("Cancel", null)
-            .show()
+        }
+        dialog.show()
     }
 
     private fun addMatchingQuestion(existing: Question.Matching? = null) {
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_matching_question, null)
 
-        // UI Elements based on the new structure
         val recyclerViewPairs = view.findViewById<RecyclerView>(R.id.recyclerViewMatchingPairs)
         val btnAddPair = view.findViewById<Button>(R.id.btnAddPair)
-
-        val questionTitleEditText = view.findViewById<EditText>(R.id.etMatchingQuestionTitle) // I-assume na idinagdag mo ito sa XML
+        val questionTitleEditText = view.findViewById<EditText>(R.id.etMatchingQuestionTitle)
 
         val pairList = mutableListOf<MatchingPair>()
+        val maxPairs = 20
+        val minPairs = 2 // Bagong requirement
 
         // Populate if editing
         existing?.let {
@@ -147,40 +159,60 @@ class CreateQuizActivity : AppCompatActivity() {
             }
         }
 
-        // Default na 3 pares kung walang laman
-        if (pairList.isEmpty()) { repeat(3) { pairList.add(MatchingPair()) } }
+        // Default na 3 pares (o minPairs kung mas mataas) kung walang laman
+        if (pairList.isEmpty()) { repeat(minPairs) { pairList.add(MatchingPair()) } }
 
-        // Callback para sa pagtanggal ng pares
         val removeCallback: (Int) -> Unit = { position ->
             pairList.removeAt(position)
             recyclerViewPairs.adapter?.notifyItemRemoved(position)
+            btnAddPair.isEnabled = pairList.size < maxPairs // Re-enable if needed
         }
 
-        // I-setup ang Adapter
         val pairAdapter = MatchingPairAdapter(pairList, removeCallback)
         recyclerViewPairs.layoutManager = LinearLayoutManager(this)
         recyclerViewPairs.adapter = pairAdapter
 
-        // I-set up ang Add Pair button
+        btnAddPair.isEnabled = pairList.size < maxPairs
         btnAddPair.setOnClickListener {
-            pairList.add(MatchingPair())
-            pairAdapter.notifyItemInserted(pairList.size - 1)
-            recyclerViewPairs.scrollToPosition(pairList.size - 1)
+            if (pairList.size < maxPairs) {
+                pairList.add(MatchingPair())
+                pairAdapter.notifyItemInserted(pairList.size - 1)
+                recyclerViewPairs.scrollToPosition(pairList.size - 1)
+                btnAddPair.isEnabled = pairList.size < maxPairs
+            } else {
+                Toast.makeText(this, "Maximum of $maxPairs matching pairs reached.", Toast.LENGTH_SHORT).show()
+            }
         }
 
-        AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(this)
             .setTitle(if (existing != null) "Edit Matching Question" else "Add Matching Question")
             .setView(view)
-            .setPositiveButton("Save") { dialog, _ ->
+            .setPositiveButton("Save", null) // Set null listener initially
+            .setNegativeButton("Cancel", null)
+            .create()
 
-                // Kolektahin ang data mula sa adapter at i-filter ang mga walang laman
-                val finalPairs = pairList.filter { it.leftTerm.isNotBlank() && it.rightMatch.isNotBlank() }
+        dialog.setOnShowListener {
+            val positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            positiveButton.setOnClickListener {
                 val questionText = questionTitleEditText.text.toString().trim()
 
-                if (finalPairs.isEmpty() || questionText.isEmpty()) {
-                    Toast.makeText(this, "Quiz must have a question title and at least one complete matching pair.", Toast.LENGTH_SHORT).show()
-                    return@setPositiveButton
+                // Kolektahin ang data mula sa adapter at i-filter ang mga walang laman
+                // Validation for Left/Right: at least 1 character
+                val finalPairs = pairList.filter { it.leftTerm.length >= 1 && it.rightMatch.length >= 1 }
+
+                // *** VALIDATION LOGIC FOR MATCHING ***
+                if (questionText.length < 2) {
+                    Toast.makeText(this, "Question title must have at least 2 characters.", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
                 }
+
+                // I-check kung naabot ang minimum na 2 pares
+                if (finalPairs.size < minPairs) {
+                    Toast.makeText(this, "Matching Quiz must have at least $minPairs complete matching pairs (1 character min per term).", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+
+                // ***************************************
 
                 val leftOptions = finalPairs.map { it.leftTerm }
                 val rightMatches = finalPairs.map { it.rightMatch }
@@ -189,66 +221,119 @@ class CreateQuizActivity : AppCompatActivity() {
                 updateQuestion(existing, newQuestion)
                 dialog.dismiss()
             }
-            .setNegativeButton("Cancel", null)
-            .show()
+        }
+        dialog.show()
     }
 
     private fun addMCQuestion(existing: Question.MultipleChoice? = null) {
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_multiple_choice, null)
 
         val etQuestion = view.findViewById<EditText>(R.id.etQuestion)
-        val et1 = view.findViewById<EditText>(R.id.etOption1)
-        val et2 = view.findViewById<EditText>(R.id.etOption2)
-        val et3 = view.findViewById<EditText>(R.id.etOption3)
-        val et4 = view.findViewById<EditText>(R.id.etOption4)
+        val etOptions = listOf<EditText>(
+            view.findViewById(R.id.etOption1),
+            view.findViewById(R.id.etOption2),
+            view.findViewById(R.id.etOption3),
+            view.findViewById(R.id.etOption4)
+        )
 
-        val rb1 = view.findViewById<RadioButton>(R.id.rbOption1)
-        val rb2 = view.findViewById<RadioButton>(R.id.rbOption2)
-        val rb3 = view.findViewById<RadioButton>(R.id.rbOption3)
-        val rb4 = view.findViewById<RadioButton>(R.id.rbOption4)
-        val radioButtons = listOf(rb1, rb2, rb3, rb4)
+        val radioButtons = listOf<RadioButton>(
+            view.findViewById(R.id.rbOption1),
+            view.findViewById(R.id.rbOption2),
+            view.findViewById(R.id.rbOption3),
+            view.findViewById(R.id.rbOption4)
+        )
 
-        // Manual single selection
+        // Option character requirement
+        val minOptionChars = 1
+
+        // Manual single selection + Validation for Radio Button
         radioButtons.forEachIndexed { index, rb ->
             rb.setOnClickListener {
-                radioButtons.forEachIndexed { i, otherRb -> otherRb.isChecked = i == index }
+                val optionText = etOptions[index].text.toString().trim()
+                if (optionText.length < minOptionChars) {
+                    Toast.makeText(this, "The selected option must have at least $minOptionChars character.", Toast.LENGTH_SHORT).show()
+                    rb.isChecked = false // Prevent selecting if invalid
+                } else {
+                    // Allow single selection
+                    radioButtons.forEachIndexed { i, otherRb -> otherRb.isChecked = i == index }
+                }
             }
         }
+
+        // Validation: If an option becomes empty/too short, uncheck its radio button
+        etOptions.forEachIndexed { index, et ->
+            et.setOnFocusChangeListener { _, hasFocus ->
+                if (!hasFocus) { // When focus leaves
+                    val text = et.text.toString().trim()
+                    if (text.length < minOptionChars && radioButtons[index].isChecked) {
+                        radioButtons[index].isChecked = false
+                        Toast.makeText(this, "The option is too short and has been unchecked.", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+
 
         // Populate if editing
         existing?.let {
             etQuestion.setText(it.questionText)
-            it.options.getOrNull(0)?.let { s -> et1.setText(s) }
-            it.options.getOrNull(1)?.let { s -> et2.setText(s) }
-            it.options.getOrNull(2)?.let { s -> et3.setText(s) }
-            it.options.getOrNull(3)?.let { s -> et4.setText(s) }
-            when (it.correctAnswerIndex) {
-                0 -> rb1.isChecked = true
-                1 -> rb2.isChecked = true
-                2 -> rb3.isChecked = true
-                3 -> rb4.isChecked = true
+            it.options.forEachIndexed { index, s ->
+                etOptions.getOrNull(index)?.setText(s)
+            }
+            it.correctAnswerIndex.let { index ->
+                radioButtons.getOrNull(index)?.isChecked = true
             }
         }
 
-        AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(this)
             .setTitle(if (existing != null) "Edit Multiple Choice" else "Add Multiple Choice")
             .setView(view)
-            .setPositiveButton("Save") { dialog, _ ->
+            .setPositiveButton("Save", null) // Set null listener initially
+            .setNegativeButton("Cancel", null)
+            .create()
+
+        dialog.setOnShowListener {
+            val positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            positiveButton.setOnClickListener {
                 val questionText = etQuestion.text.toString().trim()
-                val options = listOf(et1, et2, et3, et4).map { it.text.toString().trim() }.filter { it.isNotEmpty() }
+
+                val allOptions = etOptions.map { it.text.toString().trim() }
+
+                // Keep only valid options (1+ character) for final list
+                val validOptions = allOptions.filter { it.length >= minOptionChars }
+
                 val correctIndex = radioButtons.indexOfFirst { it.isChecked }
 
-                if (questionText.isEmpty() || options.size < 2 || correctIndex == -1) {
-                    Toast.makeText(this, "Enter question, at least 2 options, and select correct answer", Toast.LENGTH_SHORT).show()
-                    return@setPositiveButton
+                // *** VALIDATION LOGIC FOR MULTIPLE CHOICE (Question: min 2 chars; Options: min 1 char) ***
+                if (questionText.length < 2) {
+                    Toast.makeText(this, "Question must have at least 2 characters.", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                if (validOptions.size < 2) {
+                    Toast.makeText(this, "You need at least 2 valid options (min $minOptionChars character each).", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                if (correctIndex == -1) {
+                    Toast.makeText(this, "Please select the correct answer.", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
                 }
 
-                val newQuestion = Question.MultipleChoice(questionText, options, correctIndex)
+                // Re-calculate the correct index based *only* on the validOptions list
+                val newCorrectIndex = validOptions.indexOf(allOptions[correctIndex])
+                if (newCorrectIndex == -1) {
+                    // This means the selected radio button corresponds to an option that is now invalid
+                    Toast.makeText(this, "Correct answer is invalid or too short. Please re-select.", Toast.LENGTH_SHORT).show()
+                    radioButtons[correctIndex].isChecked = false // Uncheck it
+                    return@setOnClickListener
+                }
+                // *******************************************
+
+                val newQuestion = Question.MultipleChoice(questionText, validOptions, newCorrectIndex)
                 updateQuestion(existing, newQuestion)
                 dialog.dismiss()
             }
-            .setNegativeButton("Cancel", null)
-            .show()
+        }
+        dialog.show()
     }
 
     private fun editQuestion(question: Question) {
@@ -275,7 +360,15 @@ class CreateQuizActivity : AppCompatActivity() {
 
     private fun saveQuiz() {
         val title = etQuizTitle.text.toString().trim()
-        if (title.isEmpty() || questionList.isEmpty()) { Toast.makeText(this, "Quiz must have a title and at least one question", Toast.LENGTH_SHORT).show(); return }
+        // Quiz Title validation remains 2 characters
+        if (title.isEmpty() || title.length < 2) {
+            Toast.makeText(this, "Quiz title must have at least 2 characters.", Toast.LENGTH_SHORT).show();
+            return
+        }
+        if (questionList.isEmpty()) {
+            Toast.makeText(this, "Quiz must have at least one question.", Toast.LENGTH_SHORT).show();
+            return
+        }
 
         val quizId = editingQuizId ?: db.child("quizzes").push().key ?: return
         val quiz = Quiz(quizId = quizId, assignmentId = "", teacherUid = auth.currentUser?.uid ?: "", title = title, questions = questionList.toList(), isPublished = false, scheduledDateTime = 0L)
