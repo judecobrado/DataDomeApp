@@ -129,6 +129,18 @@ class CreateQuizActivity : AppCompatActivity() {
         val rb3 = view.findViewById<RadioButton>(R.id.rbOption3)
         val rb4 = view.findViewById<RadioButton>(R.id.rbOption4)
 
+        val radioButtons = listOf(rb1, rb2, rb3, rb4)
+
+        // Manual single-selection (needed because RadioButtons are inside LinearLayouts)
+        radioButtons.forEachIndexed { index, rb ->
+            rb.setOnClickListener {
+                radioButtons.forEachIndexed { i, otherRb ->
+                    otherRb.isChecked = i == index
+                }
+            }
+        }
+
+        // Populate fields if editing
         existing?.let {
             etQuestion.setText(it.questionText)
             it.options.getOrNull(0)?.let { s -> et1.setText(s) }
@@ -148,30 +160,29 @@ class CreateQuizActivity : AppCompatActivity() {
             .setView(view)
             .setPositiveButton("Save") { dialog, _ ->
                 val questionText = etQuestion.text.toString().trim()
-                val options = listOf(et1.text.toString(), et2.text.toString(), et3.text.toString(), et4.text.toString())
-                    .map { it.trim() }
+                val options = listOf(et1, et2, et3, et4)
+                    .map { it.text.toString().trim() }
                     .filter { it.isNotEmpty() }
 
-                val correctIndex = when {
-                    rb1.isChecked -> 0
-                    rb2.isChecked -> 1
-                    rb3.isChecked -> 2
-                    rb4.isChecked -> 3
-                    else -> -1
-                }
+                val correctIndex = radioButtons.indexOfFirst { it.isChecked }
 
-                if (questionText.isEmpty() || options.size < 2 || correctIndex !in options.indices) {
-                    Toast.makeText(this, "Provide question, at least 2 options, and select the correct answer", Toast.LENGTH_SHORT).show()
+                if (questionText.isEmpty() || options.size < 2 || correctIndex == -1) {
+                    Toast.makeText(this, "Fill question, at least 2 options, and select correct answer", Toast.LENGTH_SHORT).show()
                     return@setPositiveButton
                 }
 
-                val newQuestion = Question.MultipleChoice(questionText, options, correctIndex)
-                updateQuestion(existing, newQuestion)
+                val mcQuestion = Question.MultipleChoice(
+                    questionText = questionText,
+                    options = options,
+                    correctAnswerIndex = correctIndex
+                )
+                updateQuestion(existing, mcQuestion)
                 dialog.dismiss()
             }
             .setNegativeButton("Cancel", null)
             .show()
     }
+
 
     // ------------------ Edit / Delete ------------------
     private fun editQuestion(question: Question) {

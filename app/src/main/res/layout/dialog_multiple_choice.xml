@@ -1,8 +1,6 @@
-<?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:fillViewport="true">
+    android:layout_height="wrap_content">
 
     <LinearLayout
         android:orientation="vertical"
@@ -16,15 +14,15 @@
             android:layout_height="wrap_content"
             android:text="Question"
             android:textStyle="bold"
-            android:paddingBottom="4dp"/>
+            android:paddingBottom="8dp"/>
 
         <EditText
             android:id="@+id/etQuestion"
-            android:hint="Enter question"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="textMultiLine"
+            android:hint="Enter question"
             android:minLines="2"
+            android:inputType="textMultiLine"
             android:padding="8dp"
             android:background="@android:drawable/edit_text"/>
 
@@ -43,10 +41,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
+            <!-- Option 1 -->
             <LinearLayout
-                android:orientation="horizontal"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:paddingBottom="8dp">
 
@@ -61,14 +60,14 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:hint="Option 1"
-                    android:inputType="text"
                     android:paddingStart="8dp"/>
             </LinearLayout>
 
+            <!-- Option 2 -->
             <LinearLayout
-                android:orientation="horizontal"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:paddingBottom="8dp">
 
@@ -83,14 +82,14 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:hint="Option 2"
-                    android:inputType="text"
                     android:paddingStart="8dp"/>
             </LinearLayout>
 
+            <!-- Option 3 -->
             <LinearLayout
-                android:orientation="horizontal"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:paddingBottom="8dp">
 
@@ -105,14 +104,14 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:hint="Option 3 (optional)"
-                    android:inputType="text"
                     android:paddingStart="8dp"/>
             </LinearLayout>
 
+            <!-- Option 4 -->
             <LinearLayout
-                android:orientation="horizontal"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:paddingBottom="8dp">
 
@@ -127,9 +126,9 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:hint="Option 4 (optional)"
-                    android:inputType="text"
                     android:paddingStart="8dp"/>
             </LinearLayout>
+
         </RadioGroup>
     </LinearLayout>
 </ScrollView>

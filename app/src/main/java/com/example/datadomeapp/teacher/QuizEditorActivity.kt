@@ -175,5 +175,67 @@ class QuizEditorActivity : AppCompatActivity() {
     private fun showMatchingQuestionDialog(existing: Question.Matching? = null) { /* same */ }
 
     // ------------------ MULTIPLE CHOICE ------------------
-    private fun showMCQuestionDialog(existing: Question.MultipleChoice? = null) { /* same */ }
+    private fun showMCQuestionDialog(existing: Question.MultipleChoice? = null) {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_multiple_choice, null)
+
+        val etQuestion = dialogView.findViewById<EditText>(R.id.etQuestion)
+        val etOption1 = dialogView.findViewById<EditText>(R.id.etOption1)
+        val etOption2 = dialogView.findViewById<EditText>(R.id.etOption2)
+        val etOption3 = dialogView.findViewById<EditText>(R.id.etOption3)
+        val etOption4 = dialogView.findViewById<EditText>(R.id.etOption4)
+        val rgOptions = dialogView.findViewById<RadioGroup>(R.id.rgOptions)
+
+        existing?.let {
+            etQuestion.setText(it.questionText)
+            etOption1.setText(it.options.getOrNull(0) ?: "")
+            etOption2.setText(it.options.getOrNull(1) ?: "")
+            etOption3.setText(it.options.getOrNull(2) ?: "")
+            etOption4.setText(it.options.getOrNull(3) ?: "")
+
+            val rbId = when (it.correctAnswerIndex) {
+                0 -> R.id.rbOption1
+                1 -> R.id.rbOption2
+                2 -> R.id.rbOption3
+                3 -> R.id.rbOption4
+                else -> -1
+            }
+            if (rbId != -1) rgOptions.check(rbId)
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle(if (existing == null) "Add Multiple Choice Question" else "Edit Question")
+            .setView(dialogView)
+            .setPositiveButton("Save") { _, _ ->
+                val questionText = etQuestion.text.toString().trim()
+                val options = listOf(
+                    etOption1.text.toString().trim(),
+                    etOption2.text.toString().trim(),
+                    etOption3.text.toString().trim(),
+                    etOption4.text.toString().trim()
+                ).filter { it.isNotEmpty() }
+
+                val selectedRbId = rgOptions.checkedRadioButtonId
+                val correctIndex = when (selectedRbId) {
+                    R.id.rbOption1 -> 0
+                    R.id.rbOption2 -> 1
+                    R.id.rbOption3 -> 2
+                    R.id.rbOption4 -> 3
+                    else -> -1
+                }
+
+                if (questionText.isEmpty() || options.size < 2 || correctIndex == -1) {
+                    Toast.makeText(this, "Fill question, options, and select correct answer", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+
+                val mcQuestion = Question.MultipleChoice(
+                    questionText = questionText,
+                    options = options,
+                    correctAnswerIndex = correctIndex
+                )
+                updateQuestion(existing, mcQuestion)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
 }
