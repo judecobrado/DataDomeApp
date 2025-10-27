@@ -6,8 +6,8 @@
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="8dp"
     android:layout_marginBottom="8dp"
-    app:cardCornerRadius="8dp"
-    app:cardElevation="2dp">
+    app:cardCornerRadius="10dp"
+    app:cardElevation="3dp">
 
     <LinearLayout
         android:id="@+id/llClassItem"
@@ -17,6 +17,7 @@
         android:padding="16dp"
         android:background="?android:attr/selectableItemBackground">
 
+        <!-- Subject Code and Title -->
         <TextView
             android:id="@+id/tvSubjectCode"
             android:layout_width="wrap_content"
@@ -26,6 +27,18 @@
             android:textStyle="bold"
             android:textColor="#333333"/>
 
+        <!-- Teacher Name -->
+        <TextView
+            android:id="@+id/tvTeacherName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Teacher: Mr. Dela Cruz"
+            android:textSize="14sp"
+            android:textColor="#666666"
+            android:paddingTop="2dp"
+            android:paddingBottom="4dp"/>
+
+        <!-- Section Name -->
         <TextView
             android:id="@+id/tvSectionName"
             android:layout_width="wrap_content"
@@ -35,6 +48,7 @@
             android:textColor="#666666"
             android:paddingBottom="4dp"/>
 
+        <!-- Schedule Info -->
         <TextView
             android:id="@+id/tvScheduleTime"
             android:layout_width="wrap_content"
@@ -44,11 +58,13 @@
             android:textColor="#000000"
             android:textStyle="normal"
             android:paddingBottom="8dp"/>
+
+        <!-- Online Link Status -->
         <TextView
             android:id="@+id/tvOnlineLinkStatus"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Link Status"
+            android:text="No Online Link Set"
             android:textSize="14sp"
             android:textStyle="bold"
             android:drawablePadding="8dp"

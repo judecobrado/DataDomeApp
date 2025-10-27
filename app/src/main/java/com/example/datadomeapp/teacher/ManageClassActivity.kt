@@ -175,7 +175,7 @@ class ManageClassesActivity : AppCompatActivity() {
         firestore.collection("classAssignments").document(assignmentNo)
             .update("onlineClassLink", link)
             .addOnSuccessListener {
-                Toast.makeText(this, "Online Class Link saved successfully! ✅", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Online Class Link saved successfully!", Toast.LENGTH_LONG).show()
                 loadAssignedClasses()
             }
             .addOnFailureListener { e ->

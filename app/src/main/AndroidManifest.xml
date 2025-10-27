@@ -63,6 +63,7 @@
         <activity android:name=".student.CourseEnrollmentActivity"/>
         <activity android:name=".student.StudentFullScheduleActivity"/>
         <activity android:name=".student.StudentOnlineClassesActivity"/>
+        <activity android:name=".student.StudentAttendanceActivity"/>
 
         <activity
             android:name=".LibraryActivity"
@@ -82,10 +83,7 @@
         <activity android:name=".teacher.TeacherScheduleMatrixActivity"/>
         <activity android:name=".teacher.RouletteActivity"/>
         <activity android:name=".teacher.CreateQuizActivity"/>
-        <activity android:name=".teacher.CreateQuizActivity"/>
         <activity android:name=".teacher.ManageQuizzesActivity"/>
-        <activity android:name=".teacher.QuizEditorActivity"/>
-
 
         <!-- Library Module -->
         <activity android:name=".admin.ManageLibrary"/>

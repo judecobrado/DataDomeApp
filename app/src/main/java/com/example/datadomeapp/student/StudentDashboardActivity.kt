@@ -8,28 +8,25 @@ import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.widget.Button
+import android.widget.LinearLayout // 🟢 Idinagdag para sa Vertical Layout
 import android.widget.TableLayout
 import android.widget.TableRow
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.datadomeapp.R
-// Import the StudentSubject model used in your Finalization transaction
+// Model Imports (Tiyakin na ito ang tamang package ng iyong models)
 import com.example.datadomeapp.models.StudentSubject
+import com.example.datadomeapp.models.ClassAssignment
+import com.example.datadomeapp.models.TimeSlot
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import java.text.SimpleDateFormat
 import java.util.*
 
-// 🛑 Import para sa LibraryActivity (nasa root package: com.example.datadomeapp)
+// Activity Imports
 import com.example.datadomeapp.LibraryActivity
-// Import para sa ibang activities na nasa com.example.datadomeapp.student package
-import com.example.datadomeapp.student.StudentFullScheduleActivity
-import com.example.datadomeapp.student.StudentNotesActivity
-import com.example.datadomeapp.student.StudentOnlineClassesActivity
-import com.example.datadomeapp.student.StudentToDoListActivity
-
 
 class StudentDashboardActivity : AppCompatActivity() {
 
@@ -119,84 +116,134 @@ class StudentDashboardActivity : AppCompatActivity() {
     }
 
     /**
-     * Nagku-query ito sa database para sa schedule ng kasalukuyang araw gamit ang Student ID.
+     * Gumagamit ng Two-Step Fetching (StudentSubject -> ClassAssignment) para kunin ang schedule.
      */
     private fun loadDailySchedule(studentId: String) {
-        // Tiyakin na ang Locale mo ay tumutugma sa ginamit mo sa Admin side
-        val currentDay = SimpleDateFormat("EEEE", Locale.US).format(Date())
-        val currentTime = SimpleDateFormat("HH:mm", Locale.US).format(Date())
-        tvScheduleStatus.text = "Loading classes for $currentDay..."
-        tvScheduleStatus.visibility = TextView.VISIBLE
+        // Ang currentDay ay laging "Mon", "Tue", etc.
+        val currentDay = SimpleDateFormat("EEE", Locale.US).format(Date())
+        val timeFormatDisplay = SimpleDateFormat("h:mm a", Locale.US)
+        val timeFormatInternal = SimpleDateFormat("HH:mm", Locale.US)
+        val currentTimeInternal = timeFormatInternal.format(Date())
 
-        // 🛑 CRITICAL FIX: I-query ang sub-collection ng student subjects.
+        // Gagamitin natin ang Full Day name sa status para mas malinaw sa user
+        val currentDayFull = SimpleDateFormat("EEEE", Locale.US).format(Date())
+
+        tvScheduleStatus.text = "Loading classes for $currentDayFull..."
+        tvScheduleStatus.visibility = View.VISIBLE
+
+        if (tlDailySchedule.childCount > 1) {
+            tlDailySchedule.removeViews(1, tlDailySchedule.childCount - 1)
+        }
+
+        Log.i("SCHEDULE_DEBUG", "Checking schedule for abbreviated day: $currentDay (Full: $currentDayFull)")
+
+        // --- STEP 1: Get all StudentSubject records (to extract assignmentNo) ---
         firestore.collection("students")
             .document(studentId)
             .collection("subjects")
             .get()
-            .addOnSuccessListener { snapshot ->
+            .addOnSuccessListener { studentSnapshot ->
 
-                // Tiyakin na tinatanggal ang lahat ng dynamic views (simula sa row 1)
-                if (tlDailySchedule.childCount > 0) {
-                    tlDailySchedule.removeViews(1, tlDailySchedule.childCount - 1)
+                val studentSubjects: List<StudentSubject> = studentSnapshot.documents.mapNotNull {
+                    it.toObject(StudentSubject::class.java)
                 }
 
-                // 1. I-filter ang lahat ng subjects sa schedule para lang sa kasalukuyang araw at oras
-                val todaySchedule = snapshot.documents.map { it.toObject(StudentSubject::class.java) }
-                    .filterNotNull()
-                    .mapNotNull { item ->
-                        // I-check kung ang schedule string ay naglalaman ng kasalukuyang araw
-                        if (!item.schedule.startsWith(currentDay)) return@mapNotNull null
+                val assignmentNos: List<String> = studentSubjects
+                    .map { subject -> subject.assignmentNo }
+                    .filter { no -> no.isNotEmpty() }
+                    .distinct()
+                    .take(10)
 
-                        // I-parse ang schedule string para makuha ang time
-                        val timeParts = item.schedule.substringAfter("$currentDay ").split("-")
-                        val startTime = timeParts.getOrNull(0) ?: "N/A"
-                        val endTime = timeParts.getOrNull(1) ?: "N/A"
-
-                        // CRITICAL TIME FILTER: Hindi na ipapakita kung tapos na ang oras.
-                        if (endTime != "N/A" && endTime.compareTo(currentTime) < 0) {
-                            Log.d("SCHEDULE_DEBUG", "Skipping ${item.subjectCode}. End time $endTime is before current time $currentTime.")
-                            return@mapNotNull null // Skip na kung tapos na ang klase
-                        }
-
-                        // I-return ang data sa isang mas simpleng format
-                        mapOf(
-                            "subjectCode" to item.subjectCode,
-                            "sectionName" to item.sectionName,
-                            "startTime" to startTime,
-                            "endTime" to endTime,
-                            "venue" to "Room A-101 (Placeholder)" // Venue still hardcoded
-                        )
-                    }
-                    .sortedBy { it["startTime"] } // I-sort base sa oras ng pagsisimula
-
-
-
-                if (todaySchedule.isEmpty()) {
-                    tvScheduleStatus.text = "🎉 Walang natitirang klase ngayong $currentDay!"
-                    tvScheduleStatus.visibility = TextView.VISIBLE
-                    Log.w("SCHEDULE_DEBUG", "No remaining classes found for Student ID: $studentId on $currentDay.")
+                if (assignmentNos.isEmpty()) {
+                    tvScheduleStatus.text = "🎉 **Walang naka-enroll na subject para sa semester na ito.**"
+                    tvScheduleStatus.visibility = View.VISIBLE
                     return@addOnSuccessListener
                 }
 
-                // 2. I-populate ang TableLayout
-                todaySchedule.forEach { item ->
-                    tlDailySchedule.addView(createScheduleRow(item))
-                }
+                // --- STEP 2: Fetch the ClassAssignment records (The source of schedule data) ---
+                val query = firestore.collection("classAssignments").whereIn("assignmentNo", assignmentNos)
 
-                // Tanggalin ang status text kapag may laman na ang table
-                tvScheduleStatus.visibility = View.GONE
-                Log.i("SCHEDULE_DEBUG", "Found ${todaySchedule.size} remaining classes. Render successful.")
+                query.get()
+                    .addOnSuccessListener { assignmentSnapshot ->
+                        val classAssignments = assignmentSnapshot.documents.mapNotNull { it.toObject(ClassAssignment::class.java) }
+
+                        val todaySchedule = mutableListOf<Map<String, String>>()
+
+                        // --- STEP 3: Merge and Filter ---
+                        for (subject in studentSubjects) {
+                            val assignment = classAssignments.find { it.assignmentNo == subject.assignmentNo } ?: continue
+
+                            // I-iterate ang lahat ng scheduleSlots ng Assignment
+                            for (slot in assignment.scheduleSlots.values) {
+
+                                // A. PAG-AAYOS: Ginawang UPPERCASE ang comparison para maging case-insensitive
+                                // Tiyakin na ang day sa Firestore ("Fri") ay mag-ma-match sa currentDay ("Fri")
+                                if (slot.day.uppercase(Locale.ROOT) != currentDay.uppercase(Locale.ROOT)) {
+                                    Log.d("SCHEDULE_DEBUG", "Day mismatch. Skipping slot day ${slot.day} != $currentDay")
+                                    continue
+                                }
+
+                                // B. CRITICAL TIME FILTER: Check kung tapos na ang oras.
+                                try {
+                                    // I-parse ang oras mula sa Firestore (e.g., "8:30 AM")
+                                    val endTimeDate = timeFormatDisplay.parse(slot.endTime)
+                                    // I-convert sa Internal Format (e.g., "08:30")
+                                    val endTimeInternal = timeFormatInternal.format(endTimeDate)
+
+                                    if (endTimeInternal.compareTo(currentTimeInternal) < 0) {
+                                        Log.d("SCHEDULE_DEBUG", "Time passed. Skipping class ending at $endTimeInternal. Current time: $currentTimeInternal")
+                                        continue // Class ended. Skip.
+                                    }
+                                } catch (e: Exception) {
+                                    Log.e("SCHEDULE_DEBUG", "Time parsing error for ${subject.subjectCode} (${slot.endTime}): ${e.message}")
+                                    continue // Skip this slot if time parsing fails
+                                }
+
+                                // 4. I-add sa listahan
+                                todaySchedule.add(mapOf(
+                                    "subjectCode" to subject.subjectCode,
+                                    "sectionName" to slot.sectionBlock,
+                                    "startTime" to slot.startTime,
+                                    "endTime" to slot.endTime,
+                                    "venue" to slot.roomLocation
+                                ))
+                            }
+                        }
+
+                        // --- STEP 4: Final Display ---
+                        todaySchedule.sortBy { it["startTime"] } // I-sort
+
+                        if (todaySchedule.isEmpty()) {
+                            // 🟢 Final "No Schedule" Message
+                            tvScheduleStatus.text = "🎉 **Walang natitirang klase ngayong $currentDayFull!** Masiyahan sa iyong araw."
+                            tvScheduleStatus.visibility = View.VISIBLE
+                            return@addOnSuccessListener
+                        }
+
+                        todaySchedule.forEach { item ->
+                            tlDailySchedule.addView(createScheduleRow(item))
+                        }
+
+                        tvScheduleStatus.visibility = View.GONE
+                        Log.i("SCHEDULE_DEBUG", "Schedule render successful. Classes found: ${todaySchedule.size}")
+
+                    }
+                    .addOnFailureListener { e ->
+                        tvScheduleStatus.text = "❌ Error fetching class assignments: ${e.localizedMessage}"
+                        tvScheduleStatus.visibility = View.VISIBLE
+                        Log.e("SCHEDULE_DEBUG", "Failed to fetch class assignments.", e)
+                    }
+
             }
             .addOnFailureListener { e ->
-                tvScheduleStatus.text = "Error loading schedule: ${e.localizedMessage}"
+                tvScheduleStatus.text = "❌ Error loading student subjects: ${e.localizedMessage}"
                 tvScheduleStatus.visibility = View.VISIBLE
                 Log.e("SCHEDULE_DEBUG", "Failed to load daily schedule.", e)
             }
     }
 
     /**
-     * Helper function para gumawa ng TableRow para sa bawat class.
-     * Gumagamit na ito ng Map<String, String> dahil sa pag-parse natin sa taas.
+     * Helper function para gumawa ng TableRow para sa bawat class, na may mas maayos na view.
      */
     private fun createScheduleRow(item: Map<String, String>): TableRow {
         val row = TableRow(this).apply {
@@ -208,25 +255,37 @@ class StudentDashboardActivity : AppCompatActivity() {
             setPadding(0, 10, 0, 10)
         }
 
-        // Column 1: Time
+        // 🟢 Column 1: Time (Oras)
         val tvTime = TextView(this).apply {
-            text = "${item["startTime"]} - ${item["endTime"]}"
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+            text = "${item["startTime"]}\n- ${item["endTime"]}" // Ginawang 2 lines
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
             setPadding(8, 8, 8, 8)
-            gravity = Gravity.START
+            gravity = Gravity.CENTER_VERTICAL or Gravity.START
+            setTextColor(Color.parseColor("#808080")) // Gray for less emphasis
         }
 
-        // Column 2: Subject and Venue
+        // 🟢 Column 2: Subject and Section
         val tvSubject = TextView(this).apply {
-            text = "${item["subjectCode"]} (${item["sectionName"]})\n@ ${item["venue"]}"
+            text = "${item["subjectCode"]} (${item["sectionName"]})"
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
             setPadding(8, 8, 8, 8)
-            gravity = Gravity.START
-            setTextColor(Color.parseColor("#333333"))
+            gravity = Gravity.CENTER_VERTICAL or Gravity.START
+            setTextColor(Color.parseColor("#1F3A93")) // Dark Blue for Subject
         }
 
+        // 🟢 Column 3: Venue Room
+        val tvVenue = TextView(this).apply {
+            text = item["venue"]
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+            setPadding(8, 8, 8, 8)
+            gravity = Gravity.CENTER_VERTICAL or Gravity.START
+            setTextColor(Color.parseColor("#555555")) // Gray for Venue
+        }
+
+        // I-add ang 3 Columns sa Row
         row.addView(tvTime)
         row.addView(tvSubject)
+        row.addView(tvVenue)
         return row
     }
 
@@ -240,9 +299,7 @@ class StudentDashboardActivity : AppCompatActivity() {
         }
 
         // I-set up ang mga button na may "Coming Soon" Toast
-        // 🛑 Inalis ang R.id.btnLibrary sa listahan.
         val comingSoonIds = listOf(
-            R.id.btnAttendance,
             R.id.btnAssignments,
             R.id.btnCanteen
         )
@@ -254,22 +311,35 @@ class StudentDashboardActivity : AppCompatActivity() {
             }
         }
 
-        // 🛑 FIXED: Library Button (pumunta na sa LibraryActivity)
+        findViewById<Button>(R.id.btnAttendance).setOnClickListener {
+            if (studentId.isNullOrEmpty()) {
+                Toast.makeText(this, "Student ID is missing. Cannot load attendance.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val intent = Intent(this, StudentAttendanceActivity::class.java)
+            intent.putExtra("STUDENT_ID", studentId)
+            startActivity(intent)
+        }
+
         findViewById<Button>(R.id.btnLibrary).setOnClickListener {
             val intent = Intent(this, LibraryActivity::class.java)
             startActivity(intent)
         }
 
         findViewById<Button>(R.id.btnOnlineClasses).setOnClickListener {
+            // 1. Check for the Student ID
             if (studentId.isNullOrEmpty()) {
                 Toast.makeText(this, "Student ID is missing. Cannot load online classes.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            // Dito tayo magre-redirect sa isang bagong Activity
+
             val intent = Intent(this, StudentOnlineClassesActivity::class.java)
-            intent.putExtra("STUDENT_ID", studentId) // Ipapasa ang Student ID
+            // 2. PASS THE STUDENT ID
+            intent.putExtra("STUDENT_ID", studentId) // <-- PASS THE CORRECT ID
             startActivity(intent)
         }
+
 
         // Full Schedule Button
         findViewById<Button>(R.id.btnSchedule).setOnClickListener {
@@ -277,7 +347,7 @@ class StudentDashboardActivity : AppCompatActivity() {
                 Toast.makeText(this, "Student ID is missing. Cannot load full schedule.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            // Tiyakin na tama ang target activity
+            // Tiyakin na tama ang target activity (StudentFullScheduleActivity)
             val intent = Intent(this, StudentFullScheduleActivity::class.java)
             // Gamitin ang Student ID bilang "USER_ID" para sa schedule activity
             intent.putExtra("USER_ID", studentId)

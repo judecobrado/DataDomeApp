@@ -8,7 +8,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Section Block:"
+        android:text="Schedule Time (Day/Start/End):"
         android:textSize="14sp"
         android:layout_marginTop="4dp"/>
 
@@ -42,30 +42,38 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="1. Filter Teacher Department:"
+        android:text="Assigned Department (View Only):"
         android:textSize="14sp"
         android:layout_marginTop="4dp"/>
-    <Spinner
-        android:id="@+id/spnDepartmentEdit"
+    <TextView
+        android:id="@+id/tvDepartmentViewOnly"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:minHeight="48dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
+        android:paddingStart="4dp"
+        android:textStyle="bold"
+        android:textColor="@android:color/black"
+        android:text="[Department Name]"
         android:layout_marginBottom="8dp"/>
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="2. Search and Select Teacher:"
+        android:text="Assigned Teacher (View Only):"
         android:textSize="14sp"
         android:layout_marginTop="4dp"/>
-    <AutoCompleteTextView
-        android:id="@+id/actvTeacherEdit"
+    <TextView
+        android:id="@+id/tvTeacherViewOnly"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Type to search teacher name/UID..."
-        android:minHeight="48dp"
-        android:layout_marginBottom="8dp"
-        android:completionThreshold="1" />
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
+        android:paddingStart="4dp"
+        android:textStyle="bold"
+        android:textColor="@android:color/black"
+        android:text="[Teacher Name (UID: xxxx)]"
+        android:layout_marginBottom="8dp"/>
 
     <LinearLayout
         android:layout_width="match_parent"

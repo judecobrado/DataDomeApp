@@ -4,6 +4,8 @@ package com.example.datadomeapp.models
 data class StudentSubject(
     val subjectCode: String = "",
     val subjectTitle: String = "",
+    val assignmentNo: String = "",
+    val sectionBlock: String = "",
     val sectionName: String = "",
     val teacherId: String = "",
     val teacherName: String = "",
@@ -19,6 +21,9 @@ data class OnlineClassAssignment(
     val sectionName: String = "",
     val roomNumber: String = "",
 
+    val subjectTitle: String = "",
+    val teacherName: String = "",
+    val subjectCode: String,
     // Schedule Fields
     val day: String = "", // e.g., "Fri"
     val startTime: String = "", // e.g., "7:00 AM"

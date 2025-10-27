@@ -4,11 +4,8 @@
     <color name="white">#FFFFFFFF</color>
     <color name="design_default_color_error">#B00020</color>
     <color name="design_default_color_primary">#6200EE</color>
-
-
-
-
-
+    <color name="color_success">#00796B</color>
+    <color name="color_warning">#FFC107</color>
 
     <color name="blue_primary">#1E3A8A</color> <!-- Deep Navy Blue -->
     <color name="blue_secondary">#3B82F6</color> <!-- Soft Sky Blue -->

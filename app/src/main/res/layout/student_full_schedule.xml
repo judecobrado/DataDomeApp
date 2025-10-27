@@ -4,56 +4,37 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
-    tools:context=".student.StudentFullScheduleActivity">
+    android:background="#F0F0F0">
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Iskedyul ng Kurso"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="8dp"/>
+        android:background="#1F3A93"
+        android:padding="16dp"
+        android:text="Full Class Schedule"
+        android:textColor="#FFFFFF"
+        android:textSize="20sp"
+        android:textStyle="bold" />
 
-    <TextView
-        android:id="@+id/tvScheduleRange"
+    <HorizontalScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Piliin ang Araw para Mag-filter, o tingnan ang buong linggo."
-        android:textSize="14sp"
-        android:layout_marginBottom="16dp"/>
+        android:layout_height="match_parent">
 
-    <Spinner
-        android:id="@+id/spinnerDaySelector"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:minHeight="48dp"
-        android:layout_marginBottom="16dp"/>
+        <ScrollView
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent">
 
-    <TextView
-        android:id="@+id/tvScheduleStatus"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Loading personal schedule..."
-        android:gravity="center"
-        android:textSize="16sp"
-        android:padding="16dp"/>
+            <GridLayout
+                android:id="@+id/glFullSchedule"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:columnCount="6"
+                android:padding="8dp"
+                android:rowCount="30"
+                tools:context=".student.StudentFullScheduleActivity">
+            </GridLayout>
 
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_marginTop="8dp"
-        android:background="#F8F8F8"
-        android:padding="4dp">
-
-        <LinearLayout
-            android:id="@+id/llScheduleContainer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-        </LinearLayout>
-    </ScrollView>
+        </ScrollView>
+    </HorizontalScrollView>
 
 </LinearLayout>

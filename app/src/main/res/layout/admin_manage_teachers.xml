@@ -52,14 +52,6 @@
             android:inputType="textEmailAddress"
             android:minHeight="48dp"/>
 
-        <EditText
-            android:id="@+id/etTeacherPassword"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Password (initial)"
-            android:inputType="textPassword"
-            android:minHeight="48dp"/>
-
         <Button
             android:id="@+id/btnAddTeacher"
             android:layout_width="match_parent"

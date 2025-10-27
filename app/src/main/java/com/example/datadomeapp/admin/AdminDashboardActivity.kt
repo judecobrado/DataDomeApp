@@ -17,9 +17,9 @@ class AdminDashboardActivity : AppCompatActivity() {
         setContentView(R.layout.admin_dashboard)
 
         // Existing buttons...
-        findViewById<Button>(R.id.btnManageStudents).setOnClickListener {
-            startActivity(Intent(this, ManageStudentsActivity::class.java))
-        }
+        //findViewById<Button>(R.id.btnManageStudents).setOnClickListener {
+        //    startActivity(Intent(this, ManageStudentsActivity::class.java))
+        //}
         findViewById<Button>(R.id.btnManageEnrollment).setOnClickListener {
             startActivity(Intent(this, ManageEnrollmentsActivity::class.java))
         }

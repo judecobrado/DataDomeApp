@@ -57,9 +57,9 @@
             android:id="@+id/cardSchedulePreview"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="4dp">
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="10dp"
+            app:cardElevation="6dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -74,23 +74,46 @@
                     android:textSize="20sp"
                     android:textStyle="bold"
                     android:textColor="@color/design_default_color_primary"
-                    android:layout_marginBottom="8dp" />
+                    android:layout_marginBottom="12dp" />
 
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardCornerRadius="6dp"
+                    app:cardElevation="0dp"
+                    android:backgroundTint="#E1F5FE">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="12dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="NEXT UP: Loading Time..."
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:textColor="#0288D1" />
+                        <TextView
+                            android:id="@+id/tvNextClassDetails"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Subject (Room/Online)"
+                            android:textSize="16sp"
+                            android:textStyle="italic"
+                            android:textColor="#333333" />
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
                 <TableLayout
                     android:id="@+id/tlDailySchedule"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:stretchColumns="1">
-
+                    android:stretchColumns="1,2">
                     <TableRow android:background="#F0F0F0">
-                        <TextView
-                            android:text="Time"
-                            android:textStyle="bold"
-                            android:padding="8dp" />
-                        <TextView
-                            android:text="Subject &amp; Venue"
-                            android:textStyle="bold"
-                            android:padding="8dp" />
+                        <TextView android:text="Time" android:textStyle="bold" android:padding="8dp" android:textSize="12sp" />
+                        <TextView android:text="Subject" android:textStyle="bold" android:padding="8dp" android:textSize="14sp" />
+                        <TextView android:text="Room" android:textStyle="bold" android:padding="8dp" android:textSize="14sp" />
                     </TableRow>
 
                     <TextView
@@ -101,16 +124,97 @@
                         android:gravity="center"
                         android:paddingTop="10dp"
                         android:paddingBottom="10dp"
-                        android:layout_span="2"
-                        android:textColor="#888888" />
+                        android:layout_span="3" android:textColor="#888888" />
                 </TableLayout>
 
             </LinearLayout>
         </androidx.cardview.widget.CardView>
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cardAlertsDeadlines"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            app:cardCornerRadius="10dp"
+            app:cardElevation="2dp"
+            app:contentPadding="12dp">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🔔 Upcoming Deadlines"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="#F44336"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:id="@+id/tvAssignmentAlert"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Loading assignments..."
+                    android:textColor="#555555"
+                    android:drawableStart="@android:drawable/ic_notification_overlay"
+                    android:drawablePadding="8dp"
+                    android:paddingBottom="4dp" />
+
+                <TextView
+                    android:id="@+id/tvQuizAlert"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Loading quizzes..."
+                    android:textColor="#555555"
+                    android:drawableStart="@android:drawable/ic_input_get"
+                    android:drawablePadding="8dp" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🛠 ACADEMIC TOOLS"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#333333"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="4dp"
+                android:paddingStart="8dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnAssignments"
+                    style="@style/Widget.AppCompat.Button.Colored"
+                    android:layout_width="0dp"
+                    android:layout_height="100dp"
+                    android:layout_weight="1"
+                    android:layout_margin="8dp"
+                    android:drawableTop="@android:drawable/ic_menu_sort_by_size"
+                    android:text="Subjects &amp; Grades"
+                    android:textSize="14sp" />
+
+                <Button
+                    android:id="@+id/btnQuizzes"
+                    style="@style/Widget.AppCompat.Button.Colored"
+                    android:layout_width="0dp"
+                    android:layout_height="100dp"
+                    android:layout_weight="1"
+                    android:layout_margin="8dp"
+                    android:drawableTop="@android:drawable/ic_menu_help"
+                    android:text="Quizzes"
+                    android:textSize="14sp" />
+            </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -135,26 +239,26 @@
                     android:layout_height="100dp"
                     android:layout_weight="1"
                     android:layout_margin="8dp"
-                    android:drawableTop="@android:drawable/ic_menu_call"
+                    android:drawableTop="@android:drawable/ic_menu_compass"
                     android:text="Attendance"
                     android:textSize="14sp" />
             </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="💡 PRODUCTIVITY &amp; E-LEARNING"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#333333"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="4dp"
+                android:paddingStart="8dp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
-
-                <Button
-                    android:id="@+id/btnAssignments"
-                    style="@style/Widget.AppCompat.Button.Colored"
-                    android:layout_width="0dp"
-                    android:layout_height="100dp"
-                    android:layout_weight="1"
-                    android:layout_margin="8dp"
-                    android:drawableTop="@android:drawable/ic_menu_edit"
-                    android:text="Assignments"
-                    android:textSize="14sp" />
 
                 <Button
                     android:id="@+id/btnOnlineClasses"
@@ -163,25 +267,8 @@
                     android:layout_height="100dp"
                     android:layout_weight="1"
                     android:layout_margin="8dp"
-                    android:drawableTop="@android:drawable/ic_menu_camera"
+                    android:drawableTop="@android:drawable/ic_menu_view"
                     android:text="Online Classes"
-                    android:textSize="14sp" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <Button
-                    android:id="@+id/btnNotes"
-                    style="@style/Widget.AppCompat.Button.Colored"
-                    android:layout_width="0dp"
-                    android:layout_height="100dp"
-                    android:layout_weight="1"
-                    android:layout_margin="8dp"
-                    android:drawableTop="@android:drawable/ic_menu_agenda"
-                    android:text="Notes"
                     android:textSize="14sp" />
 
                 <Button
@@ -191,10 +278,21 @@
                     android:layout_height="100dp"
                     android:layout_weight="1"
                     android:layout_margin="8dp"
-                    android:drawableTop="@android:drawable/ic_menu_month"
+                    android:drawableTop="@android:drawable/ic_menu_gallery"
                     android:text="To-Do List"
                     android:textSize="14sp" />
             </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🗺️ CAMPUS SERVICES"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#333333"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="4dp"
+                android:paddingStart="8dp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -221,6 +319,34 @@
                     android:layout_margin="8dp"
                     android:drawableTop="@android:drawable/ic_menu_mapmode"
                     android:text="Canteen"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnNotes"
+                    style="@style/Widget.AppCompat.Button.Colored"
+                    android:layout_width="0dp"
+                    android:layout_height="100dp"
+                    android:layout_weight="1"
+                    android:layout_margin="8dp"
+                    android:drawableTop="@android:drawable/ic_menu_edit"
+                    android:text="Notes"
+                    android:textSize="14sp" />
+
+                <Button
+                    android:id="@+id/btnProfile"
+                    style="@style/Widget.AppCompat.Button.Colored"
+                    android:layout_width="0dp"
+                    android:layout_height="100dp"
+                    android:layout_weight="1"
+                    android:layout_margin="8dp"
+                    android:drawableTop="@android:drawable/ic_menu_myplaces"
+                    android:text="Profile"
                     android:textSize="14sp" />
             </LinearLayout>
 

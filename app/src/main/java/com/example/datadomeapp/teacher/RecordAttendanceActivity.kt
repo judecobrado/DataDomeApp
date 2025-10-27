@@ -30,16 +30,13 @@ import com.google.firebase.firestore.toObject
 import java.text.SimpleDateFormat
 import java.util.*
 
-// 🟢 FIX 1: NEW Data Model para sa ISANG document lang kada araw
-// Ilagay ito sa labas ng Activity class, ideal sa isang 'models' package.
-// Hindi ito ang iyong lumang 'AttendanceRecord' na para sa Batch Write.
+
 data class DailyAttendanceRecord(
     val assignmentId: String = "",
     val subjectCode: String = "",
     val date: String = "",
-    val timeSlotKey: String = "", // 🛑 NEW: Slot key (e.g., "slot1", "slot2")
-    val displayTimeSlot: String = "", // 🛑 NEW: Display format (e.g., "Mon 1:00 PM - 2:00 PM")
-    // Ang lahat ng statuses ay nasa isang Map: studentId -> status
+    val timeSlotKey: String = "",
+    val displayTimeSlot: String = "",
     val statuses: Map<String, String> = emptyMap()
 )
 

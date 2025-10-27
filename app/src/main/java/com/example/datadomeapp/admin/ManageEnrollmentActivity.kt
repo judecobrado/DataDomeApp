@@ -486,27 +486,57 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
     // SCHEDULE CONFLICT CHECKER (UPDATED for Map<String, TimeSlot>)
     // ----------------------------------------------------
     private fun checkForScheduleConflicts(assignments: List<ClassAssignment>): Boolean {
-        val occupiedSlots = mutableSetOf<String>()
+        // Store occupied slots as (Day, Start_ms, End_ms)
+        val occupiedSlots = mutableListOf<Triple<String, Long, Long>>()
+
+        // Re-declare time formatters if they are not class-level properties
+        val displayTimeFormat = java.text.SimpleDateFormat("h:mm a", java.util.Locale.getDefault())
+        val internalTimeFormat = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+
+        // Helper function for flexible parsing (assuming it was defined in ManageSchedulesActivity)
+        val parseTimeFlexibly: (String) -> Date? = { timeStr ->
+            try { displayTimeFormat.parse(timeStr) } catch (e: java.text.ParseException) {
+                try { internalTimeFormat.parse(timeStr) } catch (e2: java.text.ParseException) { null }
+            }
+        }
+
+        // Helper to get time in milliseconds since epoch (normalized to a single day)
+        val getTimeInMs: (String) -> Long = { timeStr ->
+            val parsedDate = parseTimeFlexibly(timeStr)
+            if (parsedDate != null) {
+                // Normalize to internal 24hr format for consistent comparison (HH:mm)
+                internalTimeFormat.parse(internalTimeFormat.format(parsedDate))?.time ?: 0L
+            } else {
+                0L
+            }
+        }
+
         for (assignment in assignments) {
-            // I-iterate ang lahat ng TimeSlot sa Assignment
+            // Iterate through all slots of the assignment (Irregular students may select multiple slots of one subject)
             for (slot in assignment.scheduleSlots.values) {
                 val day = slot.day
-                val start = slot.startTime
-                val end = slot.endTime
+                val startMs = getTimeInMs(slot.startTime)
+                val endMs = getTimeInMs(slot.endTime)
 
-                if (day.isEmpty() || start.isEmpty() || end.isEmpty()) {
-                    Log.w("EnrollmentDebug", "Skipping conflict check for incomplete slot: ${assignment.subjectCode}")
+                if (startMs == 0L || endMs == 0L || startMs >= endMs) {
+                    Log.w("EnrollmentDebug", "Skipping incomplete/invalid slot: ${assignment.subjectCode}")
                     continue
                 }
 
-                // Ang scheduleKey ay dapat unique para sa bawat oras/araw.
-                val scheduleKey = "${day}_${start}_${end}"
+                // Check for overlap against already added slots (All slots selected by the student)
+                val conflictFound = occupiedSlots.any { (existingDay, existingStart, existingEnd) ->
+                    // 1. Same Day
+                    existingDay == day &&
+                            // 2. Overlap Check: (Start1 < End2) and (End1 > Start2)
+                            startMs < existingEnd && endMs > existingStart
+                }
 
-                if (occupiedSlots.contains(scheduleKey)) {
-                    Log.e("EnrollmentDebug", "Conflict found for slot: $scheduleKey")
+                if (conflictFound) {
+                    Log.e("EnrollmentDebug", "Schedule Conflict found for student: Two selected subjects or slots overlap in time.")
                     return true
                 }
-                occupiedSlots.add(scheduleKey)
+
+                occupiedSlots.add(Triple(day, startMs, endMs))
             }
         }
         return false
@@ -519,7 +549,9 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
         studentEmail: String, pendingEnrollmentId: String,
         selectedAssignments: List<ClassAssignment>, finalYearLevel: String, finalEnrollmentType: String, courseCode: String
     ) {
-        // ... (Step 1 & 2: Generate Student ID & Get Enrollment Data) ...
+        // --- Added: Get the current timestamp once for consistency across all records ---
+        val enrollmentTimestamp = Timestamp.now()
+
         generateStudentId { studentId ->
 
             firestore.collection("pendingEnrollments").document(pendingEnrollmentId).get()
@@ -531,43 +563,36 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                     }
                     val finalPassword = generatePassword(e.lastName, e.dateOfBirth)
 
-
-                    // --- Step 3: Firebase Auth User Creation ---
+                    // --- Step 3: Firebase Auth User Creation (No change) ---
                     auth.createUserWithEmailAndPassword(studentEmail.trim(), finalPassword.trim())
                         .addOnSuccessListener { authResult ->
                             val userUid = authResult.user!!.uid
                             Log.d("EnrollmentDebug", "Auth User created successfully inside finalization: $userUid")
 
-                            // --- Step 4: START FIRESTORE TRANSACTION (Capacity Check) ---
+                            // --- Step 4: START FIRESTORE TRANSACTION (Capacity Check) (No change) ---
                             firestore.runTransaction { transaction ->
-
-                                // READ PHASE
+                                // ... (READ and VALIDATION phases remain the same) ...
                                 val snapshots = mutableMapOf<String, com.google.firebase.firestore.DocumentSnapshot>()
                                 for (assignment in selectedAssignments) {
-                                    // Ginamit ang assignmentRef at assignment.assignmentNo para maiwasan ang conflict
                                     val assignmentRef = firestore.collection("classAssignments").document(assignment.assignmentNo)
-                                    val snapshot = transaction.get(assignmentRef) // READ
+                                    val snapshot = transaction.get(assignmentRef)
                                     snapshots[assignment.assignmentNo] = snapshot
                                 }
 
-                                // VALIDATION PHASE
                                 for (assignment in selectedAssignments) {
                                     val snapshot = snapshots[assignment.assignmentNo]!!
                                     val currentCount = (snapshot.get("enrolledCount") as? Number)?.toInt() ?: 0
                                     val maxCapacity = (snapshot.get("maxCapacity") as? Number)?.toInt() ?: 50
-
-                                    // FIX: Gumamit ng Section Block sa error message
                                     val sectionBlock = assignment.scheduleSlots.values.firstOrNull()?.sectionBlock ?: assignment.subjectCode
                                     if (currentCount >= maxCapacity) {
                                         throw Exception("Section $sectionBlock is full. Aborting Enrollment.")
                                     }
                                 }
 
-                                // WRITE PHASE
                                 for (assignment in selectedAssignments) {
                                     val ref = firestore.collection("classAssignments").document(assignment.assignmentNo)
                                     val currentCount = (snapshots[assignment.assignmentNo]!!.get("enrolledCount") as? Number)?.toInt() ?: 0
-                                    transaction.update(ref, "enrolledCount", currentCount + 1) // WRITE
+                                    transaction.update(ref, "enrolledCount", currentCount + 1)
                                 }
 
                                 null
@@ -576,22 +601,18 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
 
                                 val batch = firestore.batch()
 
-                                // ⚠️ PLACEHOLDER: Kunin ang actual current semester/AY mula sa app settings
                                 val currentSemester = "1st Semester"
                                 val currentAcademicYear = "2025-2026"
 
-                                // --- CRITICAL FIX: Determine Administrative Section ID (Gumagamit ng Section Block) ---
                                 val assignedSectionBlock = if (finalEnrollmentType == "Regular") {
-                                    // Para sa Regular: Kunin ang Section Block mula sa UNANG TimeSlot ng UNANG Assignment.
                                     selectedAssignments.firstOrNull()?.scheduleSlots?.values?.firstOrNull()?.sectionBlock
                                         ?: "${courseCode}_${finalYearLevel.take(1)}A"
                                 } else {
                                     "${courseCode}_IRREG_${finalYearLevel.take(1)}"
                                 }
-                                // --- CRITICAL FIX END ---
 
 
-                                // 2. CREATE/UPDATE USER RECORD (Walang pagbabago)
+                                // 2. CREATE/UPDATE USER RECORD (No change)
                                 val userRef = firestore.collection("users").document(userUid)
                                 batch.set(userRef, mapOf(
                                     "email" to studentEmail,
@@ -602,56 +623,60 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                                     "enrollmentType" to finalEnrollmentType
                                 ))
 
-                                // 3. SAVE ASSIGNMENTS to Student Record (UPDATED: Storing COMPLETE Subject Record)
+                                // 3. SAVE ASSIGNMENTS to Student Record (UPDATED: Added status and dateEnrolled)
                                 for (assignment in selectedAssignments) {
-
                                     val primarySectionBlock = assignment.scheduleSlots.values.firstOrNull()?.sectionBlock ?: assignedSectionBlock
-                                    val subjectEntry = requiredSubjectsMap[assignment.subjectCode] // Kunin ang SubjectEntry para sa credits
+                                    val subjectEntry = requiredSubjectsMap[assignment.subjectCode]
 
-                                    // 🟢 Gamitin ang REVISED MODEL (StudentAssignmentRecord)
-                                    val studentAssignmentRecord = StudentAssignmentRecord(
-                                        subjectCode = assignment.subjectCode,
-                                        subjectTitle = assignment.subjectTitle,
-                                        assignmentNo = assignment.assignmentNo, // Dapat ClassAssignment document ID
-                                        teacherName = assignment.teacherName,
-                                        sectionBlock = primarySectionBlock,
-                                        onlineLink = assignment.onlineClassLink,
-                                        credits = subjectEntry?.credits ?: 3, // Kunin ang Credits mula sa Curriculum SubjectEntry
-                                        prelim = null,
-                                        midterm = null,
-                                        final = null,
-                                        gwa = "",
-                                        semester = currentSemester,
-                                        academicYear = currentAcademicYear,
-                                        yearLevel = finalYearLevel
+                                    // 🟢 Update: Use the enhanced data model (StudentAssignmentRecord)
+                                    // Note: The StudentAssignmentRecord model itself doesn't have a 'status' or 'dateEnrolled' field
+                                    // You must add them directly to the map when writing to Firestore if you don't want to change the model definition.
+                                    val studentAssignmentRecordMap = mapOf(
+                                        "subjectCode" to assignment.subjectCode,
+                                        "subjectTitle" to assignment.subjectTitle,
+                                        "assignmentNo" to assignment.assignmentNo,
+                                        "teacherName" to assignment.teacherName,
+                                        "sectionBlock" to primarySectionBlock,
+                                        "onlineLink" to assignment.onlineClassLink,
+                                        "credits" to (subjectEntry?.credits ?: 3),
+                                        "prelim" to null,
+                                        "midterm" to null,
+                                        "final" to null,
+                                        "gwa" to "",
+                                        "semester" to currentSemester,
+                                        "academicYear" to currentAcademicYear,
+                                        "yearLevel" to finalYearLevel,
+                                        // 🌟 NEW FIELD: Enrollment Status
+                                        "status" to "Enrolled",
+                                        // 🌟 NEW FIELD: Date Enrolled
+                                        "dateEnrolled" to enrollmentTimestamp
                                     )
 
-                                    // 🟢 Hierarchy Logic: Gawing Document ID ang "Year_Semester_SubjectCode"
-                                    val yearClean = finalYearLevel.replace(" ", "") // e.g., "1stYear"
-                                    val semClean = currentSemester.replace(" ", "") // e.g., "1stSemester"
+                                    val yearClean = finalYearLevel.replace(" ", "")
+                                    val semClean = currentSemester.replace(" ", "")
                                     val subjectDocId = "${yearClean}_${semClean}_${assignment.subjectCode}"
 
                                     val subjectRef = firestore.collection("students").document(studentId).collection("subjects").document(subjectDocId)
-                                    batch.set(subjectRef, studentAssignmentRecord)
+                                    batch.set(subjectRef, studentAssignmentRecordMap)
                                 }
 
-                                // 4. CREATE/UPDATE STUDENT MASTER RECORD (In-update ang AY/Semester)
+                                // 4. CREATE/UPDATE STUDENT MASTER RECORD (UPDATED: Added dateEnrolled)
                                 val masterRef = firestore.collection("students").document(studentId)
 
                                 batch.set(masterRef, mapOf(
-                                    // ... (Personal and Enrollment status data) ...
+                                    // ... (Existing fields) ...
                                     "id" to studentId,
                                     "userUid" to userUid,
-                                    "dateEnrolled" to Timestamp.now(),
-                                    "academicYear" to currentAcademicYear, // Gamitin ang variable
-                                    "semester" to currentSemester, // Gamitin ang variable
+                                    // 🌟 UPDATED FIELD: Using the consistent Timestamp
+                                    "dateEnrolled" to enrollmentTimestamp,
+                                    "academicYear" to currentAcademicYear,
+                                    "semester" to currentSemester,
                                     "courseCode" to courseCode,
-                                    "status" to "Admitted",
+                                    "status" to "Admitted", // Status of the student's admission
                                     "isEnrolled" to true,
                                     "yearLevel" to finalYearLevel,
                                     "enrollmentType" to finalEnrollmentType,
                                     "sectionId" to assignedSectionBlock,
-                                    // ... (Rest of personal data from Enrollment object 'e') ...
                                     "firstName" to e.firstName,
                                     "lastName" to e.lastName,
                                     "middleName" to e.middleName,
@@ -665,13 +690,13 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                                     "guardianRelationship" to "Unknown"
                                 ))
 
-                                // 5. Clean up pending enrollment
+                                // 5. Clean up pending enrollment (No change)
                                 batch.delete(firestore.collection("pendingEnrollments").document(pendingEnrollmentId))
 
                                 batch.commit().addOnSuccessListener {
                                     Toast.makeText(this, "Enrollment Finalized! Student ID: $studentId.", Toast.LENGTH_LONG).show()
 
-                                    // 6. Send enrollment email
+                                    // 6. Send enrollment email (No change)
                                     val data = hashMapOf("email" to studentEmail, "studentId" to studentId, "password" to finalPassword)
                                     functions.getHttpsCallable("sendEnrollmentEmail").call(data)
 
