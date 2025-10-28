@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="AI Quiz Generator"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="#000000"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Topic"
+        android:textSize="14sp"
+        android:textColor="#000000"
+        android:layout_marginBottom="4dp" />
+
+    <EditText
+        android:id="@+id/etAITopic"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="e.g., Science, Math, History"
+        android:padding="12dp"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Number of Questions (1-20)"
+        android:textSize="14sp"
+        android:textColor="#000000"
+        android:layout_marginBottom="4dp" />
+
+    <EditText
+        android:id="@+id/etAINumberOfQuestions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="5"
+        android:inputType="number"
+        android:padding="12dp"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Question Type"
+        android:textSize="14sp"
+        android:textColor="#000000"
+        android:layout_marginBottom="4dp" />
+
+    <Spinner
+        android:id="@+id/spinnerAIQuestionType"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="12dp"
+      />
+</LinearLayout>
