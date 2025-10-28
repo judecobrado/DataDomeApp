@@ -2,7 +2,9 @@ plugins {
     id("com.android.application")
     id("com.google.gms.google-services")
     kotlin("android")
-    kotlin("kapt")}
+    kotlin("kapt")
+    id("kotlin-parcelize")
+}
 
 android {
     namespace = "com.example.datadomeapp"

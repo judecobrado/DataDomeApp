@@ -11,7 +11,20 @@ data class StudentSubject(
     val teacherName: String = "",
     val schedule: String = "",
     val roomNumber: String = "",
+    val semester: String? = null,
     val onlineClassLink: String? = null,
+    val onlineLink: String? = null,
+
+    // 🛑 CRITICAL FIX: Changed from Double? to String? to match Firestore data 🛑
+    val gwa: String? = null,
+    val final: String? = null,
+    val prelim: String? = null,
+    val midterm: String? = null,
+
+    // Kept as original types (assuming they match the database)
+    val academicYear: String? = null,
+    val credits: Int? = null,
+    val yearLevel: String? = null,
 )
 
 data class OnlineClassAssignment(

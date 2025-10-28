@@ -18,8 +18,7 @@ data class Enrollment(
     val status: String = "pending" // Idinagdag para sa tracking
 )
 
-// Data Model para sa assigned subjects ng student
-data class StudentSubject(
+data class StudentSubjectss(
     val subjectCode: String = "",
     val subjectTitle: String = "",
     val sectionName: String = "", // e.g., 'ITEP111-A'

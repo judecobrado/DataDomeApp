@@ -486,57 +486,40 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
     // SCHEDULE CONFLICT CHECKER (UPDATED for Map<String, TimeSlot>)
     // ----------------------------------------------------
     private fun checkForScheduleConflicts(assignments: List<ClassAssignment>): Boolean {
-        // Store occupied slots as (Day, Start_ms, End_ms)
-        val occupiedSlots = mutableListOf<Triple<String, Long, Long>>()
+        val occupiedSlots = mutableListOf<Triple<String, Int, Int>>() // (day, startMin, endMin)
 
-        // Re-declare time formatters if they are not class-level properties
-        val displayTimeFormat = java.text.SimpleDateFormat("h:mm a", java.util.Locale.getDefault())
-        val internalTimeFormat = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
-
-        // Helper function for flexible parsing (assuming it was defined in ManageSchedulesActivity)
-        val parseTimeFlexibly: (String) -> Date? = { timeStr ->
-            try { displayTimeFormat.parse(timeStr) } catch (e: java.text.ParseException) {
-                try { internalTimeFormat.parse(timeStr) } catch (e2: java.text.ParseException) { null }
-            }
-        }
-
-        // Helper to get time in milliseconds since epoch (normalized to a single day)
-        val getTimeInMs: (String) -> Long = { timeStr ->
-            val parsedDate = parseTimeFlexibly(timeStr)
-            if (parsedDate != null) {
-                // Normalize to internal 24hr format for consistent comparison (HH:mm)
-                internalTimeFormat.parse(internalTimeFormat.format(parsedDate))?.time ?: 0L
-            } else {
-                0L
-            }
+        fun parseTimeToMinutes(timeStr: String): Int {
+            val pattern = Regex("(\\d{1,2}):(\\d{2})\\s*(AM|PM)", RegexOption.IGNORE_CASE)
+            val match = pattern.find(timeStr.trim()) ?: return -1
+            val (hourStr, minuteStr, meridiem) = match.destructured
+            var hour = hourStr.toInt()
+            val minute = minuteStr.toInt()
+            if (meridiem.equals("PM", true) && hour != 12) hour += 12
+            if (meridiem.equals("AM", true) && hour == 12) hour = 0
+            return hour * 60 + minute
         }
 
         for (assignment in assignments) {
-            // Iterate through all slots of the assignment (Irregular students may select multiple slots of one subject)
             for (slot in assignment.scheduleSlots.values) {
                 val day = slot.day
-                val startMs = getTimeInMs(slot.startTime)
-                val endMs = getTimeInMs(slot.endTime)
+                val startMin = parseTimeToMinutes(slot.startTime)
+                val endMin = parseTimeToMinutes(slot.endTime)
 
-                if (startMs == 0L || endMs == 0L || startMs >= endMs) {
-                    Log.w("EnrollmentDebug", "Skipping incomplete/invalid slot: ${assignment.subjectCode}")
+                if (startMin == -1 || endMin == -1 || startMin >= endMin) {
+                    Log.w("EnrollmentDebug", "Skipping invalid slot: ${assignment.subjectCode}")
                     continue
                 }
 
-                // Check for overlap against already added slots (All slots selected by the student)
-                val conflictFound = occupiedSlots.any { (existingDay, existingStart, existingEnd) ->
-                    // 1. Same Day
-                    existingDay == day &&
-                            // 2. Overlap Check: (Start1 < End2) and (End1 > Start2)
-                            startMs < existingEnd && endMs > existingStart
+                val conflict = occupiedSlots.any { (existingDay, existingStart, existingEnd) ->
+                    existingDay == day && startMin < existingEnd && endMin > existingStart
                 }
 
-                if (conflictFound) {
-                    Log.e("EnrollmentDebug", "Schedule Conflict found for student: Two selected subjects or slots overlap in time.")
+                if (conflict) {
+                    Log.e("EnrollmentDebug", "Schedule conflict found for student")
                     return true
                 }
 
-                occupiedSlots.add(Triple(day, startMs, endMs))
+                occupiedSlots.add(Triple(day, startMin, endMin))
             }
         }
         return false

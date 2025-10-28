@@ -1,48 +1,49 @@
 package com.example.datadomeapp.teacher
 
-import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.widget.*
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.datadomeapp.R
-import com.example.datadomeapp.models.Question
+import com.example.datadomeapp.models.Question // Assumed to be the FLATTENED data class
 import com.example.datadomeapp.models.Quiz
 import com.example.datadomeapp.teacher.adapters.QuestionAdapter
-import com.example.datadomeapp.teacher.adapters.MatchingPairAdapter
 import com.google.firebase.auth.FirebaseAuth
+import com.example.datadomeapp.teacher.adapters.MatchingPairAdapter
 import com.google.firebase.database.*
-import java.io.BufferedReader
-import java.io.InputStreamReader
+import com.google.firebase.database.GenericTypeIndicator
+
+// 🛑 IMPORTANT: Your Question model MUST be the FLATTENED data class for this code to work:
+/*
+data class Question(
+    val questionText: String = "",
+    val type: String = "", // "TF", "MC", "MATCHING"
+    val answer: Boolean? = null,
+    val options: List<String>? = null,
+    val correctAnswerIndex: Int? = null,
+    val matches: List<String>? = null
+)
+*/
 
 class CreateQuizActivity : AppCompatActivity() {
+
     private val db = FirebaseDatabase.getInstance().reference
     private val auth = FirebaseAuth.getInstance()
+
     private lateinit var recyclerView: RecyclerView
     private lateinit var btnAddTF: Button
     private lateinit var btnAddMatching: Button
     private lateinit var btnAddMC: Button
     private lateinit var btnSaveQuiz: Button
-    private lateinit var btnUploadQuiz: Button // NEW
     private lateinit var etQuizTitle: EditText
     private var currentAssignmentId: String? = null
     private val questionList = mutableListOf<Question>()
     private lateinit var adapter: QuestionAdapter
-    private var editingQuizId: String? = null
 
-    // NEW: File picker for upload
-    private val filePickerLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == RESULT_OK) {
-            result.data?.data?.let { uri ->
-                processUploadedFile(uri)
-            }
-        }
-    }
+    private var editingQuizId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,27 +54,24 @@ class CreateQuizActivity : AppCompatActivity() {
         btnAddMatching = findViewById(R.id.btnAddMatching)
         btnAddMC = findViewById(R.id.btnAddMC)
         btnSaveQuiz = findViewById(R.id.btnSaveQuiz)
-        btnUploadQuiz = findViewById(R.id.btnUploadQuiz) // NEW
         etQuizTitle = findViewById(R.id.etQuizTitle)
 
         recyclerView.layoutManager = LinearLayoutManager(this)
+        // QuestionAdapter also needs to be updated to accept the single Question data class
         adapter = QuestionAdapter(
             questionList,
             editClickListener = { editQuestion(it) },
-            deleteClickListener = { deleteQuestion(it) }
-        )
+            deleteClickListener = { deleteQuestion(it) })
         recyclerView.adapter = adapter
 
         btnAddTF.setOnClickListener { addTFQuestion() }
         btnAddMatching.setOnClickListener { addMatchingQuestion() }
         btnAddMC.setOnClickListener { addMCQuestion() }
         btnSaveQuiz.setOnClickListener { saveQuiz() }
-        btnUploadQuiz.setOnClickListener { openFilePicker() } // NEW
 
         // ----------------- Check if editing -----------------
         editingQuizId = intent.getStringExtra("QUIZ_ID")
         currentAssignmentId = intent.getStringExtra("ASSIGNMENT_ID")
-
         editingQuizId?.let { loadExistingQuiz(it) }
 
         if (currentAssignmentId.isNullOrEmpty() && editingQuizId.isNullOrEmpty()) {
@@ -84,322 +82,47 @@ class CreateQuizActivity : AppCompatActivity() {
         }
     }
 
-    // NEW: Open file picker for TXT files
-    private fun openFilePicker() {
-        val intent = Intent(Intent.ACTION_GET_CONTENT)
-        intent.type = "text/plain"
-        intent.addCategory(Intent.CATEGORY_OPENABLE)
-        filePickerLauncher.launch(Intent.createChooser(intent, "Select Quiz TXT File"))
-    }
-
-    // NEW: Process uploaded TXT file
-    // NEW: Process uploaded TXT file
-    private fun processUploadedFile(uri: Uri) {
-        try {
-            contentResolver.openInputStream(uri)?.use { inputStream ->
-                val reader = BufferedReader(InputStreamReader(inputStream))
-                val lines = reader.readLines()
-
-                var uploadedCount = 0
-                var skippedCount = 0
-                var currentMatchingQuestion: MutableList<Pair<String, String>>? = null
-                var currentMatchingTitle = "Matching Question"
-
-                for (line in lines) {
-                    val trimmedLine = line.trim()
-                    if (trimmedLine.isEmpty()) {
-                        // Save current matching question if exists when encountering empty line
-                        currentMatchingQuestion?.let { pairs ->
-                            if (pairs.size >= 2) {
-                                val leftOptions = pairs.map { it.first }
-                                val rightMatches = pairs.map { it.second }
-                                questionList.add(Question.Matching(currentMatchingTitle, leftOptions, rightMatches))
-                                uploadedCount++
-                            } else {
-                                skippedCount += pairs.size
-                            }
-                            currentMatchingQuestion = null
-                        }
-                        continue
-                    }
-
-                    val parts = when {
-                        line.contains("|") -> line.split("|").map { it.trim() }
-                        line.contains(",") -> line.split(",").map { it.trim() }
-                        else -> line.split("\t").map { it.trim() }
-                    }
-
-                    when (parts.size) {
-                        // True/False format: Question|True|False|Answer
-                        4 -> {
-                            // Save current matching question if exists before processing TF
-                            currentMatchingQuestion?.let { pairs ->
-                                if (pairs.size >= 2) {
-                                    val leftOptions = pairs.map { it.first }
-                                    val rightMatches = pairs.map { it.second }
-                                    questionList.add(Question.Matching(currentMatchingTitle, leftOptions, rightMatches))
-                                    uploadedCount++
-                                } else {
-                                    skippedCount += pairs.size
-                                }
-                                currentMatchingQuestion = null
-                            }
-
-                            val questionText = parts[0]
-                            val option1 = parts[1]
-                            val option2 = parts[2]
-                            val answerText = parts[3]
-
-                            // Check if it's True/False format
-                            if ((option1.equals("True", true) && option2.equals("False", true)) ||
-                                (option1.equals("False", true) && option2.equals("True", true))) {
-
-                                val answer = when (answerText.uppercase()) {
-                                    "TRUE", "T" -> true
-                                    "FALSE", "F" -> false
-                                    else -> null
-                                }
-
-                                if (answer != null && questionText.length >= 2) {
-                                    questionList.add(Question.TrueFalse(questionText, answer))
-                                    uploadedCount++
-                                } else {
-                                    skippedCount++
-                                }
-                            } else {
-                                skippedCount++
-                            }
-                        }
-
-                        // Multiple Choice format: Question|Option1|Option2|Option3|Option4|Answer
-                        6 -> {
-                            // Save current matching question if exists before processing MC
-                            currentMatchingQuestion?.let { pairs ->
-                                if (pairs.size >= 2) {
-                                    val leftOptions = pairs.map { it.first }
-                                    val rightMatches = pairs.map { it.second }
-                                    questionList.add(Question.Matching(currentMatchingTitle, leftOptions, rightMatches))
-                                    uploadedCount++
-                                } else {
-                                    skippedCount += pairs.size
-                                }
-                                currentMatchingQuestion = null
-                            }
-
-                            val questionText = parts[0]
-                            val options = parts.subList(1, 5)
-                            val answer = parts[5]
-
-                            // Find correct answer index
-                            val correctIndex = when (answer.uppercase()) {
-                                "A", options[0].uppercase() -> 0
-                                "B", options[1].uppercase() -> 1
-                                "C", options[2].uppercase() -> 2
-                                "D", options[3].uppercase() -> 3
-                                else -> -1
-                            }
-
-                            if (questionText.length >= 2 && options.all { it.length >= 1 } && correctIndex != -1) {
-                                questionList.add(Question.MultipleChoice(questionText, options, correctIndex))
-                                uploadedCount++
-                            } else {
-                                skippedCount++
-                            }
-                        }
-
-                        // Matching format: LeftTerm|RightMatch
-                        2 -> {
-                            val leftTerm = parts[0]
-                            val rightMatch = parts[1]
-
-                            if (leftTerm.length >= 1 && rightMatch.length >= 1) {
-                                // Initialize or add to current matching question
-                                if (currentMatchingQuestion == null) {
-                                    currentMatchingQuestion = mutableListOf()
-                                }
-
-                                // Check if current batch is full (20 pairs)
-                                if (currentMatchingQuestion!!.size >= 20) {
-                                    // Save current batch and start new one
-                                    val leftOptions = currentMatchingQuestion!!.map { it.first }
-                                    val rightMatches = currentMatchingQuestion!!.map { it.second }
-                                    questionList.add(Question.Matching(currentMatchingTitle, leftOptions, rightMatches))
-                                    uploadedCount++
-
-                                    // Start new batch
-                                    currentMatchingQuestion = mutableListOf()
-                                    currentMatchingTitle = "Matching Question ${uploadedCount + 1}"
-                                }
-
-                                currentMatchingQuestion!!.add(Pair(leftTerm, rightMatch))
-                            } else {
-                                skippedCount++
-                            }
-                        }
-
-                        else -> {
-                            skippedCount++
-                        }
-                    }
-                }
-
-                // Save any remaining matching question after processing all lines
-                currentMatchingQuestion?.let { pairs ->
-                    if (pairs.size >= 2) {
-                        val leftOptions = pairs.map { it.first }
-                        val rightMatches = pairs.map { it.second }
-                        questionList.add(Question.Matching(currentMatchingTitle, leftOptions, rightMatches))
-                        uploadedCount++
-                    } else {
-                        skippedCount += pairs.size
-                    }
-                }
-
-                adapter.notifyDataSetChanged()
-
-                Toast.makeText(
-                    this,
-                    "Uploaded: $uploadedCount questions, Skipped: $skippedCount lines",
-                    Toast.LENGTH_LONG
-                ).show()
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Toast.makeText(this, "Error reading file: ${e.message}", Toast.LENGTH_LONG).show()
-        }
-    }
-    // NEW: Parse question from text line
-    private fun parseQuestionFromLine(line: String): Question? {
-        return try {
-            // Try different delimiters
-            val parts = when {
-                line.contains("|") -> line.split("|").map { it.trim() }
-                line.contains(",") -> line.split(",").map { it.trim() }
-                else -> line.split("\t").map { it.trim() }
-            }
-
-            when (parts.size) {
-                // True/False format: Question|True|False|Answer
-                4 -> {
-                    val questionText = parts[0]
-                    val option1 = parts[1]
-                    val option2 = parts[2]
-                    val answerText = parts[3]
-
-                    // Check if it's True/False format
-                    if ((option1.equals("True", true) && option2.equals("False", true)) ||
-                        (option1.equals("False", true) && option2.equals("True", true))) {
-
-                        val answer = when (answerText.uppercase()) {
-                            "TRUE", "T" -> true
-                            "FALSE", "F" -> false
-                            else -> null
-                        }
-
-                        if (answer != null && questionText.length >= 2) {
-                            Question.TrueFalse(questionText, answer)
-                        } else {
-                            null
-                        }
-                    } else {
-                        null
-                    }
-                }
-
-                // Multiple Choice format: Question|Option1|Option2|Option3|Option4|Answer
-                6 -> {
-                    val questionText = parts[0]
-                    val options = parts.subList(1, 5)
-                    val answer = parts[5]
-
-                    // Find correct answer index
-                    val correctIndex = when (answer.uppercase()) {
-                        "A", options[0].uppercase() -> 0
-                        "B", options[1].uppercase() -> 1
-                        "C", options[2].uppercase() -> 2
-                        "D", options[3].uppercase() -> 3
-                        else -> -1
-                    }
-
-                    if (questionText.length >= 2 && options.all { it.length >= 1 } && correctIndex != -1) {
-                        Question.MultipleChoice(questionText, options, correctIndex)
-                    } else {
-                        null
-                    }
-                }
-
-                // Matching format: LeftTerm|RightMatch (multiple lines for one matching question)
-                2 -> {
-                    val leftTerm = parts[0]
-                    val rightMatch = parts[1]
-
-                    if (leftTerm.length >= 1 && rightMatch.length >= 1) {
-                        // For now, create individual matching pairs
-                        // You might want to group these differently based on your needs
-                        Question.Matching(
-                            "Matching Question",
-                            listOf(leftTerm),
-                            listOf(rightMatch)
-                        )
-                    } else {
-                        null
-                    }
-                }
-
-                else -> null
-            }
-        } catch (e: Exception) {
-            null
-        }
-    }
-
+    // --------------------------------------------------------
+    // ✅ FIX: Load data directly into the single Question data class
+    // --------------------------------------------------------
     private fun loadExistingQuiz(quizId: String) {
+        // Since the Question model is now a single concrete data class,
+        // the default Firebase mapper can load it directly.
         db.child("quizzes").child(quizId).get().addOnSuccessListener { snapshot ->
-            val title = snapshot.child("title").getValue(String::class.java) ?: ""
-            etQuizTitle.setText(title)
+            val fetchedQuiz = snapshot.getValue(Quiz::class.java)
 
-            val questionsSnapshot = snapshot.child("questions")
-            questionList.clear()
-
-            for (qSnap in questionsSnapshot.children) {
-                val type = qSnap.child("type").getValue(String::class.java)
-                val text = qSnap.child("questionText").getValue(String::class.java) ?: ""
-
-                when (type?.lowercase()) {
-                    "tf", "truefalse" -> {
-                        val answer = qSnap.child("answer").getValue(Boolean::class.java) ?: true
-                        questionList.add(Question.TrueFalse(text, answer))
-                    }
-                    "matching" -> {
-                        val options = qSnap.child("options")
-                            .getValue(object : GenericTypeIndicator<List<String>>() {}) ?: emptyList()
-                        val matches = qSnap.child("matches")
-                            .getValue(object : GenericTypeIndicator<List<String>>() {}) ?: emptyList()
-                        questionList.add(Question.Matching(text, options, matches))
-                    }
-                    "mc", "multiplechoice" -> {
-                        val options = qSnap.child("options")
-                            .getValue(object : GenericTypeIndicator<List<String>>() {}) ?: emptyList()
-                        val correctIndex = qSnap.child("correctAnswerIndex").getValue(Int::class.java) ?: 0
-                        questionList.add(Question.MultipleChoice(text, options, correctIndex))
-                    }
-                }
+            if (fetchedQuiz == null) {
+                Toast.makeText(this, "Error loading existing quiz data.", Toast.LENGTH_SHORT).show()
+                finish()
+                return@addOnSuccessListener
             }
+
+            etQuizTitle.setText(fetchedQuiz.title)
+            questionList.clear()
+            // The questions list is automatically loaded correctly by the Firebase mapper
+            // because Question is now a concrete data class.
+            questionList.addAll(fetchedQuiz.questions)
             adapter.notifyDataSetChanged()
+        }.addOnFailureListener { e ->
+            Toast.makeText(this, "Failed to load quiz: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 
-    // -------------------- Add / Edit Questions --------------------
-    private fun addTFQuestion(existing: Question.TrueFalse? = null) {
+    // --------------------------------------------------------
+    // ✅ FIX: Creation functions now instantiate the single FLATTENED Question class
+    // --------------------------------------------------------
+    private fun addTFQuestion(existing: Question? = null) {
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_true_false, null)
         val etQuestion = view.findViewById<EditText>(R.id.etTFQuestion)
         val rbTrue = view.findViewById<RadioButton>(R.id.rbTrue)
         val rbFalse = view.findViewById<RadioButton>(R.id.rbFalse)
 
-        // Populate if editing
+        // Populate if editing (Check type safety is not needed, just read the fields)
         existing?.let {
             etQuestion.setText(it.questionText)
-            if (it.answer) rbTrue.isChecked = true else rbFalse.isChecked = true
+            it.answer?.let { answer ->
+                if (answer) rbTrue.isChecked = true else rbFalse.isChecked = true
+            }
         }
 
         val dialog = AlertDialog.Builder(this)
@@ -420,23 +143,23 @@ class CreateQuizActivity : AppCompatActivity() {
                 }
 
                 if (questionText.length < 2) {
-                    Toast.makeText(
-                        this,
-                        "Question must have at least 2 characters.",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    Toast.makeText(this, "Question must have at least 2 characters.", Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
                 if (answer == null) {
-                    Toast.makeText(
-                        this,
-                        "Please select either True or False as the answer.",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    Toast.makeText(this, "Please select either True or False as the answer.", Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
 
-                val newQuestion = Question.TrueFalse(questionText, answer)
+                // 🎯 CONSTRUCT THE FLATTENED QUESTION OBJECT
+                val newQuestion = Question(
+                    questionText = questionText,
+                    type = "TF",
+                    answer = answer, // Only this is set
+                    options = null,
+                    correctAnswerIndex = null,
+                    matches = null
+                )
                 updateQuestion(existing, newQuestion)
                 dialog.dismiss()
             }
@@ -444,11 +167,13 @@ class CreateQuizActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    private fun addMatchingQuestion(existing: Question.Matching? = null) {
+    private fun addMatchingQuestion(existing: Question? = null) {
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_matching_question, null)
+
         val recyclerViewPairs = view.findViewById<RecyclerView>(R.id.recyclerViewMatchingPairs)
         val btnAddPair = view.findViewById<Button>(R.id.btnAddPair)
         val questionTitleEditText = view.findViewById<EditText>(R.id.etMatchingQuestionTitle)
+
         val pairList = mutableListOf<MatchingPair>()
         val maxPairs = 20
         val minPairs = 2
@@ -456,16 +181,16 @@ class CreateQuizActivity : AppCompatActivity() {
         // Populate if editing
         existing?.let {
             questionTitleEditText.setText(it.questionText)
-            it.options.zip(it.matches).forEach { (left, right) ->
-                pairList.add(MatchingPair(left, right))
+            // Use safe calls since options and matches are now nullable List<String>?
+            if (it.options != null && it.matches != null && it.options.size == it.matches.size) {
+                it.options.zip(it.matches).forEach { (left, right) ->
+                    pairList.add(MatchingPair(left, right))
+                }
             }
         }
 
-        // Default na 3 pares kung walang laman
         if (pairList.isEmpty()) {
-            repeat(minPairs) {
-                pairList.add(MatchingPair())
-            }
+            repeat(minPairs) { pairList.add(MatchingPair()) }
         }
 
         val removeCallback: (Int) -> Unit = { position ->
@@ -486,11 +211,7 @@ class CreateQuizActivity : AppCompatActivity() {
                 recyclerViewPairs.scrollToPosition(pairList.size - 1)
                 btnAddPair.isEnabled = pairList.size < maxPairs
             } else {
-                Toast.makeText(
-                    this,
-                    "Maximum of $maxPairs matching pairs reached.",
-                    Toast.LENGTH_SHORT
-                ).show()
+                Toast.makeText(this, "Maximum of $maxPairs matching pairs reached.", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -508,26 +229,26 @@ class CreateQuizActivity : AppCompatActivity() {
                 val finalPairs = pairList.filter { it.leftTerm.length >= 1 && it.rightMatch.length >= 1 }
 
                 if (questionText.length < 2) {
-                    Toast.makeText(
-                        this,
-                        "Question title must have at least 2 characters.",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    Toast.makeText(this, "Question title must have at least 2 characters.", Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
-
                 if (finalPairs.size < minPairs) {
-                    Toast.makeText(
-                        this,
-                        "Matching Quiz must have at least $minPairs complete matching pairs (1 character min per term).",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    Toast.makeText(this, "Matching Quiz must have at least $minPairs complete matching pairs (1 character min per term).", Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
 
                 val leftOptions = finalPairs.map { it.leftTerm }
                 val rightMatches = finalPairs.map { it.rightMatch }
-                val newQuestion = Question.Matching(questionText, leftOptions, rightMatches)
+
+                // 🎯 CONSTRUCT THE FLATTENED QUESTION OBJECT
+                val newQuestion = Question(
+                    questionText = questionText,
+                    type = "MATCHING",
+                    answer = null,
+                    options = leftOptions, // Used for Matching terms (left side)
+                    correctAnswerIndex = null,
+                    matches = rightMatches // Used for Matching answers (right side)
+                )
                 updateQuestion(existing, newQuestion)
                 dialog.dismiss()
             }
@@ -535,8 +256,9 @@ class CreateQuizActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    private fun addMCQuestion(existing: Question.MultipleChoice? = null) {
+    private fun addMCQuestion(existing: Question? = null) {
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_multiple_choice, null)
+
         val etQuestion = view.findViewById<EditText>(R.id.etQuestion)
         val etOptions = listOf<EditText>(
             view.findViewById(R.id.etOption1),
@@ -544,6 +266,7 @@ class CreateQuizActivity : AppCompatActivity() {
             view.findViewById(R.id.etOption3),
             view.findViewById(R.id.etOption4)
         )
+
         val radioButtons = listOf<RadioButton>(
             view.findViewById(R.id.rbOption1),
             view.findViewById(R.id.rbOption2),
@@ -553,37 +276,25 @@ class CreateQuizActivity : AppCompatActivity() {
 
         val minOptionChars = 1
 
-        // Manual single selection + Validation for Radio Button
         radioButtons.forEachIndexed { index, rb ->
             rb.setOnClickListener {
                 val optionText = etOptions[index].text.toString().trim()
                 if (optionText.length < minOptionChars) {
-                    Toast.makeText(
-                        this,
-                        "The selected option must have at least $minOptionChars character.",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    Toast.makeText(this, "The selected option must have at least $minOptionChars character.", Toast.LENGTH_SHORT).show()
                     rb.isChecked = false
                 } else {
-                    radioButtons.forEachIndexed { i, otherRb ->
-                        otherRb.isChecked = i == index
-                    }
+                    radioButtons.forEachIndexed { i, otherRb -> otherRb.isChecked = i == index }
                 }
             }
         }
 
-        // Validation: If an option becomes empty/too short, uncheck its radio button
         etOptions.forEachIndexed { index, et ->
             et.setOnFocusChangeListener { _, hasFocus ->
                 if (!hasFocus) {
                     val text = et.text.toString().trim()
                     if (text.length < minOptionChars && radioButtons[index].isChecked) {
                         radioButtons[index].isChecked = false
-                        Toast.makeText(
-                            this,
-                            "The option is too short and has been unchecked.",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        Toast.makeText(this, "The option is too short and has been unchecked.", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -592,10 +303,11 @@ class CreateQuizActivity : AppCompatActivity() {
         // Populate if editing
         existing?.let {
             etQuestion.setText(it.questionText)
-            it.options.forEachIndexed { index, s ->
+            // Use safe call for options since it is nullable
+            it.options?.forEachIndexed { index, s ->
                 etOptions.getOrNull(index)?.setText(s)
             }
-            it.correctAnswerIndex.let { index ->
+            it.correctAnswerIndex?.let { index ->
                 radioButtons.getOrNull(index)?.isChecked = true
             }
         }
@@ -616,41 +328,35 @@ class CreateQuizActivity : AppCompatActivity() {
                 val correctIndex = radioButtons.indexOfFirst { it.isChecked }
 
                 if (questionText.length < 2) {
-                    Toast.makeText(
-                        this,
-                        "Question must have at least 2 characters.",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    Toast.makeText(this, "Question must have at least 2 characters.", Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
-
                 if (validOptions.size < 2) {
-                    Toast.makeText(
-                        this,
-                        "You need at least 2 valid options (min $minOptionChars character each).",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    Toast.makeText(this, "You need at least 2 valid options (min $minOptionChars character each).", Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
-
                 if (correctIndex == -1) {
-                    Toast.makeText(this, "Please select the correct answer.", Toast.LENGTH_SHORT)
-                        .show()
+                    Toast.makeText(this, "Please select the correct answer.", Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
 
+                // Re-calculate the correct index based *only* on the validOptions list
                 val newCorrectIndex = validOptions.indexOf(allOptions[correctIndex])
                 if (newCorrectIndex == -1) {
-                    Toast.makeText(
-                        this,
-                        "Correct answer is invalid or too short. Please re-select.",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    Toast.makeText(this, "Correct answer is invalid or too short. Please re-select.", Toast.LENGTH_SHORT).show()
                     radioButtons[correctIndex].isChecked = false
                     return@setOnClickListener
                 }
 
-                val newQuestion = Question.MultipleChoice(questionText, validOptions, newCorrectIndex)
+                // 🎯 CONSTRUCT THE FLATTENED QUESTION OBJECT
+                val newQuestion = Question(
+                    questionText = questionText,
+                    type = "MC",
+                    answer = null,
+                    options = validOptions,
+                    correctAnswerIndex = newCorrectIndex, // Index relative to validOptions list
+                    matches = null
+                )
                 updateQuestion(existing, newQuestion)
                 dialog.dismiss()
             }
@@ -659,18 +365,19 @@ class CreateQuizActivity : AppCompatActivity() {
     }
 
     private fun editQuestion(question: Question) {
-        when (question) {
-            is Question.TrueFalse -> addTFQuestion(question)
-            is Question.Matching -> addMatchingQuestion(question)
-            is Question.MultipleChoice -> addMCQuestion(question)
+        // Since Question is one class, use the 'type' field to determine which dialog to open
+        when (question.type) {
+            "TF" -> addTFQuestion(question)
+            "MATCHING" -> addMatchingQuestion(question)
+            "MC" -> addMCQuestion(question)
+            else -> Toast.makeText(this, "Unknown question type.", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun deleteQuestion(question: Question) {
         val index = questionList.indexOf(question)
         if (index != -1) {
-            questionList.removeAt(index)
-            adapter.notifyItemRemoved(index)
+            questionList.removeAt(index); adapter.notifyItemRemoved(index)
         }
     }
 
@@ -678,45 +385,48 @@ class CreateQuizActivity : AppCompatActivity() {
         if (existing != null) {
             val index = questionList.indexOf(existing)
             if (index != -1) {
-                questionList[index] = newQuestion
-                adapter.notifyItemChanged(index)
-                return
+                questionList[index] = newQuestion; adapter.notifyItemChanged(index); return
             }
         }
         questionList.add(newQuestion)
         adapter.notifyItemInserted(questionList.size - 1)
     }
 
+    // --------------------------------------------------------
+    // ✅ SAVE LOGIC: Minor adjustments for robustness.
+    // --------------------------------------------------------
+
     private fun saveQuiz() {
         val title = etQuizTitle.text.toString().trim()
+
         if (title.isEmpty() || title.length < 2) {
-            Toast.makeText(this, "Quiz title must have at least 2 characters.", Toast.LENGTH_SHORT)
-                .show(); return
+            Toast.makeText(this, "Quiz title must have at least 2 characters.", Toast.LENGTH_SHORT).show();
+            return
         }
         if (questionList.isEmpty()) {
-            Toast.makeText(this, "Quiz must have at least one question.", Toast.LENGTH_SHORT)
-                .show(); return
+            Toast.makeText(this, "Quiz must have at least one question.", Toast.LENGTH_SHORT).show();
+            return
         }
 
         val quizId = editingQuizId ?: db.child("quizzes").push().key ?: return
-        val intentAssignmentId = currentAssignmentId ?: ""
 
+        val intentAssignmentId = currentAssignmentId ?: ""
         if (intentAssignmentId.isEmpty() && editingQuizId == null) {
-            Toast.makeText(
-                this,
-                "Error: Cannot save quiz without a class assignment ID.",
-                Toast.LENGTH_LONG
-            ).show()
+            Toast.makeText(this, "Error: Cannot save quiz without a class assignment ID.", Toast.LENGTH_LONG).show()
             return
         }
 
         db.child("quizzes").child(quizId).get().addOnSuccessListener { snapshot ->
+
+            // Get existing metadata or use defaults
             val oldIsPublished = snapshot.child("isPublished").getValue(Boolean::class.java) ?: false
             val oldScheduledDateTime = snapshot.child("scheduledDateTime").getValue(Long::class.java) ?: 0L
             val oldScheduledEndDateTime = snapshot.child("scheduledEndDateTime").getValue(Long::class.java) ?: 0L
 
+            // Prioritize the assignmentId from the database if editing, otherwise use the Intent ID
             val finalAssignmentId = snapshot.child("assignmentId").getValue(String::class.java)
-                .takeIf { !it.isNullOrEmpty() } ?: intentAssignmentId
+                .takeIf { !it.isNullOrEmpty() }
+                ?: intentAssignmentId
 
             val quiz = Quiz(
                 quizId = quizId,
@@ -727,6 +437,7 @@ class CreateQuizActivity : AppCompatActivity() {
                 isPublished = oldIsPublished,
                 scheduledDateTime = oldScheduledDateTime,
                 scheduledEndDateTime = oldScheduledEndDateTime
+                // totalPoints defaults to 0, which is fine before grading
             )
 
             db.child("quizzes").child(quizId).setValue(quiz)
@@ -741,7 +452,7 @@ class CreateQuizActivity : AppCompatActivity() {
     }
 }
 
-// Data class for matching pairs
+// Data class for Matching pairs (no change needed here)
 data class MatchingPair(
     var leftTerm: String = "",
     var rightMatch: String = ""
