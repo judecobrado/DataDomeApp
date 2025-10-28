@@ -93,6 +93,7 @@ class CreateQuizActivity : AppCompatActivity() {
     }
 
     // NEW: Process uploaded TXT file
+    // NEW: Process uploaded TXT file
     private fun processUploadedFile(uri: Uri) {
         try {
             contentResolver.openInputStream(uri)?.use { inputStream ->
@@ -101,17 +102,156 @@ class CreateQuizActivity : AppCompatActivity() {
 
                 var uploadedCount = 0
                 var skippedCount = 0
+                var currentMatchingQuestion: MutableList<Pair<String, String>>? = null
+                var currentMatchingTitle = "Matching Question"
 
                 for (line in lines) {
                     val trimmedLine = line.trim()
-                    if (trimmedLine.isEmpty()) continue
+                    if (trimmedLine.isEmpty()) {
+                        // Save current matching question if exists when encountering empty line
+                        currentMatchingQuestion?.let { pairs ->
+                            if (pairs.size >= 2) {
+                                val leftOptions = pairs.map { it.first }
+                                val rightMatches = pairs.map { it.second }
+                                questionList.add(Question.Matching(currentMatchingTitle, leftOptions, rightMatches))
+                                uploadedCount++
+                            } else {
+                                skippedCount += pairs.size
+                            }
+                            currentMatchingQuestion = null
+                        }
+                        continue
+                    }
 
-                    val question = parseQuestionFromLine(trimmedLine)
-                    if (question != null) {
-                        questionList.add(question)
+                    val parts = when {
+                        line.contains("|") -> line.split("|").map { it.trim() }
+                        line.contains(",") -> line.split(",").map { it.trim() }
+                        else -> line.split("\t").map { it.trim() }
+                    }
+
+                    when (parts.size) {
+                        // True/False format: Question|True|False|Answer
+                        4 -> {
+                            // Save current matching question if exists before processing TF
+                            currentMatchingQuestion?.let { pairs ->
+                                if (pairs.size >= 2) {
+                                    val leftOptions = pairs.map { it.first }
+                                    val rightMatches = pairs.map { it.second }
+                                    questionList.add(Question.Matching(currentMatchingTitle, leftOptions, rightMatches))
+                                    uploadedCount++
+                                } else {
+                                    skippedCount += pairs.size
+                                }
+                                currentMatchingQuestion = null
+                            }
+
+                            val questionText = parts[0]
+                            val option1 = parts[1]
+                            val option2 = parts[2]
+                            val answerText = parts[3]
+
+                            // Check if it's True/False format
+                            if ((option1.equals("True", true) && option2.equals("False", true)) ||
+                                (option1.equals("False", true) && option2.equals("True", true))) {
+
+                                val answer = when (answerText.uppercase()) {
+                                    "TRUE", "T" -> true
+                                    "FALSE", "F" -> false
+                                    else -> null
+                                }
+
+                                if (answer != null && questionText.length >= 2) {
+                                    questionList.add(Question.TrueFalse(questionText, answer))
+                                    uploadedCount++
+                                } else {
+                                    skippedCount++
+                                }
+                            } else {
+                                skippedCount++
+                            }
+                        }
+
+                        // Multiple Choice format: Question|Option1|Option2|Option3|Option4|Answer
+                        6 -> {
+                            // Save current matching question if exists before processing MC
+                            currentMatchingQuestion?.let { pairs ->
+                                if (pairs.size >= 2) {
+                                    val leftOptions = pairs.map { it.first }
+                                    val rightMatches = pairs.map { it.second }
+                                    questionList.add(Question.Matching(currentMatchingTitle, leftOptions, rightMatches))
+                                    uploadedCount++
+                                } else {
+                                    skippedCount += pairs.size
+                                }
+                                currentMatchingQuestion = null
+                            }
+
+                            val questionText = parts[0]
+                            val options = parts.subList(1, 5)
+                            val answer = parts[5]
+
+                            // Find correct answer index
+                            val correctIndex = when (answer.uppercase()) {
+                                "A", options[0].uppercase() -> 0
+                                "B", options[1].uppercase() -> 1
+                                "C", options[2].uppercase() -> 2
+                                "D", options[3].uppercase() -> 3
+                                else -> -1
+                            }
+
+                            if (questionText.length >= 2 && options.all { it.length >= 1 } && correctIndex != -1) {
+                                questionList.add(Question.MultipleChoice(questionText, options, correctIndex))
+                                uploadedCount++
+                            } else {
+                                skippedCount++
+                            }
+                        }
+
+                        // Matching format: LeftTerm|RightMatch
+                        2 -> {
+                            val leftTerm = parts[0]
+                            val rightMatch = parts[1]
+
+                            if (leftTerm.length >= 1 && rightMatch.length >= 1) {
+                                // Initialize or add to current matching question
+                                if (currentMatchingQuestion == null) {
+                                    currentMatchingQuestion = mutableListOf()
+                                }
+
+                                // Check if current batch is full (20 pairs)
+                                if (currentMatchingQuestion!!.size >= 20) {
+                                    // Save current batch and start new one
+                                    val leftOptions = currentMatchingQuestion!!.map { it.first }
+                                    val rightMatches = currentMatchingQuestion!!.map { it.second }
+                                    questionList.add(Question.Matching(currentMatchingTitle, leftOptions, rightMatches))
+                                    uploadedCount++
+
+                                    // Start new batch
+                                    currentMatchingQuestion = mutableListOf()
+                                    currentMatchingTitle = "Matching Question ${uploadedCount + 1}"
+                                }
+
+                                currentMatchingQuestion!!.add(Pair(leftTerm, rightMatch))
+                            } else {
+                                skippedCount++
+                            }
+                        }
+
+                        else -> {
+                            skippedCount++
+                        }
+                    }
+                }
+
+                // Save any remaining matching question after processing all lines
+                currentMatchingQuestion?.let { pairs ->
+                    if (pairs.size >= 2) {
+                        val leftOptions = pairs.map { it.first }
+                        val rightMatches = pairs.map { it.second }
+                        questionList.add(Question.Matching(currentMatchingTitle, leftOptions, rightMatches))
                         uploadedCount++
                     } else {
-                        skippedCount++
+                        skippedCount += pairs.size
                     }
                 }
 
@@ -119,7 +259,7 @@ class CreateQuizActivity : AppCompatActivity() {
 
                 Toast.makeText(
                     this,
-                    "Uploaded: $uploadedCount questions, Skipped: $skippedCount",
+                    "Uploaded: $uploadedCount questions, Skipped: $skippedCount lines",
                     Toast.LENGTH_LONG
                 ).show()
             }
@@ -128,7 +268,6 @@ class CreateQuizActivity : AppCompatActivity() {
             Toast.makeText(this, "Error reading file: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
-
     // NEW: Parse question from text line
     private fun parseQuestionFromLine(line: String): Question? {
         return try {
