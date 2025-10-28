@@ -12,6 +12,14 @@
         android:layout_height="wrap_content"
         android:text="Create New Quiz" />
 
+    <!-- 🆕 NEW BUTTON: Batch Upload Quiz -->
+    <Button
+        android:id="@+id/btnBatchUploadQuiz"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Batch Upload Quiz"
+        android:layout_marginTop="8dp" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewQuizzes"
         android:layout_width="match_parent"
@@ -29,8 +37,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        />
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <TextView
         android:id="@+id/tvNoQuizzes"
@@ -42,5 +49,4 @@
         android:gravity="center"
         android:visibility="gone"
         android:layout_marginTop="16dp"/>
-
 </LinearLayout>

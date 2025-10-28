@@ -1,5 +1,5 @@
-<ScrollView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -43,6 +43,14 @@
             android:text="Add Matching Question"
             android:layout_marginTop="8dp"/>
 
+        <!-- NEW: Upload Quiz Button -->
+        <Button
+            android:id="@+id/btnUploadQuiz"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Upload Quiz from TXT"
+            android:layout_marginTop="8dp"/>
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerViewQuestions"
             android:layout_width="match_parent"
@@ -55,5 +63,6 @@
             android:layout_height="wrap_content"
             android:text="Save Quiz"
             android:layout_marginTop="16dp" />
+
     </LinearLayout>
 </ScrollView>

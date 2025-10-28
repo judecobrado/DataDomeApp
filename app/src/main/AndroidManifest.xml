@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.datadomeapp">
-
     <!-- Permissions -->
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <application
         android:allowBackup="true"
@@ -15,83 +15,69 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.DataDomeAPP">
+        <activity
+            android:name=".teacher.BatchUploadQuiz"
+            android:exported="false" />
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyA8EXAMPLE-12345YOURREALAPIKEY67890" />
-        <!-- ⬆️ Replace with your real Google Maps API key from Google Cloud Console -->
-
-
+            android:value="AIzaSyA8EXAMPLE-12345YOURREALAPIKEY67890" /> <!-- ⬆️ Replace with your real Google Maps API key from Google Cloud Console -->
         <!-- Launcher / Main -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
-
-
-        <!-- Authentication -->
-        <activity android:name=".LoginActivity"/>
-        <activity android:name=".ResetPasswordActivity"/>
-
-        <activity android:name=".enrollment.VerifyEmailActivity"/>
-        <activity android:name=".enrollment.EnterCodeActivity"/>
-        <activity android:name=".enrollment.EnrollmentActivity"/>
-        <activity android:name=".enrollment.AlreadySubmittedActivity"/>
-        <activity android:name=".enrollment.ChooseStudentTypeActivity"/>
-        <activity android:name=".enrollment.EnrollExistingStudentActivity"/>
-        <activity android:name="SchoolMapActivity"/>
-        <!-- Admin Module -->
-        <activity android:name=".admin.AdminDashboardActivity"/>
-        <activity android:name=".admin.ManageStudentsActivity"/>
-        <activity android:name=".admin.ManageTeachersActivity"/>
-        <activity android:name=".admin.ManageCoursesActivity"/>
-        <activity android:name=".admin.ManageCanteenStaffActivity"/>
-        <activity android:name=".admin.ManageEnrollmentsActivity"/>
-        <activity android:name=".admin.ManageCurriculumActivity"/>
-        <activity android:name=".admin.ManageSchedulesActivity"/>
-
-        <!-- Student Module -->
-        <activity android:name=".student.StudentDashboardActivity"/>
-        <activity android:name=".library.UserLibraryActivity"/>
-        <activity android:name=".student.StudentScheduleActivity"/>
-        <activity android:name=".student.StudentToDoListActivity"/>
-        <activity android:name=".student.StudentNotesActivity"/>
-        <activity android:name=".student.CourseEnrollmentActivity"/>
-        <activity android:name=".student.StudentFullScheduleActivity"/>
-        <activity android:name=".student.StudentOnlineClassesActivity"/>
-        <activity android:name=".student.StudentAttendanceActivity"/>
-
+        </activity> <!-- Authentication -->
+        <activity android:name=".LoginActivity" />
+        <activity android:name=".ResetPasswordActivity" />
+        <activity android:name=".enrollment.VerifyEmailActivity" />
+        <activity android:name=".enrollment.EnterCodeActivity" />
+        <activity android:name=".enrollment.EnrollmentActivity" />
+        <activity android:name=".enrollment.AlreadySubmittedActivity" />
+        <activity android:name=".enrollment.ChooseStudentTypeActivity" />
+        <activity android:name=".enrollment.EnrollExistingStudentActivity" />
+        <activity android:name=".SchoolMapActivity" /> <!-- Admin Module -->
+        <activity android:name=".admin.AdminDashboardActivity" />
+        <activity android:name=".admin.ManageStudentsActivity" />
+        <activity android:name=".admin.ManageTeachersActivity" />
+        <activity android:name=".admin.ManageCoursesActivity" />
+        <activity android:name=".admin.ManageCanteenStaffActivity" />
+        <activity android:name=".admin.ManageEnrollmentsActivity" />
+        <activity android:name=".admin.ManageCurriculumActivity" />
+        <activity android:name=".admin.ManageSchedulesActivity" /> <!-- Student Module -->
+        <activity android:name=".student.StudentDashboardActivity" />
+        <activity android:name=".library.UserLibraryActivity" />
+        <activity android:name=".student.StudentScheduleActivity" />
+        <activity android:name=".student.StudentToDoListActivity" />
+        <activity android:name=".student.StudentNotesActivity" />
+        <activity android:name=".student.CourseEnrollmentActivity" />
+        <activity android:name=".student.StudentFullScheduleActivity" />
+        <activity android:name=".student.StudentOnlineClassesActivity" />
+        <activity android:name=".student.StudentAttendanceActivity" />
         <activity
             android:name=".LibraryActivity"
             android:exported="false"
             android:label="Digital Library"
             android:theme="@style/Theme.DataDomeAPP" />
-
-        <activity android:name=".BookDetailsActivity" />
-
-        <!-- Teacher Module -->
-        <activity android:name=".teacher.TeacherDashboardActivity"/>
-        <activity android:name=".teacher.VoiceDetectionActivity"/>
-        <activity android:name=".teacher.ManageClassesActivity"/>
-        <activity android:name=".teacher.ClassDetailsActivity"/>
-        <activity android:name=".teacher.RecordAttendanceActivity"/>
-        <activity android:name=".teacher.ManageGradesActivity"/>
-        <activity android:name=".teacher.TeacherScheduleMatrixActivity"/>
-        <activity android:name=".teacher.RouletteActivity"/>
-        <activity android:name=".teacher.CreateQuizActivity"/>
-        <activity android:name=".teacher.ManageQuizzesActivity"/>
-
-        <!-- Library Module -->
-        <activity android:name=".admin.ManageLibrary"/>
-
-        <!-- Canteen Module -->
-        <activity android:name=".canteen.CanteenStaffDashboardActivity"/>
-        <activity android:name=".canteen.MenuManagementActivity"/>
-        <activity android:name=".canteen.AddEditMenuActivity"/>
-
+        <activity android:name=".BookDetailsActivity" /> <!-- Teacher Module -->
+        <activity android:name=".teacher.TeacherDashboardActivity" />
+        <activity android:name=".teacher.VoiceDetectionActivity" />
+        <activity android:name=".teacher.ManageClassesActivity" />
+        <activity android:name=".teacher.ClassDetailsActivity" />
+        <activity android:name=".teacher.RecordAttendanceActivity" />
+        <activity android:name=".teacher.ManageGradesActivity" />
+        <activity android:name=".teacher.TeacherScheduleMatrixActivity" />
+        <activity android:name=".teacher.RouletteActivity" />
+        <activity android:name=".teacher.CreateQuizActivity" />
+        <activity android:name=".teacher.ManageQuizzesActivity" /> <!-- Library Module -->
+        <activity android:name=".admin.ManageLibrary" /> <!-- Canteen Module -->
+        <activity android:name=".canteen.CanteenStaffDashboardActivity" />
+        <activity android:name=".canteen.MenuManagementActivity" />
+        <activity android:name=".canteen.AddEditMenuActivity" />
     </application>
+
 </manifest>

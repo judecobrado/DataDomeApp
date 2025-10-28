@@ -9,7 +9,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.viewpager2.widget.ViewPager2
 import com.example.datadomeapp.R
 import com.example.datadomeapp.models.ClassAssignment
-import com.example.datadomeapp.models.ScheduleItem
+
 import com.example.datadomeapp.models.StudentSubject
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
