@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">DataDome APPs</string>
+    <string name="app_name">DataDome APP</string>
     <string name="menu_image_preview">Menu Item Image Preview</string>
     <string name="select_year_level">Select Year Level</string>
     <string name="select_course">Select Course</string>
