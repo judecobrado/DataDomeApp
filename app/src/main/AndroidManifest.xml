@@ -4,9 +4,11 @@
 
     <!-- Permissions -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.NFC" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-feature android:name="android.hardware.nfc" android:required="false" />
 
     <application
         android:allowBackup="true"
@@ -63,8 +65,6 @@
         <activity android:name=".student.StudentFullScheduleActivity"/>
         <activity android:name=".student.StudentOnlineClassesActivity"/>
         <activity android:name=".student.StudentAttendanceActivity"/>
-        <activity android:name=".student.StudentQuizActivity"/>
-        <activity android:name=".student.StudentQuizListActivity"/>
 
         <activity
             android:name=".LibraryActivity"

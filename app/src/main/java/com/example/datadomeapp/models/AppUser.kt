@@ -15,8 +15,9 @@ data class Teacher(
     val teacherId: String = "", // Internal Teacher ID (e.g., T-001)
     val name: String = "",
     val phone: String = "",
-    val department: String = ""
-    // Maaari ring magdagdag ng ibang fields (e.g., specialization, department)
+    val department: String = "",
+    val rfidTag: String? = null,
+    val rfidStatus: String? = null
 )
 
 // ... (Iba pang models: Enrollment, ClassAssignment, Curriculum, SubjectEntry, StudentSubject)

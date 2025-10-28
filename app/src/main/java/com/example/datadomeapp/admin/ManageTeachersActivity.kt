@@ -1,11 +1,20 @@
 package com.example.datadomeapp.admin
 
+import android.app.PendingIntent
+import android.content.Intent
+import android.nfc.NfcAdapter
+import android.nfc.Tag
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
+import android.view.LayoutInflater
+import android.view.View
 import android.widget.*
+import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.example.datadomeapp.R
 import com.example.datadomeapp.models.AppUser
-import com.example.datadomeapp.models.Teacher // Siguraduhin na ang Teacher model ay updated
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -13,7 +22,17 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import android.util.Log
+import java.util.*
+
+// 🛑 TANDAAN: Dapat ay nasa com.example.datadomeapp.models package ang class na ito
+data class Teacher(
+    val uid: String = "",
+    val teacherId: String = "",
+    val name: String = "",
+    val department: String? = null,
+    val rfidTag: String? = null,
+    val rfidStatus: String? = null
+)
 
 class ManageTeachersActivity : AppCompatActivity() {
 
@@ -25,14 +44,27 @@ class ManageTeachersActivity : AppCompatActivity() {
     private val teacherList = ArrayList<String>()
     private lateinit var adapter: ArrayAdapter<String>
 
-    // 🟢 List at Adapter para sa Department Spinner
+    // 🟢 NEW: Ito ang magiging master list, para hindi na kailangan mag-reload sa Firestore tuwing magfi-filter.
+    private val allTeachersDisplayList = ArrayList<String>()
+
     private val departmentList = ArrayList<String>()
     private lateinit var departmentAdapter: ArrayAdapter<String>
+    private val departmentCodeMap = mutableMapOf<String, String>()
 
     // UI Variables
     private lateinit var etName: EditText
-    // 🟢 Pinalitan ng Spinner
     private lateinit var spDepartment: Spinner
+    private lateinit var lvTeachers: ListView
+    private lateinit var searchView: SearchView // 🟢 NEW: SearchView variable
+
+    // 🟢 RFID/NFC Declarations for Teacher Management
+    private var nfcAdapter: NfcAdapter? = null
+    private var pendingIntent: PendingIntent? = null
+    private var currentTeacherForRfid: Teacher? = null
+    private var rfidDetectionDialog: AlertDialog? = null
+    private var isNfcSupported = false
+
+    private val TAG = "ManageTeachersActivity"
 
     private fun generateRandomPassword(length: Int = 10): String {
         val charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#\$%^&*"
@@ -46,12 +78,12 @@ class ManageTeachersActivity : AppCompatActivity() {
         setContentView(R.layout.admin_manage_teachers)
 
         // UI Initialization
-        val lvTeachers = findViewById<ListView>(R.id.lvTeachers)
+        lvTeachers = findViewById(R.id.lvTeachers)
         val etEmail = findViewById<EditText>(R.id.etTeacherEmail)
-        //val etPassword = findViewById<EditText>(R.id.etTeacherPassword)
         etName = findViewById<EditText>(R.id.etTeacherName)
-        // 🟢 Initialize spDepartment, dapat ito ang ID ng Spinner sa layout
         spDepartment = findViewById<Spinner>(R.id.spDepartment)
+        searchView = findViewById(R.id.searchViewTeachers) // 🟢 NEW: Initialize SearchView
+
         val btnAdd = findViewById<Button>(R.id.btnAddTeacher)
         val btnDelete = findViewById<Button>(R.id.btnDeleteTeacher)
         val btnBack = findViewById<Button>(R.id.btnBackTeacher)
@@ -61,20 +93,33 @@ class ManageTeachersActivity : AppCompatActivity() {
         lvTeachers.adapter = adapter
         lvTeachers.choiceMode = ListView.CHOICE_MODE_SINGLE
 
-        // 🟢 Setup Department Spinner
+        // 🟢 Set up Search Listener
+        setupSearchView()
+
+        // Handle Teacher Item Click
+        lvTeachers.setOnItemClickListener { _, _, position, _ ->
+            val displayString = teacherList[position]
+            val uid = teacherMap[displayString]
+            uid?.let {
+                showTeacherDetailDialog(it)
+            }
+        }
+
+        // Setup Department Spinner
         departmentAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, departmentList)
         spDepartment.adapter = departmentAdapter
 
         // Load data
-        loadCourses() // 🟢 I-load muna ang listahan ng departments
+        setupNfc()
+        loadCourses()
         loadTeachersOnce()
 
+        // --- Add Teacher Logic (No Change) ---
         btnAdd.setOnClickListener {
             val email = etEmail.text.toString().trim()
             val name = etName.text.toString().trim()
             val selectedFullName = spDepartment.selectedItem?.toString()?.trim() ?: ""
 
-            // 🔴 1. AUTO-GENERATE PASSWORD
             val autoGeneratedPassword = generateRandomPassword()
 
             if (email.isEmpty() || name.isEmpty() || selectedFullName.isEmpty() || selectedFullName == "Select Department") {
@@ -90,26 +135,32 @@ class ManageTeachersActivity : AppCompatActivity() {
 
             CoroutineScope(Dispatchers.Main).launch {
                 try {
-                    // 🔴 Log the password for the admin to retrieve temporarily
-                    Toast.makeText(this@ManageTeachersActivity, "Password generated and logged for $email. Check Logcat.", Toast.LENGTH_LONG).show()
+                    // Check if email already exists
+                    if (checkIfEmailExists(email)) {
+                        Toast.makeText(this@ManageTeachersActivity, "Error: User with this email already exists.", Toast.LENGTH_LONG).show()
+                        return@launch
+                    }
 
-                    // 2. Create Firebase Auth Account using the auto-generated password
+                    Log.i("ManageTeachers", "Temp Password for $email: $autoGeneratedPassword")
+                    Toast.makeText(this@ManageTeachersActivity, "Password generated and logged for $email. Check Logcat for temp password.", Toast.LENGTH_LONG).show()
+
+                    // Create Firebase Auth Account
                     val userCredential = auth.createUserWithEmailAndPassword(email, autoGeneratedPassword).await()
                     val uid = userCredential.user?.uid
 
                     if (uid != null) {
-                        // 3. Generate new Teacher ID
+                        // Generate new Teacher ID
                         val newTeacherId = generateTeacherId()
 
-                        // 4. Save to 'users' collection
+                        // Save to 'users' collection
                         val appUser = AppUser(uid = uid, email = email, role = "teacher")
                         usersCollection.document(uid).set(appUser).await()
 
-                        // 5. Save to 'teachers' collection
+                        // Save to 'teachers' collection
                         val teacherProfile = Teacher(uid = uid, teacherId = newTeacherId, name = name, department = departmentCode)
                         teachersCollection.document(newTeacherId).set(teacherProfile).await()
 
-                        Toast.makeText(this@ManageTeachersActivity, "Teacher added: $name ($newTeacherId). Password saved to Auth.", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this@ManageTeachersActivity, "Teacher added: $name ($newTeacherId).", Toast.LENGTH_LONG).show()
                         etEmail.text.clear()
                         etName.text.clear()
                         loadTeachersOnce()
@@ -121,8 +172,7 @@ class ManageTeachersActivity : AppCompatActivity() {
             }
         }
 
-
-        // 🔹 Delete Teacher Logic
+        // --- Delete Teacher Logic (No Change) ---
         btnDelete.setOnClickListener {
             val pos = lvTeachers.checkedItemPosition
             if (pos == ListView.INVALID_POSITION) {
@@ -134,9 +184,14 @@ class ManageTeachersActivity : AppCompatActivity() {
             val uidToDelete = teacherMap[displayString]
 
             if (uidToDelete != null) {
-                // Kunin ang email mula sa display string
-                val emailToDelete = displayString.substringBefore(" (")
-                deleteTeacherAccount(uidToDelete, emailToDelete)
+                AlertDialog.Builder(this)
+                    .setTitle("Confirm Deletion")
+                    .setMessage("Are you sure you want to delete $displayString?")
+                    .setPositiveButton("Delete") { _, _ ->
+                        deleteTeacherAccount(uidToDelete, displayString)
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
             } else {
                 Toast.makeText(this, "Error: UID not found.", Toast.LENGTH_SHORT).show()
             }
@@ -144,6 +199,412 @@ class ManageTeachersActivity : AppCompatActivity() {
 
         btnBack.setOnClickListener {
             finish()
+        }
+    }
+
+    // ------------------------------------------------
+    //               SEARCH/FILTER LOGIC
+    // ------------------------------------------------
+
+    // 🟢 NEW FUNCTION: Setup Search Logic
+    private fun setupSearchView() {
+        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                filterTeachers(query)
+                return true
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                filterTeachers(newText)
+                return true
+            }
+        })
+    }
+
+    // 🟢 NEW FUNCTION: Filter Teachers List (Pangalan, ID, Dept, o RFID)
+    private fun filterTeachers(query: String?) {
+        val filteredList = ArrayList<String>()
+        // Gawing lowercase ang query
+        val lowerCaseQuery = query?.lowercase(Locale.getDefault())?.trim() ?: ""
+
+        if (lowerCaseQuery.isEmpty()) {
+            // Walang search, ibalik ang lahat (Master List)
+            filteredList.addAll(allTeachersDisplayList)
+        } else {
+            // Search by Name, Teacher ID, Department, o RFID (lahat nasa display string)
+            allTeachersDisplayList.forEach { displayString ->
+                if (displayString.lowercase(Locale.getDefault()).contains(lowerCaseQuery)) {
+                    filteredList.add(displayString)
+                }
+            }
+        }
+
+        // I-update ang visible list (teacherList) at adapter
+        teacherList.clear()
+        teacherList.addAll(filteredList)
+        adapter.notifyDataSetChanged()
+    }
+
+
+    // ------------------------------------------------
+    //                 NFC FUNCTIONS
+    // ------------------------------------------------
+
+    private fun setupNfc() {
+        nfcAdapter = NfcAdapter.getDefaultAdapter(this)
+        if (nfcAdapter == null) {
+            Toast.makeText(this, "NFC is not supported on this device. RFID features disabled.", Toast.LENGTH_LONG).show()
+            isNfcSupported = false
+            return
+        }
+
+        isNfcSupported = true
+        val intent = Intent(this, javaClass).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        // 🟢 FIXED: Use the correct flag for modern Android versions
+        pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (isNfcSupported) {
+            nfcAdapter?.enableForegroundDispatch(this, pendingIntent, null, null)
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        if (isNfcSupported) {
+            nfcAdapter?.disableForegroundDispatch(this)
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    override fun onNewIntent(intent: Intent) {
+        if (!isNfcSupported) {
+            super.onNewIntent(intent)
+            return
+        }
+
+        super.onNewIntent(intent)
+
+        if (NfcAdapter.ACTION_TAG_DISCOVERED == intent.action ||
+            NfcAdapter.ACTION_NDEF_DISCOVERED == intent.action ||
+            NfcAdapter.ACTION_TECH_DISCOVERED == intent.action) {
+
+            // 🟢 FIXED: Use the modern type-safe getParcelableExtra method
+            val tag: Tag? = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG, Tag::class.java)
+            if (tag != null) {
+                val rfidHex = bytesToHex(tag.id)
+                Log.d("NFC_SCAN", "RFID Detected: $rfidHex")
+
+                // Mode 1: Registration is active
+                if (currentTeacherForRfid != null) {
+                    // 🛑 CRITICAL: Huwag i-dismiss ang dialog dito para hindi ito ma-close
+                    saveTeacherRfidTag(currentTeacherForRfid!!, rfidHex)
+                } else {
+                    Toast.makeText(this, "Scan detected. Select a teacher first to register RFID.", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun bytesToHex(bytes: ByteArray): String {
+        val hexArray = charArrayOf('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F')
+        val hexChars = CharArray(bytes.size * 2)
+        for (j in bytes.indices) {
+            val v: Int = bytes[j].toInt() and 0xFF
+            hexChars[j * 2] = hexArray[v ushr 4]
+            hexChars[j * 2 + 1] = hexArray[v and 0x0F]
+        }
+        return String(hexChars)
+    }
+
+    // ------------------------------------------------
+    //               RFID CONFLICT LOGIC
+    // ------------------------------------------------
+
+    // 🛑 REMOVED: Inalis ang resetGlobalRfidTagStatus function
+
+    // 🟢 FUNCTION: Check for RFID tag conflict across Students and Teachers (GLOBAL CHECK)
+    private suspend fun checkRfidConflict(rfidTag: String, currentTeacherId: String): Boolean {
+        // 1. Check Teacher Collection (Dapat HINDI ang kasalukuyang teacher ang gumagamit)
+        val teacherSnapshot = firestore.collection("teachers")
+            .whereEqualTo("rfidTag", rfidTag)
+            .get().await()
+
+        // Conflict kung may ibang teacher na gumagamit nito (ibang teacherId)
+        val teacherConflict = teacherSnapshot.documents.any { doc ->
+            doc.getString("teacherId") != currentTeacherId && doc.getString("rfidTag") == rfidTag
+        }
+        if (teacherConflict) return true
+
+        // 2. Check Student Collection (Dapat walang student na gumagamit)
+        val studentSnapshot = firestore.collection("students")
+            .whereEqualTo("rfidTag", rfidTag)
+            .limit(1)
+            .get().await()
+
+        val studentConflict = !studentSnapshot.isEmpty
+        if (studentConflict) return true
+
+        return false
+    }
+
+    // 🟢 UPDATED FUNCTION: Save RFID Tag for Teacher (Strict Conflict Error)
+    private fun saveTeacherRfidTag(teacher: Teacher, rfidTag: String) {
+        val teacherRef = teachersCollection.document(teacher.teacherId)
+
+        CoroutineScope(Dispatchers.Main).launch {
+            try {
+                // 1. Safety Check (Kung nagkamali ang user at nag-scan ulit ng iba)
+                if (!teacher.rfidTag.isNullOrEmpty() && teacher.rfidTag != rfidTag) {
+                    Toast.makeText(this@ManageTeachersActivity, "🔴 ERROR: Teacher already has a registered RFID tag. Please reset first.", Toast.LENGTH_LONG).show()
+                    currentTeacherForRfid = null
+                    rfidDetectionDialog?.dismiss()
+                    showTeacherDetailDialog(teacher.uid)
+                    return@launch
+                }
+
+                // 2. Check for GLOBAL conflict
+                val conflict = checkRfidConflict(rfidTag, teacher.teacherId)
+
+                if (conflict) {
+                    // 🛑 STRICT ERROR: Huwag i-reassign. Mag-display lang ng error.
+                    val errorMessage = "❌ ERROR: RFID Tag **$rfidTag** is already registered to another user (Teacher or Student). Tag not assigned."
+                    Log.e(TAG, "Conflict detected for $rfidTag. Tag not assigned.")
+
+                    // Display error as a persistent dialog (Huwag i-close ang RFID Detection Dialog)
+                    AlertDialog.Builder(this@ManageTeachersActivity)
+                        .setTitle("RFID Registration Conflict")
+                        .setMessage(errorMessage)
+                        .setPositiveButton("Try Again") { dialog, _ ->
+                            // Hayaan lang na manatiling bukas ang rfidDetectionDialog (magre-ready for next scan)
+                            // Walang gagawin dito, maghintay lang ng bagong scan.
+                            dialog.dismiss()
+                        }
+                        .setNegativeButton("Cancel Registration") { dialog, _ ->
+                            currentTeacherForRfid = null
+                            rfidDetectionDialog?.dismiss()
+                            showTeacherDetailDialog(teacher.uid)
+                        }
+                        .setCancelable(false)
+                        .show()
+
+                    // HINDI I-A-ASSIGN, at HINDI I-C-CLOSE ang RFID DIALOG (currentTeacherForRfid ay mananatili)
+                    return@launch
+                }
+
+                // --- Walang conflict, magpapatuloy sa pag-save ---
+
+                // 3. I-save na sa kasalukuyang guro
+                teacherRef.update(mapOf(
+                    "rfidTag" to rfidTag,
+                    "rfidStatus" to "ACTIVE"
+                ))
+                    .addOnSuccessListener {
+                        Toast.makeText(this@ManageTeachersActivity, "Successfully registered RFID: $rfidTag for ${teacher.name}. Status: ACTIVE", Toast.LENGTH_LONG).show()
+                        loadTeachersOnce() // I-reload ang listahan (Ito ang mag-a-update ng UI)
+                        currentTeacherForRfid = null
+                        // 🛑 SUCCESS: I-close ang RFID DIALOG
+                        rfidDetectionDialog?.dismiss()
+                    }
+                    .addOnFailureListener { e ->
+                        Toast.makeText(this@ManageTeachersActivity, "Failed to save RFID: ${e.message}", Toast.LENGTH_LONG).show()
+                        Log.e("RFID_SAVE", "Error saving Teacher RFID tag", e)
+                        currentTeacherForRfid = null
+                        // 🛑 FAILURE: I-dismiss ang RFID DIALOG at I-SHOW ANG DETAIL DIALOG
+                        rfidDetectionDialog?.dismiss()
+                        showTeacherDetailDialog(teacher.uid)
+                    }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error during RFID registration/conflict check", e)
+                Toast.makeText(this@ManageTeachersActivity, "An unexpected error occurred: ${e.message}", Toast.LENGTH_LONG).show()
+                currentTeacherForRfid = null
+                // 🛑 UNEXPECTED FAILURE: I-dismiss ang RFID DIALOG at I-SHOW ANG DETAIL DIALOG
+                rfidDetectionDialog?.dismiss()
+                showTeacherDetailDialog(teacher.uid)
+            }
+        }
+    }
+
+    // --- Other Profile Management Functions (No Logic Change) ---
+
+    // 🟡 NEW FUNCTION: Disable RFID Tag for Teacher
+    private fun disableTeacherRfidTag(teacher: Teacher) {
+        AlertDialog.Builder(this)
+            .setTitle("Confirm RFID Disable")
+            .setMessage("Are you sure you want to **DISABLE** the RFID tag for ${teacher.name}? This will set the tag to **DISABLED** status, meaning it can't be used for attendance.")
+            .setPositiveButton("Disable Tag") { dialog, _ ->
+                val teacherRef = teachersCollection.document(teacher.teacherId)
+
+                // 🛑 UPDATE: Set rfidStatus to DISABLED (Keep the rfidTag value)
+                teacherRef.update("rfidStatus", "DISABLED")
+                    .addOnSuccessListener {
+                        Toast.makeText(this, "RFID Tag successfully **DISABLED** for ${teacher.name}.", Toast.LENGTH_LONG).show()
+                        loadTeachersOnce() // I-reload ang listahan
+                        // I-fetch ulit ang updated teacher profile para sa dialog
+                        showTeacherDetailDialog(teacher.uid)
+                    }
+                    .addOnFailureListener { e ->
+                        Toast.makeText(this, "Failed to disable RFID tag: ${e.message}", Toast.LENGTH_LONG).show()
+                        Log.e(TAG, "Error disabling RFID tag", e)
+                    }
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    // 🔄 NEW FUNCTION: Reset RFID Tag for Teacher
+    private fun resetTeacherRfidTag(teacher: Teacher) {
+        AlertDialog.Builder(this)
+            .setTitle("Confirm RFID Reset & Re-registration")
+            .setMessage("Are you sure you want to **RESET** the RFID tag for ${teacher.name}? This will remove the current tag, clear the status, and immediately start the process to scan a NEW one.")
+            .setPositiveButton("Reset & Scan New") { dialog, _ ->
+                val teacherRef = teachersCollection.document(teacher.teacherId)
+
+                // 🛑 UPDATE: Remove rfidTag AND rfidStatus
+                teacherRef.update(mapOf(
+                    "rfidTag" to null,
+                    "rfidStatus" to null
+                ))
+                    .addOnSuccessListener {
+                        Toast.makeText(this, "RFID Tag cleared. Please scan the new tag now.", Toast.LENGTH_LONG).show()
+                        loadTeachersOnce() // I-reload ang listahan
+
+                        // 🛑 CRITICAL: Awtomatikong buksan ang scanner pagkatapos mag-reset
+                        showRfidDetectionDialog(teacher.copy(rfidTag = null, rfidStatus = null))
+                    }
+                    .addOnFailureListener { e ->
+                        Toast.makeText(this, "Failed to reset RFID tag: ${e.message}", Toast.LENGTH_LONG).show()
+                        Log.e(TAG, "Error resetting RFID tag", e)
+                    }
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    // 🟢 FUNCTION: Show Teacher Detail Dialog (for RFID Registration)
+    private fun showTeacherDetailDialog(uid: String) {
+        teachersCollection.whereEqualTo("uid", uid).get()
+            .addOnSuccessListener { snapshot ->
+                val doc = snapshot.documents.firstOrNull()
+                // Tiyakin na ang toObject ay gumagamit ng updated Teacher class
+                val teacher = doc?.toObject(Teacher::class.java)?.copy(teacherId = doc.id)
+
+                if (teacher == null) {
+                    Toast.makeText(this, "Teacher profile not found.", Toast.LENGTH_SHORT).show()
+                    return@addOnSuccessListener
+                }
+
+                val dialogView = LayoutInflater.from(this).inflate(R.layout.admin_student_detail_dialog, null) // Reusing student layout
+
+                val tvName = dialogView.findViewById<TextView>(R.id.tvName)
+                val tvId = dialogView.findViewById<TextView>(R.id.tvStudentId)
+                val tvCourse = dialogView.findViewById<TextView>(R.id.tvCourseYear)
+                val tvRfid = dialogView.findViewById<TextView>(R.id.tvRfidStatus)
+                val btnAddRfid = dialogView.findViewById<Button>(R.id.btnAddRfid)
+                val btnResetRfid = dialogView.findViewById<Button>(R.id.btnResetRfid)
+                val btnDisableRfid = dialogView.findViewById<Button>(R.id.btnDisableRfid)
+
+                tvName.text = "Teacher: ${teacher.name}"
+                tvId.text = "ID: ${teacher.teacherId}"
+                tvCourse.text = "Department: ${teacher.department ?: "N/A"}"
+
+                // 🛑 NEW/UPDATED LOGIC: I-check ang rfidStatus
+                when (teacher.rfidStatus) {
+                    "ACTIVE" -> {
+                        tvRfid.text = "RFID Status: 🟢 ACTIVE (${teacher.rfidTag})"
+                        btnAddRfid.visibility = View.GONE
+                        btnResetRfid.visibility = View.VISIBLE
+                        btnDisableRfid.visibility = View.VISIBLE
+                    }
+                    "DISABLED" -> {
+                        tvRfid.text = "RFID Status: 🟡 DISABLED (${teacher.rfidTag})"
+                        btnAddRfid.visibility = View.GONE
+                        btnResetRfid.visibility = View.VISIBLE
+                        btnDisableRfid.visibility = View.GONE // Naka-disable na, kaya i-hide
+                    }
+                    else -> {
+                        if (!isNfcSupported) {
+                            tvRfid.text = "RFID Status: ❌ NFC NOT AVAILABLE"
+                            btnAddRfid.visibility = View.GONE
+                        } else {
+                            tvRfid.text = "RFID Status: 🔴 NOT REGISTERED"
+                            btnAddRfid.visibility = View.VISIBLE
+                        }
+                        btnResetRfid.visibility = View.GONE
+                        btnDisableRfid.visibility = View.GONE
+                    }
+                }
+
+                val dialog = AlertDialog.Builder(this)
+                    .setView(dialogView)
+                    .setTitle("Teacher Profile")
+                    .setNegativeButton("Close", null)
+                    .create()
+
+                btnAddRfid.setOnClickListener {
+                    dialog.dismiss()
+                    // Gumamit ng copy na walang rfidTag/rfidStatus para sa registration
+                    showRfidDetectionDialog(teacher.copy(rfidTag = null, rfidStatus = null))
+                }
+
+                btnResetRfid.setOnClickListener {
+                    dialog.dismiss()
+                    resetTeacherRfidTag(teacher)
+                }
+
+                btnDisableRfid.setOnClickListener {
+                    dialog.dismiss()
+                    disableTeacherRfidTag(teacher)
+                }
+
+                dialog.show()
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Error fetching teacher detail: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    // 🟢 FUNCTION: Show RFID Detection Dialog (for Teacher)
+    private fun showRfidDetectionDialog(teacher: Teacher) {
+        currentTeacherForRfid = teacher // I-set ang teacher na ire-register
+
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_rfid_detection, null)
+        val tvStatus = dialogView.findViewById<TextView>(R.id.tvRfidDetectionStatus)
+
+        tvStatus.text = "Ready to scan RFID/NFC tag for ${teacher.name}.\n\nBring the tag near the phone's NFC area."
+
+        rfidDetectionDialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setTitle("RFID Tag Registration")
+            .setPositiveButton("Cancel") { _, _ ->
+                currentTeacherForRfid = null
+            }
+            .setCancelable(false)
+            .create()
+
+        rfidDetectionDialog!!.show()
+    }
+
+    // ------------------------------------------------
+    //                UTILITY FUNCTIONS
+    // ------------------------------------------------
+
+    // Function: Checks if a user with the given email already exists in Firestore
+    private suspend fun checkIfEmailExists(email: String): Boolean {
+        return try {
+            val snapshot = usersCollection
+                .whereEqualTo("email", email)
+                .limit(1)
+                .get()
+                .await()
+            !snapshot.isEmpty
+        } catch (e: Exception) {
+            Log.e("ManageTeachers", "Error checking email existence", e)
+            true
         }
     }
 
@@ -165,8 +626,8 @@ class ManageTeachersActivity : AppCompatActivity() {
             "T-0001"
         }
     }
-    private val departmentCodeMap = mutableMapOf<String, String>()
 
+    // Function: Load Courses
     private fun loadCourses() {
         departmentList.clear()
         departmentList.add("Select Department")
@@ -195,7 +656,7 @@ class ManageTeachersActivity : AppCompatActivity() {
     }
 
     // Function: Delete Teacher Account
-    private fun deleteTeacherAccount(uid: String, email: String) {
+    private fun deleteTeacherAccount(uid: String, displayString: String) {
 
         teachersCollection.whereEqualTo("uid", uid).get()
             .addOnSuccessListener { snapshot ->
@@ -211,7 +672,7 @@ class ManageTeachersActivity : AppCompatActivity() {
 
                 batch.commit()
                     .addOnSuccessListener {
-                        Toast.makeText(this, "User and Teacher records for $email deleted.", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this, "User and Teacher records for $displayString deleted.", Toast.LENGTH_LONG).show()
                         loadTeachersOnce()
                     }
                     .addOnFailureListener { e ->
@@ -224,14 +685,14 @@ class ManageTeachersActivity : AppCompatActivity() {
     }
 
 
-    // Function: Load Teachers
+    // Function: Load Teachers (UPDATED to populate allTeachersDisplayList)
     private fun loadTeachersOnce() {
         usersCollection.whereEqualTo("role", "teacher").get()
             .addOnSuccessListener { usersSnapshot ->
                 teacherList.clear()
                 teacherMap.clear()
+                allTeachersDisplayList.clear() // 🟢 CLEAR Master List
 
-                // I-loop ang lahat ng users na 'teacher'
                 val teacherUids = usersSnapshot.documents.map { it.id }
                 val teacherEmails = usersSnapshot.documents.associate { it.id to it.getString("email") }
 
@@ -240,27 +701,40 @@ class ManageTeachersActivity : AppCompatActivity() {
                     return@addOnSuccessListener
                 }
 
-                // Kukunin ang profile data (Name at Department) mula sa teachers collection
                 teachersCollection.whereIn("uid", teacherUids).get()
                     .addOnSuccessListener { teachersSnapshot ->
                         val teacherProfiles = teachersSnapshot.documents.associate { doc ->
-                            doc.getString("uid") to doc.toObject(Teacher::class.java)
+                            // Tiyakin na ang toObject ay gumagamit ng updated Teacher class
+                            doc.getString("uid") to doc.toObject(Teacher::class.java)?.copy(teacherId = doc.id)
                         }
 
                         usersSnapshot.documents.forEach { userDoc ->
                             val uid = userDoc.id
-                            val email = teacherEmails[uid]
                             val profile = teacherProfiles[uid]
 
-                            if (email != null && profile != null) {
-                                // Updated display format: Email (Name - Department)
-                                val display = "$email (${profile.name} - ${profile.department ?: "No Dept"})"
+                            if (profile != null) {
+                                // 🛑 NEW: I-check ang rfidStatus para sa display
+                                val rfidStatusPrefix = when (profile.rfidStatus) {
+                                    "ACTIVE" -> "🟢"
+                                    "DISABLED" -> "🟡"
+                                    else -> "🔴"
+                                }
+
+                                // Gumawa ng display string na kasama ang RFID Tag para sa pag-search
+                                val rfidPart = if (!profile.rfidTag.isNullOrEmpty()) " / RFID: ${profile.rfidTag}" else ""
+
+                                val display = "$rfidStatusPrefix ${profile.name} (${profile.teacherId} - ${profile.department ?: "No Dept"}) $rfidPart"
+
+                                allTeachersDisplayList.add(display) // 🟢 ADD to Master List
                                 teacherList.add(display)
-                                teacherMap[display] = uid // I-mapa ang buong display string sa UID
-                            } else if (email != null) {
-                                // Backup display
-                                teacherList.add(email)
-                                teacherMap[email] = uid
+                                teacherMap[display] = uid // Gagamitin ang buong string bilang key
+                            } else {
+                                // Case where user exists but teacher profile is missing (Error state)
+                                val email = teacherEmails[uid] ?: "Unknown Email"
+                                val display = "❓ $email (Profile Missing)"
+                                allTeachersDisplayList.add(display) // 🟢 ADD to Master List
+                                teacherList.add(display)
+                                teacherMap[display] = uid
                             }
                         }
                         adapter.notifyDataSetChanged()

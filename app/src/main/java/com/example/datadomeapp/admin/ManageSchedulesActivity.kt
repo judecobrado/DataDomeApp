@@ -153,6 +153,8 @@ class ManageSchedulesActivity : AppCompatActivity() {
         return spnCourse.selectedItem?.toString()?.trim()?.uppercase(Locale.getDefault())
     }
 
+    // ... (patuloy ang code sa ManageSchedulesActivity.kt)
+
     private fun loadCoursesTeachersAndRooms() {
         // Load Courses
         firestore.collection("courses").get().addOnSuccessListener { snapshot ->
@@ -171,9 +173,11 @@ class ManageSchedulesActivity : AppCompatActivity() {
             val uniqueDepartments = mutableSetOf<String>()
 
             snapshot.documents.forEach { doc ->
+                // Assuming Teacher model is defined elsewhere and has the department field
                 doc.toObject(Teacher::class.java)?.let { teacher ->
                     teacherList.add(teacher)
-                    if (teacher.department.isNotBlank()) {
+                    // 🛑 FIX: Safely check if department is not null or blank
+                    if (!teacher.department.isNullOrBlank()) {
                         uniqueDepartments.add(teacher.department)
                     }
                 }
@@ -183,15 +187,36 @@ class ManageSchedulesActivity : AppCompatActivity() {
             departmentList.addAll(uniqueDepartments.sorted())
             departmentList.add(0, "All Departments")
 
-            // 🟢 FIX: Unchecked cast warning
+            // 🟢 FIXED: Unchecked cast warning
             (spnDepartment.adapter as? ArrayAdapter<String>)?.notifyDataSetChanged()
 
             // Initial setup: filter lahat ng guro
-            filterTeachersByDepartment(actvTeacher, spnDepartment.selectedItem?.toString())
+            // 🛑 FIX for Lines 176 & 177: Handle the 'Any?' return type safely
+            val selectedItem = spnDepartment.selectedItem
+            val selectedDepartment: String? = selectedItem?.toString()
+
+            // Ang selectedDepartment ay may type na String? (nullable String)
+            // Walang error dito dahil tama ang pagkuha. Ang error ay nangyayari sa
+            // susunod na linya (kung ginamit mo ang lumang code).
+            filterTeachersByDepartment(actvTeacher, selectedDepartment) // Ipinasa ang String?
 
         }.addOnFailureListener { e ->
             Log.e("ScheduleLoad", "Error loading teacher profiles: ${e.message}")
             Toast.makeText(this, "Error loading teachers.", Toast.LENGTH_SHORT).show()
+        }
+
+        // --- Load Rooms ---
+        roomsCollection.get().addOnSuccessListener { snapshot ->
+            roomList.clear()
+            snapshot.documents.forEach { doc ->
+                doc.toObject(Room::class.java)?.let {
+                    roomList.add(it)
+                }
+            }
+            val roomNames = roomList.map { it.id }.toMutableList()
+            roomNames.add(0, "Select Room")
+            spnRoom.adapter =
+                ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, roomNames)
         }
 
         // --- Load Rooms ---

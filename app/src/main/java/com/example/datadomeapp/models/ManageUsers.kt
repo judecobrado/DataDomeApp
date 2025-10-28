@@ -28,7 +28,8 @@ data class Student(
     val isEnrolled: Boolean = false,
     val enrollmentType: String? = null,
     val userUid: String? = null,
-    val status: String? = null
+    val status: String? = null,
+    val rfidTag: String? = null // ⬅️ I-check kung ganito ang spelling/casing at nullable
 )
 
 // 👩‍🏫 Teacher model

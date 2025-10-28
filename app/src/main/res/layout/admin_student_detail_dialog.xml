@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:id="@+id/tvName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:text="Dela Cruz, Juan" />
+
+    <TextView
+        android:id="@+id/tvStudentId"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:textSize="16sp"
+        android:text="ID: 2021-0001" />
+
+    <TextView
+        android:id="@+id/tvCourseYear"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:textSize="16sp"
+        android:text="BSCS - 3rd Year" />
+
+    <TextView
+        android:id="@+id/tvRfidStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:textSize="16sp"
+        android:textStyle="italic"
+        android:textColor="@android:color/holo_red_dark"
+        android:text="RFID Status: 🔴 NOT REGISTERED" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="?android:attr/listDivider"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"/>
+
+    <Button
+        android:id="@+id/btnAddRfid"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Add New RFID Tag"
+        android:layout_marginTop="0dp"
+        android:visibility="gone"/>
+
+    <Button
+        android:id="@+id/btnResetRfid"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Reset Tag &amp; Scan New"
+        android:backgroundTint="@color/design_default_color_primary"
+        android:layout_marginTop="8dp"
+        android:visibility="gone"/>
+
+    <Button
+        android:id="@+id/btnDisableRfid"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Disable Tag (Lost Card)"
+        android:backgroundTint="@android:color/holo_red_dark"
+        android:layout_marginTop="8dp"
+        android:visibility="gone"/>
+
+</LinearLayout>

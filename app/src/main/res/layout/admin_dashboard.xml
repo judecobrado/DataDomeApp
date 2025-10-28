@@ -21,6 +21,13 @@
             android:paddingBottom="24dp"/>
 
         <Button
+            android:id="@+id/btnManageStudents"
+            android:layout_width="match_parent"
+            android:text="Manage Student"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"/>
+
+        <Button
             android:id="@+id/btnManageEnrollment"
             android:layout_width="match_parent"
             android:text="Manage Enrollment"
