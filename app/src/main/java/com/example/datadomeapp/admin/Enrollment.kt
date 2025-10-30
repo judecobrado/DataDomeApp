@@ -1,6 +1,5 @@
 package com.example.datadomeapp.admin
 
-// Data Model para sa pending enrollment forms
 data class Enrollment(
     val id: String = "",
     val firstName: String = "",

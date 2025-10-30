@@ -32,7 +32,7 @@
     <ImageView
         android:id="@+id/ivCanteenImage"
         android:layout_width="200dp"
-        android:layout_height="200dp"
+        android:layout_height="150dp"
         android:layout_marginTop="24dp"
         android:scaleType="centerCrop"
         android:contentDescription="Canteen Image"
@@ -46,7 +46,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Menu Management"
-        android:layout_marginTop="40dp"
+        android:layout_marginTop="5dp"
         android:padding="14dp"
         android:textSize="16sp"/>
 
@@ -56,7 +56,7 @@
         android:layout_height="wrap_content"
         android:text="TOP-UP / CASH-IN"
         android:backgroundTint="#009688"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="5dp"
         android:padding="14dp"
         android:textSize="16sp"/>
 
@@ -65,7 +65,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Orders (POS)"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="5dp"
         android:padding="14dp"
         android:textSize="16sp"/>
 
@@ -74,7 +74,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Sales Reports"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="5dp"
         android:padding="14dp"
         android:textSize="16sp"/>
 
@@ -83,7 +83,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Balance Inquiry"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="5dp"
         android:padding="14dp"
         android:textSize="16sp"/>
 
