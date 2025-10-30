@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.util.Base64
+import android.view.View // Import para sa View.GONE at View.VISIBLE
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
@@ -20,15 +21,15 @@ class CanteenStaffDashboardActivity : AppCompatActivity() {
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
 
-    // NEW: For Canteen Name Title (Matches tvCanteenTitle in XML)
     private lateinit var tvCanteenTitle: TextView
-
-    // Existing: Now for Staff Welcome Name (Matches tvWelcome in XML)
     private lateinit var tvWelcome: TextView
     private lateinit var btnLogout: Button
     private lateinit var btnMenu: Button
     private lateinit var btnOrders: Button
     private lateinit var btnReports: Button
+    private lateinit var btnBalance: Button
+    private lateinit var btnTopUp: Button
+
     private lateinit var ivCanteenImage: ImageView
 
     private var staffUid: String? = null
@@ -36,16 +37,18 @@ class CanteenStaffDashboardActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Tiyakin na ang R.layout.canteen_dashboard ay mayroon nang 'btnTopUp' ID
         setContentView(R.layout.canteen_dashboard)
 
-        // Initialize the TextViews based on your new two-line structure
+        // Initialize Views
         tvCanteenTitle = findViewById(R.id.tvCanteenTitle)
         tvWelcome = findViewById(R.id.tvWelcome)
-
         btnLogout = findViewById(R.id.btnLogout)
         btnMenu = findViewById(R.id.btnMenu)
         btnOrders = findViewById(R.id.btnOrders)
         btnReports = findViewById(R.id.btnReports)
+        btnBalance = findViewById(R.id.btnBalance)
+        btnTopUp = findViewById(R.id.btnTopUp)
         ivCanteenImage = findViewById(R.id.ivCanteenImage)
 
         val currentUser = auth.currentUser
@@ -58,6 +61,14 @@ class CanteenStaffDashboardActivity : AppCompatActivity() {
 
         staffUid = currentUser.uid
 
+        // Load Staff Data
+        loadStaffData()
+
+        // Setup Button Listeners
+        setupButtonListeners()
+    }
+
+    private fun loadStaffData() {
         // --- STEP 1: Fetch the Canteen Staff ID from the 'users' collection ---
         firestore.collection("users").document(staffUid!!)
             .get()
@@ -77,7 +88,48 @@ class CanteenStaffDashboardActivity : AppCompatActivity() {
             .addOnFailureListener { e ->
                 Toast.makeText(this, "Error fetching user link: ${e.message}", Toast.LENGTH_SHORT).show()
             }
+    }
 
+    private fun fetchFullStaffData(canteenStaffId: String) {
+        firestore.collection("canteen_staff").document(canteenStaffId)
+            .get()
+            .addOnSuccessListener { staffDoc ->
+                if (staffDoc.exists()) {
+                    val firstName = staffDoc.getString("firstName") ?: ""
+                    val lastName = staffDoc.getString("lastName") ?: ""
+                    staffCanteenName = staffDoc.getString("canteenName")
+
+                    // Set Canteen Name (first line)
+                    tvCanteenTitle.text = staffCanteenName ?: "Canteen Dashboard"
+                    tvCanteenTitle.textSize = 28f
+
+                    // Set Staff Welcome Name (second line)
+                    tvWelcome.text = "Welcome, $firstName $lastName!"
+                    tvWelcome.textSize = 18f
+
+                    // Retrieve image path (storeImageUrl) and display
+                    val base64Image = staffDoc.getString("storeImageUrl")
+
+                    if (!base64Image.isNullOrEmpty()) {
+                        try {
+                            ivCanteenImage.setImageBitmap(base64ToBitmap(base64Image))
+                        } catch (e: Exception) {
+                            ivCanteenImage.setImageDrawable(null)
+                            Toast.makeText(this, "Error loading canteen image.", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                } else {
+                    tvCanteenTitle.text = "Error"
+                    tvWelcome.text = "Staff data not found."
+                }
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Error fetching staff details: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    // ⭐ NEW FUNCTION: Grouped all button listeners
+    private fun setupButtonListeners() {
         btnLogout.setOnClickListener {
             auth.signOut()
             startActivity(Intent(this, LoginActivity::class.java))
@@ -91,49 +143,29 @@ class CanteenStaffDashboardActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
+        // ✅ REDIRECT TO TOP-UP ACTIVITY
+        btnTopUp.setOnClickListener {
+            val intent = Intent(this, TopUpActivity::class.java)
+            startActivity(intent)
+        }
+
         btnOrders.setOnClickListener {
-            Toast.makeText(this, "Order Processing coming soon", Toast.LENGTH_SHORT).show()
+            // ⭐ Pinalitan ang Toast ng Intent sa POSActivity
+            val intent = Intent(this, POSActivity::class.java)
+            startActivity(intent)
+        }
+
+        // ✅ REDIRECT REPORTS BUTTON TO BALANCE INQUIRY ACTIVITY
+        btnBalance.setOnClickListener {
+            val intent = Intent(this, BalanceInquiryActivity::class.java)
+            startActivity(intent)
         }
 
         btnReports.setOnClickListener {
-            Toast.makeText(this, "Sales Reports coming soon", Toast.LENGTH_SHORT).show()
+            // Palitan ang BalanceInquiryActivity ng CanteenReportsActivity
+            val intent = Intent(this, CanteenReportsActivity::class.java)
+            startActivity(intent)
         }
-    }
-
-    /**
-     * Fetches the complete staff record from the canteen_staff collection using the Staff ID.
-     */
-    private fun fetchFullStaffData(canteenStaffId: String) {
-        firestore.collection("canteen_staff").document(canteenStaffId)
-            .get()
-            .addOnSuccessListener { staffDoc ->
-                if (staffDoc.exists()) {
-                    val firstName = staffDoc.getString("firstName") ?: ""
-                    val lastName = staffDoc.getString("lastName") ?: ""
-                    staffCanteenName = staffDoc.getString("canteenName")
-
-                    // Set Canteen Name (first line)
-                    tvCanteenTitle.text = staffCanteenName ?: "Canteen Dashboard"
-                    tvCanteenTitle.textSize = 28f // Ensure prominence
-
-                    // Set Staff Welcome Name (second line)
-                    tvWelcome.text = "Welcome, $firstName $lastName!"
-                    tvWelcome.textSize = 18f // Ensure hierarchy
-
-                    // Retrieve image path (storeImageUrl) and display
-                    val base64Image = staffDoc.getString("storeImageUrl")
-
-                    if (!base64Image.isNullOrEmpty()) {
-                        ivCanteenImage.setImageBitmap(base64ToBitmap(base64Image))
-                    }
-                } else {
-                    tvCanteenTitle.text = "Error"
-                    tvWelcome.text = "Staff data not found."
-                }
-            }
-            .addOnFailureListener { e ->
-                Toast.makeText(this, "Error fetching staff details: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
     }
 
     /**
@@ -141,6 +173,12 @@ class CanteenStaffDashboardActivity : AppCompatActivity() {
      */
     private fun base64ToBitmap(base64: String): Bitmap {
         val bytes = Base64.decode(base64, Base64.DEFAULT)
-        return BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+        // CRITICAL: Added try-catch for safety
+        return try {
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+        } catch (e: Exception) {
+            // Return a dummy bitmap or throw, depending on preference
+            throw IllegalArgumentException("Invalid Base64 format for image.", e)
+        }
     }
 }

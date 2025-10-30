@@ -156,6 +156,15 @@ class ManageTeachersActivity : AppCompatActivity() {
                         val appUser = AppUser(uid = uid, email = email, role = "teacher")
                         usersCollection.document(uid).set(appUser).await()
 
+                        val userUpdateData = mapOf(
+                            "uid" to uid,
+                            "email" to email,
+                            "role" to "teacher",
+                            // ✅ CRITICAL: Idagdag ang teacherId field sa users document
+                            "teacherId" to newTeacherId
+                        )
+                        usersCollection.document(uid).set(userUpdateData).await()
+
                         // Save to 'teachers' collection
                         val teacherProfile = Teacher(uid = uid, teacherId = newTeacherId, name = name, department = departmentCode)
                         teachersCollection.document(newTeacherId).set(teacherProfile).await()
@@ -350,14 +359,49 @@ class ManageTeachersActivity : AppCompatActivity() {
         return false
     }
 
-    // 🟢 UPDATED FUNCTION: Save RFID Tag for Teacher (Strict Conflict Error)
+    private fun activateTeacherRfidTag(teacher: Teacher) {
+        AlertDialog.Builder(this)
+            .setTitle("Confirm RFID Activation")
+            .setMessage("Are you sure you want to **ACTIVATE** the RFID tag for ${teacher.name}? This will set the tag back to **ACTIVE** status.")
+            .setPositiveButton("Activate Tag") { dialog, _ ->
+                val teacherRef = teachersCollection.document(teacher.teacherId)
+                val userRef = usersCollection.document(teacher.uid)
+
+                CoroutineScope(Dispatchers.Main).launch {
+                    try {
+                        val updateData = mapOf("rfidStatus" to "ACTIVE")
+
+                        // Batch Write para sabay-sabay
+                        firestore.runBatch { batch ->
+                            batch.update(teacherRef, updateData) // Update Teachers
+                            batch.update(userRef, updateData) // CRITICAL: Update Users
+                        }.await()
+
+                        Toast.makeText(this@ManageTeachersActivity, "RFID Tag successfully **ACTIVATED** for ${teacher.name}.", Toast.LENGTH_LONG).show()
+                        loadTeachersOnce()
+                        // Ipakita ulit ang dialog para makita ang bagong status
+                        showTeacherDetailDialog(teacher.uid)
+
+                    } catch (e: Exception) {
+                        Toast.makeText(this@ManageTeachersActivity, "Failed to activate RFID tag: ${e.message}", Toast.LENGTH_LONG).show()
+                        Log.e(TAG, "Error activating RFID tag or syncing user", e)
+                    }
+                }
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
     private fun saveTeacherRfidTag(teacher: Teacher, rfidTag: String) {
         val teacherRef = teachersCollection.document(teacher.teacherId)
+        val userRef = usersCollection.document(teacher.uid)
 
         CoroutineScope(Dispatchers.Main).launch {
             try {
                 // 1. Safety Check (Kung nagkamali ang user at nag-scan ulit ng iba)
                 if (!teacher.rfidTag.isNullOrEmpty() && teacher.rfidTag != rfidTag) {
+                    // ... (Error handling remains the same) ...
                     Toast.makeText(this@ManageTeachersActivity, "🔴 ERROR: Teacher already has a registered RFID tag. Please reset first.", Toast.LENGTH_LONG).show()
                     currentTeacherForRfid = null
                     rfidDetectionDialog?.dismiss()
@@ -369,19 +413,12 @@ class ManageTeachersActivity : AppCompatActivity() {
                 val conflict = checkRfidConflict(rfidTag, teacher.teacherId)
 
                 if (conflict) {
-                    // 🛑 STRICT ERROR: Huwag i-reassign. Mag-display lang ng error.
+                    // ... (Conflict error handling remains the same) ...
                     val errorMessage = "❌ ERROR: RFID Tag **$rfidTag** is already registered to another user (Teacher or Student). Tag not assigned."
-                    Log.e(TAG, "Conflict detected for $rfidTag. Tag not assigned.")
-
-                    // Display error as a persistent dialog (Huwag i-close ang RFID Detection Dialog)
                     AlertDialog.Builder(this@ManageTeachersActivity)
                         .setTitle("RFID Registration Conflict")
                         .setMessage(errorMessage)
-                        .setPositiveButton("Try Again") { dialog, _ ->
-                            // Hayaan lang na manatiling bukas ang rfidDetectionDialog (magre-ready for next scan)
-                            // Walang gagawin dito, maghintay lang ng bagong scan.
-                            dialog.dismiss()
-                        }
+                        .setPositiveButton("Try Again") { dialog, _ -> dialog.dismiss() }
                         .setNegativeButton("Cancel Registration") { dialog, _ ->
                             currentTeacherForRfid = null
                             rfidDetectionDialog?.dismiss()
@@ -389,38 +426,30 @@ class ManageTeachersActivity : AppCompatActivity() {
                         }
                         .setCancelable(false)
                         .show()
-
-                    // HINDI I-A-ASSIGN, at HINDI I-C-CLOSE ang RFID DIALOG (currentTeacherForRfid ay mananatili)
                     return@launch
                 }
 
                 // --- Walang conflict, magpapatuloy sa pag-save ---
-
-                // 3. I-save na sa kasalukuyang guro
-                teacherRef.update(mapOf(
+                val updateData = mapOf(
                     "rfidTag" to rfidTag,
                     "rfidStatus" to "ACTIVE"
-                ))
-                    .addOnSuccessListener {
-                        Toast.makeText(this@ManageTeachersActivity, "Successfully registered RFID: $rfidTag for ${teacher.name}. Status: ACTIVE", Toast.LENGTH_LONG).show()
-                        loadTeachersOnce() // I-reload ang listahan (Ito ang mag-a-update ng UI)
-                        currentTeacherForRfid = null
-                        // 🛑 SUCCESS: I-close ang RFID DIALOG
-                        rfidDetectionDialog?.dismiss()
-                    }
-                    .addOnFailureListener { e ->
-                        Toast.makeText(this@ManageTeachersActivity, "Failed to save RFID: ${e.message}", Toast.LENGTH_LONG).show()
-                        Log.e("RFID_SAVE", "Error saving Teacher RFID tag", e)
-                        currentTeacherForRfid = null
-                        // 🛑 FAILURE: I-dismiss ang RFID DIALOG at I-SHOW ANG DETAIL DIALOG
-                        rfidDetectionDialog?.dismiss()
-                        showTeacherDetailDialog(teacher.uid)
-                    }
+                )
+
+                // 3. Batch Write: I-update ang BOTH Teachers at Users
+                firestore.runBatch { batch ->
+                    batch.update(teacherRef, updateData) // Update Teachers
+                    batch.update(userRef, updateData)    // CRITICAL: Update Users
+                }.await()
+
+                Toast.makeText(this@ManageTeachersActivity, "Successfully registered RFID: $rfidTag. Status: ACTIVE", Toast.LENGTH_LONG).show()
+                loadTeachersOnce()
+                currentTeacherForRfid = null
+                rfidDetectionDialog?.dismiss()
+
             } catch (e: Exception) {
                 Log.e(TAG, "Error during RFID registration/conflict check", e)
                 Toast.makeText(this@ManageTeachersActivity, "An unexpected error occurred: ${e.message}", Toast.LENGTH_LONG).show()
                 currentTeacherForRfid = null
-                // 🛑 UNEXPECTED FAILURE: I-dismiss ang RFID DIALOG at I-SHOW ANG DETAIL DIALOG
                 rfidDetectionDialog?.dismiss()
                 showTeacherDetailDialog(teacher.uid)
             }
@@ -433,22 +462,30 @@ class ManageTeachersActivity : AppCompatActivity() {
     private fun disableTeacherRfidTag(teacher: Teacher) {
         AlertDialog.Builder(this)
             .setTitle("Confirm RFID Disable")
-            .setMessage("Are you sure you want to **DISABLE** the RFID tag for ${teacher.name}? This will set the tag to **DISABLED** status, meaning it can't be used for attendance.")
+            .setMessage("Are you sure you want to **DISABLE** the RFID tag for ${teacher.name}? This will set the tag to **DISABLED** status, meaning it can't be used for attendance or login.")
             .setPositiveButton("Disable Tag") { dialog, _ ->
                 val teacherRef = teachersCollection.document(teacher.teacherId)
+                val userRef = usersCollection.document(teacher.uid)
 
-                // 🛑 UPDATE: Set rfidStatus to DISABLED (Keep the rfidTag value)
-                teacherRef.update("rfidStatus", "DISABLED")
-                    .addOnSuccessListener {
-                        Toast.makeText(this, "RFID Tag successfully **DISABLED** for ${teacher.name}.", Toast.LENGTH_LONG).show()
-                        loadTeachersOnce() // I-reload ang listahan
-                        // I-fetch ulit ang updated teacher profile para sa dialog
+                CoroutineScope(Dispatchers.Main).launch {
+                    try {
+                        val updateData = mapOf("rfidStatus" to "DISABLED")
+
+                        // Batch Write para sabay-sabay
+                        firestore.runBatch { batch ->
+                            batch.update(teacherRef, updateData) // Update Teachers
+                            batch.update(userRef, updateData) // CRITICAL: Update Users
+                        }.await()
+
+                        Toast.makeText(this@ManageTeachersActivity, "RFID Tag successfully **DISABLED** for ${teacher.name}.", Toast.LENGTH_LONG).show()
+                        loadTeachersOnce()
                         showTeacherDetailDialog(teacher.uid)
+
+                    } catch (e: Exception) {
+                        Toast.makeText(this@ManageTeachersActivity, "Failed to disable RFID tag: ${e.message}", Toast.LENGTH_LONG).show()
+                        Log.e(TAG, "Error disabling RFID tag or syncing user", e)
                     }
-                    .addOnFailureListener { e ->
-                        Toast.makeText(this, "Failed to disable RFID tag: ${e.message}", Toast.LENGTH_LONG).show()
-                        Log.e(TAG, "Error disabling RFID tag", e)
-                    }
+                }
                 dialog.dismiss()
             }
             .setNegativeButton("Cancel", null)
@@ -462,23 +499,33 @@ class ManageTeachersActivity : AppCompatActivity() {
             .setMessage("Are you sure you want to **RESET** the RFID tag for ${teacher.name}? This will remove the current tag, clear the status, and immediately start the process to scan a NEW one.")
             .setPositiveButton("Reset & Scan New") { dialog, _ ->
                 val teacherRef = teachersCollection.document(teacher.teacherId)
+                val userRef = usersCollection.document(teacher.uid)
 
-                // 🛑 UPDATE: Remove rfidTag AND rfidStatus
-                teacherRef.update(mapOf(
-                    "rfidTag" to null,
-                    "rfidStatus" to null
-                ))
-                    .addOnSuccessListener {
-                        Toast.makeText(this, "RFID Tag cleared. Please scan the new tag now.", Toast.LENGTH_LONG).show()
-                        loadTeachersOnce() // I-reload ang listahan
+                CoroutineScope(Dispatchers.Main).launch {
+                    try {
+                        // 🛑 UPDATE: Remove rfidTag AND rfidStatus sa Teachers AT Users
+                        val updateData = mapOf(
+                            "rfidTag" to null,
+                            "rfidStatus" to null
+                        )
 
-                        // 🛑 CRITICAL: Awtomatikong buksan ang scanner pagkatapos mag-reset
+                        // Batch Write
+                        firestore.runBatch { batch ->
+                            batch.update(teacherRef, updateData) // Update Teachers
+                            batch.update(userRef, updateData) // CRITICAL: Update Users
+                        }.await()
+
+                        Toast.makeText(this@ManageTeachersActivity, "RFID Tag cleared. Please scan the new tag now.", Toast.LENGTH_LONG).show()
+
+                        loadTeachersOnce()
+                        // CRITICAL: Awtomatikong buksan ang scanner pagkatapos mag-reset
                         showRfidDetectionDialog(teacher.copy(rfidTag = null, rfidStatus = null))
+
+                    } catch (e: Exception) {
+                        Toast.makeText(this@ManageTeachersActivity, "Failed to reset RFID tag: ${e.message}", Toast.LENGTH_LONG).show()
+                        Log.e(TAG, "Error resetting RFID tag or syncing user", e)
                     }
-                    .addOnFailureListener { e ->
-                        Toast.makeText(this, "Failed to reset RFID tag: ${e.message}", Toast.LENGTH_LONG).show()
-                        Log.e(TAG, "Error resetting RFID tag", e)
-                    }
+                }
                 dialog.dismiss()
             }
             .setNegativeButton("Cancel", null)
@@ -512,30 +559,36 @@ class ManageTeachersActivity : AppCompatActivity() {
                 tvId.text = "ID: ${teacher.teacherId}"
                 tvCourse.text = "Department: ${teacher.department ?: "N/A"}"
 
-                // 🛑 NEW/UPDATED LOGIC: I-check ang rfidStatus
+                // Itago muna ang lahat ng button
+                btnAddRfid.visibility = View.GONE
+                btnResetRfid.visibility = View.GONE
+                btnDisableRfid.visibility = View.GONE
+
+
+                // 🛑 FINAL LOGIC PARA SA BUTTONS AT TEXT 🛑
                 when (teacher.rfidStatus) {
                     "ACTIVE" -> {
+                        // Case 1: Active (Pwedeng i-Reset o i-Disable)
                         tvRfid.text = "RFID Status: 🟢 ACTIVE (${teacher.rfidTag})"
-                        btnAddRfid.visibility = View.GONE
                         btnResetRfid.visibility = View.VISIBLE
                         btnDisableRfid.visibility = View.VISIBLE
+                        btnDisableRfid.text = "Disable RFID"
                     }
                     "DISABLED" -> {
+                        // Case 2: Disabled (Pwedeng i-Reset o i-Activate)
                         tvRfid.text = "RFID Status: 🟡 DISABLED (${teacher.rfidTag})"
-                        btnAddRfid.visibility = View.GONE
                         btnResetRfid.visibility = View.VISIBLE
-                        btnDisableRfid.visibility = View.GONE // Naka-disable na, kaya i-hide
+                        btnDisableRfid.visibility = View.VISIBLE // Ipakita ang button
+                        btnDisableRfid.text = "Activate RFID" // 🔄 Palitan ang text sa Activate
                     }
                     else -> {
+                        // Case 3: Not Registered (walang tag o status)
                         if (!isNfcSupported) {
                             tvRfid.text = "RFID Status: ❌ NFC NOT AVAILABLE"
-                            btnAddRfid.visibility = View.GONE
                         } else {
                             tvRfid.text = "RFID Status: 🔴 NOT REGISTERED"
                             btnAddRfid.visibility = View.VISIBLE
                         }
-                        btnResetRfid.visibility = View.GONE
-                        btnDisableRfid.visibility = View.GONE
                     }
                 }
 
@@ -556,9 +609,15 @@ class ManageTeachersActivity : AppCompatActivity() {
                     resetTeacherRfidTag(teacher)
                 }
 
+                // 🛑 CONDITIONAL LISTENER
                 btnDisableRfid.setOnClickListener {
                     dialog.dismiss()
-                    disableTeacherRfidTag(teacher)
+
+                    if (teacher.rfidStatus == "DISABLED") {
+                        activateTeacherRfidTag(teacher) // 🟢 Activate
+                    } else {
+                        disableTeacherRfidTag(teacher) // 🟡 Disable
+                    }
                 }
 
                 dialog.show()
@@ -723,29 +782,24 @@ class ManageTeachersActivity : AppCompatActivity() {
                                 // Gumawa ng display string na kasama ang RFID Tag para sa pag-search
                                 val rfidPart = if (!profile.rfidTag.isNullOrEmpty()) " / RFID: ${profile.rfidTag}" else ""
 
-                                val display = "$rfidStatusPrefix ${profile.name} (${profile.teacherId} - ${profile.department ?: "No Dept"}) $rfidPart"
+                                // ✅ KINUMPLETO ANG DISPLAY STRING
+                                val display = "$rfidStatusPrefix ${profile.name} (${profile.teacherId} - ${profile.department ?: "N/A"})$rfidPart"
 
-                                allTeachersDisplayList.add(display) // 🟢 ADD to Master List
                                 teacherList.add(display)
-                                teacherMap[display] = uid // Gagamitin ang buong string bilang key
-                            } else {
-                                // Case where user exists but teacher profile is missing (Error state)
-                                val email = teacherEmails[uid] ?: "Unknown Email"
-                                val display = "❓ $email (Profile Missing)"
-                                allTeachersDisplayList.add(display) // 🟢 ADD to Master List
-                                teacherList.add(display)
+                                allTeachersDisplayList.add(display)
                                 teacherMap[display] = uid
                             }
                         }
                         adapter.notifyDataSetChanged()
                     }
-                    .addOnFailureListener { error ->
-                        Log.e("ManageTeachers", "Failed to load teacher profiles: ${error.message}")
-                        Toast.makeText(this, "Failed to load teacher profiles.", Toast.LENGTH_SHORT).show()
+                    .addOnFailureListener { e ->
+                        Toast.makeText(this, "Error fetching teacher profiles: ${e.message}", Toast.LENGTH_SHORT).show()
+                        Log.e(TAG, "Error fetching teacher profiles", e)
                     }
             }
-            .addOnFailureListener { error ->
-                Toast.makeText(this, "Failed to load teachers: ${error.message}", Toast.LENGTH_SHORT).show()
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Error fetching users: ${e.message}", Toast.LENGTH_SHORT).show()
+                Log.e(TAG, "Error fetching users", e)
             }
     }
 }

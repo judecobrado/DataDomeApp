@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:weightSum="3"
+    android:padding="8dp"
+    tools:context=".canteen.POSActivity">
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="2"
+        android:orientation="vertical"
+        android:paddingEnd="8dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="MENU ITEMS"
+            android:textStyle="bold"
+            android:textSize="20sp"
+            android:padding="8dp"/>
+
+        <ProgressBar
+            android:id="@+id/pbLoading"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="visible"
+            style="?android:attr/progressBarStyle" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvMenuPOS"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scrollbars="vertical"
+            app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
+            app:spanCount="2"
+            tools:listitem="@layout/item_menu_pos" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:paddingStart="8dp"
+        android:background="@drawable/rounded_border_background"> <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="ORDER CART"
+        android:textStyle="bold"
+        android:textSize="20sp"
+        android:padding="8dp"
+        android:gravity="center_horizontal"/>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvCart"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:scrollbars="vertical"
+            tools:listitem="@layout/item_cart" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:background="?android:attr/listDivider"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="8dp">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="TOTAL AMOUNT:"
+                android:textStyle="bold"
+                android:textSize="24sp"/>
+            <TextView
+                android:id="@+id/tvTotalAmount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="₱0.00"
+                android:textStyle="bold"
+                android:textSize="24sp"
+                android:textColor="@color/design_default_color_primary"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/llNfcPrompt"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="8dp"
+            android:visibility="gone"
+            android:background="#FFF9C4"
+            android:gravity="center">
+            <ImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@drawable/ic_nfc_scan" /> <TextView
+            android:id="@+id/tvNfcPrompt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Awaiting customer scan..."
+            android:textStyle="bold"
+            android:textColor="@color/design_default_color_error"/>
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnCheckout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="CHECKOUT (CONFIRM ORDER)"
+            android:layout_marginTop="8dp"
+            android:enabled="false"/>
+
+        <Button
+            android:id="@+id/btnCancelOrder"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="CANCEL ORDER"
+            android:backgroundTint="@android:color/holo_red_dark"
+            android:layout_marginBottom="8dp"
+            android:visibility="gone"/>
+
+    </LinearLayout>
+
+</LinearLayout>

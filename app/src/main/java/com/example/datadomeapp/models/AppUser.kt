@@ -5,7 +5,7 @@ data class AppUser(
     val uid: String = "",       // Ang Document ID ay karaniwang ang Auth UID
     val email: String = "",
     val role: String = "student", // student, teacher, admin
-    val studentId: String? = null // Para sa students
+    val teacherId: String? = null // Para sa students
 )
 
 // 2. Teacher: Para sa records sa 'teachers' collection (Profile Data)

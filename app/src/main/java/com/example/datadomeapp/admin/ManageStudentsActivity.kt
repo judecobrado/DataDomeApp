@@ -18,6 +18,10 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.datadomeapp.R
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.util.*
 
 // Tandaan: Dapat ay nasa com.example.datadomeapp.models package ang class na ito (pero inulit dito para sa completeness)
@@ -29,7 +33,7 @@ data class Student(
     val courseCode: String = "",
     val yearLevel: String = "",
     val rfidTag: String? = null,
-    // 🟢 NEW FIELD: rfidStatus
+    val userUid: String = "",
     // Possible values: "ACTIVE", "DISABLED", or null/empty (for Not Registered)
     val rfidStatus: String? = null
 )
@@ -78,7 +82,7 @@ class ManageStudentsActivity : AppCompatActivity() {
         setupFilters()
     }
 
-    // --- NFC Lifecycle Handlers (No Changes) ---
+    // --- NFC Lifecycle Handlers ---
 
     private fun setupNfc() {
         nfcAdapter = NfcAdapter.getDefaultAdapter(this)
@@ -91,7 +95,8 @@ class ManageStudentsActivity : AppCompatActivity() {
         isNfcSupported = true
 
         val intent = Intent(this, javaClass).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
-        pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_MUTABLE)
+        // Gumamit ng FLAG_MUTABLE or FLAG_IMMUTABLE
+        pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
     }
 
     override fun onResume() {
@@ -108,7 +113,7 @@ class ManageStudentsActivity : AppCompatActivity() {
         }
     }
 
-    // 🛑 CRITICAL: Ito ang mag-de-detect ng RFID/NFC scan! (No Changes)
+    // 🛑 CRITICAL: Ito ang mag-de-detect ng RFID/NFC scan!
     override fun onNewIntent(intent: Intent) {
         if (!isNfcSupported) {
             super.onNewIntent(intent)
@@ -121,6 +126,7 @@ class ManageStudentsActivity : AppCompatActivity() {
             NfcAdapter.ACTION_NDEF_DISCOVERED == intent.action ||
             NfcAdapter.ACTION_TECH_DISCOVERED == intent.action) {
 
+            // Gumamit ng getParcelableExtra<Tag> para sa safety
             val tag: Tag? = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG)
             if (tag != null) {
                 val rfidHex = bytesToHex(tag.id)
@@ -129,7 +135,7 @@ class ManageStudentsActivity : AppCompatActivity() {
                 if (currentStudentForRfid != null) {
                     // Mode 1: Registration is active
                     saveRfidTag(currentStudentForRfid!!, rfidHex)
-                    rfidDetectionDialog?.dismiss()
+                    // HINDI I-D-DISMISS ANG DIALOG DITO
                 } else {
                     // Mode 2: Quick Search
                     performRfidQuickSearch(rfidHex)
@@ -138,12 +144,10 @@ class ManageStudentsActivity : AppCompatActivity() {
         }
     }
 
-    // --- RFID Quick Search Function (No Changes) ---
+    // --- RFID Quick Search Function ---
 
     private fun performRfidQuickSearch(rfidTag: String) {
         // I-search ang student gamit ang RFID tag
-        // Note: Kahit "DISABLED" ang status, pwede pa rin itong mahanap dito.
-        // Ang rfidTag field ang primary key sa search.
         firestore.collection("students")
             .whereEqualTo("rfidTag", rfidTag)
             .get()
@@ -157,7 +161,7 @@ class ManageStudentsActivity : AppCompatActivity() {
 
                     if (student != null) {
                         // 1. I-apply ang search filter para ipakita lang ang student na ito
-                        etSearch.setText(student.studentId)
+                        etSearch.setText(student.studentId) // Gagamitin ang Student ID sa search box
 
                         // 2. Ipakita ang detailed dialog agad
                         showStudentDetailDialog(student)
@@ -173,7 +177,7 @@ class ManageStudentsActivity : AppCompatActivity() {
     }
 
 
-    // --- Utility Functions (No Changes) ---
+    // --- Utility Functions ---
 
     private fun bytesToHex(bytes: ByteArray): String {
         val hexArray = charArrayOf('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F')
@@ -186,7 +190,7 @@ class ManageStudentsActivity : AppCompatActivity() {
         return String(hexChars)
     }
 
-    // --- Data Loading and Filtering (No Changes in logic, relies on updated Student class) ---
+    // --- Data Loading and Filtering ---
 
     private fun loadAllStudents() {
         firestore.collection("students")
@@ -230,6 +234,7 @@ class ManageStudentsActivity : AppCompatActivity() {
         }
     }
 
+    // 🛑 UPDATED: Kasama na ang RFID Tag sa search logic
     private fun applyFilters() {
         val searchText = etSearch.text.toString().trim().lowercase(Locale.getDefault())
         val selectedCourse = spinnerFilterCourse.selectedItem?.toString()
@@ -239,11 +244,12 @@ class ManageStudentsActivity : AppCompatActivity() {
             val courseMatch = selectedCourse == "All Courses" || student.courseCode == selectedCourse
             val yearMatch = selectedYear == "All Year Levels" || student.yearLevel == selectedYear
 
-            // Search Filter: Uses studentId for filtering
+            // 🟢 UPDATED Search Filter: Kasama na ang RFID Tag
             val searchMatch = searchText.isEmpty() ||
                     student.firstName.lowercase(Locale.getDefault()).contains(searchText) ||
                     student.lastName.lowercase(Locale.getDefault()).contains(searchText) ||
-                    student.studentId.lowercase(Locale.getDefault()).contains(searchText)
+                    student.studentId.lowercase(Locale.getDefault()).contains(searchText) ||
+                    (!student.rfidTag.isNullOrEmpty() && student.rfidTag!!.lowercase(Locale.getDefault()).contains(searchText)) // NEW: Check RFID Tag
 
             courseMatch && yearMatch && searchMatch
         }
@@ -255,21 +261,58 @@ class ManageStudentsActivity : AppCompatActivity() {
 
     // --- RFID/NFC Registration and Reset/Disable Logic ---
 
-    // 🟡 UPDATED LOGIC: Disable (Tatanggalin ang tag at mag-se-set ng status na "DISABLED")
+    // 🟢 NEW FUNCTION: Check for RFID tag conflict across Students and Teachers (GLOBAL CHECK)
+    private suspend fun checkRfidConflict(rfidTag: String, currentStudentDocId: String): Boolean {
+        // 1. Check Student Collection (Dapat HINDI ang kasalukuyang student ang gumagamit)
+        val studentSnapshot = firestore.collection("students")
+            .whereEqualTo("rfidTag", rfidTag)
+            .get().await()
+
+        // Conflict kung may ibang student na gumagamit nito (ibang document ID)
+        val studentConflict = studentSnapshot.documents.any { doc ->
+            doc.id != currentStudentDocId && doc.getString("rfidTag") == rfidTag
+        }
+        if (studentConflict) return true
+
+        // 2. Check Teacher Collection (Dapat walang teacher na gumagamit)
+        val teacherSnapshot = firestore.collection("teachers")
+            .whereEqualTo("rfidTag", rfidTag)
+            .limit(1)
+            .get().await()
+
+        val teacherConflict = !teacherSnapshot.isEmpty
+        if (teacherConflict) return true
+
+        return false
+    }
+
+    // 🟡 UPDATED LOGIC: Disable
     private fun disableRfidTag(student: Student) {
         AlertDialog.Builder(this)
             .setTitle("Confirm RFID Disable")
-            .setMessage("Are you sure you want to **DISABLE** the RFID tag for ${student.firstName} ${student.lastName}? This will set the tag to **DISABLED** status, meaning it can't be used for attendance.")
+            .setMessage("Are you sure you want to **DISABLE** the RFID tag for ${student.firstName} ${student.lastName}? This will set the tag to **DISABLED** status, meaning it can't be used for attendance or login.")
             .setPositiveButton("Disable Tag") { dialog, _ ->
                 val studentRef = firestore.collection("students").document(student.id)
 
-                // 🛑 UPDATE: Set rfidStatus to DISABLED
-                studentRef.update(mapOf(
-                    "rfidTag" to student.rfidTag, // Keep the tag, just disable it
-                    "rfidStatus" to "DISABLED"
-                ))
-                    .addOnSuccessListener {
-                        Toast.makeText(this, "RFID Tag successfully **DISABLED** for ${student.firstName}.", Toast.LENGTH_LONG).show()
+                // 🛑 CRITICAL: Gamitin ang userUid direkta!
+                if (student.userUid.isEmpty()) {
+                    Toast.makeText(this, "Disable failed: Missing User UID for this student.", Toast.LENGTH_LONG).show()
+                    dialog.dismiss()
+                    return@setPositiveButton
+                }
+                val userRef = firestore.collection("users").document(student.userUid)
+
+                CoroutineScope(Dispatchers.Main).launch {
+                    try {
+                        // 🛑 UPDATE: Set rfidStatus to DISABLED sa Students AT Users
+                        val updateData = mapOf("rfidStatus" to "DISABLED")
+
+                        firestore.runBatch { batch ->
+                            batch.update(studentRef, updateData)
+                            batch.update(userRef, updateData) // CRITICAL: Update Users
+                        }.await()
+
+                        Toast.makeText(this@ManageStudentsActivity, "RFID Tag successfully **DISABLED** for ${student.firstName}.", Toast.LENGTH_LONG).show()
 
                         // I-update ang cache at UI
                         val updatedList = allStudentsCache.map {
@@ -277,19 +320,18 @@ class ManageStudentsActivity : AppCompatActivity() {
                         }
                         allStudentsCache = updatedList
                         applyFilters()
-                        // Isasara lang dito.
+                    } catch (e: Exception) {
+                        Toast.makeText(this@ManageStudentsActivity, "Failed to disable RFID tag: ${e.message}", Toast.LENGTH_LONG).show()
+                        Log.e(TAG, "Error disabling RFID tag or syncing user", e)
                     }
-                    .addOnFailureListener { e ->
-                        Toast.makeText(this, "Failed to disable RFID tag: ${e.message}", Toast.LENGTH_LONG).show()
-                        Log.e(TAG, "Error disabling RFID tag", e)
-                    }
+                }
                 dialog.dismiss()
             }
             .setNegativeButton("Cancel", null)
             .show()
     }
 
-    // 🔄 UPDATED LOGIC: Reset (Tatanggalin ang tag at magbubukas ng scanner at clear status)
+    // 🔄 UPDATED LOGIC: Reset
     private fun resetRfidTag(student: Student) {
         AlertDialog.Builder(this)
             .setTitle("Confirm RFID Reset & Re-registration")
@@ -297,13 +339,28 @@ class ManageStudentsActivity : AppCompatActivity() {
             .setPositiveButton("Reset & Scan New") { dialog, _ ->
                 val studentRef = firestore.collection("students").document(student.id)
 
-                // 🛑 UPDATE: Remove rfidTag AND rfidStatus
-                studentRef.update(mapOf(
-                    "rfidTag" to null,
-                    "rfidStatus" to null
-                ))
-                    .addOnSuccessListener {
-                        Toast.makeText(this, "RFID Tag cleared. Please scan the new tag now.", Toast.LENGTH_LONG).show()
+                // 🛑 CRITICAL: Gamitin ang userUid direkta!
+                if (student.userUid.isEmpty()) {
+                    Toast.makeText(this, "Reset failed: Missing User UID for this student.", Toast.LENGTH_LONG).show()
+                    dialog.dismiss()
+                    return@setPositiveButton
+                }
+                val userRef = firestore.collection("users").document(student.userUid)
+
+                CoroutineScope(Dispatchers.Main).launch {
+                    try {
+                        // 🛑 UPDATE: Remove rfidTag AND rfidStatus sa Students AT Users
+                        val updateData = mapOf(
+                            "rfidTag" to null,
+                            "rfidStatus" to null
+                        )
+
+                        firestore.runBatch { batch ->
+                            batch.update(studentRef, updateData)
+                            batch.update(userRef, updateData) // CRITICAL: Update Users
+                        }.await()
+
+                        Toast.makeText(this@ManageStudentsActivity, "RFID Tag cleared. Please scan the new tag now.", Toast.LENGTH_LONG).show()
 
                         // I-update ang cache at UI
                         val updatedList = allStudentsCache.map {
@@ -314,17 +371,17 @@ class ManageStudentsActivity : AppCompatActivity() {
 
                         // 🛑 CRITICAL: Awtomatikong buksan ang scanner pagkatapos mag-reset
                         showRfidDetectionDialog(student.copy(rfidTag = null, rfidStatus = null))
+
+                    } catch (e: Exception) {
+                        Toast.makeText(this@ManageStudentsActivity, "Failed to reset RFID tag: ${e.message}", Toast.LENGTH_LONG).show()
+                        Log.e(TAG, "Error resetting RFID tag or syncing user", e)
                     }
-                    .addOnFailureListener { e ->
-                        Toast.makeText(this, "Failed to reset RFID tag: ${e.message}", Toast.LENGTH_LONG).show()
-                        Log.e(TAG, "Error resetting RFID tag", e)
-                    }
+                }
                 dialog.dismiss()
             }
             .setNegativeButton("Cancel", null)
             .show()
     }
-
 
     private fun showStudentDetailDialog(student: Student) {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.admin_student_detail_dialog, null)
@@ -343,46 +400,47 @@ class ManageStudentsActivity : AppCompatActivity() {
         tvCourse.text = "${student.courseCode} - ${student.yearLevel}"
 
 
-        // 🛑 NEW/UPDATED LOGIC: I-check ang rfidTag at rfidStatus para sa tamang display at buttons
+        // Itago muna ang lahat ng button
+        btnAddRfid.visibility = View.GONE
+        btnResetRfid.visibility = View.GONE
+        btnDisableRfid.visibility = View.GONE
+
+
+        // 🛑 FINAL LOGIC PARA SA BUTTONS AT TEXT 🛑
         if (!student.rfidTag.isNullOrEmpty()) {
             // May rfidTag (pwedeng ACTIVE o DISABLED)
             when (student.rfidStatus) {
                 "ACTIVE" -> {
-                    // Case 1: Active
+                    // Case 1: Active (Pwedeng i-Reset o i-Disable)
                     tvRfid.text = "RFID Status: 🟢 ACTIVE (${student.rfidTag})"
-                    btnAddRfid.visibility = View.GONE
                     btnResetRfid.visibility = View.VISIBLE
                     btnDisableRfid.visibility = View.VISIBLE
+                    btnDisableRfid.text = "Disable RFID" // Tiyakin na Disable ang text
                 }
                 "DISABLED" -> {
-                    // Case 2: Disabled
+                    // Case 2: Disabled (Pwedeng i-Reset o i-Activate)
                     tvRfid.text = "RFID Status: 🟡 DISABLED (${student.rfidTag})"
-                    btnAddRfid.visibility = View.GONE
-                    btnResetRfid.visibility = View.VISIBLE // Pwedeng i-reset para makapag-scan ng bago
-                    btnDisableRfid.visibility = View.GONE // Naka-disable na, kaya i-hide ang disable button
-                }
-                else -> {
-                    // Case 3: May tag pero walang status (Old/Inconsistent Data)
-                    tvRfid.text = "RFID Status: ❓ UNKNOWN TAG STATUS (${student.rfidTag})"
-                    btnAddRfid.visibility = View.GONE
                     btnResetRfid.visibility = View.VISIBLE
                     btnDisableRfid.visibility = View.VISIBLE
+                    btnDisableRfid.text = "Activate RFID" // 🛑 ITO ANG PAGBABAGO: Palitan ang text sa Activate
+                }
+                else -> {
+                    // Case 3: May tag pero walang status (Inconsistent Data)
+                    tvRfid.text = "RFID Status: ❓ UNKNOWN TAG STATUS (${student.rfidTag})"
+                    btnResetRfid.visibility = View.VISIBLE
+                    btnDisableRfid.visibility = View.VISIBLE
+                    btnDisableRfid.text = "Disable RFID" // Default sa Disable
                 }
             }
 
         } else if (!isNfcSupported) {
             // Case 4: Walang tag AND walang NFC support ang phone.
             tvRfid.text = "RFID Status: ❌ NFC NOT AVAILABLE"
-            btnAddRfid.visibility = View.GONE
-            btnResetRfid.visibility = View.GONE
-            btnDisableRfid.visibility = View.GONE
 
         } else {
             // Case 5: Walang tag AND may NFC support ang phone (Not Registered/Ready for Registration).
             tvRfid.text = "RFID Status: 🔴 NOT REGISTERED"
             btnAddRfid.visibility = View.VISIBLE
-            btnResetRfid.visibility = View.GONE
-            btnDisableRfid.visibility = View.GONE
         }
 
         val dialog = AlertDialog.Builder(this)
@@ -393,20 +451,25 @@ class ManageStudentsActivity : AppCompatActivity() {
 
         btnAddRfid.setOnClickListener {
             dialog.dismiss()
-            // Gamitin ang copy ng student na walang rfidTag/rfidStatus para sa registration
             showRfidDetectionDialog(student.copy(rfidTag = null, rfidStatus = null))
         }
 
-        // Reset Click Listener (Reset & Scan New)
+        // Reset Click Listener
         btnResetRfid.setOnClickListener {
             dialog.dismiss()
             resetRfidTag(student)
         }
 
-        // Disable Click Listener (Disable & Close)
+        // Disable/Activate Click Listener (Conditional Logic)
         btnDisableRfid.setOnClickListener {
             dialog.dismiss()
-            disableRfidTag(student)
+
+            // 🛑 NEW LOGIC: Tignan kung ano ang current status ng student object
+            if (student.rfidStatus == "DISABLED") {
+                activateRfidTag(student) // 🟢 Tatawagin ang Activate function
+            } else {
+                disableRfidTag(student) // 🟡 Tatawagin ang Disable function (para sa ACTIVE o UNKNOWN status)
+            }
         }
 
         dialog.show()
@@ -426,6 +489,8 @@ class ManageStudentsActivity : AppCompatActivity() {
             .setTitle("RFID Tag Registration")
             .setPositiveButton("Cancel") { _, _ ->
                 currentStudentForRfid = null // I-clear ang selection
+                // Kapag nag-cancel, ibalik sa detail dialog
+                showStudentDetailDialog(student)
             }
             .setCancelable(false)
             .create()
@@ -433,58 +498,119 @@ class ManageStudentsActivity : AppCompatActivity() {
         rfidDetectionDialog!!.show()
     }
 
-    // 🟢 UPDATED LOGIC: Save (I-set ang rfidStatus sa "ACTIVE")
+    // 🟢 NEW FUNCTION: Activate RFID Tag for Student
+    private fun activateRfidTag(student: Student) {
+        AlertDialog.Builder(this)
+            .setTitle("Confirm RFID Activation")
+            .setMessage("Are you sure you want to **ACTIVATE** the RFID tag for ${student.firstName} ${student.lastName}? This will set the tag back to **ACTIVE** status, allowing it to be used for attendance and login.")
+            .setPositiveButton("Activate Tag") { dialog, _ ->
+                val studentRef = firestore.collection("students").document(student.id)
+
+                if (student.userUid.isEmpty()) {
+                    Toast.makeText(this, "Activation failed: Missing User UID for this student.", Toast.LENGTH_LONG).show()
+                    dialog.dismiss()
+                    return@setPositiveButton
+                }
+                val userRef = firestore.collection("users").document(student.userUid)
+
+                CoroutineScope(Dispatchers.Main).launch {
+                    try {
+                        // 🛑 UPDATE: Set rfidStatus to ACTIVE sa Students AT Users
+                        val updateData = mapOf("rfidStatus" to "ACTIVE")
+
+                        firestore.runBatch { batch ->
+                            batch.update(studentRef, updateData)
+                            batch.update(userRef, updateData) // CRITICAL: Update Users
+                        }.await()
+
+                        Toast.makeText(this@ManageStudentsActivity, "RFID Tag successfully **ACTIVATED** for ${student.firstName}.", Toast.LENGTH_LONG).show()
+
+                        // I-update ang cache at UI
+                        val updatedList = allStudentsCache.map {
+                            if (it.id == student.id) it.copy(rfidStatus = "ACTIVE") else it
+                        }
+                        allStudentsCache = updatedList
+                        applyFilters()
+                        // Ipakita ulit ang dialog para makita ang bagong status
+                        showStudentDetailDialog(student.copy(rfidStatus = "ACTIVE"))
+
+                    } catch (e: Exception) {
+                        Toast.makeText(this@ManageStudentsActivity, "Failed to activate RFID tag: ${e.message}", Toast.LENGTH_LONG).show()
+                        Log.e(TAG, "Error activating RFID tag or syncing user", e)
+                    }
+                }
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
     private fun saveRfidTag(student: Student, rfidTag: String) {
         val studentRef = firestore.collection("students").document(student.id)
 
-        // 🛑 NEW VALIDATION: I-check kung may ibang gumagamit na ng RFID tag
-        firestore.collection("students")
-            .whereEqualTo("rfidTag", rfidTag)
-            .get()
-            .addOnSuccessListener { querySnapshot ->
+        // 🛑 CRITICAL: Gamitin ang userUid direkta!
+        if (student.userUid.isEmpty()) {
+            Toast.makeText(this, "Registration failed: Missing User UID for this student.", Toast.LENGTH_LONG).show()
+            Log.e(TAG, "Error: Student document is missing userUid field for ${student.studentId}")
+            currentStudentForRfid = null
+            rfidDetectionDialog?.dismiss()
+            return
+        }
+        val userRef = firestore.collection("users").document(student.userUid)
 
-                // I-check kung may nakita at HINDI ito ang kasalukuyang estudyante
-                val conflict = querySnapshot.documents.any { doc -> doc.id != student.id }
-
+        CoroutineScope(Dispatchers.Main).launch {
+            try {
+                // 1. Check for GLOBAL conflict (Code remains the same)
+                val conflict = checkRfidConflict(rfidTag, student.id)
                 if (conflict) {
-                    // May conflict! Ginagamit na ang tag
-                    Toast.makeText(this, "🔴 ERROR: RFID Tag $rfidTag is already registered to another student.", Toast.LENGTH_LONG).show()
-                    Log.e(TAG, "Conflict: RFID Tag already in use.")
-                    currentStudentForRfid = null
-                } else if (!student.rfidTag.isNullOrEmpty()) {
-                    // Dapat ay hindi na ito mangyari dahil sa UI logic, pero dagdag safety
-                    Toast.makeText(this, "🔴 ERROR: Student already has a registered RFID tag. Contact IT to reset.", Toast.LENGTH_LONG).show()
-                    currentStudentForRfid = null
-                } else {
-                    // Walang conflict at walang tag pa. I-save na.
-                    // 🛑 UPDATE: Set rfidTag AND rfidStatus to "ACTIVE"
-                    studentRef.update(mapOf(
-                        "rfidTag" to rfidTag,
-                        "rfidStatus" to "ACTIVE"
-                    ))
-                        .addOnSuccessListener {
-                            Toast.makeText(this, "Successfully registered RFID: $rfidTag for ${student.firstName}. Status: ACTIVE", Toast.LENGTH_LONG).show()
-
-                            // I-update ang cache at UI
-                            val updatedList = allStudentsCache.map {
-                                if (it.id == student.id) it.copy(rfidTag = rfidTag, rfidStatus = "ACTIVE") else it
-                            }
-                            allStudentsCache = updatedList
-                            applyFilters()
+                    // ... (Conflict handling code remains the same) ...
+                    val errorMessage = "❌ ERROR: RFID Tag **$rfidTag** is already registered to another user (Student or Teacher). Tag not assigned."
+                    AlertDialog.Builder(this@ManageStudentsActivity)
+                        .setTitle("RFID Registration Conflict")
+                        .setMessage(errorMessage)
+                        .setPositiveButton("Try Again") { dialog, _ -> dialog.dismiss() }
+                        .setNegativeButton("Cancel Registration") { dialog, _ ->
                             currentStudentForRfid = null
+                            rfidDetectionDialog?.dismiss()
+                            showStudentDetailDialog(student)
                         }
-                        .addOnFailureListener { e ->
-                            Toast.makeText(this, "Failed to save RFID: ${e.message}", Toast.LENGTH_LONG).show()
-                            Log.e(TAG, "Error saving RFID tag", e)
-                            currentStudentForRfid = null
-                        }
+                        .setCancelable(false)
+                        .show()
+                    return@launch
                 }
-            }
-            .addOnFailureListener { e ->
-                Toast.makeText(this, "Validation failed: ${e.message}", Toast.LENGTH_LONG).show()
-                Log.e(TAG, "Error validating RFID tag", e)
+
+                // 2. I-update ang BOTH Students at Users Collections
+                val updateData = mapOf(
+                    "rfidTag" to rfidTag,
+                    "rfidStatus" to "ACTIVE"
+                )
+
+                // Batch Write para siguradong sabay-sabay mag-update (MAS SAFE)
+                firestore.runBatch { batch ->
+                    batch.update(studentRef, updateData)
+                    batch.update(userRef, updateData) // CRITICAL: Update Users gamit ang userUid
+                }.await()
+
+
+                Toast.makeText(this@ManageStudentsActivity, "Successfully registered RFID: $rfidTag. Status: ACTIVE", Toast.LENGTH_LONG).show()
+
+                // I-update ang cache at UI
+                val updatedList = allStudentsCache.map {
+                    if (it.id == student.id) it.copy(rfidTag = rfidTag, rfidStatus = "ACTIVE") else it
+                }
+                allStudentsCache = updatedList
+                applyFilters()
                 currentStudentForRfid = null
+                rfidDetectionDialog?.dismiss()
+
+            } catch (e: Exception) {
+                Toast.makeText(this@ManageStudentsActivity, "Registration failed: ${e.message}", Toast.LENGTH_LONG).show()
+                Log.e(TAG, "Error saving/validating RFID tag or syncing user: ${e.message}", e)
+                currentStudentForRfid = null
+                rfidDetectionDialog?.dismiss()
+                showStudentDetailDialog(student)
             }
+        }
     }
 }
 
@@ -499,7 +625,7 @@ class StudentAdapter(
     inner class StudentViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvName: TextView = view.findViewById(R.id.tvStudentItemName)
         val tvId: TextView = view.findViewById(R.id.tvStudentItemId)
-        // 🛑 UPDATE: Use a different ID if needed, or re-use existing TV for status
+        // Gumamit ng tvRfidStatus na id kung saan man ito idineklara sa admin_student_item.xml
         val tvRfid: TextView = view.findViewById(R.id.tvRfidStatus)
     }
 

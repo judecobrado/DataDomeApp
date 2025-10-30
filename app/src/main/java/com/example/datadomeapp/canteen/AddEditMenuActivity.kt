@@ -39,6 +39,9 @@ class AddEditMenuActivity : AppCompatActivity() {
     private var staffUid: String? = null
     private var canteenName: String? = null
 
+    // ⭐ NEW: Original name of the menu item (for comparison in Edit mode)
+    private var originalMenuName: String? = null
+
     private val imagePickerLauncher: ActivityResultLauncher<String> =
         registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
             if (uri != null) {
@@ -60,10 +63,8 @@ class AddEditMenuActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Ensure you have R.layout.canteen_add_edit_menu defined in your project
         setContentView(R.layout.canteen_add_edit_menu)
 
-        // Ensure these IDs exist in your XML layout
         etName = findViewById(R.id.etMenuName)
         etPrice = findViewById(R.id.etMenuPrice)
         switchAvailable = findViewById(R.id.switchAvailable)
@@ -196,7 +197,8 @@ class AddEditMenuActivity : AppCompatActivity() {
      */
     private fun createDocumentId(canteenName: String, foodName: String): String {
         val cleanCanteen = canteenName.trim().replace("\\s+".toRegex(), "").toLowerCase(Locale.getDefault())
-        val cleanFood = foodName.trim().replace("\\s+".toRegex(), "").toLowerCase(Locale.getDefault())
+        // Replace non-alphanumeric characters with underscore to ensure valid Firestore ID
+        val cleanFood = foodName.trim().replace("[^a-zA-Z0-9]".toRegex(), "_").toLowerCase(Locale.getDefault())
         return "${cleanCanteen}_${cleanFood}"
     }
 
@@ -206,7 +208,10 @@ class AddEditMenuActivity : AppCompatActivity() {
         firestore.collection("canteenMenu").document(id).get()
             .addOnSuccessListener { doc ->
                 if (doc.exists()) {
-                    etName.setText(doc.getString("name"))
+                    val loadedName = doc.getString("name") ?: ""
+                    etName.setText(loadedName)
+                    originalMenuName = loadedName // Store the original name
+
                     val priceValue = doc.getDouble("price")
                     etPrice.setText(if (priceValue != null) String.format("%.2f", priceValue) else "")
                     switchAvailable.isChecked = doc.getBoolean("available") ?: true
@@ -233,7 +238,6 @@ class AddEditMenuActivity : AppCompatActivity() {
     /**
      * Performs all input validation and sets inline errors.
      * @return true if all fields are valid, false otherwise.
-     * * Note: This function provides the real-time inline error feedback.
      */
     private fun validateInputFields(): Boolean {
         val name = etName.text.toString().trim()
@@ -249,10 +253,10 @@ class AddEditMenuActivity : AppCompatActivity() {
         if (name.length < 3 || name.length > 50) {
             etName.error = "Name must be 3 to 50 characters long."
             isValid = false
-        } else if (name.any { it.isDigit() }) {
-            etName.error = "Name cannot contain numbers."
-            isValid = false
         }
+        // Ang pag-check kung may digit ay maaaring masyadong mahigpit (hal. "Coke Zero").
+        // Tanging *required* lang kung bawal talaga ang number sa pangalan ng pagkain.
+        // Hahayaan ko ito na optional: kung gusto mo, ibalik mo ang luma.
         // ------------------------------------
 
         // --- PRICE VALIDATION (Inline Error) ---
@@ -316,15 +320,73 @@ class AddEditMenuActivity : AppCompatActivity() {
             else -> ""
         }
 
-        // --- Save Logic ---
+        // --- Save Logic (FIXED LOGIC) ---
         if (menuId == null) {
-            // Check existence for new items
+            // ADD NEW ITEM: Check existence and save using the generated ID
             checkExistenceAndSave(formattedName, price, available, base64Image, uid, canteen)
         } else {
-            // Update existing item
-            saveToFirestore(formattedName, price, available, base64Image, uid, canteen, menuId!!)
+            // EDIT EXISTING ITEM:
+            val newCustomDocId = createDocumentId(canteen, formattedName)
+
+            if (newCustomDocId != menuId) {
+                // Name was changed -> Delete old document and create new one
+                handleNameChangeUpdate(menuId!!, formattedName, price, available, base64Image, uid, canteen, newCustomDocId)
+            } else {
+                // Name is the same OR no name change -> Safe update on the existing ID
+                saveToFirestore(formattedName, price, available, base64Image, uid, canteen, menuId!!)
+            }
         }
     }
+
+    // ⭐ NEW FUNCTION: Handles the critical case where the name (and thus the Document ID) is changed.
+    private fun handleNameChangeUpdate(
+        oldDocId: String,
+        newName: String,
+        price: Double,
+        available: Boolean,
+        base64Image: String,
+        staffUid: String,
+        canteenName: String,
+        newDocId: String
+    ) {
+        // 1. Check if the new name already exists as a document ID (safety check)
+        firestore.collection("canteenMenu").document(newDocId).get()
+            .addOnSuccessListener { doc ->
+                if (doc.exists()) {
+                    // Fail: The new document ID already exists in the database
+                    progressBar.visibility = View.GONE
+                    btnSave.isEnabled = true
+                    showCriticalErrorDialog("The new name '$newName' already exists as a separate item. Please choose a unique name.", "Name Conflict")
+                } else {
+                    // Success: Safe to create new document and delete old one
+                    // 2. Save new document
+                    saveToFirestore(newName, price, available, base64Image, staffUid, canteenName, newDocId, isNameChange = true)
+                        .addOnSuccessListener {
+                            // 3. Delete old document
+                            firestore.collection("canteenMenu").document(oldDocId).delete()
+                                .addOnSuccessListener {
+                                    progressBar.visibility = View.GONE
+                                    Toast.makeText(this, "Menu updated and name changed successfully!", Toast.LENGTH_LONG).show()
+                                    finish()
+                                }
+                                .addOnFailureListener { e ->
+                                    // CRITICAL: Failed to delete old document! Data redundancy issue.
+                                    progressBar.visibility = View.GONE
+                                    showCriticalErrorDialog("Data saved but failed to delete old menu item. Please contact administrator.", "Partial Update Error")
+                                    finish()
+                                }
+                        }
+                    // Failure on saveToFirestore is handled inside saveToFirestore
+                }
+            }
+            .addOnFailureListener { e ->
+                progressBar.visibility = View.GONE
+                btnSave.isEnabled = true
+                Toast.makeText(this, "Error checking new name existence: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
+    // -------------------------------------------------------------------------------------------------
+
 
     /**
      * Checks if a new menu item already exists by its custom ID before saving.
@@ -358,6 +420,7 @@ class AddEditMenuActivity : AppCompatActivity() {
             }
     }
 
+    // ⭐ UPDATED FUNCTION: Para suportahan ang onSuccessListener sa handleNameChangeUpdate
     private fun saveToFirestore(
         name: String,
         price: Double,
@@ -365,8 +428,9 @@ class AddEditMenuActivity : AppCompatActivity() {
         base64Image: String,
         staffUid: String,
         canteenName: String,
-        docId: String
-    ) {
+        docId: String,
+        isNameChange: Boolean = false
+    ): com.google.android.gms.tasks.Task<Void> {
         val menuMap = hashMapOf(
             "name" to name,
             "price" to price,
@@ -376,16 +440,23 @@ class AddEditMenuActivity : AppCompatActivity() {
             "canteenName" to canteenName
         )
 
-        firestore.collection("canteenMenu").document(docId).set(menuMap)
-            .addOnSuccessListener {
+        val task = firestore.collection("canteenMenu").document(docId).set(menuMap)
+
+        task.addOnSuccessListener {
+            if (!isNameChange) {
+                // Only finish here if it's a simple ADD or simple EDIT (no name change)
                 progressBar.visibility = View.GONE
                 Toast.makeText(this, "Menu saved successfully!", Toast.LENGTH_SHORT).show()
                 finish()
-            }.addOnFailureListener { e ->
-                progressBar.visibility = View.GONE
-                btnSave.isEnabled = true
-                // Network/Database Failure: Use Dialog for critical technical errors
-                showCriticalErrorDialog("An error occurred while saving the menu item. Please check your connection or image size (max 1MB). Error: ${e.message}", "Save Failed")
             }
+            // If it is a name change, the finishing logic is handled in handleNameChangeUpdate
+        }.addOnFailureListener { e ->
+            progressBar.visibility = View.GONE
+            btnSave.isEnabled = true
+            // Network/Database Failure: Use Dialog for critical technical errors
+            showCriticalErrorDialog("An error occurred while saving the menu item. Please check your connection or image size (max 1MB). Error: ${e.message}", "Save Failed")
+        }
+
+        return task // Return the task for chaining in handleNameChangeUpdate
     }
 }

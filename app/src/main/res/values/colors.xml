@@ -25,7 +25,8 @@
     <color name="softGold">#F5E6B3</color> <!-- Soft gold for lighter accents -->
     <color name="darkText">#EDEDED</color>
 
-
+    <color name="colorPrimary">#00796B</color>
+    <color name="colorAccent">#D81B60</color>
 
 
 </resources>

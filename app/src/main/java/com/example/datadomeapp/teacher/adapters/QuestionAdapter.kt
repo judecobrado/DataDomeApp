@@ -7,10 +7,10 @@ import android.widget.ImageButton
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.datadomeapp.R
-import com.example.datadomeapp.models.Question // This is the FLATTENED data class
+import com.example.datadomeapp.models.Question
 
 class QuestionAdapter(
-    private val questions: MutableList<Question>,
+    private val questions: MutableList<Question>, // mutable para puwede i-update
     private val editClickListener: (Question) -> Unit,
     private val deleteClickListener: (Question) -> Unit
 ) : RecyclerView.Adapter<QuestionAdapter.QuestionViewHolder>() {
@@ -26,7 +26,7 @@ class QuestionAdapter(
 
     override fun getItemCount(): Int = questions.size
 
-    // ------------------ NEW METHOD (No Change) ------------------
+    // ------------------ NEW METHOD ------------------
     fun updateQuestions(newQuestions: List<Question>) {
         questions.clear()
         questions.addAll(newQuestions)
@@ -44,45 +44,22 @@ class QuestionAdapter(
             tvQuestionText.text = question.questionText
             tvOptions.visibility = View.VISIBLE
 
-            // 🛑 FIX: Use the 'type' string property instead of the 'is' keyword
-            when (question.type.uppercase()) {
-                "TF" -> {
+            when (question) {
+                is Question.TrueFalse -> {
                     tvQuestionType.text = "True / False"
-                    // Safely access the nullable 'answer' field
-                    val answerText = if (question.answer == true) "True" else if (question.answer == false) "False" else "N/A"
-                    tvOptions.text = "Answer: $answerText"
+                    tvOptions.text = "Answer: ${if (question.answer) "True" else "False"}"
                 }
-                "MC" -> {
+                is Question.MultipleChoice -> {
                     tvQuestionType.text = "Multiple Choice"
-                    // Safely access nullable 'options' and 'correctAnswerIndex'
-                    val options = question.options ?: emptyList()
-                    val correctIndex = question.correctAnswerIndex
-
-                    if (options.isNotEmpty()) {
-                        tvOptions.text = options.mapIndexed { index, option ->
-                            val correctMark = if (index == correctIndex) " (Correct)" else ""
-                            "${index + 1}. $option$correctMark"
-                        }.joinToString("\n")
-                    } else {
-                        tvOptions.text = "No options available."
-                    }
+                    tvOptions.text = question.options.mapIndexed { index, option ->
+                        val correctMark = if (index == question.correctAnswerIndex) " (Correct)" else ""
+                        "${index + 1}. $option$correctMark"
+                    }.joinToString("\n")
                 }
-                "MATCHING" -> {
+                is Question.Matching -> {
                     tvQuestionType.text = "Matching"
-                    // Safely access nullable 'options' (left) and 'matches' (right)
-                    val options = question.options ?: emptyList()
-                    val matches = question.matches ?: emptyList()
-
-                    if (options.isNotEmpty() && matches.isNotEmpty() && options.size == matches.size) {
-                        tvOptions.text = options.zip(matches)
-                            .joinToString("\n") { (l, r) -> "$l → $r" }
-                    } else {
-                        tvOptions.text = "Matching pairs incomplete."
-                    }
-                }
-                else -> {
-                    tvQuestionType.text = "Unknown Type"
-                    tvOptions.visibility = View.GONE
+                    tvOptions.text = question.options.zip(question.matches)
+                        .joinToString("\n") { (l, r) -> "$l → $r" }
                 }
             }
 

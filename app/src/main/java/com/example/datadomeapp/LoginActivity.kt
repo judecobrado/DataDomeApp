@@ -3,12 +3,14 @@ package com.example.datadomeapp
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.nfc.NfcAdapter // 🟢 NEW
-import android.nfc.Tag // 🟢 NEW
+import android.nfc.NfcAdapter
+import android.nfc.Tag
 import android.os.Bundle
 import android.util.Log
+import android.view.LayoutInflater
 import android.view.View
 import android.widget.*
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.example.datadomeapp.admin.AdminDashboardActivity
 import com.example.datadomeapp.canteen.CanteenStaffDashboardActivity
@@ -16,33 +18,29 @@ import com.example.datadomeapp.student.StudentDashboardActivity
 import com.example.datadomeapp.teacher.TeacherDashboardActivity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.CoroutineScope // 🟢 NEW
-import kotlinx.coroutines.Dispatchers // 🟢 NEW
-import kotlinx.coroutines.launch // 🟢 NEW
-import kotlinx.coroutines.tasks.await // 🟢 NEW
+import java.util.*
 
 class LoginActivity : AppCompatActivity() {
 
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
 
-    // Hardcoded credentials
+    // Hardcoded admin credentials for development bypass
     private val adminEmail = "q"
     private val adminPassword = "q"
-
-    // 🟢 NEW: Hardcoded password for RFID/Auto-Login (Security note: Use Custom Tokens in production)
-    private val RFID_AUTOLOGIN_PASSWORD = "datarome_temp_password"
 
     private lateinit var emailEditText: EditText
     private lateinit var passwordEditText: EditText
     private lateinit var loginButton: Button
     private lateinit var forgotPasswordText: TextView
     private lateinit var progressBar: ProgressBar
+    private lateinit var btnRfidLogin: Button // RFID Login Button
 
-    // 🟢 NFC Declarations
+    // RFID/NFC Declarations
     private var nfcAdapter: NfcAdapter? = null
     private var pendingIntent: PendingIntent? = null
     private var isNfcSupported = false
+    private var rfidDetectionDialog: AlertDialog? = null
 
     private val TAG = "LoginActivity"
 
@@ -56,18 +54,24 @@ class LoginActivity : AppCompatActivity() {
         loginButton = findViewById(R.id.btnLogin)
         forgotPasswordText = findViewById(R.id.tvForgotPassword)
         progressBar = findViewById(R.id.progressBar)
-
-        setupNfc() // 🟢 Initialize NFC
+        btnRfidLogin = findViewById(R.id.btnRfidLogin)
 
         forgotPasswordText.setOnClickListener {
             startActivity(Intent(this, ResetPasswordActivity::class.java))
+        }
+
+        // 🛑 CRITICAL FIX: Tinanggal ang maling session check logic dito.
+        // Ang LoginActivity ay hindi dapat agad mag-exit kapag walang UID.
+
+        // RFID Button Listener
+        btnRfidLogin.setOnClickListener {
+            showRfidDetectionDialog()
         }
 
         loginButton.setOnClickListener {
             val email = emailEditText.text.toString().trim()
             val password = passwordEditText.text.toString().trim()
 
-            // ... (rest of standard login logic)
             if (email.isEmpty() || password.isEmpty()) {
                 Toast.makeText(this, "Please enter email and password", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
@@ -80,6 +84,7 @@ class LoginActivity : AppCompatActivity() {
                 getSharedPreferences("user_prefs", Context.MODE_PRIVATE).edit()
                     .putString("role", "admin")
                     .apply()
+
                 hideLoading()
                 Toast.makeText(this, "Welcome Admin (Hardcoded)!", Toast.LENGTH_SHORT).show()
                 startActivity(Intent(this, AdminDashboardActivity::class.java))
@@ -97,7 +102,6 @@ class LoginActivity : AppCompatActivity() {
                             Toast.makeText(this, "Login successful but user data is temporarily unavailable.", Toast.LENGTH_LONG).show()
                             return@addOnCompleteListener
                         }
-                        // Continue to Firestore fetch
                         fetchUserRoleAndStartDashboard(currentUser.uid)
 
                     } else {
@@ -107,27 +111,33 @@ class LoginActivity : AppCompatActivity() {
                     }
                 }
         }
+
+        // Setup NFC
+        setupNfc()
     }
 
-    // --- NFC Setup and Lifecycle ---
+    // --- NFC Setup and Lifecycle Handlers ---
 
     private fun setupNfc() {
         nfcAdapter = NfcAdapter.getDefaultAdapter(this)
         if (nfcAdapter == null) {
-            Log.w(TAG, "NFC is not supported on this device.")
+            Toast.makeText(this, "NFC is not supported on this device. RFID login disabled.", Toast.LENGTH_LONG).show()
             isNfcSupported = false
+            btnRfidLogin.isEnabled = false
             return
         }
 
         isNfcSupported = true
+        // Gumamit ng FLAG_MUTABLE or FLAG_IMMUTABLE
         val intent = Intent(this, javaClass).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
-        // Gumamit ng FLAG_MUTABLE
-        pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_MUTABLE)
+        // Gumamit ng FLAG_IMMUTABLE kung posible, pero sinunod ko ang iyong FLAG_MUTABLE or FLAG_UPDATE_CURRENT setup
+        pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
     }
 
     override fun onResume() {
         super.onResume()
-        if (isNfcSupported) {
+        // I-enable lang ang foreground dispatch kung may NFC support AT HINDI naka-login
+        if (isNfcSupported && auth.currentUser == null) {
             nfcAdapter?.enableForegroundDispatch(this, pendingIntent, null, null)
         }
     }
@@ -139,7 +149,7 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
-    // 🛑 CRITICAL: RFID Scan Handler
+    // 🛑 CRITICAL: Ito ang mag-de-detect ng RFID/NFC scan!
     override fun onNewIntent(intent: Intent) {
         if (!isNfcSupported) {
             super.onNewIntent(intent)
@@ -155,89 +165,15 @@ class LoginActivity : AppCompatActivity() {
             val tag: Tag? = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG)
             if (tag != null) {
                 val rfidHex = bytesToHex(tag.id)
-                Log.d("NFC_SCAN", "RFID Detected for Auto-Login: $rfidHex")
+                Log.d(TAG, "RFID Detected for Login: $rfidHex")
 
-                showLoading()
-
-                // I-start ang RFID auto-login process
-                CoroutineScope(Dispatchers.Main).launch {
-                    performRfidAutoLogin(rfidHex)
-                }
+                // Trigger RFID Login
+                performRfidLogin(rfidHex)
             }
-        }
-    }
-
-    // --- RFID Auto-Login Core Logic ---
-
-    private suspend fun performRfidAutoLogin(rfidTag: String) {
-        // Mag-try muna sa Student Collection
-        var userEmail = getEmailByRfid("students", rfidTag)
-
-        // Kung walang nakita, mag-try sa Teacher Collection
-        if (userEmail == null) {
-            userEmail = getEmailByRfid("teachers", rfidTag)
-        }
-
-        // Kung wala pa rin, mag-try sa Canteen Staff (kung may sariling collection)
-        if (userEmail == null) {
-            // Assuming canteen_staff has its own collection with rfidTag
-            userEmail = getEmailByRfid("canteen_staff", rfidTag)
-        }
-
-
-        if (userEmail == null) {
-            resetUI()
-            Toast.makeText(this, "RFID Tag is not registered to any active user.", Toast.LENGTH_LONG).show()
-            return
-        }
-
-        // I-set ang email field (for visual confirmation)
-        emailEditText.setText(userEmail)
-
-        // Mag-sign in gamit ang nahanap na email at hardcoded password
-        auth.signInWithEmailAndPassword(userEmail, RFID_AUTOLOGIN_PASSWORD)
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    Toast.makeText(this, "RFID Auto-Login Successful!", Toast.LENGTH_SHORT).show()
-                    val currentUser = auth.currentUser
-                    if (currentUser != null) {
-                        fetchUserRoleAndStartDashboard(currentUser.uid)
-                    } else {
-                        resetUI()
-                    }
-                } else {
-                    resetUI()
-                    Log.e(TAG, "RFID Auth failed: ${task.exception?.message}")
-                    Toast.makeText(this, "Auto-Login Failed. Password mismatch or user account error.", Toast.LENGTH_LONG).show()
-                }
-            }
-    }
-
-    // 🟢 NEW: Utility function to search for email by RFID tag in a specific collection
-    private suspend fun getEmailByRfid(collectionPath: String, rfidTag: String): String? {
-        return try {
-            val snapshot = firestore.collection(collectionPath)
-                .whereEqualTo("rfidTag", rfidTag)
-                .limit(1)
-                .get()
-                .await()
-
-            val uid = snapshot.documents.firstOrNull()?.getString("uid")
-
-            // Check if UID exists in the 'users' collection (para makuha ang email)
-            if (uid != null) {
-                val userDoc = firestore.collection("users").document(uid).get().await()
-                return userDoc.getString("email")
-            }
-            null
-        } catch (e: Exception) {
-            Log.e(TAG, "Error fetching user email by RFID from $collectionPath: ${e.message}")
-            null
         }
     }
 
     private fun bytesToHex(bytes: ByteArray): String {
-        // Utility function (Same as in ManageStudentsActivity)
         val hexArray = charArrayOf('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F')
         val hexChars = CharArray(bytes.size * 2)
         for (j in bytes.indices) {
@@ -247,6 +183,82 @@ class LoginActivity : AppCompatActivity() {
         }
         return String(hexChars)
     }
+
+    // --- RFID Login Core Logic ---
+
+    private fun showRfidDetectionDialog() {
+        if (!isNfcSupported) {
+            Toast.makeText(this, "NFC is required for RFID login.", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        // I-close muna ang dating dialog kung meron
+        rfidDetectionDialog?.dismiss()
+
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_rfid_detection, null)
+        val tvStatus = dialogView.findViewById<TextView>(R.id.tvRfidDetectionStatus)
+
+        tvStatus.text = "Waiting for RFID/NFC tag scan...\n\nBring your ID near the phone's NFC area."
+
+        // Mag-display ng temporary loading para maging malinaw na may ginagawa
+        showLoading()
+
+        rfidDetectionDialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setTitle("RFID Login")
+            .setPositiveButton("Cancel") { _, _ ->
+                rfidDetectionDialog?.dismiss()
+                resetUI() // Ibalik sa normal ang UI
+            }
+            .setCancelable(false)
+            .create()
+
+        rfidDetectionDialog!!.show()
+    }
+
+    private fun performRfidLogin(rfidTag: String) {
+        // Hahanapin ang user sa 'users' collection gamit ang rfidTag.
+        // Hahanapin din ang rfidStatus na 'ACTIVE' para hindi mag-login ang DISABLED tags.
+        firestore.collection("users")
+            .whereEqualTo("rfidTag", rfidTag)
+            .whereEqualTo("rfidStatus", "ACTIVE")
+            .limit(1)
+            .get()
+            .addOnSuccessListener { snapshot ->
+
+                rfidDetectionDialog?.dismiss() // I-dismiss ang dialog agad
+
+                if (snapshot.isEmpty) {
+                    resetUI()
+                    Toast.makeText(this, "Login failed: RFID tag is either not registered or is DISABLED.", Toast.LENGTH_LONG).show()
+                } else {
+                    val userDoc = snapshot.documents.first()
+                    val uid = userDoc.id // Ito na ang User UID
+
+                    val role = userDoc.getString("role")
+                    val finalRole = role ?: "unknown"
+
+                    Log.d(TAG, "RFID Login SUCCESS: UID: $uid, Role: $finalRole")
+
+                    // Save role to shared preferences for later use in the app
+                    getSharedPreferences("user_prefs", Context.MODE_PRIVATE).edit()
+                        .putString("role", finalRole)
+                        .apply()
+
+                    hideLoading()
+                    Toast.makeText(this, "Welcome ${finalRole.uppercase(Locale.getDefault())}!", Toast.LENGTH_LONG).show()
+                    // 🛑 CRITICAL FIX: Tiyakin na ang role at uid ang ipinapasa
+                    startDashboard(finalRole , uid)
+                }
+            }
+            .addOnFailureListener { e ->
+                rfidDetectionDialog?.dismiss() // I-dismiss ang dialog agad
+                resetUI()
+                Toast.makeText(this, "RFID Login Error: ${e.message}", Toast.LENGTH_LONG).show()
+                Log.e(TAG, "RFID Login failed", e)
+            }
+    }
+
 
     private fun fetchUserRoleAndStartDashboard(uid: String) {
         // Fetch the role from the 'users' collection in Firestore
@@ -274,7 +286,7 @@ class LoginActivity : AppCompatActivity() {
                     .apply()
 
                 hideLoading()
-                startDashboard(finalRole)
+                startDashboard(finalRole, uid)
             }
             .addOnFailureListener { e ->
                 // Firestore fetch failed
@@ -285,9 +297,9 @@ class LoginActivity : AppCompatActivity() {
             }
     }
 
-    private fun startDashboard(role: String) {
+    private fun startDashboard(role: String, uid: String) {
         // Use lowercase to match roles consistently
-        val roleLower = role.lowercase()
+        val roleLower = role.lowercase(Locale.getDefault())
 
         val intent = when (roleLower) {
             "student" -> Intent(this, StudentDashboardActivity::class.java)
@@ -299,6 +311,8 @@ class LoginActivity : AppCompatActivity() {
                 Intent(this, MainActivity::class.java)
             }
         }
+        // Ipinapasa ang UID sa Intent para gamitin sa dashboard (Ito ang solusyon)
+        intent.putExtra("USER_UID", uid)
 
         startActivity(intent)
         finish() // Prevent returning to the LoginActivity
@@ -309,12 +323,14 @@ class LoginActivity : AppCompatActivity() {
         progressBar.visibility = View.VISIBLE
         loginButton.isEnabled = false
         forgotPasswordText.isEnabled = false
+        btnRfidLogin.isEnabled = false // Disable RFID button too
     }
 
     private fun hideLoading() {
         progressBar.visibility = View.GONE
         loginButton.isEnabled = true
         forgotPasswordText.isEnabled = true
+        btnRfidLogin.isEnabled = isNfcSupported // Ibalik sa true kung supported ang NFC
     }
 
     private fun resetUI() {

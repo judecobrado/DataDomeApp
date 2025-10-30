@@ -8,6 +8,7 @@ import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.widget.Button
+import com.google.firebase.firestore.SetOptions
 import android.widget.LinearLayout // 🟢 Idinagdag para sa Vertical Layout
 import android.widget.TableLayout
 import android.widget.TableRow
@@ -48,23 +49,27 @@ class StudentDashboardActivity : AppCompatActivity() {
         tvScheduleStatus = findViewById(R.id.tvScheduleStatus)
         tvUserInfo = findViewById(R.id.tvUserInfo)
 
-        if (auth.currentUser == null) {
-            // Redirect sa Login Activity
-            // startActivity(Intent(this, LoginActivity::class.java))
+        val finalUid = intent.getStringExtra("USER_UID") ?: auth.currentUser?.uid
+
+        Log.i("DASHBOARD_DEBUG", "Starting dashboard with UID: $finalUid")
+
+        if (finalUid.isNullOrEmpty()) {
+            Toast.makeText(this, "Session expired or User ID missing. Please log in again.", Toast.LENGTH_LONG).show()
+            // Tiyakin na tama ang reference sa LoginActivity
+            startActivity(Intent(this, com.example.datadomeapp.LoginActivity::class.java))
             finish()
             return
         }
 
         // Simulan ang pagkuha ng data at i-set up ang mga button
-        loadStudentInfo()
+        loadStudentInfo(finalUid) // <--- Dapat may parameter na 'finalUid'
         setupFeatureButtons()
     }
 
     /**
      * Kukunin ang Section ID at Student ID ng student mula sa Master Record (students/{uid}).
      */
-    private fun loadStudentInfo() {
-        val uid = auth.currentUser?.uid ?: return
+    private fun loadStudentInfo(uid: String) {
         tvUserInfo.text = "Loading student info..."
 
         // I-query ang master 'users' collection para makuha ang studentId.

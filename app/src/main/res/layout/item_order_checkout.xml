@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp"
+    android:gravity="center_vertical"
+    android:background="@android:color/white">
+
+    <TextView
+        android:id="@+id/tvQuantity"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="#333333"
+        android:layout_marginEnd="16dp"
+        tools:text="2x"/>
+
+    <TextView
+        android:id="@+id/tvItemName"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textSize="16sp"
+        android:textColor="#333333"
+        tools:text="Cheese Burger"/>
+
+    <TextView
+        android:id="@+id/tvItemPrice"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="#00796B"
+        tools:text="₱50.00"/>
+
+</LinearLayout>

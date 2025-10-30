@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="#F5F5F5"
+    tools:context=".canteen.CanteenReportsActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="12dp">
+
+        <TextView
+            android:id="@+id/tvDateRange"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            tools:text="Showing results for: This Week (Oct 22, 2025 - Oct 29, 2025)"
+            android:textSize="14sp"
+            android:textStyle="italic"
+            android:textColor="#333333"/>
+
+        <Button
+            android:id="@+id/btnFilterDate"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:text="Filter"
+            android:textSize="12sp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            style="@style/Widget.AppCompat.Button.Colored"/>
+    </LinearLayout>
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="6dp"
+        android:layout_marginBottom="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="TOTAL SALES"
+                android:textSize="14sp"
+                android:textColor="#757575" />
+            <TextView
+                android:id="@+id/tvTotalSales"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                tools:text="₱ 15,450.00"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="12dp"/>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#e0e0e0"
+                android:layout_marginBottom="12dp"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:baselineAligned="false">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="TOTAL ORDERS"
+                        android:textSize="12sp"
+                        android:textColor="#757575" />
+                    <TextView
+                        android:id="@+id/tvTotalOrders"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        tools:text="128"
+                        android:textSize="20sp"
+                        android:textStyle="bold"/>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="end">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="TOP SELLING ITEM"
+                        android:textSize="12sp"
+                        android:textColor="#757575" />
+                    <TextView
+                        android:id="@+id/tvTopSellingItem"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        tools:text="Spaghetti (45 sold)"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textAlignment="viewEnd" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <TextView
+        android:id="@+id/tvSalesChartTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        tools:text="Sales and Quantity Trend (This Week)"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp"
+        android:textColor="@color/black"/>
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="220dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="6dp"
+        android:layout_marginBottom="16dp">
+
+        <com.github.mikephil.charting.charts.LineChart
+            android:id="@+id/salesChart"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="8dp"/>
+    </com.google.android.material.card.MaterialCardView>
+
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Transaction History"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp"
+        android:textColor="@color/black"/>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvOrderList"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        tools:listitem="@layout/item_order_report"/>
+
+</LinearLayout>

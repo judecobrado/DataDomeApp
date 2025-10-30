@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:id="@+id/tvName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Teacher Name Placeholder"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp"/>
+
+    <TextView
+        android:id="@+id/tvTeacherId"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="ID Placeholder"
+        android:textSize="16sp"
+        android:layout_marginBottom="4dp"/>
+
+    <TextView
+        android:id="@+id/tvDepartment"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Department Placeholder"
+        android:textSize="16sp"
+        android:layout_marginBottom="12dp"/>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@android:color/darker_gray"
+        android:layout_marginBottom="12dp"/>
+
+    <TextView
+        android:id="@+id/tvRfidStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="RFID Status: Checking..."
+        android:textSize="16sp"
+        android:textColor="@color/design_default_color_error"
+        android:textStyle="bold"
+        android:layout_marginBottom="12dp"/>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@android:color/darker_gray"
+        android:layout_marginBottom="12dp"/>
+
+    <Button
+        android:id="@+id/btnAddRfid"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Register New RFID Tag"
+        android:backgroundTint="@android:color/holo_green_dark"
+        android:visibility="gone"
+        android:layout_marginBottom="8dp"/>
+
+    <Button
+        android:id="@+id/btnResetRfid"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Reset &amp; Scan New Tag"
+        android:backgroundTint="@android:color/holo_orange_dark"
+        android:visibility="gone"
+        android:layout_marginBottom="8dp"/>
+
+    <Button
+        android:id="@+id/btnDisableRfid"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Disable RFID Tag"
+        android:backgroundTint="@android:color/holo_red_dark"
+        android:visibility="gone"/>
+
+</LinearLayout>

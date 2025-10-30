@@ -17,7 +17,12 @@
         <item>Regular</item>
         <item>Irregular</item>
     </string-array>
-
+    <string-array name="balance_filter_options">
+        <item>High to Low</item>
+        <item>Low to High</item>
+        <item>Students Only</item>
+        <item>Teachers Only</item>
+    </string-array>
     <string name="book_image">Book cover image</string>
 
 
