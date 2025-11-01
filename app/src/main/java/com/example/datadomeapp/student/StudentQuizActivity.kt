@@ -1,21 +1,24 @@
 package com.example.datadomeapp.student
 
 import android.app.AlertDialog
-import android.content.pm.ActivityInfo
-import android.graphics.Color
-import android.os.Bundle
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ActivityInfo
+import android.widget.AdapterView
+import android.graphics.Color
+import android.os.Build
+import android.os.Bundle
 import android.provider.Settings
 import android.view.View
+import android.view.ViewGroup
 import android.view.WindowManager
-import androidx.activity.OnBackPressedCallback
 import android.widget.ArrayAdapter
 import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.example.datadomeapp.databinding.ActivityStudentQuizBinding
@@ -25,106 +28,190 @@ import com.example.datadomeapp.models.Quiz
 class StudentQuizActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityStudentQuizBinding
+    private var cheatOverlay: View? = null
 
-    // 1. Initialize ViewModel using a Factory
+    private var spinnerActive = false
+
+    private val prefs by lazy { getSharedPreferences("quiz_prefs", Context.MODE_PRIVATE) }
+    private var termsAccepted: Boolean
+        get() = prefs.getBoolean("termsAccepted_${quiz.quizId}", false)  // unique per quiz
+        set(value) = prefs.edit().putBoolean("termsAccepted_${quiz.quizId}", value).apply()
+
     private val quiz: Quiz by lazy {
         requireNotNull(intent.getParcelableExtra<Quiz>("QUIZ")) {
-            // This message will be shown if the required "QUIZ" extra is missing.
             "FATAL: Missing 'QUIZ' extra in Intent. StudentQuizActivity cannot start."
         }
     }
 
-    // 2. Pass the safely initialized, non-nullable 'quiz' object to the ViewModel
     private val viewModel: StudentQuizViewModel by viewModels {
-        StudentQuizViewModelFactory(quiz)
+        StudentQuizViewModelFactory(application, quiz)
     }
 
-    private fun requestDndPermission() {
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        if (!notificationManager.isNotificationPolicyAccessGranted) {
-            val intent = Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
-            startActivity(intent)
-            Toast.makeText(this, "Please grant 'Do Not Disturb' access to start the quiz.", Toast.LENGTH_LONG).show()
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        binding = ActivityStudentQuizBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        // Lock orientation & prevent screenshots
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
+
+        // Disable Back button
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                Toast.makeText(this@StudentQuizActivity, "Back is disabled during the quiz", Toast.LENGTH_SHORT).show()
+            }
+        })
+
+        setupLiveDataObservers()
+
+        if (termsAccepted) {
+            // Already agreed before; continue directly
+            lockQuizScreen()
+            requestDndPermission()
+            viewModel.fetchServerTime()
+        } else {
+            showTermsAndConditions()
         }
     }
 
-    private fun resetDoNotDisturb() {
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        // Check if we have permission before attempting to change the setting
-        if (notificationManager.isNotificationPolicyAccessGranted) {
-            // Set back to INTERRUPTION_FILTER_ALL (all notifications allowed)
-            notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL)
-        }
+    // --- Anti-Cheat Functions ---
+
+    private fun lockQuizScreen() {
+        startScreenPinning()
+        setDoNotDisturb()
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        // Ensure DND is turned off when the quiz activity is finished
-        resetDoNotDisturb()
+    private fun startScreenPinning() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            try {
+                startLockTask()
+                Toast.makeText(
+                    this,
+                    "Screen pinned. Leaving the quiz will count as cheating.",
+                    Toast.LENGTH_LONG
+                ).show()
+            } catch (e: Exception) {
+                Toast.makeText(this, "Screen pinning failed. Security may be compromised.", Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
     private fun setDoNotDisturb() {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (notificationManager.isNotificationPolicyAccessGranted) {
-            // This is equivalent to Total Silence on some Android versions.
-            // You might need to experiment with INTERRUPTION_FILTER_ALARMS or INTERRUPTION_FILTER_PRIORITY
             notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_NONE)
-            // You should also have logic to turn it back on in onPause/onDestroy!
         }
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
 
-        binding = ActivityStudentQuizBinding.inflate(layoutInflater)
-        setContentView(binding.root)
 
-        val callback = object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                handleCheatAttempt("Back gesture detected")
+    private fun resetDoNotDisturb() {
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (notificationManager.isNotificationPolicyAccessGranted) {
+            notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL)
+        }
+    }
+
+
+    private fun setupMatchingSpinners() {
+        for (i in 0 until binding.matchingLayout.childCount) {
+            val row = binding.matchingLayout.getChildAt(i) as LinearLayout
+            (row.getChildAt(1) as? Spinner)?.let { spinner ->
+                spinner.setOnTouchListener { _, _ ->
+                    spinnerActive = true
+                    false
+                }
+                spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                    override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                        spinnerActive = false
+                    }
+                    override fun onNothingSelected(parent: AdapterView<*>?) {
+                        spinnerActive = false
+                    }
+                }
             }
         }
-
-        onBackPressedDispatcher.addCallback(this, callback)
-
-        // **Anti-Cheating / Security Measures**
-        window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
-        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-
-        // 2. Setup Observers
-        setupLiveDataObservers()
-
-        // 3. Start the quiz flow
-        showTermsAndConditions()
     }
 
-    // --- Observer Setup and UI Listeners ---
+    private fun isSpinnerOpen(): Boolean {
+        return spinnerActive
+    }
+
+    private fun showCheatOverlay(reason: String) {
+        if (cheatOverlay != null) return
+
+        cheatOverlay = View(this).apply {
+            setBackgroundColor(Color.parseColor("#AA000000")) // semi-transparent black
+            isClickable = true
+            isFocusable = true
+        }
+
+        addContentView(
+            cheatOverlay,
+            ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        )
+
+        Toast.makeText(this, "Cheating detected: $reason", Toast.LENGTH_LONG).show()
+    }
+
+    private fun removeCheatOverlay() {
+        cheatOverlay?.let {
+            (it.parent as? ViewGroup)?.removeView(it)
+            cheatOverlay = null
+        }
+    }
+
+    private fun resetQuiz() {
+        Toast.makeText(this, "Quiz restarted due to cheating.", Toast.LENGTH_LONG).show()
+        removeCheatOverlay()
+        viewModel.resetQuizProgress() // we'll define this in ViewModel
+        viewModel.fetchServerTime()   // restart timer from server
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        resetDoNotDisturb()
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (!hasFocus && !isSpinnerOpen() && cheatOverlay == null) {
+            viewModel.handleCheatAttempt("Notification shade / overlay detected")
+            showCheatOverlay("Cheating detected! Return to the quiz.")
+        } else {
+            removeCheatOverlay()
+        }
+    }
+
+    override fun onMultiWindowModeChanged(isInMultiWindowMode: Boolean) {
+        super.onMultiWindowModeChanged(isInMultiWindowMode)
+        if (isInMultiWindowMode) {
+            viewModel.handleCheatAttempt("Entered multi-window mode")
+            showCheatOverlay("Cheating detected! Multi-window mode is forbidden.")
+        }
+    }
+
+    // --- Quiz Flow ---
 
     private fun setupLiveDataObservers() {
-        // Observe timer changes
-        viewModel.timerText.observe(this) { time ->
-            binding.tvTimer.text = time
-        }
-
-        // Observe current question changes
-        viewModel.currentQuestion.observe(this) { question ->
-            showQuestion(question, viewModel.currentQuestionIndex.value ?: 0)
-        }
-
-        // Observe UI messages
-        viewModel.uiMessage.observe(this) { message ->
-            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-        }
-
-        // Observe quiz finish signal
+        viewModel.timerText.observe(this) { binding.tvTimer.text = it }
+        viewModel.currentQuestion.observe(this) { showQuestion(it, viewModel.currentQuestionIndex.value ?: 0) }
+        viewModel.uiMessage.observe(this) { Toast.makeText(this, it, Toast.LENGTH_SHORT).show() }
         viewModel.quizFinished.observe(this) { finished ->
             if (finished) {
                 Toast.makeText(this, "Quiz Finished!", Toast.LENGTH_LONG).show()
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    stopLockTask() // Release screen pinning
+                }
+                resetDoNotDisturb()
                 finish()
             }
         }
 
-        // Setup Submit/Next Button Listener
         binding.btnSubmit.setOnClickListener {
             val currentQuestion = viewModel.currentQuestion.value
             val currentIndex = viewModel.currentQuestionIndex.value!!
@@ -139,15 +226,14 @@ class StudentQuizActivity : AppCompatActivity() {
                 }
                 viewModel.recordMatchingAnswers(currentIndex, answerPairs)
             }
-
-            // Tell the ViewModel to advance or submit
             viewModel.nextQuestion()
+            spinnerActive = false
         }
     }
 
-    // --- Core Quiz Flow ---
-
     private fun showTermsAndConditions() {
+        if (termsAccepted) return
+
         AlertDialog.Builder(this)
             .setTitle("Terms and Conditions")
             .setMessage(
@@ -159,24 +245,17 @@ class StudentQuizActivity : AppCompatActivity() {
             )
             .setCancelable(false)
             .setPositiveButton("I Agree") { _, _ ->
+                termsAccepted = true   // mark agreed
+                lockQuizScreen()
                 requestDndPermission()
-
-                setDoNotDisturb()
-
                 viewModel.fetchServerTime()
             }
-            .setNegativeButton("Cancel") { _, _ ->
-                finish()
-            }
+            .setNegativeButton("Cancel") { _, _ -> finish() }
             .show()
     }
 
-    // NOTE: The broken shuffleQuestionsAndAnswers() function is DELETED.
-
     private fun showQuestion(q: Question, index: Int) {
-        binding.tvQuestionText.text = q.questionText
-
-        // Hide all option buttons and clear the matching layout before drawing
+        binding.tvQuestionText.text = "${index + 1}. ${q.questionText}"
         val optionButtons = listOf(binding.btnOption1, binding.btnOption2, binding.btnOption3, binding.btnOption4)
         optionButtons.forEach { it.visibility = View.GONE }
         binding.matchingLayout.removeAllViews()
@@ -188,7 +267,6 @@ class StudentQuizActivity : AppCompatActivity() {
                         btn.visibility = View.VISIBLE
                         btn.text = q.options[i]
                         btn.setBackgroundColor(Color.parseColor("#FFBB33"))
-                        // Answer recording calls ViewModel directly
                         btn.setOnClickListener { viewModel.recordAnswer(index, q.options[i]) }
                     }
                 }
@@ -210,52 +288,34 @@ class StudentQuizActivity : AppCompatActivity() {
             }
 
             is Question.Matching -> {
-                // The right side terms are randomized for presentation
                 val shuffledRights = q.matches.shuffled()
 
-                // q.options (the left terms) are already shuffled in the ViewModel
                 q.options.forEach { leftText ->
-                    val row = LinearLayout(this)
-                    row.orientation = LinearLayout.HORIZONTAL
-                    row.setPadding(0, 10, 0, 10)
-
-                    val tvLeft = TextView(this)
-                    tvLeft.text = leftText
-                    tvLeft.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-
-                    val spinner = Spinner(this)
-                    val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, shuffledRights)
-                    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-                    spinner.adapter = adapter
-                    spinner.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-
+                    val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0,10,0,10) }
+                    val tvLeft = TextView(this).apply {
+                        text = leftText
+                        layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                    }
+                    val spinner = Spinner(this).apply {
+                        val adapter = ArrayAdapter(this@StudentQuizActivity, android.R.layout.simple_spinner_item, shuffledRights)
+                        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                        this.adapter = adapter
+                        layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                    }
                     row.addView(tvLeft)
                     row.addView(spinner)
                     binding.matchingLayout.addView(row)
                 }
+                setupMatchingSpinners()
             }
         }
     }
 
-    // NOTE: All redundant logic methods (recordAnswer, recordMatchingAnswers, submitQuiz, calculateScore) are DELETED.
-
-    // --- Anti-Cheating Handlers (Calls ViewModel) ---
-    private fun handleCheatAttempt(reason: String) {
-        viewModel.handleCheatAttempt(reason)
-    }
-
-    override fun onUserLeaveHint() {
-        super.onUserLeaveHint()  // ✅ call super
-        handleCheatAttempt("Switched app or pressed home button")
-    }
-
-    override fun onMultiWindowModeChanged(isInMultiWindowMode: Boolean) {
-        super.onMultiWindowModeChanged(isInMultiWindowMode)  // ✅ call super
-        if (isInMultiWindowMode) handleCheatAttempt("Entered multi-window mode")
-    }
-
-    override fun onPause() {
-        super.onPause()
-        handleCheatAttempt("App paused")
+    private fun requestDndPermission() {
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (!notificationManager.isNotificationPolicyAccessGranted) {
+            startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
+            Toast.makeText(this, "Grant 'Do Not Disturb' access to start the quiz.", Toast.LENGTH_LONG).show()
+        }
     }
 }
