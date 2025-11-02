@@ -4,11 +4,14 @@ import android.app.AlertDialog
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import com.example.datadomeapp.student.StudentQuizViewModel.QuizResultData
 import android.content.pm.ActivityInfo
 import android.widget.AdapterView
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.view.View
 import android.view.ViewGroup
@@ -24,6 +27,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.example.datadomeapp.databinding.ActivityStudentQuizBinding
 import com.example.datadomeapp.models.Question
 import com.example.datadomeapp.models.Quiz
+import android.content.res.Configuration
 
 class StudentQuizActivity : AppCompatActivity() {
 
@@ -31,26 +35,33 @@ class StudentQuizActivity : AppCompatActivity() {
     private var cheatOverlay: View? = null
 
     private var spinnerActive = false
-
+    private var currentServerTime: Long = 0
     private val prefs by lazy { getSharedPreferences("quiz_prefs", Context.MODE_PRIVATE) }
-    private var termsAccepted: Boolean
-        get() = prefs.getBoolean("termsAccepted_${quiz.quizId}", false)  // unique per quiz
-        set(value) = prefs.edit().putBoolean("termsAccepted_${quiz.quizId}", value).apply()
-
     private val quiz: Quiz by lazy {
         requireNotNull(intent.getParcelableExtra<Quiz>("QUIZ")) {
             "FATAL: Missing 'QUIZ' extra in Intent. StudentQuizActivity cannot start."
         }
     }
 
+
+    private var termsAccepted: Boolean
+        get() = prefs.getBoolean("termsAccepted_${quiz.quizId}", false)
+        set(value) = prefs.edit().putBoolean("termsAccepted_${quiz.quizId}", value).apply()
+
+
     private val viewModel: StudentQuizViewModel by viewModels {
         StudentQuizViewModelFactory(application, quiz)
     }
+
+    private var quizFinished = false
+    private lateinit var timerHandler: Handler
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityStudentQuizBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        timerHandler = Handler(Looper.getMainLooper())
 
         // Lock orientation & prevent screenshots
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
@@ -65,8 +76,12 @@ class StudentQuizActivity : AppCompatActivity() {
 
         setupLiveDataObservers()
 
+        viewModel.serverTime.observe(this) { ts ->
+            currentServerTime = ts
+            timerHandler.post(timerRunnable)
+        }
+
         if (termsAccepted) {
-            // Already agreed before; continue directly
             lockQuizScreen()
             requestDndPermission()
             viewModel.fetchServerTime()
@@ -104,6 +119,23 @@ class StudentQuizActivity : AppCompatActivity() {
         }
     }
 
+    private val timerRunnable = object : Runnable {
+        override fun run() {
+            if (currentServerTime > 0L) {
+                viewModel.updateTimer(currentServerTime)
+                currentServerTime += 1000 // simulate ticking 1 sec forward
+            }
+            timerHandler.postDelayed(this, 1000)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        timerHandler.post(timerRunnable)
+
+        if (cheatOverlay != null) {
+        }
+    }
 
 
     private fun resetDoNotDisturb() {
@@ -154,8 +186,6 @@ class StudentQuizActivity : AppCompatActivity() {
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
         )
-
-        Toast.makeText(this, "Cheating detected: $reason", Toast.LENGTH_LONG).show()
     }
 
     private fun removeCheatOverlay() {
@@ -179,19 +209,35 @@ class StudentQuizActivity : AppCompatActivity() {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (!hasFocus && !isSpinnerOpen() && cheatOverlay == null) {
-            viewModel.handleCheatAttempt("Notification shade / overlay detected")
-            showCheatOverlay("Cheating detected! Return to the quiz.")
-        } else {
-            removeCheatOverlay()
+
+        if (!quizFinished) {
+            if (!hasFocus && !isSpinnerOpen()) {
+                viewModel.handleCheatAttempt("Notification shade / overlay detected")
+            } else if (hasFocus) {
+                viewModel.resetCheat()
+            }
         }
     }
+
+
+    override fun onPause() {
+        super.onPause()
+        timerHandler.removeCallbacks(timerRunnable)
+
+        if (!quizFinished) {
+            if (!isSpinnerOpen()) {
+                viewModel.handleCheatAttempt("App backgrounded / Home button pressed")
+            }
+        }
+    }
+
 
     override fun onMultiWindowModeChanged(isInMultiWindowMode: Boolean) {
         super.onMultiWindowModeChanged(isInMultiWindowMode)
         if (isInMultiWindowMode) {
             viewModel.handleCheatAttempt("Entered multi-window mode")
-            showCheatOverlay("Cheating detected! Multi-window mode is forbidden.")
+        } else {
+            viewModel.resetCheat()
         }
     }
 
@@ -201,14 +247,38 @@ class StudentQuizActivity : AppCompatActivity() {
         viewModel.timerText.observe(this) { binding.tvTimer.text = it }
         viewModel.currentQuestion.observe(this) { showQuestion(it, viewModel.currentQuestionIndex.value ?: 0) }
         viewModel.uiMessage.observe(this) { Toast.makeText(this, it, Toast.LENGTH_SHORT).show() }
-        viewModel.quizFinished.observe(this) { finished ->
-            if (finished) {
-                Toast.makeText(this, "Quiz Finished!", Toast.LENGTH_LONG).show()
+
+        // NEW: Observe for QuizResultData to launch the result screen
+        viewModel.quizResultData.observe(this) { resultData ->
+            if (resultData != null) {
+                quizFinished = true
+                // 1. Release security features
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     stopLockTask() // Release screen pinning
                 }
                 resetDoNotDisturb()
-                finish()
+
+                // 2. Launch QuizResultActivity
+                val intent = Intent(this, QuizResultActivity::class.java).apply {
+                    putExtra("SCORE", resultData.score)
+                    putExtra("TOTAL_QUESTIONS", resultData.totalQuestions)
+                    putExtra("CHEAT_COUNT", resultData.cheatCount)
+                    // Add FLAG_ACTIVITY_CLEAR_TOP to prevent going back to the quiz
+                    addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+
+                startActivity(intent)
+                finish() // Remove this activity from the back stack
+            }
+        }
+
+        // Removed the old quizFinished observer logic, as it is now handled by quizResultData.
+
+        viewModel.isCheating.observe(this) { cheating ->
+            if (cheating) {
+                if (cheatOverlay == null) showCheatOverlay("Cheating detected!")
+            } else {
+                removeCheatOverlay()
             }
         }
 
@@ -255,35 +325,93 @@ class StudentQuizActivity : AppCompatActivity() {
     }
 
     private fun showQuestion(q: Question, index: Int) {
+        val questionType: String
+
+        when (q) {
+            is Question.MultipleChoice -> questionType = "Question Type: Multiple Choice"
+            is Question.TrueFalse -> questionType = "Question Type: True or False"
+            is Question.Matching -> questionType = "Question Type: Matching Type"
+        }
+
+        binding.tvQuestionType.text = questionType
+
         binding.tvQuestionText.text = "${index + 1}. ${q.questionText}"
         val optionButtons = listOf(binding.btnOption1, binding.btnOption2, binding.btnOption3, binding.btnOption4)
         optionButtons.forEach { it.visibility = View.GONE }
         binding.matchingLayout.removeAllViews()
 
+        val recordedAnswer = viewModel.getRecordedAnswer(index)
+
+        // Define colors
+        val defaultColor = Color.parseColor("#FFBB33")
+        val selectedColor = Color.parseColor("#33A2FF")
+
+        // NEW T/F Colors
+        val trueDefaultColor = Color.parseColor("#4CAF50")
+        val falseDefaultColor = Color.parseColor("#F44336")
+        val tfSelectedColor = Color.parseColor("#008000")
+
         when (q) {
             is Question.MultipleChoice -> {
                 optionButtons.forEachIndexed { i, btn ->
                     if (i < q.options.size) {
+                        val optionText = q.options[i]
                         btn.visibility = View.VISIBLE
-                        btn.text = q.options[i]
-                        btn.setBackgroundColor(Color.parseColor("#FFBB33"))
-                        btn.setOnClickListener { viewModel.recordAnswer(index, q.options[i]) }
+                        btn.text = optionText
+
+                        // Logic: Light Blue kung napili, Orange kung hindi
+                        if (recordedAnswer == optionText) {
+                            btn.setBackgroundColor(selectedColor)
+                        } else {
+                            btn.setBackgroundColor(defaultColor)
+                        }
+
+                        // OnClick: I-record ang sagot at i-reload ang tanong para sa UI update
+                        btn.setOnClickListener {
+                            viewModel.recordAnswer(index, optionText)
+                            showQuestion(q, index)
+                        }
                     }
                 }
             }
 
             is Question.TrueFalse -> {
+                // TRUE Button
                 binding.btnOption1.apply {
                     visibility = View.VISIBLE
                     text = "TRUE"
-                    setBackgroundColor(Color.parseColor("#FFBB33"))
-                    setOnClickListener { viewModel.recordAnswer(index, "true") }
+                    val answer = "true"
+
+                    // Logic: Dark Green (selected) o Light Green (default)
+                    if (recordedAnswer == answer) {
+                        setBackgroundColor(tfSelectedColor)
+                    } else {
+                        setBackgroundColor(trueDefaultColor)
+                    }
+
+                    setOnClickListener {
+                        viewModel.recordAnswer(index, answer)
+                        showQuestion(q, index)
+                    }
                 }
+
+                // FALSE Button
                 binding.btnOption2.apply {
                     visibility = View.VISIBLE
                     text = "FALSE"
-                    setBackgroundColor(Color.parseColor("#FFBB33"))
-                    setOnClickListener { viewModel.recordAnswer(index, "false") }
+                    val answer = "false"
+
+                    // Logic: Dark Green (selected) o Red (default)
+                    if (recordedAnswer == answer) {
+                        setBackgroundColor(tfSelectedColor)
+                    } else {
+                        setBackgroundColor(falseDefaultColor)
+                    }
+
+                    setOnClickListener {
+                        viewModel.recordAnswer(index, answer)
+                        showQuestion(q, index)
+                    }
                 }
             }
 
@@ -308,6 +436,18 @@ class StudentQuizActivity : AppCompatActivity() {
                 }
                 setupMatchingSpinners()
             }
+        }
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+
+        // Check if the detected configuration is different from the portrait mode we locked it to.
+        // Since the orientation is locked in onCreate, any change event is suspicious.
+        // We specifically check for landscape (or undefined) if it attempts to change.
+        if (newConfig.orientation != ActivityInfo.SCREEN_ORIENTATION_PORTRAIT) {
+            // Log the cheat attempt
+            viewModel.handleCheatAttempt("Screen orientation was changed.")
         }
     }
 

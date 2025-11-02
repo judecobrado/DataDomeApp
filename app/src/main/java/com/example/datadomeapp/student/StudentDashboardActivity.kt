@@ -306,7 +306,7 @@ class StudentDashboardActivity : AppCompatActivity() {
         // I-set up ang mga button na may "Coming Soon" Toast
         val comingSoonIds = listOf(
             R.id.btnAssignments,
-            R.id.btnCanteen
+            R.id.btnCanteen,
         )
 
         for (id in comingSoonIds) {
@@ -314,6 +314,32 @@ class StudentDashboardActivity : AppCompatActivity() {
                 val buttonText = findViewById<Button>(id).text
                 Toast.makeText(this, "$buttonText: Coming Soon!", Toast.LENGTH_SHORT).show()
             }
+        }
+
+        findViewById<Button>(R.id.btnQuizzes).setOnClickListener {
+            if (studentId.isNullOrEmpty()) {
+                Toast.makeText(this, "Student ID is missing. Cannot load quizzes.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val intent = Intent(this, StudentQuizListActivity::class.java)
+            intent.putExtra("QUIZ_TYPE", "Quiz") // Only Quizzes
+            startActivity(intent)
+        }
+
+        findViewById<Button>(R.id.btnExam).setOnClickListener {
+            if (studentId.isNullOrEmpty()) {
+                Toast.makeText(
+                    this,
+                    "Student ID is missing. Cannot load exams.",
+                    Toast.LENGTH_SHORT
+                ).show()
+                return@setOnClickListener
+            }
+
+            val intent = Intent(this, StudentQuizListActivity::class.java)
+            intent.putExtra("QUIZ_TYPE", "Exam") // Only Exams
+            startActivity(intent)
         }
 
         findViewById<Button>(R.id.btnAttendance).setOnClickListener {

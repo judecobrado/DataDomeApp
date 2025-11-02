@@ -5,9 +5,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import android.content.ClipboardManager
 import android.app.Application
-import androidx.lifecycle.AndroidViewModel
 import com.example.datadomeapp.models.Question
 import com.example.datadomeapp.models.Quiz
 import com.google.firebase.auth.FirebaseAuth
@@ -20,20 +18,20 @@ import kotlin.collections.shuffle
 import kotlin.collections.toMutableList
 // ... other imports
 
-class StudentQuizViewModel(private val initialQuiz: Quiz) : ViewModel() {
+class StudentQuizViewModel(application: Application, private val initialQuiz: Quiz) : ViewModel() {
 
+    data class QuizResultData(val score: Int, val totalQuestions: Int, val cheatCount: Int)
+    private val _quizResultData = MutableLiveData<QuizResultData?>()
+    val quizResultData: LiveData<QuizResultData?> = _quizResultData
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
-    private val totalTimeMillis = 5 * 60 * 1000L
-
-
-    // --- LiveData for UI State ---
     private val _currentQuestion = MutableLiveData<Question>()
     val currentQuestion: LiveData<Question> = _currentQuestion
-
+    private val _isCheating = MutableLiveData<Boolean>(false)
+    val isCheating: LiveData<Boolean> = _isCheating
     private val _currentQuestionIndex = MutableLiveData(0)
     val currentQuestionIndex: LiveData<Int> = _currentQuestionIndex
-
+    private var timerRunning = false
     private val _timerText = MutableLiveData<String>()
     val timerText: LiveData<String> = _timerText
 
@@ -43,9 +41,6 @@ class StudentQuizViewModel(private val initialQuiz: Quiz) : ViewModel() {
     private val _uiMessage = MutableLiveData<String>()
     val uiMessage: LiveData<String> = _uiMessage
 
-    private val _quizFinished = MutableLiveData<Boolean>()
-    val quizFinished: LiveData<Boolean> = _quizFinished
-
     // --- Internal State ---
     // Ensure the questions list is mutable *after* copying the quiz.
     private var mutableQuestions = initialQuiz.questions.toMutableList()
@@ -53,8 +48,10 @@ class StudentQuizViewModel(private val initialQuiz: Quiz) : ViewModel() {
 
     private val studentAnswers = mutableListOf<Pair<Int, String>>()
     private var countDownTimer: CountDownTimer? = null
-    private var serverEndTime: Long = 0
     private val maxCheatAttempts = 5
+    private var remainingMillis: Long = 0
+    private var lastCheatTimestamp = 0L
+    private val cheatCooldown = 500L
 
     init {
         // Shuffling done once when the ViewModel is created
@@ -64,69 +61,97 @@ class StudentQuizViewModel(private val initialQuiz: Quiz) : ViewModel() {
     // --- Data and State Management ---
 
     private fun shuffleQuestionsAndAnswers() {
-        // 1. Shuffle the main list of questions (uses the mutable list)
-        mutableQuestions.shuffle() // FIX 1: 'shuffle' is now resolved
+        // 1. Paghiwalayin ang mga tanong ayon sa uri
+        val mcQuestions = mutableQuestions.filterIsInstance<Question.MultipleChoice>().toMutableList()
+        val tfQuestions = mutableQuestions.filterIsInstance<Question.TrueFalse>().toMutableList()
+        val matchingQuestions = mutableQuestions.filterIsInstance<Question.Matching>().toMutableList()
 
-        // 2. Shuffle options for each question and update the model
-        mutableQuestions.forEachIndexed { index, q ->
-            when (q) {
-                is Question.MultipleChoice -> {
-                    val mutableOptions = q.options.toMutableList()
-                    mutableOptions.shuffle()
-                    // FIX 2: We use the mutableQuestions list to set the value by index
-                    mutableQuestions[index] = q.copy(options = mutableOptions)
-                }
-                is Question.Matching -> {
-                    val mutableOptions = q.options.toMutableList()
-                    mutableOptions.shuffle()
-                    // FIX 3: We use the mutableQuestions list to set the value by index
-                    mutableQuestions[index] = q.copy(options = mutableOptions)
-                }
-                is Question.TrueFalse -> { /* No options to shuffle */ }
-            }
+        // 2. I-shuffle ang bawat set ng tanong (random order within category)
+        mcQuestions.shuffle()
+        tfQuestions.shuffle()
+        matchingQuestions.shuffle()
+
+        // 3. I-shuffle ang options sa loob ng Multiple Choice tanong
+        mcQuestions.forEachIndexed { index, q ->
+            val mutableOptions = q.options.toMutableList()
+            mutableOptions.shuffle()
+            mcQuestions[index] = q.copy(options = mutableOptions)
         }
+
+        // 4. Pagsamahin muli ang mga tanong sa tamang pagkakasunod-sunod: MC -> TF -> Matching
+        mutableQuestions.clear()
+        mutableQuestions.addAll(mcQuestions)
+        mutableQuestions.addAll(tfQuestions)
+        mutableQuestions.addAll(matchingQuestions)
+
         // Initialize the first question
-        _currentQuestion.value = mutableQuestions[0]
+        _currentQuestion.value = mutableQuestions.firstOrNull()
+            ?: throw IllegalStateException("Quiz questions cannot be empty after setup.")
     }
+
+    // --- In StudentQuizViewModel ---
+    private var serverEndTime: Long = 0
+
+    private val _serverTime = MutableLiveData<Long>()
+    val serverTime: LiveData<Long> = _serverTime
 
     fun fetchServerTime() {
         val timeDocRef = firestore.collection("serverTime").document("timeDoc")
-        val serverTimestamp = mapOf("ts" to FieldValue.serverTimestamp())
-        timeDocRef.set(serverTimestamp).addOnSuccessListener {
-            timeDocRef.get().addOnSuccessListener { snapshot ->
-                val ts = snapshot.getTimestamp("ts")
-                if (ts != null) {
-                    val serverStartTime = ts.toDate().time
-                    serverEndTime = serverStartTime + totalTimeMillis
-                    startTimer()
-                } else {
-                    _uiMessage.value = "Failed to get server time."
-                    _quizFinished.value = true
-                }
-            }.addOnFailureListener {
-                _uiMessage.value = "Error fetching server time."
-                _quizFinished.value = true
+        timeDocRef.get().addOnSuccessListener { snapshot ->
+            val ts = snapshot.getTimestamp("ts")?.toDate()?.time
+            if (ts != null) {
+                serverEndTime = initialQuiz.scheduledEndDateTime
+                _serverTime.value = ts
+            } else {
+                _uiMessage.value = "Failed to get server time."
+                _quizResultData.value = QuizResultData(0, mutableQuestions.size, _cheatCount.value ?: 0)
             }
         }.addOnFailureListener {
-            _uiMessage.value = "Error initializing server time."
-            _quizFinished.value = true
+            _uiMessage.value = "Error fetching server time."
+            _quizResultData.value = QuizResultData(0, mutableQuestions.size, _cheatCount.value ?: 0)
         }
     }
 
-    private fun startTimer() {
-        val currentTime = System.currentTimeMillis()
-        var remainingTime = serverEndTime - currentTime
-        if (remainingTime <= 0) remainingTime = 0
+    fun updateTimer(currentServerTime: Long) {
+        val remaining = serverEndTime - currentServerTime
+        if (remaining <= 0L) {
+            _timerText.value = "00:00"
+            onTimeUp()
+        } else {
+            val minutes = TimeUnit.MILLISECONDS.toMinutes(remaining)
+            val seconds = TimeUnit.MILLISECONDS.toSeconds(remaining) % 60
+            _timerText.value = String.format("%02d:%02d", minutes, seconds)
+        }
+    }
+
+    private fun onTimeUp() {
+        _uiMessage.value = "Time's up! Auto-submitting..."
+        submitQuiz()
+    }
+
+
+
+    private fun startTimer(remainingTime: Long) {
+        countDownTimer?.cancel()
+        timerRunning = false
+
+        if (remainingTime <= 0L) {
+            onTimeUp()
+            return
+        }
+
+        timerRunning = true
 
         countDownTimer = object : CountDownTimer(remainingTime, 1000) {
             override fun onTick(millisUntilFinished: Long) {
+                remainingMillis = millisUntilFinished
                 val minutes = TimeUnit.MILLISECONDS.toMinutes(millisUntilFinished)
                 val seconds = TimeUnit.MILLISECONDS.toSeconds(millisUntilFinished) % 60
                 _timerText.value = String.format("%02d:%02d", minutes, seconds)
             }
+
             override fun onFinish() {
-                _uiMessage.value = "Time's up! Auto-submitting..."
-                submitQuiz()
+                onTimeUp()
             }
         }.start()
     }
@@ -157,29 +182,62 @@ class StudentQuizViewModel(private val initialQuiz: Quiz) : ViewModel() {
         }
     }
 
+    fun resetQuizProgress(keepCheatCount: Boolean = false) {
+        _currentQuestionIndex.value = 0
+        _currentQuestion.value = mutableQuestions.firstOrNull()
+        studentAnswers.clear()
+        if (!keepCheatCount) _cheatCount.value = 0
+        _quizResultData.value = null
+    }
+
+    fun resetCheat() {
+        _isCheating.value = false
+    }
+
     fun handleCheatAttempt(reason: String) {
-        val newCount = _cheatCount.value!! + 1
+        val currentTime = System.currentTimeMillis()
+
+        if (currentTime - lastCheatTimestamp < cheatCooldown) {
+            _isCheating.value = true
+            return
+        }
+
+        lastCheatTimestamp = currentTime
+
+        val currentCount = _cheatCount.value ?: 0
+        val newCount = currentCount + 1
         _cheatCount.value = newCount
         _uiMessage.value = "Cheating detected: $reason (Attempt $newCount/$maxCheatAttempts)"
+
+        _isCheating.value = true
 
         if (newCount >= maxCheatAttempts) {
             _uiMessage.value = "Maximum cheat attempts reached. Auto-submit = 0"
             submitQuiz()
+        } else {
+            // Reset quiz progress (questions back to 1) WITHOUT resetting cheat count
+            resetQuizProgress(keepCheatCount = true)
         }
     }
 
+    fun getRecordedAnswer(questionIndex: Int): String? {
+        return studentAnswers.find { it.first == questionIndex }?.second
+    }
+
     private fun calculateScore(): Int {
-        if (_cheatCount.value!! >= maxCheatAttempts) return 0
+        if ((_cheatCount.value ?: 0) >= maxCheatAttempts) return 0
         var score = 0
         // Use mutableQuestions for calculation
         mutableQuestions.forEachIndexed { i, q ->
             val answer = studentAnswers.find { it.first == i }?.second
             when (q) {
                 is Question.MultipleChoice -> {
-                    if (answer == q.options.getOrNull(q.correctAnswerIndex)) score++
+                    if (answer == q.options.getOrNull(q.correctAnswerIndex))
+                        score++
                 }
                 is Question.TrueFalse -> {
-                    if (answer?.toBoolean() == q.answer) score++
+                    if (answer?.toBoolean() == q.answer)
+                        score++
                 }
                 is Question.Matching -> {
                     val correctMap = q.options.zip(q.matches).toMap()
@@ -198,11 +256,21 @@ class StudentQuizViewModel(private val initialQuiz: Quiz) : ViewModel() {
         return score
     }
 
+    private var submitAttempts = 0
+
     fun submitQuiz() {
         countDownTimer?.cancel()
         val studentId = auth.currentUser?.uid ?: "unknown"
-
         val score = calculateScore()
+        val totalQuestions = mutableQuestions.size
+
+        if (submitAttempts >= 3) {
+            _uiMessage.value = "Failed to submit quiz after multiple attempts."
+            _quizResultData.value = QuizResultData(score, totalQuestions, _cheatCount.value ?: 0)
+            return
+        }
+        submitAttempts++
+
         firestore.collection("quizResults").document("${quiz.quizId}_$studentId")
             .set(
                 mapOf(
@@ -215,9 +283,11 @@ class StudentQuizViewModel(private val initialQuiz: Quiz) : ViewModel() {
                 )
             ).addOnSuccessListener {
                 _uiMessage.value = "Quiz submitted! Score: $score"
-                _quizFinished.value = true
+                _quizResultData.value = QuizResultData(score, totalQuestions, _cheatCount.value ?: 0)
+
             }.addOnFailureListener {
-                _uiMessage.value = "Failed to submit quiz."
+                _uiMessage.value = "Failed to submit quiz. Retrying..."
+                submitQuiz()
             }
     }
 
@@ -227,11 +297,12 @@ class StudentQuizViewModel(private val initialQuiz: Quiz) : ViewModel() {
     }
 }
 
-class StudentQuizViewModelFactory(private val quiz: Quiz) : ViewModelProvider.Factory {
+class StudentQuizViewModelFactory(private val application: Application, private val quiz: Quiz) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(StudentQuizViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return StudentQuizViewModel(quiz) as T
+            // CRITICAL: Ensure the ViewModel constructor is also called with both arguments
+            return StudentQuizViewModel(application, quiz) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
