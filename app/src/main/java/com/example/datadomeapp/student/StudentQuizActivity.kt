@@ -35,7 +35,6 @@ class StudentQuizActivity : AppCompatActivity() {
     private var cheatOverlay: View? = null
 
     private var spinnerActive = false
-    private var currentServerTime: Long = 0
     private val prefs by lazy { getSharedPreferences("quiz_prefs", Context.MODE_PRIVATE) }
     private val quiz: Quiz by lazy {
         requireNotNull(intent.getParcelableExtra<Quiz>("QUIZ")) {
@@ -54,14 +53,12 @@ class StudentQuizActivity : AppCompatActivity() {
     }
 
     private var quizFinished = false
-    private lateinit var timerHandler: Handler
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
         super.onCreate(savedInstanceState)
         binding = ActivityStudentQuizBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        timerHandler = Handler(Looper.getMainLooper())
 
         // Lock orientation & prevent screenshots
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
@@ -76,10 +73,6 @@ class StudentQuizActivity : AppCompatActivity() {
 
         setupLiveDataObservers()
 
-        viewModel.serverTime.observe(this) { ts ->
-            currentServerTime = ts
-            timerHandler.post(timerRunnable)
-        }
 
         if (termsAccepted) {
             lockQuizScreen()
@@ -119,19 +112,8 @@ class StudentQuizActivity : AppCompatActivity() {
         }
     }
 
-    private val timerRunnable = object : Runnable {
-        override fun run() {
-            if (currentServerTime > 0L) {
-                viewModel.updateTimer(currentServerTime)
-                currentServerTime += 1000 // simulate ticking 1 sec forward
-            }
-            timerHandler.postDelayed(this, 1000)
-        }
-    }
-
     override fun onResume() {
         super.onResume()
-        timerHandler.post(timerRunnable)
 
         if (cheatOverlay != null) {
         }
@@ -222,7 +204,6 @@ class StudentQuizActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-        timerHandler.removeCallbacks(timerRunnable)
 
         if (!quizFinished) {
             if (!isSpinnerOpen()) {

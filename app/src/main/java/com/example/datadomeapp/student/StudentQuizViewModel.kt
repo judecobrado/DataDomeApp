@@ -6,6 +6,8 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import android.app.Application
+import android.os.Handler
+import android.os.Looper
 import com.example.datadomeapp.models.Question
 import com.example.datadomeapp.models.Quiz
 import com.google.firebase.auth.FirebaseAuth
@@ -31,10 +33,9 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
     val isCheating: LiveData<Boolean> = _isCheating
     private val _currentQuestionIndex = MutableLiveData(0)
     val currentQuestionIndex: LiveData<Int> = _currentQuestionIndex
-    private var timerRunning = false
     private val _timerText = MutableLiveData<String>()
     val timerText: LiveData<String> = _timerText
-
+    private val cheatCooldown = 500L
     private val _cheatCount = MutableLiveData(0)
     val cheatCount: LiveData<Int> = _cheatCount
 
@@ -45,18 +46,25 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
     // Ensure the questions list is mutable *after* copying the quiz.
     private var mutableQuestions = initialQuiz.questions.toMutableList()
     private var quiz = initialQuiz.copy(questions = mutableQuestions)
-
+    private var serverTimeListenerRegistration: com.google.firebase.firestore.ListenerRegistration? = null
     private val studentAnswers = mutableListOf<Pair<Int, String>>()
-    private var countDownTimer: CountDownTimer? = null
     private val maxCheatAttempts = 5
-    private var remainingMillis: Long = 0
     private var lastCheatTimestamp = 0L
-    private val cheatCooldown = 500L
 
     init {
         // Shuffling done once when the ViewModel is created
         shuffleQuestionsAndAnswers()
     }
+
+    private val handler = Handler(Looper.getMainLooper())
+    private val tickRunnable = object : Runnable {
+        override fun run() {
+            // Tumawag sa updateTimer gamit ang simulated local time
+            updateTimer(System.currentTimeMillis())
+            handler.postDelayed(this, 1000)
+        }
+    }
+    private var isTicking = false
 
     // --- Data and State Management ---
 
@@ -96,26 +104,53 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
     val serverTime: LiveData<Long> = _serverTime
 
     fun fetchServerTime() {
+        // Cancel the previous listener if it exists to prevent memory leaks or duplicate calls
+        serverTimeListenerRegistration?.remove()
         val timeDocRef = firestore.collection("serverTime").document("timeDoc")
-        timeDocRef.get().addOnSuccessListener { snapshot ->
-            val ts = snapshot.getTimestamp("ts")?.toDate()?.time
-            if (ts != null) {
-                serverEndTime = initialQuiz.scheduledEndDateTime
-                _serverTime.value = ts
-            } else {
-                _uiMessage.value = "Failed to get server time."
+
+        // Gumamit ng addSnapshotListener para sa real-time updates
+        serverTimeListenerRegistration = timeDocRef.addSnapshotListener { snapshot, e ->
+            if (e != null) {
+                _uiMessage.value = "Error listening to server time: ${e.message}"
+                // Sa error, auto-submit para hindi ma-stuck
                 _quizResultData.value = QuizResultData(0, mutableQuestions.size, _cheatCount.value ?: 0)
+                return@addSnapshotListener
             }
-        }.addOnFailureListener {
-            _uiMessage.value = "Error fetching server time."
-            _quizResultData.value = QuizResultData(0, mutableQuestions.size, _cheatCount.value ?: 0)
+
+            if (snapshot != null && snapshot.exists()) {
+                val serverTs = snapshot.getTimestamp("ts")?.toDate()?.time
+                if (serverTs != null) {
+                    serverEndTime = initialQuiz.scheduledEndDateTime
+                    _serverTime.value = serverTs
+
+                    // Tawagin ang updateTimer mula dito, tuwing may pagbabago sa server time
+                    updateTimer(serverTs)
+
+                    if (!isTicking) {
+                        isTicking = true
+                        handler.post(tickRunnable)
+                    }
+
+                } else {
+                    _uiMessage.value = "Failed to get server time."
+                    onTimeUp()
+                }
+            }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        serverTimeListenerRegistration?.remove()
+        handler.removeCallbacks(tickRunnable)
     }
 
     fun updateTimer(currentServerTime: Long) {
         val remaining = serverEndTime - currentServerTime
         if (remaining <= 0L) {
             _timerText.value = "00:00"
+            handler.removeCallbacks(tickRunnable)
+            isTicking = false
             onTimeUp()
         } else {
             val minutes = TimeUnit.MILLISECONDS.toMinutes(remaining)
@@ -127,33 +162,6 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
     private fun onTimeUp() {
         _uiMessage.value = "Time's up! Auto-submitting..."
         submitQuiz()
-    }
-
-
-
-    private fun startTimer(remainingTime: Long) {
-        countDownTimer?.cancel()
-        timerRunning = false
-
-        if (remainingTime <= 0L) {
-            onTimeUp()
-            return
-        }
-
-        timerRunning = true
-
-        countDownTimer = object : CountDownTimer(remainingTime, 1000) {
-            override fun onTick(millisUntilFinished: Long) {
-                remainingMillis = millisUntilFinished
-                val minutes = TimeUnit.MILLISECONDS.toMinutes(millisUntilFinished)
-                val seconds = TimeUnit.MILLISECONDS.toSeconds(millisUntilFinished) % 60
-                _timerText.value = String.format("%02d:%02d", minutes, seconds)
-            }
-
-            override fun onFinish() {
-                onTimeUp()
-            }
-        }.start()
     }
 
     // --- User Interaction and Navigation ---
@@ -259,7 +267,6 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
     private var submitAttempts = 0
 
     fun submitQuiz() {
-        countDownTimer?.cancel()
         val studentId = auth.currentUser?.uid ?: "unknown"
         val score = calculateScore()
         val totalQuestions = mutableQuestions.size
@@ -289,11 +296,6 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
                 _uiMessage.value = "Failed to submit quiz. Retrying..."
                 submitQuiz()
             }
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        countDownTimer?.cancel()
     }
 }
 
