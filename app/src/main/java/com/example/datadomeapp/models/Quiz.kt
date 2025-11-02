@@ -1,5 +1,12 @@
 package com.example.datadomeapp.models
 
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
+
+/**
+ * Represents a complete Quiz object, now parcelable for fast data transfer in Android components.
+ */
+@Parcelize
 data class Quiz(
     val quizId: String = "",
     val assignmentId: String = "",
@@ -8,21 +15,29 @@ data class Quiz(
     val questions: List<Question> = emptyList(),
     var isPublished: Boolean = false,
     val scheduledDateTime: Long = 0L,
-    val scheduledEndDateTime: Long = 0L
-)
+    val scheduledEndDateTime: Long = 0L,
+    val description: String = "",
+    val quizType: String = "Quiz",
+) : Parcelable
 
 
-sealed class Question {
+/**
+ * Sealed class representing different types of questions, all parcelable.
+ */
+@Parcelize
+sealed class Question : Parcelable {
     abstract val questionText: String
     abstract val type: String
 
+    @Parcelize
     data class TrueFalse(
-        override val questionText: String,
-        val answer: Boolean
+        override var questionText: String = "", // default value
+        var answer: Boolean = false
     ) : Question() {
         override val type = "TF"
     }
 
+    @Parcelize
     data class MultipleChoice(
         override val questionText: String,
         val options: List<String>,
@@ -31,6 +46,7 @@ sealed class Question {
         override val type = "MC"
     }
 
+    @Parcelize
     data class Matching(
         override val questionText: String,
         val options: List<String>, // [ "Paris", "Tokyo" ]
@@ -40,7 +56,12 @@ sealed class Question {
     }
 }
 
+/**
+ * Display details for a class section, now parcelable.
+ */
+@Parcelize
 data class ClassDisplayDetails(
     val sectionId: String,
     val subjectTitle: String
-)
+) : Parcelable
+

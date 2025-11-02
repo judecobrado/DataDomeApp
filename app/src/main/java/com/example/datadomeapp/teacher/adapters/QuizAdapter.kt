@@ -32,21 +32,12 @@ class QuizAdapter(
 
     override fun getItemCount(): Int = quizzes.size
 
-    fun updateQuiz(updatedQuiz: Quiz) {
-        val index = quizzes.indexOfFirst { it.quizId == updatedQuiz.quizId }
-        if (index != -1) {
-            quizzes[index] = updatedQuiz
-            notifyItemChanged(index)
-        }
+    fun updateList(newQuizzes: List<Quiz>) {
+        quizzes.clear()
+        quizzes.addAll(newQuizzes)
+        notifyDataSetChanged()
     }
 
-    fun removeQuiz(quiz: Quiz) {
-        val index = quizzes.indexOf(quiz)
-        if (index != -1) {
-            quizzes.removeAt(index)
-            notifyItemRemoved(index)
-        }
-    }
 
     inner class QuizViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val tvTitle: TextView = itemView.findViewById(R.id.tvQuizTitle)
