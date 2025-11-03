@@ -400,13 +400,12 @@ class ManageQuizzesActivity : BaseActivity() {
         // 2. Ipakita ang Toast
         Toast.makeText(this, "Opening $status for: ${quiz.title}", Toast.LENGTH_SHORT).show()
 
-        // 3. I-launch ang bagong activity
-        val intent = Intent(this, QuizResultDashboardActivity::class.java).apply {
-            // Mahalaga: Ipasa ang Quiz ID at Assignment ID
+        // 3. I-launch ang TAMANG activity
+        val intent = Intent(this, QuizMonitoringActivity::class.java).apply {
             putExtra("QUIZ_ID", quiz.quizId)
             putExtra("ASSIGNMENT_ID", quiz.assignmentId)
             putExtra("IS_ONGOING", isOngoing)
-            // Opsyonal: Para sa header
+            putExtra("SCHEDULED_END_DATE_TIME", quiz.scheduledEndDateTime)
             putExtra("QUIZ_TITLE", quiz.title)
         }
         startActivity(intent)

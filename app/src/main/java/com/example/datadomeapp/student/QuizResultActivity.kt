@@ -5,6 +5,7 @@ import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import com.example.datadomeapp.R
 import com.example.datadomeapp.databinding.ActivityQuizResultBinding
+import androidx.core.content.ContextCompat
 import com.example.datadomeapp.student.StudentDashboardActivity
 
 class QuizResultActivity : AppCompatActivity() {

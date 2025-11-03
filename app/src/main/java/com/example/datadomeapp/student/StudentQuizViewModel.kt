@@ -8,14 +8,17 @@ import androidx.lifecycle.ViewModelProvider
 import android.app.Application
 import android.os.Handler
 import android.os.Looper
+import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.SetOptions
 import com.example.datadomeapp.models.Question
 import com.example.datadomeapp.models.Quiz
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import java.util.concurrent.TimeUnit
-
-// Add the missing imports for shuffle and toMutableList if not already present
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlin.collections.shuffle
 import kotlin.collections.toMutableList
 // ... other imports
@@ -47,13 +50,54 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
     private var mutableQuestions = initialQuiz.questions.toMutableList()
     private var quiz = initialQuiz.copy(questions = mutableQuestions)
     private var serverTimeListenerRegistration: com.google.firebase.firestore.ListenerRegistration? = null
+    private var quizResultListenerRegistration: com.google.firebase.firestore.ListenerRegistration? = null
     private val studentAnswers = mutableListOf<Pair<Int, String>>()
     private val maxCheatAttempts = 5
     private var lastCheatTimestamp = 0L
 
+    private val cheatLogList = mutableListOf<String>()
+
+    private var submitAttempts = 0
+
     init {
         // Shuffling done once when the ViewModel is created
         shuffleQuestionsAndAnswers()
+        setupRetakeStatusListener()
+    }
+
+    private fun setupRetakeStatusListener() {
+        val studentId = auth.currentUser?.uid ?: return
+        val quizId = initialQuiz.quizId
+        // Ito ang document na babasahin at in-u-update din ng guro
+        val documentRef = firestore.collection("quizResults").document("${quizId}_$studentId")
+
+        // Gumamit ng addSnapshotListener para makinig sa pagbabago ng status
+        quizResultListenerRegistration = documentRef.addSnapshotListener { snapshot, e ->
+            if (e != null) {
+                // Log error
+                return@addSnapshotListener
+            }
+
+            if (snapshot != null && snapshot.exists()) {
+                val status = snapshot.getString("status")
+
+                if (status == "RETAKE_GRANTED") {
+                    // Ang guro ay nag-grant ng retake!
+                    _uiMessage.value = "Retake granted by teacher. Resetting quiz..."
+
+                    // I-reset ang quiz state
+                    resetQuizProgress(keepCheatCount = false)
+
+                    // Important: I-update ang status pabalik sa IN_PROGRESS para hindi paulit-ulit mag-reset
+                    // Gamit ang SetOptions.merge()
+                    documentRef.update("status", "IN_PROGRESS", "timestamp", System.currentTimeMillis())
+                        .addOnSuccessListener {
+                            _uiMessage.value = "Quiz reset complete. You may now start the quiz."
+                            startQuizTracking() // I-restart ang tracking
+                        }
+                }
+            }
+        }
     }
 
     private val handler = Handler(Looper.getMainLooper())
@@ -139,9 +183,11 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
         }
     }
 
+
     override fun onCleared() {
         super.onCleared()
         serverTimeListenerRegistration?.remove()
+        quizResultListenerRegistration?.remove()
         handler.removeCallbacks(tickRunnable)
     }
 
@@ -162,6 +208,28 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
     private fun onTimeUp() {
         _uiMessage.value = "Time's up! Auto-submitting..."
         submitQuiz()
+    }
+
+    fun startQuizTracking() {
+        val studentUid = auth.currentUser?.uid ?: return
+        val quizId = quiz.quizId
+
+        //
+        // Gumawa ng initial record na may "IN_PROGRESS" status para makita ng guro sa real-time.
+        firestore.collection("quizResults").document("${quizId}_$studentUid")
+            .set(
+                mapOf(
+                    "studentId" to studentUid,
+                    "quizId" to quizId,
+                    "assignmentId" to quiz.assignmentId, // Mahalaga para sa filtering ng guro
+                    "status" to "IN_PROGRESS",
+                    "cheatCount" to 0,
+                    "startTime" to System.currentTimeMillis()
+                ),
+                SetOptions.merge() // Gumamit ng merge kung sakaling nag-retake
+            ).addOnFailureListener {
+                _uiMessage.value = "Error starting quiz tracking: ${it.message}"
+            }
     }
 
     // --- User Interaction and Navigation ---
@@ -195,6 +263,9 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
         _currentQuestion.value = mutableQuestions.firstOrNull()
         studentAnswers.clear()
         if (!keepCheatCount) _cheatCount.value = 0
+
+        submitAttempts = 0
+
         _quizResultData.value = null
     }
 
@@ -215,6 +286,11 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
         val currentCount = _cheatCount.value ?: 0
         val newCount = currentCount + 1
         _cheatCount.value = newCount
+        val timestamp = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date(currentTime))
+        val logEntry = "[$timestamp] $reason"
+
+        cheatLogList.add(logEntry)
+
         _uiMessage.value = "Cheating detected: $reason (Attempt $newCount/$maxCheatAttempts)"
 
         _isCheating.value = true
@@ -264,10 +340,9 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
         return score
     }
 
-    private var submitAttempts = 0
 
     fun submitQuiz() {
-        val studentId = auth.currentUser?.uid ?: "unknown"
+        val studentUid = auth.currentUser?.uid ?: "unknown"
         val score = calculateScore()
         val totalQuestions = mutableQuestions.size
 
@@ -278,15 +353,18 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
         }
         submitAttempts++
 
-        firestore.collection("quizResults").document("${quiz.quizId}_$studentId")
+        firestore.collection("quizResults").document("${quiz.quizId}_$studentUid")
             .set(
                 mapOf(
-                    "studentId" to studentId,
+                    "studentId" to studentUid,
                     "quizId" to quiz.quizId,
+                    "assignmentId" to quiz.assignmentId,
                     "answers" to studentAnswers,
                     "score" to score,
+                    "status" to "COMPLETED",
                     "cheatCount" to _cheatCount.value,
-                    "timestamp" to System.currentTimeMillis()
+                    "timestamp" to System.currentTimeMillis(),
+                    "cheatLog" to cheatLogList
                 )
             ).addOnSuccessListener {
                 _uiMessage.value = "Quiz submitted! Score: $score"
