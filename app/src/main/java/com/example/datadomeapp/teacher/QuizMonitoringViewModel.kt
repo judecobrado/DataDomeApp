@@ -236,23 +236,37 @@ class QuizMonitoringViewModel(
         studentUids.forEach { studentUid ->
             val documentRef = firestore.collection("quizResults").document("${quizId}_$studentUid")
 
-            val updateData = when (action) {
-                "RETAKE", "REOPEN" -> mapOf(
+            // CRITICAL: Always include studentId in the data
+            val baseData = hashMapOf<String, Any>(
+                "studentId" to studentUid,  // ⭐ ALWAYS INCLUDE THIS
+                "quizId" to quizId,         // ⭐ ALWAYS INCLUDE THIS
+                "timestamp" to System.currentTimeMillis()
+            )
+
+            val actionData = when (action) {
+                "RETAKE", "REOPEN" -> hashMapOf(
                     "status" to "RETAKE_GRANTED",
-                    "timestamp" to System.currentTimeMillis(),
-                    "score" to 0, // Reset score
-                    "cheatCount" to 0, // Reset cheat count
-                    "retakeDeadline" to endTime // Gamitin ang endTime ng access window
+                    "score" to 0,
+                    "cheatCount" to 0,
+                    "retakeDeadline" to endTime,
+                    "answers" to emptyList<String>(),
+                    "cheatLog" to emptyList<String>()
                 )
-                "REVOKE" -> mapOf(
-                    "status" to "ACCESS_REVOKED", // Bagong status para sa pag-block
-                    "timestamp" to System.currentTimeMillis(),
-                    "retakeDeadline" to 0L // Alisin ang retake deadline
+                "REVOKE" -> hashMapOf(
+                    "status" to "ACCESS_REVOKED",
+                    "retakeDeadline" to 0L
                 )
-                else -> return
+                else -> return@forEach
             }
 
-            documentRef.update(updateData)
+            // Merge base data with action-specific data
+            val updateData = HashMap<String, Any>().apply {
+                putAll(baseData)
+                putAll(actionData)
+            }
+
+            // Use set with merge to create if doesn't exist, update if exists
+            documentRef.set(updateData, com.google.firebase.firestore.SetOptions.merge())
                 .addOnSuccessListener {
                     android.util.Log.d("QuizMonitorVM", "$action command sent for $studentUid until $endTime")
                 }

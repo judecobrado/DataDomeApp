@@ -77,7 +77,7 @@ class StudentQuizActivity : AppCompatActivity() {
         if (termsAccepted) {
             lockQuizScreen()
             requestDndPermission()
-            viewModel.fetchServerTime()
+            startQuizAttempt()
         } else {
             showTermsAndConditions()
         }
@@ -88,6 +88,19 @@ class StudentQuizActivity : AppCompatActivity() {
     private fun lockQuizScreen() {
         startScreenPinning()
         setDoNotDisturb()
+    }
+
+    private fun startQuizAttempt() {
+        // Kung ang quiz ay 'Exam' type, dapat mong i-validate muna ang oras bago magsimula.
+        // Sa kasong ito, ipaubaya natin sa ViewModel ang pag-validate, ngunit magbigay tayo
+        // ng mensahe kung tapos na ang oras bago mag-submit.
+
+        // I-start lang ang tracking at timer.
+        viewModel.fetchServerTime()
+        viewModel.startQuizTracking()
+
+        // Kung hindi na ito dapat mag-submit, dapat may handler sa ViewModel na
+        // nagre-report ng "Time expired, cannot start."
     }
 
     private fun startScreenPinning() {
@@ -301,7 +314,7 @@ class StudentQuizActivity : AppCompatActivity() {
                 termsAccepted = true   // mark agreed
                 lockQuizScreen()
                 requestDndPermission()
-                viewModel.fetchServerTime()
+                startQuizAttempt()
             }
             .setNegativeButton("Cancel") { _, _ -> finish() }
             .show()
@@ -315,6 +328,8 @@ class StudentQuizActivity : AppCompatActivity() {
             is Question.TrueFalse -> questionType = "Question Type: True or False"
             is Question.Matching -> questionType = "Question Type: Matching Type"
         }
+
+        spinnerActive = false
 
         binding.tvQuestionType.text = questionType
 

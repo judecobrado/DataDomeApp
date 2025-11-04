@@ -1,27 +1,25 @@
 package com.example.datadomeapp.student
 
+import android.app.Application
 import android.os.CountDownTimer
+import android.os.Handler
+import android.os.Looper
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import android.app.Application
-import android.os.Handler
-import android.os.Looper
-import com.google.firebase.firestore.ListenerRegistration
-import com.google.firebase.firestore.SetOptions
 import com.example.datadomeapp.models.Question
 import com.example.datadomeapp.models.Quiz
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
-import java.util.concurrent.TimeUnit
+import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.SetOptions
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 import kotlin.collections.shuffle
 import kotlin.collections.toMutableList
-// ... other imports
 
 class StudentQuizViewModel(application: Application, private val initialQuiz: Quiz) : ViewModel() {
 
@@ -46,18 +44,22 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
     val uiMessage: LiveData<String> = _uiMessage
 
     // --- Internal State ---
-    // Ensure the questions list is mutable *after* copying the quiz.
     private var mutableQuestions = initialQuiz.questions.toMutableList()
     private var quiz = initialQuiz.copy(questions = mutableQuestions)
-    private var serverTimeListenerRegistration: com.google.firebase.firestore.ListenerRegistration? = null
-    private var quizResultListenerRegistration: com.google.firebase.firestore.ListenerRegistration? = null
+    private var serverTimeListenerRegistration: ListenerRegistration? = null
+    private var quizResultListenerRegistration: ListenerRegistration? = null
     private val studentAnswers = mutableListOf<Pair<Int, String>>()
     private val maxCheatAttempts = 5
     private var lastCheatTimestamp = 0L
 
     private val cheatLogList = mutableListOf<String>()
-
     private var submitAttempts = 0
+
+    // CRITICAL FIX 1: I-set ang default value ng serverEndTime sa orihinal na deadline
+    private var serverEndTime: Long = initialQuiz.scheduledEndDateTime
+
+    private val _serverTime = MutableLiveData<Long>()
+    val serverTime: LiveData<Long> = _serverTime
 
     init {
         // Shuffling done once when the ViewModel is created
@@ -68,7 +70,6 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
     private fun setupRetakeStatusListener() {
         val studentId = auth.currentUser?.uid ?: return
         val quizId = initialQuiz.quizId
-        // Ito ang document na babasahin at in-u-update din ng guro
         val documentRef = firestore.collection("quizResults").document("${quizId}_$studentId")
 
         // Gumamit ng addSnapshotListener para makinig sa pagbabago ng status
@@ -80,23 +81,55 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
 
             if (snapshot != null && snapshot.exists()) {
                 val status = snapshot.getString("status")
+                // CRITICAL FIX 2a: Kunin ang retakeDeadline na galing sa Teacher App
+                val retakeDeadline = snapshot.getLong("retakeDeadline") ?: 0L
 
+                // 1. CHECK: ACCESS_REVOKED
+                if (status == "ACCESS_REVOKED") {
+                    _uiMessage.value = "Access to the quiz has been revoked by the teacher."
+                    handleTimeExpired()
+                    return@addSnapshotListener
+                }
+
+                // 2. CHECK: RETAKE_GRANTED
                 if (status == "RETAKE_GRANTED") {
-                    // Ang guro ay nag-grant ng retake!
-                    _uiMessage.value = "Retake granted by teacher. Resetting quiz..."
+                    // Tiyakin na ang retakeDeadline ay valid at mas malaki sa kasalukuyang oras
+                    if (retakeDeadline > System.currentTimeMillis()) {
 
-                    shuffleQuestionsAndAnswers()
+                        val currentAttempt = snapshot.getLong("attemptCount")?.toInt() ?: 1
+                        val previousScore = snapshot.getLong("score")?.toInt() ?: 0
 
-                    // I-reset ang quiz state
-                    resetQuizProgress(keepCheatCount = false)
+                        // CRITICAL FIX 1: Gumawa ng record ng nakaraang attempt
+                        val newAttemptCount = currentAttempt + 1
+                        val newAttemptKey = "attempt_${currentAttempt}"
 
-                    // Important: I-update ang status pabalik sa IN_PROGRESS para hindi paulit-ulit mag-reset
-                    // Gamit ang SetOptions.merge()
-                    documentRef.update("status", "IN_PROGRESS", "timestamp", System.currentTimeMillis())
-                        .addOnSuccessListener {
-                            _uiMessage.value = "Quiz reset complete. You may now start the quiz."
-                            startQuizTracking() // I-restart ang tracking
+                        val updates = hashMapOf<String, Any>(
+                            "status" to "IN_PROGRESS",
+                            "timestamp" to System.currentTimeMillis(),
+                            "retakeDeadline" to retakeDeadline, // I-set ulit ang deadline
+                            "attemptCount" to newAttemptCount, // Increment ang count
+                            newAttemptKey to previousScore, // I-store ang previous score (ex: "attempt_1": 15)
+                        )
+
+                        serverEndTime = retakeDeadline
+
+                        _uiMessage.value = "Retake granted by teacher. Resetting quiz..."
+                        shuffleQuestionsAndAnswers()
+                        resetQuizProgress(keepCheatCount = false)
+
+                        // 3. Update status pabalik sa IN_PROGRESS
+                        documentRef.update("status", "IN_PROGRESS", "timestamp", System.currentTimeMillis())
+                            .addOnSuccessListener {
+                                _uiMessage.value = "Quiz reset complete. New deadline set! Start now."
+                                startQuizTracking() // I-restart ang tracking
+                            }
+                    } else {
+                        // Kung ang retake deadline ay tapos na, i-update ang status
+                        if (retakeDeadline > 0L) {
+                            documentRef.update("status", "TIME_EXPIRED")
                         }
+                    }
+                    return@addSnapshotListener
                 }
             }
         }
@@ -128,6 +161,8 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
         // 3. I-shuffle ang options sa loob ng Multiple Choice tanong
         mcQuestions.forEachIndexed { index, q ->
             val mutableOptions = q.options.toMutableList()
+            // Tiyakin na ang correct answer index ay na-u-update o nako-correct sa adapter logic.
+            // Para sa simpleng shuffle, ang buong listahan ng options ay i-sha-shuffle dito:
             mutableOptions.shuffle()
             mcQuestions[index] = q.copy(options = mutableOptions)
         }
@@ -142,12 +177,6 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
         _currentQuestion.value = mutableQuestions.firstOrNull()
             ?: throw IllegalStateException("Quiz questions cannot be empty after setup.")
     }
-
-    // --- In StudentQuizViewModel ---
-    private var serverEndTime: Long = 0
-
-    private val _serverTime = MutableLiveData<Long>()
-    val serverTime: LiveData<Long> = _serverTime
 
     fun fetchServerTime() {
         // Cancel the previous listener if it exists to prevent memory leaks or duplicate calls
@@ -166,7 +195,7 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
             if (snapshot != null && snapshot.exists()) {
                 val serverTs = snapshot.getTimestamp("ts")?.toDate()?.time
                 if (serverTs != null) {
-                    serverEndTime = initialQuiz.scheduledEndDateTime
+                    // CRITICAL FIX 3: Inalis ang 'serverEndTime = initialQuiz.scheduledEndDateTime' dito.
                     _serverTime.value = serverTs
 
                     // Tawagin ang updateTimer mula dito, tuwing may pagbabago sa server time
@@ -179,7 +208,7 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
 
                 } else {
                     _uiMessage.value = "Failed to get server time."
-                    onTimeUp()
+                    handleTimeExpired()
                 }
             }
         }
@@ -194,12 +223,13 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
     }
 
     fun updateTimer(currentServerTime: Long) {
+        // Ang 'serverEndTime' ay gumagamit na ngayon ng retake deadline kung na-override ito.
         val remaining = serverEndTime - currentServerTime
         if (remaining <= 0L) {
             _timerText.value = "00:00"
             handler.removeCallbacks(tickRunnable)
             isTicking = false
-            onTimeUp()
+            handleTimeExpired()
         } else {
             val minutes = TimeUnit.MILLISECONDS.toMinutes(remaining)
             val seconds = TimeUnit.MILLISECONDS.toSeconds(remaining) % 60
@@ -207,28 +237,49 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
         }
     }
 
-    private fun onTimeUp() {
-        _uiMessage.value = "Time's up! Auto-submitting..."
-        submitQuiz()
+    private fun handleTimeExpired() {
+        val studentUid = auth.currentUser?.uid ?: return
+        val quizId = quiz.quizId
+
+        firestore.collection("quizResults").document("${quizId}_$studentUid")
+            .get().addOnSuccessListener { snapshot ->
+                val status = snapshot.getString("status")
+
+                if (status == "IN_PROGRESS" || status == "RETAKE_GRANTED") {
+                    // FIX 2a: Kung IN_PROGRESS (nagsimula na ang estudyante), auto-submit na may score.
+                    _uiMessage.value = "Time's up! Auto-submitting..."
+                    submitQuiz()
+                } else {
+                    // FIX 2b: Kung hindi pa nagsisimula o COMPLETED na, i-update lang ang status.
+                    _uiMessage.value = "Quiz deadline has passed. Submission is no longer possible."
+
+                    // Siguraduhin na ang app ay lalabas pagkatapos magbigay ng mensahe.
+                    _quizResultData.value = QuizResultData(0, mutableQuestions.size, _cheatCount.value ?: 0)
+                }
+
+                // I-update ang status sa database
+                firestore.collection("quizResults").document("${quizId}_$studentUid")
+                    .update("status", "TIME_EXPIRED")
+            }
     }
 
     fun startQuizTracking() {
         val studentUid = auth.currentUser?.uid ?: return
         val quizId = quiz.quizId
 
-        //
         // Gumawa ng initial record na may "IN_PROGRESS" status para makita ng guro sa real-time.
         firestore.collection("quizResults").document("${quizId}_$studentUid")
             .set(
                 mapOf(
                     "studentId" to studentUid,
                     "quizId" to quizId,
-                    "assignmentId" to quiz.assignmentId, // Mahalaga para sa filtering ng guro
+                    "assignmentId" to quiz.assignmentId,
                     "status" to "IN_PROGRESS",
                     "cheatCount" to 0,
+                    "attemptCount" to 1,
                     "startTime" to System.currentTimeMillis()
                 ),
-                SetOptions.merge() // Gumamit ng merge kung sakaling nag-retake
+                SetOptions.merge()
             ).addOnFailureListener {
                 _uiMessage.value = "Error starting quiz tracking: ${it.message}"
             }
@@ -252,9 +303,9 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
         val currentIndex = _currentQuestionIndex.value!!
 
         val nextIndex = currentIndex + 1
-        if (nextIndex < mutableQuestions.size) { // Use mutableQuestions size
+        if (nextIndex < mutableQuestions.size) {
             _currentQuestionIndex.value = nextIndex
-            _currentQuestion.value = mutableQuestions[nextIndex] // Use mutableQuestions
+            _currentQuestion.value = mutableQuestions[nextIndex]
         } else {
             submitQuiz()
         }
@@ -274,6 +325,10 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
         _timerText.value = "00:00"
         handler.removeCallbacks(tickRunnable)
         isTicking = false
+
+        if (keepCheatCount) {
+            fetchServerTime()
+        }
     }
 
     fun resetCheat() {
@@ -294,7 +349,7 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
         val newCount = currentCount + 1
         _cheatCount.value = newCount
         val timestamp = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date(currentTime))
-        val logEntry = "[$timestamp] $reason"
+        val logEntry = "[$timestamp] ${reason} (Q:${_currentQuestionIndex.value})"
 
         cheatLogList.add(logEntry)
 
@@ -316,13 +371,14 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
     }
 
     private fun calculateScore(): Int {
-        if ((_cheatCount.value ?: 0) >= maxCheatAttempts) return 0
         var score = 0
         // Use mutableQuestions for calculation
         mutableQuestions.forEachIndexed { i, q ->
             val answer = studentAnswers.find { it.first == i }?.second
             when (q) {
                 is Question.MultipleChoice -> {
+                    // Tiyakin na ang logic mo sa pag-shuffle ng options ay tama ang pagko-compute
+                    // Gamit ang text ng sagot, hindi index, para maging safe.
                     if (answer == q.options.getOrNull(q.correctAnswerIndex))
                         score++
                 }
@@ -338,6 +394,7 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
                         if (parts.size == 2) {
                             val left = parts[0]
                             val selected = parts[1]
+                            // Magbigay ng partial score kung tama ang match
                             if (correctMap[left] == selected) score++
                         }
                     }
@@ -350,12 +407,29 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
 
     fun submitQuiz() {
         val studentUid = auth.currentUser?.uid ?: "unknown"
-        val score = calculateScore()
+        val rawScore = calculateScore()
         val totalQuestions = mutableQuestions.size
+        val cheatCount = _cheatCount.value ?: 0
+
+        var finalScore = rawScore
+
+        if (cheatCount >= maxCheatAttempts) {
+            finalScore = 0
+            _uiMessage.value = "Maximum cheat attempts reached. Auto-submit = 0"
+        } else {
+            // Kung nag-auto-submit dahil sa oras, o natapos niya, gamitin ang rawScore.
+            _uiMessage.value = "Quiz submitted! Score: $rawScore"
+        }
+        // Stop all timers and listeners immediately upon submission attempt
+        serverTimeListenerRegistration?.remove()
+        quizResultListenerRegistration?.remove()
+        handler.removeCallbacks(tickRunnable)
+        isTicking = false
+
 
         if (submitAttempts >= 3) {
             _uiMessage.value = "Failed to submit quiz after multiple attempts."
-            _quizResultData.value = QuizResultData(score, totalQuestions, _cheatCount.value ?: 0)
+            _quizResultData.value = QuizResultData(finalScore, totalQuestions, cheatCount)
             return
         }
         submitAttempts++
@@ -368,16 +442,16 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
                     "studentId" to studentUid,
                     "quizId" to quiz.quizId,
                     "assignmentId" to quiz.assignmentId,
-                    "answers" to answerMap, // <-- Gamitin ang Map dito!
-                    "score" to score,
+                    "answers" to answerMap,
+                    "score" to finalScore,
                     "status" to "COMPLETED",
                     "cheatCount" to _cheatCount.value,
                     "timestamp" to System.currentTimeMillis(),
                     "cheatLog" to cheatLogList
                 )
             ).addOnSuccessListener {
-                _uiMessage.value = "Quiz submitted! Score: $score"
-                _quizResultData.value = QuizResultData(score, totalQuestions, _cheatCount.value ?: 0)
+                _uiMessage.value = "Quiz submitted! Score: $finalScore"
+                _quizResultData.value = QuizResultData(finalScore, totalQuestions, cheatCount)
 
             }.addOnFailureListener {
                 _uiMessage.value = "Failed to submit quiz. Retrying..."
@@ -390,7 +464,6 @@ class StudentQuizViewModelFactory(private val application: Application, private 
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(StudentQuizViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            // CRITICAL: Ensure the ViewModel constructor is also called with both arguments
             return StudentQuizViewModel(application, quiz) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
