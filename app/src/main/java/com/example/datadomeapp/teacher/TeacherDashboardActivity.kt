@@ -7,6 +7,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.example.datadomeapp.LoginActivity
 import com.example.datadomeapp.R
+import com.example.datadomeapp.student.UserCanteenMenuActivity
 import com.google.firebase.auth.FirebaseAuth
 
 
@@ -27,6 +28,15 @@ class TeacherDashboardActivity : AppCompatActivity() {
         tvDashboard.text = "Welcome, Teacher!"
 
         // --- CORE FEATURES ---
+
+        val btnCanteen = findViewById<Button>(R.id.btnCanteenMenu)
+        btnCanteen.setOnClickListener {
+            val intent = Intent(this, UserCanteenMenuActivity::class.java)
+            intent.putExtra("USER_TYPE", "teacher")
+            intent.putExtra("USER_ID", teacherUid)
+            startActivity(intent)
+        }
+
 
         // 1. Manage Classes/Sections Button (Para makita ang listahan ng mga klase)
         val btnManageClasses = findViewById<Button>(R.id.btnManageClasses)

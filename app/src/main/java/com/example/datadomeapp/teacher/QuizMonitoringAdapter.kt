@@ -16,14 +16,12 @@ import java.util.*
 import java.util.Locale
 
 class QuizMonitoringAdapter(
-    // Ang Constructor na gumagamit ng Lambdas ay TAMA na
+    // ⭐ UPDATE 1: INALIS ang onRetakeClick lambda
     private var dataList: List<StudentMonitoringData>,
-    private val onRetakeClick: (StudentMonitoringData) -> Unit,
-    private val onIntegrityClick: (StudentMonitoringData) -> Unit
+    private val onIntegrityClick: (StudentMonitoringData) -> Unit // Ito na lang ang natira
 ) : RecyclerView.Adapter<QuizMonitoringAdapter.MonitorViewHolder>() {
 
     fun updateList(newList: List<StudentMonitoringData>) {
-        // Ang sorting ay ginagawa na sa ViewModel, pero pwedeng i-sort ulit dito kung kailangan
         dataList = newList
         notifyDataSetChanged()
     }
@@ -51,18 +49,19 @@ class QuizMonitoringAdapter(
         private val tvScore: TextView = itemView.findViewById(R.id.tvScore)
         private val tvCheats: TextView = itemView.findViewById(R.id.tvCheats)
         private val tvLastUpdate: TextView = itemView.findViewById(R.id.tvLastUpdate)
-        private val btnRetake: Button = itemView.findViewById(R.id.btnRetake)
+        // ⭐ UPDATE 2: INALIS ang btnRetake Button mula sa deklarasyon at layout
+        // private val btnRetake: Button = itemView.findViewById(R.id.btnRetake) // ALISIN ITO
         private val btnViewIntegrity: ImageButton = itemView.findViewById(R.id.btnViewIntegrity)
 
 
         fun bind(data: StudentMonitoringData) {
             tvStudentName.text = data.studentName
 
-            // ⭐ UPDATE 1: SCORE LOGIC
-            // Ipakita ang final score (kabilang ang bagong UNATTEMPTED_TIME_EXPIRED)
+            // ⭐ UPDATE 3: SCORE LOGIC (Idinagdag ang ACCESS_REVOKED)
             tvScore.text = if (data.status == "COMPLETED" ||
                 data.status == "TIME_EXPIRED" ||
-                data.status == "UNATTEMPTED_TIME_EXPIRED") { // DINAGDAG ITO
+                data.status == "UNATTEMPTED_TIME_EXPIRED" ||
+                data.status == "ACCESS_REVOKED") { // DINAGDAG ITO
                 data.score.toString()
             } else {
                 // Ipakita ang question number
@@ -75,7 +74,6 @@ class QuizMonitoringAdapter(
                 val dateFormat = SimpleDateFormat("MMM dd, hh:mm a", Locale.getDefault())
                 "Updated: ${dateFormat.format(Date(data.lastUpdate))}"
             } else {
-                // Maari rin itong ma-trigger ng UNATTEMPTED_TIME_EXPIRED na walang lastUpdate
                 "Not yet active"
             }
 
@@ -83,23 +81,16 @@ class QuizMonitoringAdapter(
             tvStatus.text = formatStatus(data.status, data.cheatCount)
             setStatusColor(data.status, data.cheatCount)
 
-            // --- Retake Button Logic ---
-            // ⭐ UPDATE 2: RETAKE LOGIC
-            // Lalabas ang Retake button kapag tapos na, expired, missed, o granted na.
-            val showRetake = data.status == "COMPLETED" ||
+            // ⭐ UPDATE 4: INALIS ang Retake Button Logic
+
+            // --- INTEGRITY LOGIC ---
+            // Lalabas ang Integrity Log button kung may cheat o tapos na
+            val showIntegrityLog = data.cheatCount > 0 ||
+                    data.status == "COMPLETED" ||
                     data.status == "TIME_EXPIRED" ||
-                    data.status == "RETAKE_GRANTED" ||
-                    data.status == "UNATTEMPTED_TIME_EXPIRED" || // DINAGDAG ITO
-                    data.cheatCount >= 5 // Base sa inyong lumang logic
+                    data.status == "UNATTEMPTED_TIME_EXPIRED" ||
+                    data.status == "ACCESS_REVOKED" // DINAGDAG ITO
 
-            btnRetake.visibility = if (showRetake) View.VISIBLE else View.GONE
-
-            if (showRetake) {
-                btnRetake.setOnClickListener { onRetakeClick(data) }
-            }
-
-            // ⭐ UPDATE 3: INTEGRITY LOGIC
-            val showIntegrityLog = data.cheatCount > 0 || data.status == "COMPLETED" || data.status == "TIME_EXPIRED" || data.status == "UNATTEMPTED_TIME_EXPIRED"
             btnViewIntegrity.visibility = if (showIntegrityLog) View.VISIBLE else View.GONE
 
             if (showIntegrityLog) {
@@ -117,27 +108,29 @@ class QuizMonitoringAdapter(
         }
 
         private fun formatStatus(status: String, cheatCount: Int): String {
-            // ⭐ UPDATE 4: STATUS FORMATTING
+            // ⭐ UPDATE 5: STATUS FORMATTING (Idinagdag ang ACCESS_REVOKED)
             return when (status) {
                 "IN_PROGRESS" -> if (cheatCount > 0) "CHEATING ALERT ⚠️" else "TAKING QUIZ ⏱️"
                 "COMPLETED" -> "FINISHED ✅"
                 "NOT_STARTED" -> "PENDING ⚪"
                 "RETAKE_GRANTED" -> "RETAKE ALLOWED 🔄"
                 "TIME_EXPIRED" -> "TIME UP 🚨"
-                "UNATTEMPTED_TIME_EXPIRED" -> "MISSED QUIZ ❌" // CRITICAL NEW STATUS DISPLAY
+                "UNATTEMPTED_TIME_EXPIRED" -> "MISSED QUIZ ❌"
+                "ACCESS_REVOKED" -> "BLOCKED 🔒" // CRITICAL NEW STATUS DISPLAY
                 else -> status
             }
         }
 
         private fun setStatusColor(status: String, cheatCount: Int) {
             val context = itemView.context
-            // ⭐ UPDATE 5: COLOR HANDLING
+            // ⭐ UPDATE 6: COLOR HANDLING (Idinagdag ang ACCESS_REVOKED)
             val colorRes = when {
                 cheatCount > 0 && status != "COMPLETED" -> R.color.status_expired
                 status == "IN_PROGRESS" -> R.color.status_in_progress
                 status == "COMPLETED" -> R.color.status_completed
-                status == "TIME_EXPIRED" || status == "UNATTEMPTED_TIME_EXPIRED" -> R.color.status_expired // Parehong Dark Red/Orange
+                status == "TIME_EXPIRED" || status == "UNATTEMPTED_TIME_EXPIRED" -> R.color.status_expired // Dark Red/Orange
                 status == "RETAKE_GRANTED" -> R.color.status_retake
+                status == "ACCESS_REVOKED" -> R.color.status_expired // Gamitin ang red/dark orange para sa blocked
                 status == "NOT_STARTED" -> R.color.status_not_started
                 else -> android.R.color.black
             }

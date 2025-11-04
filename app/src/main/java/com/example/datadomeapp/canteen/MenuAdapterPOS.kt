@@ -16,11 +16,13 @@ import java.util.*
 // data class MenuItem(var id: String = "", val name: String? = null, val price: Double? = null, val imageUrl: String? = null, ...)
 
 class MenuAdapterPOS(
-    private val menuList: List<MenuItem>,
+    // ⭐ FIX 1: Gawing 'var' ang menuList para ma-update
+    private var menuList: List<MenuItem>,
     private val onAddClick: (MenuItem) -> Unit
 ) : RecyclerView.Adapter<MenuAdapterPOS.MenuViewHolder>() {
 
     class MenuViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        // Tiyakin na ang mga ID na ito ay tama sa item_menu_pos.xml
         val tvName: TextView = view.findViewById(R.id.tvMenuName)
         val tvPrice: TextView = view.findViewById(R.id.tvMenuPrice)
         val ivImage: ImageView = view.findViewById(R.id.ivMenuItemImage)
@@ -36,6 +38,7 @@ class MenuAdapterPOS(
     override fun onBindViewHolder(holder: MenuViewHolder, position: Int) {
         val item = menuList[position]
         holder.tvName.text = item.name ?: "No Name"
+        // Gumamit ng Elvis operator sa price kung sakaling null
         holder.tvPrice.text = String.format(Locale.US, "₱%.2f", item.price ?: 0.0)
 
         // Image loading (Reused Base64 logic)
@@ -45,9 +48,10 @@ class MenuAdapterPOS(
                 val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
                 holder.ivImage.setImageBitmap(bitmap)
             } catch (e: Exception) {
-                holder.ivImage.setImageResource(R.drawable.ic_image_placeholder) // Use a placeholder
+                // Tiyakin na may R.drawable.ic_image_placeholder ka
+                holder.ivImage.setImageResource(R.drawable.ic_image_placeholder)
             }
-        } ?: holder.ivImage.setImageResource(R.drawable.ic_image_placeholder) // Use a placeholder
+        } ?: holder.ivImage.setImageResource(R.drawable.ic_image_placeholder)
 
         // Add to Cart Button Listener
         holder.btnAdd.setOnClickListener {
@@ -56,4 +60,13 @@ class MenuAdapterPOS(
     }
 
     override fun getItemCount(): Int = menuList.size
+
+    // ⭐ FIX 2: IDINAGDAG ang updateList function para sa filtering/search
+    /**
+     * Ginagamit ng POSActivity.kt para i-update ang listahan pagkatapos mag-search o mag-filter.
+     */
+    fun updateList(newList: List<MenuItem>) {
+        menuList = newList
+        notifyDataSetChanged()
+    }
 }

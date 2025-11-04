@@ -23,7 +23,7 @@ class BalanceInquiryActivity : AppCompatActivity() {
     private lateinit var etSearch: EditText
     private lateinit var spinnerFilter: Spinner
     private lateinit var progressBar: ProgressBar
-
+    private lateinit var tvNoResults: TextView
     private var allUsersList: List<BalanceItem> = emptyList()
     private var currentFilter: String = "High to Low"
     private var currentQuery: String = ""
@@ -43,6 +43,7 @@ class BalanceInquiryActivity : AppCompatActivity() {
         spinnerFilter = findViewById(R.id.spinnerFilter)
         progressBar = findViewById(R.id.progressBar)
         recyclerView = findViewById(R.id.recyclerViewBalances)
+        tvNoResults = findViewById(R.id.tvNoResults)
 
         recyclerView.layoutManager = LinearLayoutManager(this)
 
@@ -157,6 +158,15 @@ class BalanceInquiryActivity : AppCompatActivity() {
             "Low to High" -> filteredList.sortedBy { it.balance }
             "High to Low" -> filteredList.sortedByDescending { it.balance }
             else -> filteredList // Maintain the initial sort if no balance filter is selected
+        }
+
+        if (filteredList.isEmpty()) {
+            tvNoResults.visibility = View.VISIBLE // Ipakita ang "No user found"
+            recyclerView.visibility = View.GONE    // Itago ang listahan
+            tvNoResults.text = "No user found." // Custom message
+        } else {
+            tvNoResults.visibility = View.GONE     // Itago ang "No user found"
+            recyclerView.visibility = View.VISIBLE // Ipakita ang listahan
         }
 
         adapter.updateList(filteredList)

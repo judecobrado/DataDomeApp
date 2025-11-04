@@ -1,36 +1,40 @@
 package com.example.datadomeapp.student
 
+import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
+import android.view.View
+import android.widget.ProgressBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.datadomeapp.R
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.Date
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.DocumentSnapshot
-import com.example.datadomeapp.databinding.ActivityQuizResultBinding
-import android.content.Intent
 import com.example.datadomeapp.models.Question
 import com.example.datadomeapp.models.Quiz
-import android.view.View
-import android.widget.ProgressBar
-import com.google.firebase.database.*
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.*
+import com.google.firebase.firestore.FirebaseFirestore
+import java.text.SimpleDateFormat
+import java.util.*
 
-import android.widget.Button
-import android.graphics.Color
-import android.widget.TextView
-
+// Data class na gagamitin sa Adapter
+data class StudentQuizItem(
+    val quiz: Quiz,
+    var studentStatus: String = "NOT_STARTED", // E.g., COMPLETED, RETAKE_GRANTED, ACCESS_REVOKED, UNATTEMPTED_TIME_EXPIRED
+    var retakeDeadline: Long = 0L,
+    var rawScore: Int = 0,
+    var totalQuestions: Int = 0,
+    var cheatCount: Int = 0
+)
 
 class StudentQuizListActivity : AppCompatActivity() {
 
     private lateinit var rvQuizzes: RecyclerView
     private lateinit var quizAdapter: StudentQuizAdapter
-    private val quizzesList = mutableListOf<Quiz>()
+    private val quizItemList = mutableListOf<StudentQuizItem>()
     private lateinit var progressBar: ProgressBar
     private lateinit var tvEmpty: TextView
     private var quizTypeFilter: String? = null
@@ -42,6 +46,12 @@ class StudentQuizListActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.student_quiz_list_activity)
 
+        if (studentUid.isEmpty()) {
+            Toast.makeText(this, "User not logged in. Please re-login.", Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
+
         tvHeader = findViewById(R.id.tvHeader)
         rvQuizzes = findViewById(R.id.recyclerViewQuizzes)
         progressBar = findViewById(R.id.progressBar)
@@ -49,47 +59,15 @@ class StudentQuizListActivity : AppCompatActivity() {
 
         quizTypeFilter = intent.getStringExtra("QUIZ_TYPE") ?: "Quiz"
 
-        // Update header dynamically
         tvHeader.text = quizTypeFilter
         tvHeader.setBackgroundColor(
             if (quizTypeFilter.equals("Exam", true)) Color.parseColor("#C62828")
             else Color.parseColor("#1B5E20")
         )
 
-        quizAdapter = StudentQuizAdapter(quizzesList) { quiz ->
-
-            checkQuizStatusAndLaunch(quiz, studentUid)
-
-            if (studentUid.isEmpty()) {
-                Toast.makeText(this, "User not logged in.", Toast.LENGTH_SHORT).show()
-                return@StudentQuizAdapter
-            }
-
-            checkQuizStatusAndLaunch(quiz, studentUid)
-
-            if (quiz.scheduledDateTime != 0L && quiz.scheduledEndDateTime != 0L) {
-                val currentTime = System.currentTimeMillis()
-                val startTime = quiz.scheduledDateTime
-                val endTime = quiz.scheduledEndDateTime
-
-                if (currentTime in startTime..endTime) {
-                    // Quiz is ONGOING: Start the quiz activity
-                    val intent = Intent(this, StudentQuizActivity::class.java).apply {
-                        // **IMPORTANT:** Pass the whole Quiz object (it must be Serializable)
-                        putExtra("QUIZ", quiz)
-                    }
-                    startActivity(intent)
-                } else if (currentTime > endTime) {
-                    // Quiz is FINISHED: Show results/status (Optional: Implement a Results Activity)
-                    Toast.makeText(this, "Quiz finished. You can view your results now.", Toast.LENGTH_LONG).show()
-                    // You would typically launch a StudentResultActivity here
-                } else {
-                    // Quiz is NOT YET AVAILABLE
-                    Toast.makeText(this, "The quiz is not yet available.", Toast.LENGTH_SHORT).show()
-                }
-            } else {
-                Toast.makeText(this, "Quiz schedule is invalid.", Toast.LENGTH_SHORT).show()
-            }
+        // FIXED: Ipapasa na ang buong quizItem sa checkQuizStatusAndLaunch
+        quizAdapter = StudentQuizAdapter(quizItemList) { quizItem ->
+            checkQuizStatusAndLaunch(quizItem)
         }
 
         rvQuizzes.apply {
@@ -108,10 +86,11 @@ class StudentQuizListActivity : AppCompatActivity() {
 
         quizzesRef.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                val quizList = mutableListOf<Quiz>()
+                val fetchedQuizzes = mutableListOf<Quiz>()
 
                 snapshot.children.forEach { childSnapshot ->
                     val map = childSnapshot.value as? Map<String, Any> ?: return@forEach
+                    // Deserialization (assuming Quiz model has been created)
                     val quiz = Quiz(
                         quizId = map["quizId"] as? String ?: "",
                         assignmentId = map["assignmentId"] as? String ?: "",
@@ -123,31 +102,31 @@ class StudentQuizListActivity : AppCompatActivity() {
                         isPublished = map["isPublished"] as? Boolean ?: false,
                         questions = ((map["questions"] as? List<Map<String, Any>>)?.mapNotNull { deserializeQuestion(it) }) ?: emptyList()
                     )
-                    quizList.add(quiz)
+                    if (quiz.isPublished) {
+                        fetchedQuizzes.add(quiz)
+                    }
                 }
 
-                // Filter by type
-                val filtered = quizList.filter { it.quizType.equals(quizTypeFilter, true) }
-                quizAdapter.updateList(filtered.toMutableList())
+                val filteredQuizzes = fetchedQuizzes.filter { it.quizType.equals(quizTypeFilter, true) }
 
-                progressBar.visibility = View.GONE  // Show loading
-                tvEmpty.visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
+                // NEW STEP: Fetch student statuses and update the adapter
+                fetchStudentStatuses(filteredQuizzes)
             }
 
             override fun onCancelled(error: DatabaseError) {
-                Toast.makeText(this@StudentQuizListActivity, "Failed to load quizzes.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@StudentQuizListActivity, "Failed to load quizzes: ${error.message}", Toast.LENGTH_SHORT).show()
                 progressBar.visibility = View.GONE
                 tvEmpty.visibility = View.VISIBLE
             }
         })
     }
 
+    // Assumed function for Question deserialization
     private fun deserializeQuestion(map: Map<String, Any>): Question? {
         val type = map["type"] as? String ?: return null
         val questionText = map["questionText"] as? String ?: ""
 
         val optionsList = (map["options"] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
-        val matchesList = (map["matches"] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
 
         return when (type) {
             "TF" -> Question.TrueFalse(questionText, map["answer"] as? Boolean ?: false)
@@ -158,15 +137,83 @@ class StudentQuizListActivity : AppCompatActivity() {
             )
             "MATCHING" -> Question.Matching(
                 questionText,
-                (map["options"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+                optionsList,
                 (map["matches"] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
             )
             else -> null
         }
     }
-    private fun checkQuizStatusAndLaunch(quiz: Quiz, studentUid: String) {
+
+
+    // FIXED: Nilagyan ng logic para i-load ang score, total questions, at cheat count
+    private fun fetchStudentStatuses(quizzes: List<Quiz>) {
+        // I-set ang totalQuestions dito bago ang fetch
+        val quizItems = quizzes.map {
+            StudentQuizItem(
+                quiz = it,
+                totalQuestions = it.questions.size // I-set ang total questions dito
+            )
+        }.toMutableList()
+
+        var countdown = quizItems.size
+        if (countdown == 0) {
+            quizAdapter.updateList(quizItems)
+            progressBar.visibility = View.GONE
+            tvEmpty.visibility = if (quizItems.isEmpty()) View.VISIBLE else View.GONE
+            return
+        }
+
+
+        quizItems.forEachIndexed { index, item ->
+            val quizId = item.quiz.quizId
+            FirebaseFirestore.getInstance().collection("quizResults")
+                .document("${quizId}_$studentUid")
+                .get()
+                .addOnSuccessListener { doc ->
+                    if (doc.exists()) {
+                        val status = doc.getString("status")
+                        val deadline = doc.getLong("retakeDeadline") ?: 0L
+
+                        // KRITIKAL NA PAGDADAGDAG: Load Score Data Mula sa Firestore
+                        val rawScore = (doc.get("score") as? Number)?.toInt() ?: 0
+                        val cheatCount = (doc.get("cheatCount") as? Number)?.toInt() ?: 0
+
+                        item.studentStatus = status ?: "NOT_STARTED"
+                        item.retakeDeadline = deadline
+                        // I-update ang item na may score
+                        item.rawScore = rawScore
+                        item.cheatCount = cheatCount
+                    } else {
+                        // Walang record. Check kung expired na ang time
+                        val currentTime = System.currentTimeMillis()
+                        if (currentTime > item.quiz.scheduledEndDateTime && item.quiz.scheduledEndDateTime > 0L) {
+                            // Ito ang status na gagamitin ng adapter para magpakita ng 'MISSED'
+                            item.studentStatus = "UNATTEMPTED_TIME_EXPIRED"
+                        } else {
+                            item.studentStatus = "NOT_STARTED"
+                        }
+                    }
+                }
+                .addOnFailureListener {
+                    Log.e("QuizList", "Failed to fetch status for ${quizId}: ${it.message}")
+                    item.studentStatus = "FETCH_ERROR"
+                }
+                .addOnCompleteListener {
+                    countdown--
+                    if (countdown == 0) {
+                        quizAdapter.updateList(quizItems)
+                        progressBar.visibility = View.GONE
+                        tvEmpty.visibility = if (quizItems.isEmpty()) View.VISIBLE else View.GONE
+                    }
+                }
+        }
+    }
+
+    // FIXED: Tumatanggap na ng StudentQuizItem
+    private fun checkQuizStatusAndLaunch(item: StudentQuizItem) {
+        val quiz = item.quiz
         if (quiz.scheduledDateTime == 0L || quiz.scheduledEndDateTime == 0L) {
-            Toast.makeText(this, "Quiz schedule is invalid.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Quiz schedule is invalid. Please contact your teacher.", Toast.LENGTH_LONG).show()
             return
         }
 
@@ -175,94 +222,113 @@ class StudentQuizListActivity : AppCompatActivity() {
         val endTime = quiz.scheduledEndDateTime
 
         when {
-            // Case 1: ONGOING (Pwedeng mag-umpisa)
-            currentTime in startTime..endTime -> {
-                // ✅ Logic para sa ONGOING: Titingnan sa result kung may "RETAKE_GRANTED"
-                checkIfRetakeGranted(quiz, studentUid)
-            }
-
-            // Case 2: NOT YET AVAILABLE
+            // Case 1: NOT YET AVAILABLE
             currentTime < startTime -> {
-                Toast.makeText(this, "The quiz will start on ${SimpleDateFormat("MMM dd, hh:mm a", Locale.getDefault()).format(Date(startTime))}.", Toast.LENGTH_LONG).show()
+                val sdf = SimpleDateFormat("MMM dd, hh:mm a", Locale.getDefault())
+                Toast.makeText(this, "The quiz will start on ${sdf.format(Date(startTime))}.", Toast.LENGTH_LONG).show()
             }
 
-            // Case 3: FINISHED (Tapos na ang oras)
-            currentTime > endTime -> {
-                // ✅ Logic para sa FINISHED: Titingnan ang result
-                checkIfQuizIsAttempted(quiz, studentUid, true)
+            // Case 2: ONGOING or EXPIRED - Titingnan ang result sa Firestore
+            else -> {
+                // FIXED: Ipasa ang buong item
+                checkQuizResultsAndDetermineAccess(item, currentTime, endTime)
             }
         }
     }
 
-    private fun checkIfRetakeGranted(quiz: Quiz, studentUid: String) {
-        // 1. Tumingin sa quizResults kung may record
+    // FIXED: Tumatanggap na ng StudentQuizItem at inayos ang logic flow para sa IN_PROGRESS
+    private fun checkQuizResultsAndDetermineAccess(item: StudentQuizItem, currentTime: Long, originalEndTime: Long) {
+        val quiz = item.quiz
+        // Tumingin sa quizResults kung may record
         FirebaseFirestore.getInstance().collection("quizResults")
             .document("${quiz.quizId}_$studentUid")
             .get()
             .addOnSuccessListener { doc ->
                 val status = doc.getString("status")
-                val retakeDeadline = doc.getLong("retakeDeadline") ?: 0L // ⭐ NEW: Kuhanin ang deadline
-                val currentTime = System.currentTimeMillis()
+                val retakeDeadline = doc.getLong("retakeDeadline") ?: 0L
 
                 val isRetakeGrantedAndValid = status == "RETAKE_GRANTED" && retakeDeadline > 0L && currentTime < retakeDeadline
+                val isRevoked = status == "ACCESS_REVOKED"
 
-                // May Attempt na siya O Tapos na ang Retake Deadline
-                if (doc.exists() && status != "RETAKE_GRANTED") {
-                    // Case A: Nag-attempt na siya at HINDI Retake Granted: I-launch ang result view.
-                    Toast.makeText(this, "You have already attempted this quiz.", Toast.LENGTH_SHORT).show()
-                    // LUNCH RESULT ACTIVITY
+                // ⭐ [CRITICAL FIX] isFinishedAttempt: Statuses na nagpapahiwatig ng tapos na attempt.
+                // In-exclude ang "IN_PROGRESS".
+                val isFinishedAttempt = doc.exists() && status in setOf("COMPLETED", "CHEATING", "TIME_EXPIRED")
 
-                } else if (isRetakeGrantedAndValid) {
-                    // Case B: RETAKE GRANTED at HINDI PA EXPIRED ang deadline: Pwede mag-start.
-                    launchStudentQuizActivity(quiz)
+                // [NEW] isInProgress: Status na nagpapahiwatig na nagsimula na pero hindi pa tapos.
+                val isInProgress = doc.exists() && status == "IN_PROGRESS"
 
-                } else if (status == "RETAKE_GRANTED" && retakeDeadline > 0L && currentTime >= retakeDeadline) {
-                    // Case C: RETAKE GRANTED PERO EXPIRED NA ang deadline.
-                    Toast.makeText(this, "The retake window has expired.", Toast.LENGTH_LONG).show()
-                    // HINDI DAPAT MAO-OPEN ANG QUIZ. I-launch ang Result Activity na may status na Expired.
+                val isOriginalTimeValid = currentTime <= originalEndTime
 
-                } else {
-                    // Case D: Walang record, o normal na quiz (hindi retake ang isyu)
-                    // Ang orihinal na schedule (quiz.scheduledDateTime) ang gagamitin.
-                    val startTime = quiz.scheduledDateTime
-                    val endTime = quiz.scheduledEndDateTime
-
-                    if (currentTime in startTime..endTime) {
+                when {
+                    // A. ACCESS GRANTED (RETAKE/REOPEN)
+                    isRetakeGrantedAndValid -> {
                         launchStudentQuizActivity(quiz)
-                    } else {
-                        Toast.makeText(this, "Quiz is not available.", Toast.LENGTH_SHORT).show()
+                    }
+
+                    // ⭐ [FIXED CASE] ONGOING and IN_PROGRESS: Dapat makabalik sa Quiz.
+                    isOriginalTimeValid && isInProgress -> {
+                        launchStudentQuizActivity(quiz)
+                    }
+
+                    // B. ONGOING (Original Time) at HINDI pa nag-attempt
+                    // Kung hindi pa nagsimula (NOT_STARTED) at ONGOING pa ang time.
+                    isOriginalTimeValid && !isFinishedAttempt && !isInProgress -> {
+                        launchStudentQuizActivity(quiz)
+                    }
+
+                    // C. REVOKED ACCESS
+                    isRevoked -> {
+                        // FIXED: Ipasa ang item
+                        launchStudentResultActivity(item, "REVOKED")
+                    }
+
+                    // D. ATTEMPTED/FINISHED (Gumamit na ng isFinishedAttempt)
+                    isFinishedAttempt -> {
+                        // FIXED: Ipasa ang item
+                        launchStudentResultActivity(item, "ATTEMPTED")
+                    }
+
+                    // E. TIME EXPIRED (Original Time) at WALANG ATTEMPT
+                    currentTime > originalEndTime && status in setOf("NOT_STARTED", null) -> {
+                        // FIXED: Ipasa ang item
+                        launchStudentResultActivity(item, "MISSED")
+                    }
+
+                    // F. RETAKE EXPIRED
+                    status == "RETAKE_GRANTED" && retakeDeadline > 0L && currentTime >= retakeDeadline -> {
+                        // FIXED: Ipasa ang item
+                        launchStudentResultActivity(item, "ATTEMPTED") // Treat as ATTEMPTED/FINISHED
+                    }
+
+                    // G. DEFAULT CATCH-ALL (e.g., tapos na ang time at wala pang attempt/record)
+                    else -> {
+                        Toast.makeText(this, "Quiz is not available (Status: $status).", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
-            .addOnFailureListener {
-                Toast.makeText(this, "Error checking quiz status.", Toast.LENGTH_SHORT).show()
-            }
-    }
-
-    private fun checkIfQuizIsAttempted(quiz: Quiz, studentUid: String, isExpired: Boolean) {
-        // Tumingin sa quizResults kung may record (Attempted ba?)
-        FirebaseFirestore.getInstance().collection("quizResults")
-            .document("${quiz.quizId}_$studentUid")
-            .get()
-            .addOnSuccessListener { doc ->
-                if (doc.exists()) {
-                    // May record: Nag-attempt. I-launch ang result view.
-                    Toast.makeText(this, "Quiz finished. View your final results.", Toast.LENGTH_LONG).show()
-                    // LUNCH RESULT ACTIVITY
-                } else {
-                    // Walang record: Missed/Unattempted. Huwag payagan mag-start.
-                    Toast.makeText(this, "You missed the quiz. The schedule has expired.", Toast.LENGTH_LONG).show()
-                    // I-launch ang Result Activity na nagpapakita ng 0/Missed.
-                }
-            }
-            .addOnFailureListener {
-                Toast.makeText(this, "Error checking quiz status.", Toast.LENGTH_SHORT).show()
+            .addOnFailureListener { e ->
+                Log.e("StudentQuizList", "Error checking quiz result: ${e.message}")
+                Toast.makeText(this, "Error checking quiz status. Try again.", Toast.LENGTH_SHORT).show()
             }
     }
 
     private fun launchStudentQuizActivity(quiz: Quiz) {
         val intent = Intent(this, StudentQuizActivity::class.java).apply {
             putExtra("QUIZ", quiz)
+        }
+        startActivity(intent)
+    }
+
+    // FIXED: Tumatanggap na ng StudentQuizItem at ipinapasa ang score data
+    private fun launchStudentResultActivity(item: StudentQuizItem, resultStatus: String) {
+        val intent = Intent(this, QuizResultActivity::class.java).apply {
+            putExtra("QUIZ_ID", item.quiz.quizId)
+            putExtra("RESULT_TYPE", resultStatus)
+
+            // KRITIKAL: Ipasa ang Score Data mula sa item
+            putExtra("SCORE", item.rawScore)
+            putExtra("TOTAL_QUESTIONS", item.totalQuestions)
+            putExtra("CHEAT_COUNT", item.cheatCount)
         }
         startActivity(intent)
     }

@@ -6,29 +6,24 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
-import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.FieldPath
 import com.google.android.gms.tasks.Tasks
-import com.google.firebase.firestore.DocumentSnapshot
-import com.google.firebase.firestore.Query
 import java.util.concurrent.TimeUnit
 
 // Model na ginagamit sa RecyclerView Adapter
 data class StudentMonitoringData(
-    // studentUid: Ang Auth UID na ang gagamitin natin para sa monitoring key
     val studentUid: String,
     var studentName: String,
-    var status: String, // E.g., IN_PROGRESS, COMPLETED, CHEATING, TIME_EXPIRED, UNATTEMPTED_TIME_EXPIRED
+    var status: String, // E.g., IN_PROGRESS, COMPLETED, TIME_EXPIRED, UNATTEMPTED_TIME_EXPIRED, ACCESS_REVOKED
     var score: Int,
     var cheatCount: Int,
     var lastUpdate: Long
 )
 
-// ⭐ UPDATED CONSTRUCTOR: Tumatanggap na ng quizEndTime
 class QuizMonitoringViewModel(
     private val quizId: String,
     private val assignmentNo: String,
-    private val quizEndTime: Long // Nagdaragdag ng Quiz End Time
+    private val quizEndTime: Long // Quiz End Time
 ) : ViewModel() {
 
     private val firestore = FirebaseFirestore.getInstance()
@@ -54,6 +49,7 @@ class QuizMonitoringViewModel(
 
     // --- STEP 1: LOAD ENROLLED STUDENT IDS (DDS-xxxx) ---
     private fun loadEnrolledStudents() {
+        // ... (Keep the original loadEnrolledStudents logic here)
         firestore.collectionGroup("subjects")
             .whereEqualTo("assignmentNo", assignmentNo)
             .get()
@@ -88,6 +84,7 @@ class QuizMonitoringViewModel(
 
     // --- STEP 2: FETCH AUTH UID AT PROFILE USING DDS-xxxx ---
     private fun fetchStudentAuthUids(studentIds: List<String>) {
+        // ... (Keep the original fetchStudentAuthUids logic here)
         if (studentIds.isEmpty()) return
 
         val idChunks = studentIds.chunked(10)
@@ -124,7 +121,6 @@ class QuizMonitoringViewModel(
                     }
                 }
 
-                // I-initialize ang monitoring gamit ang Auth UIDs
                 initializeMonitoringWithAuthUids(authUids, studentProfiles)
 
             }
@@ -138,23 +134,20 @@ class QuizMonitoringViewModel(
     private fun initializeMonitoringWithAuthUids(authUids: List<String>, studentProfiles: Map<String, String>) {
 
         val currentTime = System.currentTimeMillis()
-        // ⭐ NEW LOGIC: Check kung tapos na ang oras ng quiz
         val isQuizPeriodFinished = quizEndTime > 0L && currentTime > quizEndTime
 
-        // Mag-set ng initial status
         val initialStatus = if (isQuizPeriodFinished) {
-            "UNATTEMPTED_TIME_EXPIRED" // Bagong status para sa mga hindi nakapag-umpisa at lumipas na ang oras
+            "UNATTEMPTED_TIME_EXPIRED"
         } else {
             "NOT_STARTED"
         }
 
-        // I-initialize ang studentList gamit ang Auth UID keys
         authUids.forEach { uid ->
             val fullName = studentProfiles[uid] ?: "Unknown Student"
             studentList[uid] = StudentMonitoringData(
                 studentUid = uid,
                 studentName = fullName,
-                status = initialStatus, // Gagamitin ang bagong initial status
+                status = initialStatus,
                 score = 0,
                 cheatCount = 0,
                 lastUpdate = 0L
@@ -189,10 +182,9 @@ class QuizMonitoringViewModel(
 
                         val data = studentList[monitoredStudentUid]!!
 
-                        // Kuhanin ang status mula sa Firestore
                         var newStatus = doc.getString("status") ?: "N/A"
 
-                        // ⭐ CRITICAL FIX: Kung ang oras ay tapos na, huwag hayaang maging NOT_STARTED!
+                        // CRITICAL FIX: Kung ang oras ay tapos na, huwag hayaang maging NOT_STARTED!
                         if (isQuizPeriodFinished && newStatus == "NOT_STARTED") {
                             newStatus = "UNATTEMPTED_TIME_EXPIRED"
                         }
@@ -222,37 +214,52 @@ class QuizMonitoringViewModel(
         _monitoringData.value = sortedList
     }
 
-    // ⭐ UPDATED STATUS PRIORITY
+    // UPDATED STATUS PRIORITY
     private fun getStatusPriority(status: String): Int {
         return when (status) {
-            "CHEATING" -> 5 // Highest priority
-            "IN_PROGRESS" -> 4
-            "COMPLETED" -> 3
-            // Mas mataas ang expired kaysa sa not_started
-            "TIME_EXPIRED", "UNATTEMPTED_TIME_EXPIRED" -> 2
-            "RETAKE_GRANTED" -> 1
+            "CHEATING" -> 6 // Highest priority
+            "IN_PROGRESS" -> 5
+            "COMPLETED" -> 4
+            "TIME_EXPIRED", "UNATTEMPTED_TIME_EXPIRED" -> 3
+            "RETAKE_GRANTED" -> 2
+            "ACCESS_REVOKED" -> 1
             else -> 0 // NOT_STARTED
         }
     }
 
-    fun grantRetake(studentUid: String, retakeDeadline: Long) { // ✅ Tumatanggap na ng deadline
-        val documentRef = firestore.collection("quizResults").document("${quizId}_$studentUid")
+    /**
+     * Performs a bulk action (RETAKE, REOPEN, REVOKE) on selected students.
+     */
+    fun performBulkAction(action: String, studentUids: List<String>, startTime: Long, endTime: Long) {
+        if (studentUids.isEmpty()) return
 
-        // I-reset ang status, score, cheatCount, at magdagdag ng deadline
-        documentRef.update(
-            mapOf(
-                "status" to "RETAKE_GRANTED",
-                "timestamp" to System.currentTimeMillis(),
-                "score" to 0, // ✅ I-reset ang score
-                "cheatCount" to 0, // ✅ I-reset ang cheat count
-                "retakeDeadline" to retakeDeadline // ✅ Defined na at naipasok sa Firestore
-            )
-        ).addOnSuccessListener {
-            android.util.Log.d("QuizMonitorVM", "Retake granted for $studentUid with deadline $retakeDeadline")
-        }
-            .addOnFailureListener { e ->
-                android.util.Log.e("QuizMonitorVM", "Error granting retake: ${e.message}")
+        studentUids.forEach { studentUid ->
+            val documentRef = firestore.collection("quizResults").document("${quizId}_$studentUid")
+
+            val updateData = when (action) {
+                "RETAKE", "REOPEN" -> mapOf(
+                    "status" to "RETAKE_GRANTED",
+                    "timestamp" to System.currentTimeMillis(),
+                    "score" to 0, // Reset score
+                    "cheatCount" to 0, // Reset cheat count
+                    "retakeDeadline" to endTime // Gamitin ang endTime ng access window
+                )
+                "REVOKE" -> mapOf(
+                    "status" to "ACCESS_REVOKED", // Bagong status para sa pag-block
+                    "timestamp" to System.currentTimeMillis(),
+                    "retakeDeadline" to 0L // Alisin ang retake deadline
+                )
+                else -> return
             }
+
+            documentRef.update(updateData)
+                .addOnSuccessListener {
+                    android.util.Log.d("QuizMonitorVM", "$action command sent for $studentUid until $endTime")
+                }
+                .addOnFailureListener { e ->
+                    android.util.Log.e("QuizMonitorVM", "Error performing $action: ${e.message}")
+                }
+        }
     }
 
     fun getDetailedCheatLog(studentUid: String, callback: (List<String>) -> Unit) {
@@ -268,16 +275,14 @@ class QuizMonitoringViewModel(
     }
 }
 
-// ⭐ UPDATED FACTORY: Tumatanggap na ng quizEndTime
 class QuizMonitoringViewModelFactory(
     private val quizId: String,
     private val assignmentId: String,
-    private val quizEndTime: Long // Nagdaragdag ng Quiz End Time
+    private val quizEndTime: Long
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(QuizMonitoringViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            // I-pass ang quizEndTime sa ViewModel
             return QuizMonitoringViewModel(quizId, assignmentId, quizEndTime) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")

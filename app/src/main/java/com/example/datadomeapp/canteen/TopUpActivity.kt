@@ -179,6 +179,8 @@ class TopUpActivity : AppCompatActivity() {
                     // UI Updates
                     tvStudentInfo.text = "User: $firstName $lastName ($capitalizedRole)"
                     tvCurrentBalance.text = "Current Balance: ₱${String.format(Locale.US, "%.2f", balance)}"
+                    tvStudentInfo.visibility = View.VISIBLE
+                    tvCurrentBalance.visibility = View.VISIBLE
                     tvScanPrompt.text = "Ready to Top Up"
                     llTopUpForm.visibility = View.VISIBLE
                     etAmount.requestFocus()
@@ -283,8 +285,8 @@ class TopUpActivity : AppCompatActivity() {
         // Reset UI
         llTopUpForm.visibility = View.GONE
         tvScanPrompt.text = "Scan Student/Teacher RFID Tag"
-        tvStudentInfo.text = "User Info: N/A"
-        tvCurrentBalance.text = "Current Balance: ₱0.00"
+        tvStudentInfo.visibility = View.GONE
+        tvCurrentBalance.visibility = View.GONE
         etAmount.setText("")
     }
 }

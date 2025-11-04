@@ -67,6 +67,22 @@ class OnlineClassAdapter(private val classList: List<OnlineClassAssignment>) :
                 }
             }
 
+            holder.llClassItem.setOnLongClickListener {
+                // Get the system clipboard service
+                val clipboard = ContextCompat.getSystemService(context, android.content.ClipboardManager::class.java)
+
+                // Create a ClipData to hold the text
+                val clip = android.content.ClipData.newPlainText("Online Class Link", link)
+
+                // Set the clip to the clipboard
+                clipboard?.setPrimaryClip(clip)
+
+                // Show a confirmation message
+                Toast.makeText(context, "Online Link Copied: $link", Toast.LENGTH_LONG).show()
+
+                true // Indicates the long click was consumed
+            }
+
         } else {
             // Disabled / faded
             holder.llClassItem.isEnabled = false
@@ -81,6 +97,7 @@ class OnlineClassAdapter(private val classList: List<OnlineClassAssignment>) :
                     Toast.LENGTH_SHORT
                 ).show()
             }
+            holder.llClassItem.setOnLongClickListener(null)
         }
     }
 

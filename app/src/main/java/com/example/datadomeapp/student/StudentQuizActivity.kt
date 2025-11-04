@@ -244,6 +244,8 @@ class StudentQuizActivity : AppCompatActivity() {
                     putExtra("SCORE", resultData.score)
                     putExtra("TOTAL_QUESTIONS", resultData.totalQuestions)
                     putExtra("CHEAT_COUNT", resultData.cheatCount)
+                    // ⭐ KRITIKAL: Ipasa ang RESULT_TYPE = "ATTEMPTED"
+                    putExtra("RESULT_TYPE", "ATTEMPTED")
                     // Add FLAG_ACTIVITY_CLEAR_TOP to prevent going back to the quiz
                     addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
                 }

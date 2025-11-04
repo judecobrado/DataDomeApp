@@ -18,6 +18,10 @@ import com.example.datadomeapp.R
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import java.io.ByteArrayOutputStream
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.*
 
 class AddEditMenuActivity : AppCompatActivity() {
@@ -39,15 +43,13 @@ class AddEditMenuActivity : AppCompatActivity() {
     private var staffUid: String? = null
     private var canteenName: String? = null
 
-    // ⭐ NEW: Original name of the menu item (for comparison in Edit mode)
     private var originalMenuName: String? = null
 
     private val imagePickerLauncher: ActivityResultLauncher<String> =
         registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
             if (uri != null) {
-                // Grant temporary read permission
-                val flag = Intent.FLAG_GRANT_READ_URI_PERMISSION
-                contentResolver.takePersistableUriPermission(uri, flag)
+                // ✅ FIX: Removed takePersistableUriPermission to avoid SecurityException
+                // No need for persistable permission since we process the image immediately.
 
                 imageUri = uri
                 val bitmap = getBitmapFromUri(uri)
@@ -84,12 +86,10 @@ class AddEditMenuActivity : AppCompatActivity() {
             supportActionBar?.title = "Add New Menu Item"
         }
 
-        // --- UPDATED: Text Watcher updates button state immediately ---
         val validationTextWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
 
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                // Perform validation check whenever text changes and update the button state
                 btnSave.isEnabled = validateInputFields()
             }
 
@@ -99,9 +99,7 @@ class AddEditMenuActivity : AppCompatActivity() {
         etName.addTextChangedListener(validationTextWatcher)
         etPrice.addTextChangedListener(validationTextWatcher)
 
-        // NEW: Set the initial state of the Save button based on the data loaded
         btnSave.isEnabled = validateInputFields()
-        // ------------------------------------------------------------------
 
         btnUploadImage.setOnClickListener { openGallery() }
         btnSave.setOnClickListener { validateAndSaveMenu() }
@@ -113,9 +111,6 @@ class AddEditMenuActivity : AppCompatActivity() {
 
     // --- UTILITY FUNCTIONS ---
 
-    /**
-     * Shows a non-blocking dialog for critical errors or business logic failures.
-     */
     private fun showCriticalErrorDialog(message: String, title: String = "Error") {
         AlertDialog.Builder(this)
             .setTitle(title)
@@ -124,9 +119,6 @@ class AddEditMenuActivity : AppCompatActivity() {
             .show()
     }
 
-    /**
-     * Safely decodes and samples an image from a Uri to prevent OutOfMemory errors.
-     */
     private fun getBitmapFromUri(uri: Uri): Bitmap? {
         return try {
             val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
@@ -160,18 +152,12 @@ class AddEditMenuActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Converts a Bitmap to a Base64 string, using JPEG compression at 50% quality.
-     */
     private fun bitmapToBase64(bitmap: Bitmap): String {
         val baos = ByteArrayOutputStream()
         bitmap.compress(Bitmap.CompressFormat.JPEG, 50, baos)
         return Base64.encodeToString(baos.toByteArray(), Base64.DEFAULT)
     }
 
-    /**
-     * Converts a Base64 string back to a Bitmap, with error handling.
-     */
     private fun base64ToBitmap(base64: String): Bitmap? {
         return try {
             val bytes = Base64.decode(base64, Base64.DEFAULT)
@@ -184,21 +170,24 @@ class AddEditMenuActivity : AppCompatActivity() {
     }
 
     /**
+     * ✅ Stability Fix: Uses Locale.ROOT for consistent formatting.
      * Formats the name: Title Case (First letter caps, rest lowercase).
      */
     private fun formatMenuName(name: String): String {
-        return name.toLowerCase(Locale.getDefault()).split(' ').joinToString(" ") {
-            it.capitalize(Locale.getDefault())
+        return name.toLowerCase(Locale.ROOT).split(' ').joinToString(" ") {
+            // Using a simple check to capitalize the first letter of each word safely
+            it.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }
         }
     }
 
     /**
+     * ✅ Stability Fix: Uses Locale.ROOT for consistent document ID generation.
      * Creates a clean document ID using the format: CanteenName_FoodName
      */
     private fun createDocumentId(canteenName: String, foodName: String): String {
-        val cleanCanteen = canteenName.trim().replace("\\s+".toRegex(), "").toLowerCase(Locale.getDefault())
+        val cleanCanteen = canteenName.trim().replace("\\s+".toRegex(), "").toLowerCase(Locale.ROOT)
         // Replace non-alphanumeric characters with underscore to ensure valid Firestore ID
-        val cleanFood = foodName.trim().replace("[^a-zA-Z0-9]".toRegex(), "_").toLowerCase(Locale.getDefault())
+        val cleanFood = foodName.trim().replace("[^a-zA-Z0-9]".toRegex(), "_").toLowerCase(Locale.ROOT)
         return "${cleanCanteen}_${cleanFood}"
     }
 
@@ -210,7 +199,7 @@ class AddEditMenuActivity : AppCompatActivity() {
                 if (doc.exists()) {
                     val loadedName = doc.getString("name") ?: ""
                     etName.setText(loadedName)
-                    originalMenuName = loadedName // Store the original name
+                    originalMenuName = loadedName
 
                     val priceValue = doc.getDouble("price")
                     etPrice.setText(if (priceValue != null) String.format("%.2f", priceValue) else "")
@@ -223,10 +212,9 @@ class AddEditMenuActivity : AppCompatActivity() {
                         if (bitmap != null) {
                             ivPreview.setImageBitmap(bitmap)
                         } else {
-                            existingBase64Image = null // Corrupted image, don't try to save it
+                            existingBase64Image = null
                         }
                     }
-                    // Re-validate to set initial button state after data loads
                     btnSave.isEnabled = validateInputFields()
                 }
             }
@@ -235,31 +223,20 @@ class AddEditMenuActivity : AppCompatActivity() {
             }
     }
 
-    /**
-     * Performs all input validation and sets inline errors.
-     * @return true if all fields are valid, false otherwise.
-     */
     private fun validateInputFields(): Boolean {
         val name = etName.text.toString().trim()
         val priceText = etPrice.text.toString().trim()
 
-        // --- Reset Inline Errors ---
         etName.error = null
         etPrice.error = null
 
         var isValid = true
 
-        // --- NAME VALIDATION (Inline Error) ---
         if (name.length < 3 || name.length > 50) {
             etName.error = "Name must be 3 to 50 characters long."
             isValid = false
         }
-        // Ang pag-check kung may digit ay maaaring masyadong mahigpit (hal. "Coke Zero").
-        // Tanging *required* lang kung bawal talaga ang number sa pangalan ng pagkain.
-        // Hahayaan ko ito na optional: kung gusto mo, ibalik mo ang luma.
-        // ------------------------------------
 
-        // --- PRICE VALIDATION (Inline Error) ---
         if (priceText.isEmpty()) {
             etPrice.error = "Price is required."
             isValid = false
@@ -272,34 +249,36 @@ class AddEditMenuActivity : AppCompatActivity() {
                 etPrice.error = "Price cannot exceed ₱1,000.00."
                 isValid = false
             }
-            // Check for decimal precision (max two digits after the decimal point)
             else if (priceText.contains('.') && priceText.substringAfter('.').length > 2) {
                 etPrice.error = "Price can only have up to two decimal places."
                 isValid = false
             }
         }
-        // ------------------------------------
 
         return isValid
     }
 
     private fun validateAndSaveMenu() {
-        // Step 1: Run validation again just before saving (final safeguard).
         if (!validateInputFields()) {
             return
         }
 
-        // Fields are valid. Get final values.
         val name = etName.text.toString().trim()
         val price = etPrice.text.toString().trim().toDouble()
 
-        // --- Critical Checks ---
         progressBar.visibility = View.VISIBLE
-        btnSave.isEnabled = false // Disable again to prevent double-click during network call
+        btnSave.isEnabled = false
 
         val available = switchAvailable.isChecked
         val uid = staffUid
-        val canteen = canteenName ?: "UnknownCanteen"
+        val canteen = canteenName
+
+        if (canteen.isNullOrEmpty()) {
+            progressBar.visibility = View.GONE
+            showCriticalErrorDialog("Canteen name is missing. Cannot save menu.", "Data Error")
+            btnSave.isEnabled = true
+            return
+        }
 
         if (uid == null) {
             progressBar.visibility = View.GONE
@@ -307,38 +286,46 @@ class AddEditMenuActivity : AppCompatActivity() {
             return
         }
 
-        // --- Formatting ---
         val formattedName = formatMenuName(name)
 
-        // --- Image Encoding ---
-        val base64Image = when {
-            imageUri != null -> {
-                val bitmap = getBitmapFromUri(imageUri!!)
-                if (bitmap != null) bitmapToBase64(bitmap) else ""
-            }
-            existingBase64Image != null -> existingBase64Image!!
-            else -> ""
-        }
+        lifecycleScope.launch {
 
-        // --- Save Logic (FIXED LOGIC) ---
+            val base64Image = withContext(Dispatchers.IO) {
+                when {
+                    imageUri != null -> {
+                        val bitmap = getBitmapFromUri(imageUri!!)
+                        if (bitmap != null) bitmapToBase64(bitmap) else ""
+                    }
+                    existingBase64Image != null -> existingBase64Image!!
+                    else -> ""
+                }
+            }
+
+            continueSaveLogic(formattedName, price, available, base64Image, uid, canteen)
+        }
+    }
+
+    private fun continueSaveLogic(
+        formattedName: String,
+        price: Double,
+        available: Boolean,
+        base64Image: String,
+        uid: String,
+        canteen: String
+    ) {
         if (menuId == null) {
-            // ADD NEW ITEM: Check existence and save using the generated ID
             checkExistenceAndSave(formattedName, price, available, base64Image, uid, canteen)
         } else {
-            // EDIT EXISTING ITEM:
             val newCustomDocId = createDocumentId(canteen, formattedName)
 
             if (newCustomDocId != menuId) {
-                // Name was changed -> Delete old document and create new one
                 handleNameChangeUpdate(menuId!!, formattedName, price, available, base64Image, uid, canteen, newCustomDocId)
             } else {
-                // Name is the same OR no name change -> Safe update on the existing ID
                 saveToFirestore(formattedName, price, available, base64Image, uid, canteen, menuId!!)
             }
         }
     }
 
-    // ⭐ NEW FUNCTION: Handles the critical case where the name (and thus the Document ID) is changed.
     private fun handleNameChangeUpdate(
         oldDocId: String,
         newName: String,
@@ -349,20 +336,15 @@ class AddEditMenuActivity : AppCompatActivity() {
         canteenName: String,
         newDocId: String
     ) {
-        // 1. Check if the new name already exists as a document ID (safety check)
         firestore.collection("canteenMenu").document(newDocId).get()
             .addOnSuccessListener { doc ->
                 if (doc.exists()) {
-                    // Fail: The new document ID already exists in the database
                     progressBar.visibility = View.GONE
                     btnSave.isEnabled = true
                     showCriticalErrorDialog("The new name '$newName' already exists as a separate item. Please choose a unique name.", "Name Conflict")
                 } else {
-                    // Success: Safe to create new document and delete old one
-                    // 2. Save new document
                     saveToFirestore(newName, price, available, base64Image, staffUid, canteenName, newDocId, isNameChange = true)
                         .addOnSuccessListener {
-                            // 3. Delete old document
                             firestore.collection("canteenMenu").document(oldDocId).delete()
                                 .addOnSuccessListener {
                                     progressBar.visibility = View.GONE
@@ -370,13 +352,11 @@ class AddEditMenuActivity : AppCompatActivity() {
                                     finish()
                                 }
                                 .addOnFailureListener { e ->
-                                    // CRITICAL: Failed to delete old document! Data redundancy issue.
                                     progressBar.visibility = View.GONE
                                     showCriticalErrorDialog("Data saved but failed to delete old menu item. Please contact administrator.", "Partial Update Error")
                                     finish()
                                 }
                         }
-                    // Failure on saveToFirestore is handled inside saveToFirestore
                 }
             }
             .addOnFailureListener { e ->
@@ -385,12 +365,7 @@ class AddEditMenuActivity : AppCompatActivity() {
                 Toast.makeText(this, "Error checking new name existence: ${e.message}", Toast.LENGTH_SHORT).show()
             }
     }
-    // -------------------------------------------------------------------------------------------------
 
-
-    /**
-     * Checks if a new menu item already exists by its custom ID before saving.
-     */
     private fun checkExistenceAndSave(
         name: String,
         price: Double,
@@ -404,12 +379,10 @@ class AddEditMenuActivity : AppCompatActivity() {
         firestore.collection("canteenMenu").document(customDocId).get()
             .addOnSuccessListener { doc ->
                 if (doc.exists()) {
-                    // Item exists: Use Dialog
                     progressBar.visibility = View.GONE
                     btnSave.isEnabled = true
                     showCriticalErrorDialog("A menu item named '$name' already exists for your canteen. Please use the Edit feature to modify it.", "Duplicate Item")
                 } else {
-                    // Document does not exist: Safe to save as a new item
                     saveToFirestore(name, price, available, base64Image, staffUid, canteenName, customDocId)
                 }
             }
@@ -420,7 +393,6 @@ class AddEditMenuActivity : AppCompatActivity() {
             }
     }
 
-    // ⭐ UPDATED FUNCTION: Para suportahan ang onSuccessListener sa handleNameChangeUpdate
     private fun saveToFirestore(
         name: String,
         price: Double,
@@ -444,19 +416,16 @@ class AddEditMenuActivity : AppCompatActivity() {
 
         task.addOnSuccessListener {
             if (!isNameChange) {
-                // Only finish here if it's a simple ADD or simple EDIT (no name change)
                 progressBar.visibility = View.GONE
                 Toast.makeText(this, "Menu saved successfully!", Toast.LENGTH_SHORT).show()
                 finish()
             }
-            // If it is a name change, the finishing logic is handled in handleNameChangeUpdate
         }.addOnFailureListener { e ->
             progressBar.visibility = View.GONE
             btnSave.isEnabled = true
-            // Network/Database Failure: Use Dialog for critical technical errors
-            showCriticalErrorDialog("An error occurred while saving the menu item. Please check your connection or image size (max 1MB). Error: ${e.message}", "Save Failed")
+            showCriticalErrorDialog("An error occurred while saving the menu item. Error: ${e.message}", "Save Failed")
         }
 
-        return task // Return the task for chaining in handleNameChangeUpdate
+        return task
     }
 }

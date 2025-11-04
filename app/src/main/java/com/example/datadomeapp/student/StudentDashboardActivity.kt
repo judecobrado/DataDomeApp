@@ -39,7 +39,9 @@ class StudentDashboardActivity : AppCompatActivity() {
 
     // Variable para sa Section ID at Student ID
     private var studentSectionId: String? = null
-    private var studentId: String? = null // Gagamitin ito para sa schedule path
+    private var studentId: String? = null
+
+    private var studentUid: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,6 +50,8 @@ class StudentDashboardActivity : AppCompatActivity() {
         tlDailySchedule = findViewById(R.id.tlDailySchedule)
         tvScheduleStatus = findViewById(R.id.tvScheduleStatus)
         tvUserInfo = findViewById(R.id.tvUserInfo)
+
+        studentUid = intent.getStringExtra("USER_UID") ?: auth.currentUser?.uid
 
         val finalUid = intent.getStringExtra("USER_UID") ?: auth.currentUser?.uid
 
@@ -306,7 +310,6 @@ class StudentDashboardActivity : AppCompatActivity() {
         // I-set up ang mga button na may "Coming Soon" Toast
         val comingSoonIds = listOf(
             R.id.btnAssignments,
-            R.id.btnCanteen,
         )
 
         for (id in comingSoonIds) {
@@ -324,6 +327,20 @@ class StudentDashboardActivity : AppCompatActivity() {
 
             val intent = Intent(this, StudentQuizListActivity::class.java)
             intent.putExtra("QUIZ_TYPE", "Quiz") // Only Quizzes
+            startActivity(intent)
+        }
+
+        findViewById<Button>(R.id.btnCanteen).setOnClickListener {
+            // ✅ I-check kung may valid Student ID (DDS-0008) na nakuha.
+            if (studentId.isNullOrEmpty()) {
+                Toast.makeText(this, "Student ID missing. Cannot open canteen. Please contact admin.", Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+
+            val intent = Intent(this, UserCanteenMenuActivity::class.java)
+            intent.putExtra("USER_TYPE", "student")
+            // ⭐️ CRITICAL: Ginagamit na ang studentId (e.g., DDS-0008) bilang USER_ID!
+            intent.putExtra("USER_ID", studentId)
             startActivity(intent)
         }
 

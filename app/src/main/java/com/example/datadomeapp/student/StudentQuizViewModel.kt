@@ -85,6 +85,8 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
                     // Ang guro ay nag-grant ng retake!
                     _uiMessage.value = "Retake granted by teacher. Resetting quiz..."
 
+                    shuffleQuestionsAndAnswers()
+
                     // I-reset ang quiz state
                     resetQuizProgress(keepCheatCount = false)
 
@@ -267,6 +269,11 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
         submitAttempts = 0
 
         _quizResultData.value = null
+
+        // ⭐ BAGONG PAGBABAGO: I-stop ang timer at i-reset ang display
+        _timerText.value = "00:00"
+        handler.removeCallbacks(tickRunnable)
+        isTicking = false
     }
 
     fun resetCheat() {
@@ -353,13 +360,15 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
         }
         submitAttempts++
 
+        val answerMap = studentAnswers.associate { it.first.toString() to it.second }
+
         firestore.collection("quizResults").document("${quiz.quizId}_$studentUid")
             .set(
                 mapOf(
                     "studentId" to studentUid,
                     "quizId" to quiz.quizId,
                     "assignmentId" to quiz.assignmentId,
-                    "answers" to studentAnswers,
+                    "answers" to answerMap, // <-- Gamitin ang Map dito!
                     "score" to score,
                     "status" to "COMPLETED",
                     "cheatCount" to _cheatCount.value,

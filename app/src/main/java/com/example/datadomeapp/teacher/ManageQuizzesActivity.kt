@@ -77,7 +77,8 @@ class ManageQuizzesActivity : BaseActivity() {
             editClickListener = { quiz -> openQuizEditor(quiz) },
             deleteClickListener = { quiz -> deleteQuiz(quiz) },
             publishClickListener = { quiz -> togglePublish(quiz) },
-            setTimeClickListener = { quiz -> setScheduledTime(quiz) }
+            setTimeClickListener = { quiz -> setScheduledTime(quiz) },
+            viewClickListener = { quiz -> viewQuizResults(quiz) }
         )
         recyclerView.adapter = adapter
 

@@ -124,38 +124,65 @@ class CanteenReportsActivity : AppCompatActivity() {
         val chartTitle = filterLabel.substringBefore(" (")
         tvSalesChartTitle.text = "Sales & Quantity Trend ($chartTitle)" // Dynamic Title
 
-        firestore.collection("transactions")
-            .whereEqualTo("type", "CASH_OUT") // Only sales transactions
+        // --- SIMULA NG PAGBABAGO SA QUERY LOGIC ---
+        // Gumawa ng dalawang queries at pagsasamahin ang resulta (This is the standard, albeit slightly complex, way to handle 'OR' in Firestore)
+
+        // 1. Query for RFID Payments
+        val rfidQuery = firestore.collection("transactions")
+            .whereEqualTo("type", "RFID_PAYMENT") // RFID Transaction Type
             .whereGreaterThanOrEqualTo("timestamp", start)
             .whereLessThanOrEqualTo("timestamp", end)
             .orderBy("timestamp", Query.Direction.DESCENDING)
-            .get()
-            .addOnSuccessListener { snapshot ->
-                orderList.clear()
 
-                val orders = snapshot.documents.mapNotNull { doc ->
-                    // Manual extraction ng 'amount' field
-                    val amountValue = doc.get("amount")
-                    val totalAmount = when (amountValue) {
-                        is Number -> amountValue.toDouble()
-                        is String -> amountValue.toDoubleOrNull() ?: 0.0
-                        else -> 0.0
-                    }
+        // 2. Query for Cash Payments
+        val cashQuery = firestore.collection("transactions")
+            .whereEqualTo("type", "CASH_PAYMENT") // Cash Transaction Type
+            .whereGreaterThanOrEqualTo("timestamp", start)
+            .whereLessThanOrEqualTo("timestamp", end)
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+
+        // Mag-fetch ng RFID transactions
+        rfidQuery.get().addOnSuccessListener { rfidSnapshot ->
+            val rfidOrders = rfidSnapshot.documents.mapNotNull { doc ->
+                val totalAmount = (doc.get("amount") as? Number)?.toDouble() ?: doc.getString("amount")?.toDoubleOrNull() ?: 0.0
+
+                doc.toObject(Order::class.java)?.copy(
+                    id = doc.id,
+                    totalAmount = totalAmount,
+                    paymentMethod = "RFID" // Tiyakin na RFID ito
+                )
+            }
+
+            // Mag-fetch ng Cash transactions
+            cashQuery.get().addOnSuccessListener { cashSnapshot ->
+                val cashOrders = cashSnapshot.documents.mapNotNull { doc ->
+                    val totalAmount = (doc.get("amount") as? Number)?.toDouble() ?: doc.getString("amount")?.toDoubleOrNull() ?: 0.0
 
                     doc.toObject(Order::class.java)?.copy(
                         id = doc.id,
-                        totalAmount = totalAmount
+                        totalAmount = totalAmount,
+                        paymentMethod = "Cash" // Tiyakin na Cash ito
                     )
                 }
 
-                orderList.addAll(orders)
+                // Pagsasamahin, i-sort, at i-display
+                val combinedOrders = (rfidOrders + cashOrders)
+                    .sortedByDescending { it.timestamp }
+
+                orderList.clear()
+                orderList.addAll(combinedOrders)
                 orderAdapter.notifyDataSetChanged()
 
-                calculateAndDisplaySummary(orders)
+                calculateAndDisplaySummary(combinedOrders)
             }
+                .addOnFailureListener { e ->
+                    Toast.makeText(this, "Failed to load cash reports: ${e.message}", Toast.LENGTH_LONG).show()
+                    Log.e(TAG, "Error loading cash orders for report", e)
+                }
+        }
             .addOnFailureListener { e ->
-                Toast.makeText(this, "Failed to load reports: ${e.message}", Toast.LENGTH_LONG).show()
-                Log.e(TAG, "Error loading orders for report", e)
+                Toast.makeText(this, "Failed to load RFID reports: ${e.message}", Toast.LENGTH_LONG).show()
+                Log.e(TAG, "Error loading RFID orders for report", e)
             }
     }
 
@@ -293,6 +320,7 @@ class OrderAdapter(private val items: List<Order>) :
         val tvOrderTime: TextView = view.findViewById(R.id.tvOrderTime)
         val tvOrderTotal: TextView = view.findViewById(R.id.tvOrderTotal)
         val tvItemDetails: TextView = view.findViewById(R.id.tvItemDetails)
+        val tvPaymentMethod: TextView = view.findViewById(R.id.tvPaymentMethod)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): OrderViewHolder {
@@ -308,6 +336,8 @@ class OrderAdapter(private val items: List<Order>) :
         holder.tvOrderId.text = "Order #${order.id.substring(0, 6).toUpperCase(Locale.US)}"
         holder.tvOrderTime.text = timeFormatter.format(order.timestamp)
         holder.tvOrderTotal.text = String.format(Locale.US, "₱%.2f", order.totalAmount)
+
+        holder.tvPaymentMethod.text = "Paid via: ${order.paymentMethod}"
 
         // Item details summary
         val itemSummary = order.items.joinToString(separator = ", ") { item ->
