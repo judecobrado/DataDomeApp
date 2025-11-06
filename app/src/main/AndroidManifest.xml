@@ -73,6 +73,16 @@
         <activity android:name=".teacher.TeacherScheduleMatrixActivity" />
         <activity android:name=".teacher.RouletteActivity" />
         <activity android:name=".teacher.CreateQuizActivity" />
+        <activity android:name=".teacher.CreateAssignmentActivity" />
+        <activity android:name=".teacher.ViewSubmissionsActivity" />
+        <activity android:name=".teacher.AssignmentListActivity" />
+        <activity android:name=".teacher.EditAssignmentActivity" />
+        <!-- 🆕 ADD THIS LINE: StudentExtensionsActivity -->
+        <activity android:name=".student.AssignmentDetailsActivity" />
+        <activity android:name=".teacher.StudentExtensionsActivity" />
+        <activity android:name=".student.StudentSubjectsActivity" />
+        <activity android:name=".student.SubmitAssignmentActivity" />
+        <activity android:name=".student.StudentAssignmentsActivity" />
         <activity android:name=".teacher.ManageQuizzesActivity" /> <!-- Library Module -->
         <activity android:name=".admin.ManageLibrary" /> <!-- Canteen Module -->
         <activity android:name=".canteen.CanteenStaffDashboardActivity" />

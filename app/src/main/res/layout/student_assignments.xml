@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#F5F5F5"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/tvAssignmentsHeader"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="📚 Assignments"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="#212121"
+        android:layout_marginBottom="12dp" />
+
+    <TextView
+        android:id="@+id/tvNoAssignments"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Loading..."
+        android:gravity="center"
+        android:textColor="#757575"
+        android:visibility="gone" />
+
+    <ListView
+        android:id="@+id/lvAssignments"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:dividerHeight="8dp"
+        android:paddingBottom="8dp" />
+</LinearLayout>

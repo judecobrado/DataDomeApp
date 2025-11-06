@@ -1,10 +1,12 @@
 package com.example.datadomeapp.models
 
-import com.google.firebase.Timestamp // Don't forget this import!
+import android.os.Parcelable
+import com.google.firebase.Timestamp
+import kotlinx.parcelize.Parcelize
 
-// 🧑‍🎓 Student model
+@Parcelize
 data class Student(
-    val id: String = "",
+    var id: String = "", // ✅ Change from val to var
     val firstName: String = "",
     val lastName: String = "",
     val email: String = "",
@@ -22,27 +24,27 @@ data class Student(
     val yearLevel: String? = null,
     val phone: String? = null,
     val guardianPhone: String? = null,
-    val dateEnrolled: Timestamp? = null, // 🌟 FIX: Use Timestamp to match Firestore data type    val semester: String? = null,
-    val middleName: String? = null,
+    val dateEnrolled: Timestamp? = null,
     val semester: String? = null,
+    val middleName: String? = null,
     val isEnrolled: Boolean = false,
     val enrollmentType: String? = null,
     val userUid: String? = null,
     val status: String? = null
-)
+) : Parcelable // ✅ Don't forget to make it Parcelable
 
-// 👩‍🏫 Teacher model
+@Parcelize
 data class AdminTeacher(
-    val id: String = "",
+    var id: String = "", // ✅ Also make this mutable
     val firstName: String = "",
     val lastName: String = "",
     val email: String = "",
     val subject: String = "",
     val sectionAssigned: String = "",
     val department: String = ""
-)
+) : Parcelable
 
-// 👩‍🍳 Canteen Staff model
+@Parcelize
 data class CanteenStaff(
     var email: String = "",
     var role: String = "",
@@ -53,6 +55,5 @@ data class CanteenStaff(
     var uid: String? = null,
     var storeImageUrl: String = "",
     var canteenStaffId: String = "",
-    var firestoreId: String? = null    // <-- Add this
-)
-
+    var firestoreId: String? = null
+) : Parcelable

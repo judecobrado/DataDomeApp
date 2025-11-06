@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("com.google.gms.google-services")
+    id ("kotlin-parcelize")
     kotlin("android")
     kotlin("kapt")}
 

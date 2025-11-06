@@ -25,7 +25,68 @@
     <color name="softGold">#F5E6B3</color> <!-- Soft gold for lighter accents -->
     <color name="darkText">#EDEDED</color>
 
+    <color name="gray">#FF9E9E9E</color>
+    <color name="gray_light">#FFE0E0E0</color>
+    <color name="gray_dark">#FF616161</color>
+    <color name="gray_divider">#FFD0D0D0</color>
 
+
+        <!-- Primary Colors -->
+    <color name="purple_200">#FFBB86FC</color>
+        <color name="purple_500">#FF6200EE</color>
+        <color name="purple_700">#FF3700B3</color>
+        <color name="teal_200">#FF03DAC5</color>
+        <color name="teal_700">#FF018786</color>
+
+
+
+        <!-- Additional gray shades -->
+        <color name="gray_50">#FFF9F9F9</color>
+        <color name="gray_100">#FFF5F5F5</color>
+        <color name="gray_200">#FFEEEEEE</color>
+        <color name="gray_300">#FFE0E0E0</color>
+        <color name="gray_400">#FFBDBDBD</color>
+        <color name="gray_500">#FF9E9E9E</color>
+        <color name="gray_600">#FF757575</color>
+        <color name="gray_700">#FF616161</color>
+        <color name="gray_800">#FF424242</color>
+        <color name="gray_900">#FF212121</color>
+
+        <!-- Status Colors -->
+        <color name="red">#FFFF0000</color>
+        <color name="red_dark">#FFD32F2F</color>
+        <color name="green">#FF00FF00</color>
+        <color name="green_dark">#FF388E3C</color>
+        <color name="blue">#FF0000FF</color>
+        <color name="blue_dark">#FF1976D2</color>
+        <color name="orange">#FFFF9800</color>
+        <color name="orange_dark">#FFF57C00</color>
+
+        <!-- Material Design Colors -->
+        <color name="material_grey_300">#FFE0E0E0</color>
+        <color name="material_grey_500">#FF9E9E9E</color>
+        <color name="material_grey_700">#FF616161</color>
+
+        <!-- Custom App Colors -->
+        <color name="colorPrimary">#FF6200EE</color>
+        <color name="colorPrimaryDark">#FF3700B3</color>
+        <color name="colorAccent">#FF03DAC5</color>
+
+        <!-- Button Colors -->
+        <color name="button_primary">#FF6200EE</color>
+        <color name="button_secondary">#FF03DAC5</color>
+        <color name="button_danger">#FFFF0000</color>
+        <color name="button_success">#FF00FF00</color>
+
+        <!-- Text Colors -->
+        <color name="text_primary">#FF000000</color>
+        <color name="text_secondary">#FF9E9E9E</color>
+        <color name="text_hint">#FFBDBDBD</color>
+
+        <!-- Background Colors -->
+        <color name="background_light">#FFF5F5F5</color>
+        <color name="background_white">#FFFFFFFF</color>
+        <color name="background_dark">#FF212121</color>
 
 
 </resources>

@@ -69,14 +69,19 @@ class ManageClassesActivity : AppCompatActivity() {
             }
     }
 
+    // ✅ FIXED: Pass CLASS_ID to ClassDetailsActivity
     private fun navigateToClassDetails(assignment: ClassAssignment) {
         val intent = Intent(this, ClassDetailsActivity::class.java)
         val primarySlot = assignment.scheduleSlots.values.firstOrNull()
         val sectionBlock = primarySlot?.sectionBlock ?: "A"
+
+        // 🔧 Pass all important extras to avoid missing class info
         intent.putExtra("ASSIGNMENT_ID", assignment.assignmentNo)
+        intent.putExtra("CLASS_ID", assignment.assignmentNo) // ✅ This fixes “Missing Class ID”
         intent.putExtra("CLASS_NAME", "${assignment.subjectTitle} - $sectionBlock")
         intent.putExtra("SUBJECT_CODE", assignment.subjectCode)
         intent.putExtra("ONLINE_CLASS_LINK", assignment.onlineClassLink ?: "")
+
         startActivity(intent)
     }
 

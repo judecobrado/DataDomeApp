@@ -1,5 +1,9 @@
 package com.example.datadomeapp.models
 
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
+
+@Parcelize
 data class ClassAssignment(
     // Ang '726' na ginagamit bilang Document ID sa loob ng /schedules/
     val assignmentNo: String = "",
@@ -24,22 +28,23 @@ data class ClassAssignment(
 
     // 🟢 CRITICAL FIX: Schedule Slots as a Map<Slot Number, TimeSlot>
     val scheduleSlots: Map<String, TimeSlot> = emptyMap()
-)
+) : Parcelable
 
+@Parcelize
 data class TimeSlot(
     val day: String = "",       // e.g., "Mon", "Tue"
     val startTime: String = "", // e.g., "1:00 PM" (Display Format)
     val endTime: String = "",   // e.g., "2:00 PM" (Display Format)
     val roomLocation: String = "", // e.g., "Room 201"
     val sectionBlock: String = ""
-)
+) : Parcelable
 
+@Parcelize
 data class Room(
     val id: String = "",       // Hal: "RM-305"
-)
+) : Parcelable
 
-
-
+@Parcelize
 data class OLDVerClassAssignment(
     val assignmentId: String = "", // Document ID
     val courseCode: String = "",
@@ -57,4 +62,4 @@ data class OLDVerClassAssignment(
     val maxCapacity: Int = 0,
     val enrolledCount: Int = 0,
     val onlineClassLink: String = ""
-)
+) : Parcelable
