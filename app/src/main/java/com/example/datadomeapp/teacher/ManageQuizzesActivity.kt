@@ -37,13 +37,33 @@ class ManageQuizzesActivity : BaseActivity() {
     private var currentAssignmentId: String? = null
     private var currentClassName: String? = null
     private val quizList = mutableListOf<Quiz>()
+    private val displayedQuizList = mutableListOf<Quiz>()
     private lateinit var adapter: QuizAdapter
+    private lateinit var tabFilter: com.google.android.material.tabs.TabLayout
 
     private val classDetailsMap = mutableMapOf<String, ClassDisplayDetails>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_manage_quizzes)
+
+        tabFilter = findViewById(R.id.tabFilter)
+        tabFilter.addTab(tabFilter.newTab().setText("All"))
+        tabFilter.addTab(tabFilter.newTab().setText("Exams"))
+        tabFilter.addTab(tabFilter.newTab().setText("Quizzes"))
+
+        tabFilter.addOnTabSelectedListener(object : com.google.android.material.tabs.TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: com.google.android.material.tabs.TabLayout.Tab) {
+                filterQuizzes(tab.text.toString())
+            }
+
+            override fun onTabUnselected(tab: com.google.android.material.tabs.TabLayout.Tab?) {}
+
+            override fun onTabReselected(tab: com.google.android.material.tabs.TabLayout.Tab?) {
+                // Also apply filter again when reselecting the same tab
+                filterQuizzes(tab?.text.toString())
+            }
+        })
 
         progressBarLoading = findViewById(R.id.progressBarLoading)
         currentAssignmentId = intent.getStringExtra("ASSIGNMENT_ID")
@@ -72,7 +92,7 @@ class ManageQuizzesActivity : BaseActivity() {
 
         recyclerView.layoutManager = LinearLayoutManager(this)
         adapter = QuizAdapter(
-            quizzes = quizList,
+            quizzes = displayedQuizList,
             classDetailsMap = classDetailsMap,
             editClickListener = { quiz -> openQuizEditor(quiz) },
             deleteClickListener = { quiz -> deleteQuiz(quiz) },
@@ -137,6 +157,20 @@ class ManageQuizzesActivity : BaseActivity() {
             }
     }
 
+    private fun filterQuizzes(filter: String) {
+        displayedQuizList.clear()
+        displayedQuizList.addAll(
+            when (filter) {
+                "Exams" -> quizList.filter { it.quizType.equals("Exam", ignoreCase = true) }
+                "Quizzes" -> quizList.filter { it.quizType.equals("Quiz", ignoreCase = true) }
+                else -> quizList
+            }
+        )
+        adapter.notifyDataSetChanged()
+        toggleEmptyMessage(displayedQuizList)
+    }
+
+
     override fun getLoadingProgressBar(): ProgressBar? = progressBarLoading
 
     private fun loadQuizzes() {
@@ -176,26 +210,30 @@ class ManageQuizzesActivity : BaseActivity() {
                         }
 
                         val title = child.child("title").getValue(String::class.java) ?: ""
+                        val description = child.child("description").getValue(String::class.java) ?: ""
                         val isPublished = child.child("isPublished").getValue(Boolean::class.java) ?: false
                         val scheduledDateTime = child.child("scheduledDateTime").getValue(Long::class.java) ?: 0L
                         val scheduledEndDateTime = child.child("scheduledEndDateTime").getValue(Long::class.java) ?: 0L
+                        val quizType = child.child("quizType").getValue(String::class.java) ?: "Quiz"
 
                         val quiz = Quiz(
                             quizId = quizId,
                             assignmentId = assignmentId,
                             teacherUid = teacherUid,
                             title = title,
+                            description = description,
                             questions = emptyList(),
                             isPublished = isPublished,
                             scheduledDateTime = scheduledDateTime,
-                            scheduledEndDateTime = scheduledEndDateTime
+                            scheduledEndDateTime = scheduledEndDateTime,
+                            quizType = quizType
                         )
                         quizList.add(quiz)
                     }
 
                     sortQuizzes(quizList)
-                    adapter.notifyDataSetChanged()
-                    toggleEmptyMessage()
+                    val currentTabText = tabFilter.getTabAt(tabFilter.selectedTabPosition)?.text.toString()
+                    filterQuizzes(currentTabText)
                 }
 
                 override fun onCancelled(error: DatabaseError) {
@@ -408,12 +446,19 @@ class ManageQuizzesActivity : BaseActivity() {
             putExtra("IS_ONGOING", isOngoing)
             putExtra("SCHEDULED_END_DATE_TIME", quiz.scheduledEndDateTime)
             putExtra("QUIZ_TITLE", quiz.title)
+            putExtra("QUIZ_TYPE", quiz.quizType)
         }
         startActivity(intent)
     }
 
-    private fun toggleEmptyMessage() {
-        if (quizList.isEmpty()) {
+    private fun toggleEmptyMessage(listToCheck: List<Quiz> = displayedQuizList) {
+        if (listToCheck.isEmpty()) {
+            val currentTabText = tabFilter.getTabAt(tabFilter.selectedTabPosition)?.text.toString()
+            tvNoQuizzes.text = when (currentTabText) {
+                "Quizzes" -> "No Quizzes yet."
+                "Exams" -> "No Exams yet."
+                else -> "No Quizzes or Exams yet."
+            }
             fadeIn(tvNoQuizzes)
             recyclerView.visibility = View.GONE
         } else {

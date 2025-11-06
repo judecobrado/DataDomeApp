@@ -12,7 +12,6 @@ import com.example.datadomeapp.models.ClassDisplayDetails
 import java.text.SimpleDateFormat
 import java.util.*
 
-
 class QuizAdapter(
     private val quizzes: MutableList<Quiz>,
     private val classDetailsMap: Map<String, ClassDisplayDetails>,

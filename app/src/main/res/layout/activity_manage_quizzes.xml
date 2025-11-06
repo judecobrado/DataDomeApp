@@ -12,13 +12,18 @@
         android:layout_height="wrap_content"
         android:text="Create New Quiz" />
 
-    <!-- 🆕 NEW BUTTON: Batch Upload Quiz -->
-    <Button
-        android:id="@+id/btnBatchUploadQuiz"
+    <!-- Filter Tabs -->
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tabFilter"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Batch Upload Quiz"
-        android:layout_marginTop="8dp" />
+        android:layout_height="48dp"
+        android:background="@color/white"
+        app:tabMode="fixed"
+        app:tabGravity="fill"
+        app:tabIndicatorFullWidth="false"
+        app:tabPaddingStart="16dp"
+        app:tabPaddingEnd="16dp"
+        app:tabBackground="?attr/selectableItemBackgroundBorderless"/>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewQuizzes"
@@ -32,12 +37,9 @@
         style="?android:attr/progressBarStyleLarge"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_gravity="center"
         android:indeterminate="true"
-        android:visibility="gone"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        android:visibility="gone" />
 
     <TextView
         android:id="@+id/tvNoQuizzes"

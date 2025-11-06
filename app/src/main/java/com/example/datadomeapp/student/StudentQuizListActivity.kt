@@ -114,7 +114,7 @@ class StudentQuizListActivity : AppCompatActivity() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                Toast.makeText(this@StudentQuizListActivity, "Failed to load quizzes: ${error.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@StudentQuizListActivity, "Failed to load: ${error.message}", Toast.LENGTH_SHORT).show()
                 progressBar.visibility = View.GONE
                 tvEmpty.visibility = View.VISIBLE
             }
@@ -166,6 +166,7 @@ class StudentQuizListActivity : AppCompatActivity() {
 
         quizItems.forEachIndexed { index, item ->
             val quizId = item.quiz.quizId
+            val isExamType = item.quiz.quizType.equals("Exam", true)
             FirebaseFirestore.getInstance().collection("quizResults")
                 .document("${quizId}_$studentUid")
                 .get()
@@ -186,11 +187,14 @@ class StudentQuizListActivity : AppCompatActivity() {
                     } else {
                         // Walang record. Check kung expired na ang time
                         val currentTime = System.currentTimeMillis()
-                        if (currentTime > item.quiz.scheduledEndDateTime && item.quiz.scheduledEndDateTime > 0L) {
-                            // Ito ang status na gagamitin ng adapter para magpakita ng 'MISSED'
-                            item.studentStatus = "UNATTEMPTED_TIME_EXPIRED"
-                        } else {
-                            item.studentStatus = "NOT_STARTED"
+
+                        item.studentStatus = when {
+                            // Priority 1: Kung Exam, default status ay EXAM_READY
+                            isExamType -> "EXAM_READY"
+                            // Priority 2: Kung tapos na ang oras, MISSED
+                            currentTime > item.quiz.scheduledEndDateTime && item.quiz.scheduledEndDateTime > 0L -> "UNATTEMPTED_TIME_EXPIRED"
+                            // Priority 3: Kung hindi Exam at hindi pa tapos ang oras
+                            else -> "NOT_STARTED"
                         }
                     }
                 }
@@ -213,7 +217,7 @@ class StudentQuizListActivity : AppCompatActivity() {
     private fun checkQuizStatusAndLaunch(item: StudentQuizItem) {
         val quiz = item.quiz
         if (quiz.scheduledDateTime == 0L || quiz.scheduledEndDateTime == 0L) {
-            Toast.makeText(this, "Quiz schedule is invalid. Please contact your teacher.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, " Schedule is invalid. Please contact your teacher.", Toast.LENGTH_LONG).show()
             return
         }
 
@@ -225,7 +229,7 @@ class StudentQuizListActivity : AppCompatActivity() {
             // Case 1: NOT YET AVAILABLE
             currentTime < startTime -> {
                 val sdf = SimpleDateFormat("MMM dd, hh:mm a", Locale.getDefault())
-                Toast.makeText(this, "The quiz will start on ${sdf.format(Date(startTime))}.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Will start on ${sdf.format(Date(startTime))}.", Toast.LENGTH_LONG).show()
             }
 
             // Case 2: ONGOING or EXPIRED - Titingnan ang result sa Firestore
@@ -239,11 +243,33 @@ class StudentQuizListActivity : AppCompatActivity() {
     // FIXED: Tumatanggap na ng StudentQuizItem at inayos ang logic flow para sa IN_PROGRESS
     private fun checkQuizResultsAndDetermineAccess(item: StudentQuizItem, currentTime: Long, originalEndTime: Long) {
         val quiz = item.quiz
+        val isExamType = item.quiz.quizType.equals("Exam", true) // ⭐ DINAGDAG ITO
         // Tumingin sa quizResults kung may record
         FirebaseFirestore.getInstance().collection("quizResults")
             .document("${quiz.quizId}_$studentUid")
             .get()
             .addOnSuccessListener { doc ->
+
+                if (!doc.exists()) {
+                    when {
+                        // 1. Walang record, pero Exam type - HARANGAN DITO.
+                        isExamType -> {
+                            Toast.makeText(this, "Exam access is restricted until the teacher starts it.", Toast.LENGTH_LONG).show()
+                            return@addOnSuccessListener
+                        }
+                        // 2. Walang record, tapos na ang oras - MISSED
+                        currentTime > originalEndTime -> {
+                            launchStudentResultActivity(item, "MISSED")
+                            return@addOnSuccessListener
+                        }
+                        // 3. Walang record, hindi Exam, at ONGOING ang oras - START QUIZ
+                        else -> {
+                            launchStudentQuizActivity(quiz)
+                            return@addOnSuccessListener
+                        }
+                    }
+                }
+
                 val status = doc.getString("status")
                 val retakeDeadline = doc.getLong("retakeDeadline") ?: 0L
 
@@ -302,13 +328,13 @@ class StudentQuizListActivity : AppCompatActivity() {
 
                     // G. DEFAULT CATCH-ALL (e.g., tapos na ang time at wala pang attempt/record)
                     else -> {
-                        Toast.makeText(this, "Quiz is not available (Status: $status).", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "Not available (Status: $status).", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
             .addOnFailureListener { e ->
-                Log.e("StudentQuizList", "Error checking quiz result: ${e.message}")
-                Toast.makeText(this, "Error checking quiz status. Try again.", Toast.LENGTH_SHORT).show()
+                Log.e("StudentQuizList", "Error checking result: ${e.message}")
+                Toast.makeText(this, "Error checking status. Try again.", Toast.LENGTH_SHORT).show()
             }
     }
 

@@ -2,7 +2,7 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:tools="http://schemas.android/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="horizontal"
@@ -25,22 +25,48 @@
             android:textSize="20sp"
             android:padding="8dp"/>
 
-        <ProgressBar
-            android:id="@+id/pbLoading"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:visibility="visible"
-            style="?android:attr/progressBarStyle" />
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvMenuPOS"
+        <SearchView
+            android:id="@+id/searchMenu"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:scrollbars="vertical"
-            app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
-            app:spanCount="2"
-            tools:listitem="@layout/item_menu_pos" />
+            android:layout_height="wrap_content"
+            android:iconifiedByDefault="false"
+            android:queryHint="Search menu items..."
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp" />
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <ProgressBar
+                android:id="@+id/pbMenuLoading"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:visibility="gone"
+                style="?android:attr/progressBarStyle" />
+
+            <TextView
+                android:id="@+id/tvNoResults"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="No menu items found matching your search."
+                android:textSize="18sp"
+                android:textColor="@android:color/darker_gray"
+                android:visibility="gone" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvMenuPOS"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scrollbars="vertical"
+                app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
+                app:spanCount="2"
+                tools:listitem="@layout/item_menu_pos" />
+
+        </FrameLayout>
 
     </LinearLayout>
 
@@ -50,14 +76,16 @@
         android:layout_weight="1"
         android:orientation="vertical"
         android:paddingStart="8dp"
-        android:background="@drawable/rounded_border_background"> <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="ORDER CART"
-        android:textStyle="bold"
-        android:textSize="20sp"
-        android:padding="8dp"
-        android:gravity="center_horizontal"/>
+        android:background="@drawable/rounded_border_background">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="ORDER CART"
+            android:textStyle="bold"
+            android:textSize="20sp"
+            android:padding="8dp"
+            android:gravity="center_horizontal"/>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvCart"
@@ -103,16 +131,26 @@
             android:visibility="gone"
             android:background="#FFF9C4"
             android:gravity="center">
+
+            <ProgressBar
+                android:id="@+id/pbLoading"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="8dp"
+                android:visibility="gone" />
+
             <ImageView
                 android:layout_width="32dp"
                 android:layout_height="32dp"
-                android:src="@drawable/ic_nfc_scan" /> <TextView
-            android:id="@+id/tvNfcPrompt"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Awaiting customer scan..."
-            android:textStyle="bold"
-            android:textColor="@color/design_default_color_error"/>
+                android:src="@drawable/ic_nfc_scan" />
+            <TextView
+                android:id="@+id/tvNfcPrompt"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Awaiting customer scan..."
+                android:textStyle="bold"
+                android:textColor="@color/design_default_color_error"/>
         </LinearLayout>
 
         <Button

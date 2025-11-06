@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:id="@+id/tvDialogStudentName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Student Name Here"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="4dp"/>
+
+    <TextView
+        android:id="@+id/tvDialogCurrentStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Status: COMPLETED (Cheats: 0)"
+        android:textSize="14sp"
+        android:textColor="@android:color/darker_gray"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Choose Quick Action:"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp"/>
+
+    <Button
+        android:id="@+id/btnRevokeAccess"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🚫 BLOCK / REVOKE ACCESS (Instant)"
+        android:backgroundTint="#D32F2F" android:textColor="@android:color/white"
+        android:layout_marginBottom="8dp"/>
+
+    <Button
+        android:id="@+id/btnAllowRetake"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🔁 ALLOW RETAKE (Set Deadline)"
+        android:backgroundTint="#4CAF50" android:textColor="@android:color/white"/>
+
+</LinearLayout>

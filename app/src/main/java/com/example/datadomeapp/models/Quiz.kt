@@ -18,6 +18,9 @@ data class Quiz(
     val scheduledEndDateTime: Long = 0L,
     val description: String = "",
     val quizType: String = "Quiz",
+    val academicTerm: String? = null,
+    val academicYear: String? = null,
+    val semester: String? = null
 ) : Parcelable
 
 

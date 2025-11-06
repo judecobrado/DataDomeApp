@@ -1,67 +1,67 @@
-const express = require("express");
-const bodyParser = require("body-parser");
-const cors = require("cors");
-const { Resend } = require("resend");
+const functions = require("firebase-functions");
+const admin = require("firebase-admin");
+const nodemailer = require("nodemailer");
 
-const app = express();
-const PORT = process.env.PORT || 5000;
+admin.initializeApp();
 
-// Replace with your Resend API key
-const resend = new Resend("re_XXXXXXXXXXXXXXXXXXXX");
+// Configure your Gmail account (or app password)
+const gmailEmail = "dtdmspprt@gmail.com";
+const gmailPassword = "fgxx kfqh zspk jicb"; // If 2FA enabled, generate App Password
 
-app.use(cors());
-app.use(bodyParser.json());
-
-// -----------------------------
-// Send Enrollment Email
-// -----------------------------
-app.post("/sendEnrollmentEmail", async (req, res) => {
-    try {
-        const { email, studentId, password } = req.body;
-
-        await resend.emails.send({
-            from: "Your School <no-reply@yourschool.com>",
-            to: email,
-            subject: "Enrollment Approved",
-            html: `
-                <h3>Congratulations!</h3>
-                <p>You have been enrolled successfully.</p>
-                <p><b>Student ID:</b> ${studentId}</p>
-                <p><b>Login Email:</b> ${email}</p>
-                <p><b>Password:</b> ${password}</p>
-                <p>Please login and change your password after first login.</p>
-            `,
-        });
-
-        res.json({ success: true });
-    } catch (error) {
-        console.error("Error sending enrollment email:", error);
-        res.status(500).json({ success: false, error: error.message });
+const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+        user: gmailEmail,
+        pass: gmailPassword
     }
 });
 
-// -----------------------------
-// Send Rejection Email
-// -----------------------------
-app.post("/sendRejectionEmail", async (req, res) => {
+// Cloud Function to send enrollment email
+exports.sendEnrollmentEmail = functions.https.onCall(async (data, context) => {
+    const { email, studentId, password } = data;
+
+    const mailOptions = {
+        from: gmailEmail,
+        to: email,
+        subject: "Enrollment Approved",
+        html: `
+            <h3>Congratulations!</h3>
+            <p>You have been enrolled successfully.</p>
+            <p><b>Student ID:</b> ${studentId}</p>
+            <p><b>Login Email:</b> ${email}</p>
+            <p><b>Password:</b> ${password}</p>
+            <p>Please login and change your password after first login.</p>
+        `
+    };
+
     try {
-        const { email } = req.body;
-
-        await resend.emails.send({
-            from: "Your School <no-reply@yourschool.com>",
-            to: email,
-            subject: "Enrollment Result",
-            html: `
-                <h3>Enrollment Update</h3>
-                <p>We regret to inform you that you did not pass the enrollment process.</p>
-            `,
-        });
-
-        res.json({ success: true });
+        await transporter.sendMail(mailOptions);
+        return { success: true };
     } catch (error) {
-        console.error("Error sending rejection email:", error);
-        res.status(500).json({ success: false, error: error.message });
+        console.error("Error sending email:", error);
+        return { success: false, error: error.message };
     }
 });
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Cloud Function to send rejection email
+exports.sendRejectionEmail = functions.https.onCall(async (data, context) => {
+    const { email } = data;
+
+    const mailOptions = {
+        from: gmailEmail,
+        to: email,
+        subject: "Enrollment Result",
+        html: `
+            <h3>Enrollment Update</h3>
+            <p>We regret to inform you that you did not pass the enrollment process.</p>
+        `
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+        return { success: true };
+    } catch (error) {
+        console.error("Error sending email:", error);
+        return { success: false, error: error.message };
+    }
+});

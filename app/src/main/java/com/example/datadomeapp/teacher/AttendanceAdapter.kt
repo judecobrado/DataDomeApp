@@ -107,7 +107,6 @@ class AttendanceAdapter(
 
             if (isEditable) {
                 holder.rgAttendanceStatus.setOnCheckedChangeListener { _, checkedId ->
-                    // Logic sa pag-update ng attendanceStatus (Pareho pa rin)
                     val selectedStatus = when (checkedId) {
                         holder.rbPresent.id -> "Present"
                         holder.rbLate.id -> "Late"
@@ -115,6 +114,15 @@ class AttendanceAdapter(
                         holder.rbAbsent.id -> "Absent"
                         else -> "Absent"
                     }
+
+                    if (selectedStatus == "Absent" || selectedStatus == "Excused") {
+                        val currentPoints = recitationStatus[studentId] ?: 0
+                        if (currentPoints > 0) {
+                            recitationStatus[studentId] = 0 // I-set sa zero!
+                            Log.i(TAG, "Student $studentId attendance is $selectedStatus. Recitation reset to 0.")
+                        }
+                    }
+
                     attendanceStatus[studentId] = selectedStatus
                     Log.i(TAG, "Student $studentId attendance updated to $selectedStatus")
                     onDataChanged()

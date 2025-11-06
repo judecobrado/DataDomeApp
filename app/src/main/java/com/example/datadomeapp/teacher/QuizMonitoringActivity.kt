@@ -33,7 +33,7 @@ class QuizMonitoringActivity : BaseActivity() {
     private val assignmentId by lazy { intent.getStringExtra("ASSIGNMENT_ID") ?: "" }
     private val quizTitle by lazy { intent.getStringExtra("QUIZ_TITLE") ?: "Quiz Monitoring" }
     private val quizEndTime by lazy { intent.getLongExtra("SCHEDULED_END_DATE_TIME", 0L) }
-
+    private val quizType by lazy { intent.getStringExtra("QUIZ_TYPE")?.trim() ?: "" }
     private val viewModel: QuizMonitoringViewModel by viewModels {
         QuizMonitoringViewModelFactory(
             quizId,
@@ -67,12 +67,22 @@ class QuizMonitoringActivity : BaseActivity() {
         tvQuizTitle.text = quizTitle
         tvStatus.text = "Loading Live Status..."
 
+        val isQuizGloballyFinished = quizEndTime > 0L && System.currentTimeMillis() < quizEndTime
+
+        if (isQuizGloballyFinished) {
+            fabManageAccess.visibility = View.GONE
+        } else {
+            fabManageAccess.visibility = View.VISIBLE
+        }
+
         setupRecyclerView()
         observeViewModel()
 
-        fabManageAccess.setOnClickListener {
-            viewModel.monitoringData.value?.let { currentList ->
-                showManageAccessDialog(currentList)
+        if (!isQuizGloballyFinished) {
+            fabManageAccess.setOnClickListener {
+                viewModel.monitoringData.value?.let { currentList ->
+                    showManageAccessDialog(currentList)
+                }
             }
         }
     }
@@ -88,7 +98,8 @@ class QuizMonitoringActivity : BaseActivity() {
     private fun setupRecyclerView() {
         adapter = QuizMonitoringAdapter(
             dataList = emptyList(),
-            onIntegrityClick = { studentData -> onIntegrityClicked(studentData) }
+            onIntegrityClick = { studentData -> onIntegrityClicked(studentData) },
+            onAccessControlClick = { studentData -> showIndividualAccessControlDialog(studentData) }
         )
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
@@ -255,17 +266,13 @@ class QuizMonitoringActivity : BaseActivity() {
             val actionText = selectedAction ?: "N/A"
             val timeFormat = SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.getDefault())
 
-            val validUntilText = if (selectedAction == "REVOKE") {
-                "Not Applicable (Access Blocked)"
-            } else if (endTime > 0L) {
+            val validUntilText = if (endTime > 0L) {
                 timeFormat.format(Date(endTime))
             } else {
                 "Not set (REQUIRED for RETAKE/REOPEN)"
             }
 
-            val validFromText = if (selectedAction == "REVOKE") {
-                "N/A"
-            } else if (startTime > 0L) {
+            val validFromText = if (startTime > 0L) {
                 timeFormat.format(Date(startTime))
             } else {
                 "N/A"
@@ -288,7 +295,7 @@ class QuizMonitoringActivity : BaseActivity() {
         // --- Student Selection Logic ---
         btnSelectSpecific.setOnClickListener {
             val allUids = currentList.map { it.studentUid }
-            val allNames = currentList.map { it.studentName }
+            val allNames = currentList.map { "${it.studentName} - [STUDENT ID: ${it.id}]" }
             val selectedItems = BooleanArray(allNames.size) { allUids[it] in specificUids }
 
             AlertDialog.Builder(this)
@@ -299,7 +306,13 @@ class QuizMonitoringActivity : BaseActivity() {
                 .setPositiveButton("OK") { _, _ ->
                     specificUids = allUids.filterIndexed { index, _ -> selectedItems[index] }
 
-                    (rgStudents.getChildAt(1) as RadioButton).isChecked = true
+                    // ⭐ PAGWAWASTO: Kung may specific UIDs na pinili, tiyakin na naka-check ang SPECIFIC RadioButton.
+                    // Gumamit ng rgStudents.check() sa halip na .isChecked = true para mas malinaw ang intent.
+                    if (specificUids.isNotEmpty() && selectedStudentsType != "SPECIFIC") {
+                        rgStudents.check(R.id.rbSpecificStudents)
+                    }
+                    // Kung inalis lahat, mananatili sa kung ano ang naka-check (e.g., ALL students)
+
                     Toast.makeText(this, "Selected ${specificUids.size} student(s).", Toast.LENGTH_SHORT).show()
                     updateSummary()
                 }
@@ -323,7 +336,6 @@ class QuizMonitoringActivity : BaseActivity() {
             selectedAction = when (checkedId) {
                 R.id.rbAllowRetake -> "RETAKE"
                 R.id.rbReopenAccess -> "REOPEN"
-                R.id.rbRevokeAccess -> "REVOKE"
                 else -> null
             }
 
@@ -359,7 +371,7 @@ class QuizMonitoringActivity : BaseActivity() {
             updateSummary()
             val positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
             positiveButton.setOnClickListener {
-                val (affectedStudents, isValid) = getAffectedStudentsAndValidate(
+                val (initialAffectedStudents, isValid) = getAffectedStudentsAndValidate(
                     selectedAction,
                     selectedStudentsType,
                     specificUids,
@@ -373,17 +385,155 @@ class QuizMonitoringActivity : BaseActivity() {
                     return@setOnClickListener
                 }
 
+                var finalUidsToUpdate = initialAffectedStudents.map { it.studentUid }
+                val finalAction = selectedAction!!
+
+                if (finalAction == "RETAKE") {
+                    val retakeableStatuses = listOf("COMPLETED", "TIME_EXPIRED", "CHEATED_MAX", "ACCESS_REVOKED")
+
+                    finalUidsToUpdate = initialAffectedStudents
+                        .filter { it.status in retakeableStatuses }
+                        .map { it.studentUid }
+
+                    if (finalUidsToUpdate.isEmpty()) {
+                        Toast.makeText(this, "RETAKE requires students to have COMPLETED/EXPIRED their previous attempts. No eligible students found.", Toast.LENGTH_LONG).show()
+                        return@setOnClickListener
+                    }
+                }
+
+                // ✅ KORPORMEK NA CALL: Ginamit ang finalUidsToUpdate
                 viewModel.performBulkAction(
-                    selectedAction!!,
-                    affectedStudents.map { it.studentUid },
+                    finalAction, // Pwedeng selectedAction!! o finalAction, pareho lang
+                    finalUidsToUpdate, // ⭐ ITO ANG CORRECTION
                     startTime,
                     endTime
                 )
 
-                Toast.makeText(this, "${selectedAction!!} command sent to ${affectedStudents.size} students.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "${finalAction} command sent to ${finalUidsToUpdate.size} students.", Toast.LENGTH_LONG).show()
                 dialog.dismiss()
             }
         }
         dialog.show()
     }
+
+    private fun showIndividualAccessControlDialog(studentData: StudentMonitoringData) {
+        val actions = mutableListOf<String>()
+
+        val isQuizGloballyFinished = quizEndTime > 0L && System.currentTimeMillis() > quizEndTime
+        val isExamType = quizType.equals("Exam", ignoreCase = true)
+
+        if (isExamType && !isQuizGloballyFinished &&
+            (studentData.status == "EXAM_READY" || studentData.status == "NOT_STARTED" || studentData.status == "UNATTEMPTED_TIME_EXPIRED")) {
+            actions.add("START / OPEN ACCESS")
+        }
+
+        val restartableStatuses = listOf("IN_PROGRESS", "COMPLETED")
+
+        if (!isQuizGloballyFinished && studentData.status in restartableStatuses) {
+            actions.add("RESTART QUIZ")
+        }
+
+        if (isQuizGloballyFinished &&
+            (studentData.status == "COMPLETED" || studentData.status == "TIME_EXPIRED" || studentData.status == "CHEATED_MAX" || studentData.status == "ACCESS_REVOKED")) {
+            actions.add("GRANT RETAKE")
+        }
+
+
+        if (actions.isEmpty()) {
+            Toast.makeText(this, "${studentData.status}: No access actions available.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("Access Control for ${studentData.studentName}")
+            .setItems(actions.toTypedArray()) { dialog, which ->
+                when (actions[which]) {
+                    "START / OPEN ACCESS" -> confirmIndividualStart(studentData)
+                    "RESTART QUIZ" -> confirmIndividualRestart(studentData)
+                    "GRANT RETAKE" -> showRetakeDeadlinePicker(studentData)
+                }
+            }
+            .show()
+    }
+
+    private fun confirmIndividualRestart(studentData: StudentMonitoringData) {
+        AlertDialog.Builder(this)
+            .setTitle("Confirm Quiz Restart")
+            .setMessage(
+                "Restarting the quiz for **${studentData.studentName}** will reset their current score and progress to 0. " +
+                        "A history log will be saved. Continue?"
+            )
+            .setPositiveButton("RESTART NOW") { _, _ ->
+                // Gumamit ng performBulkAction na may action na "RESTART"
+                viewModel.performBulkAction(
+                    action = "RESTART",
+                    studentUids = listOf(studentData.studentUid),
+                    // Ang START at END time ay hindi mahalaga sa RESTART, pero kailangan nating magpasa ng valid value.
+                    startTime = System.currentTimeMillis(),
+                    endTime = quizEndTime
+                )
+                // ✅ Pinalitan ang Toast message
+                Toast.makeText(this, "Quiz successfully restarted for ${studentData.studentName}.", Toast.LENGTH_LONG).show()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun confirmIndividualStart(studentData: StudentMonitoringData) {
+        val timeFormat = SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.getDefault())
+        val endTimeText = timeFormat.format(Date(quizEndTime))
+
+        AlertDialog.Builder(this)
+            .setTitle("Confirm Start Exam")
+            .setMessage("Start the exam for ${studentData.studentName} now? The deadline will be set to: $endTimeText")
+            .setPositiveButton("START NOW") { _, _ ->
+                // ✅ Pinalitan ng performBulkAction (REOPEN)
+                viewModel.performBulkAction(
+                    action = "REOPEN",
+                    studentUids = listOf(studentData.studentUid),
+                    startTime = System.currentTimeMillis(),
+                    endTime = quizEndTime
+                )
+                Toast.makeText(this, "Access granted to ${studentData.studentName}.", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun showRetakeDeadlinePicker(studentData: StudentMonitoringData) {
+        val calendar = Calendar.getInstance()
+        var selectedTime: Long = 0L
+
+        val datePickerDialog = DatePickerDialog(this, { _, year, month, day ->
+            calendar.set(year, month, day)
+
+            val timePickerDialog = TimePickerDialog(this, { _, hour, minute ->
+                calendar.set(Calendar.HOUR_OF_DAY, hour)
+                calendar.set(Calendar.MINUTE, minute)
+                selectedTime = calendar.timeInMillis
+
+                if (selectedTime <= System.currentTimeMillis()) {
+                    Toast.makeText(this, "Deadline must be in the future.", Toast.LENGTH_LONG).show()
+                    return@TimePickerDialog
+                }
+
+                // Call ViewModel to grant retake with the new deadline
+                viewModel.performBulkAction(
+                    action = "RETAKE",
+                    studentUids = listOf(studentData.studentUid),
+                    startTime = System.currentTimeMillis(),
+                    endTime = selectedTime
+                )
+                Toast.makeText(this, "Retake granted to ${studentData.studentName} until ${SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.getDefault()).format(Date(selectedTime))}.", Toast.LENGTH_LONG).show()
+
+            }, calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE), false)
+            timePickerDialog.setTitle("Set Retake Time")
+            timePickerDialog.show()
+
+        }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH))
+
+        datePickerDialog.datePicker.minDate = System.currentTimeMillis() - 1000
+        datePickerDialog.show()
+    }
+
 }

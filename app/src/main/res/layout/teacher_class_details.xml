@@ -39,7 +39,7 @@
             android:layout_marginEnd="8dp"/>
 
         <Button
-            android:id="@+id/btnCreateAssessment"
+            android:id="@+id/btnCreateAssignment"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -78,7 +78,24 @@
             android:text="Roleta"
             android:textSize="14sp"/>
 
+
     </LinearLayout>
+
+    <Button
+        android:id="@+id/btnViewSubmissions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="View Submissions"
+        android:textSize="16sp"
+        android:layout_marginBottom="16dp"
+        android:textColor="@android:color/white"/>
+    <Button
+        android:id="@+id/btnViewAssignments"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="View Assignments"
+        android:layout_marginBottom="16dp"/>
+
 
     <TextView
         android:layout_width="match_parent"
@@ -92,5 +109,6 @@
         android:id="@+id/recyclerViewStudents"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
+
 
 </LinearLayout>

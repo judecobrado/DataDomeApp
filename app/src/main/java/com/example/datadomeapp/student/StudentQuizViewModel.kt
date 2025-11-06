@@ -84,6 +84,22 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
                 // CRITICAL FIX 2a: Kunin ang retakeDeadline na galing sa Teacher App
                 val retakeDeadline = snapshot.getLong("retakeDeadline") ?: 0L
 
+                if (status == "EXAM_READY") {
+                    _uiMessage.value = "This is an Exam. Access is restricted until the teacher starts the Exam."
+
+                    // CRITICAL: Prevent quiz from starting/ticking but DO NOT exit the activity.
+                    // Instead, i-set lang ang _quizResultData.value to null para hindi mag-exit,
+                    // at hintayin ang update mula sa guro.
+
+                    // I-stop ang timer para hindi mag-auto-submit
+                    handler.removeCallbacks(tickRunnable)
+                    isTicking = false
+                    _timerText.value = "--:--"
+
+                    // Huwag tumawag sa handleTimeExpired() para hindi mag-exit ang activity.
+                    return@addSnapshotListener
+                }
+
                 // 1. CHECK: ACCESS_REVOKED
                 if (status == "ACCESS_REVOKED") {
                     _uiMessage.value = "Access to the quiz has been revoked by the teacher."
@@ -175,7 +191,7 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
 
         // Initialize the first question
         _currentQuestion.value = mutableQuestions.firstOrNull()
-            ?: throw IllegalStateException("Quiz questions cannot be empty after setup.")
+            ?: throw IllegalStateException("Questions cannot be empty after setup.")
     }
 
     fun fetchServerTime() {

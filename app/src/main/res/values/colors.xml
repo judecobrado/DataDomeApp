@@ -28,5 +28,24 @@
     <color name="colorPrimary">#00796B</color>
     <color name="colorAccent">#D81B60</color>
 
+    <!--Attendace Adapter-->
+    <color name="color_default_button">#2196F3</color>
+    <color name="color_absent">#F44336</color>
+    <color name="color_present">#4CAF50</color>
+    <color name="red_700">#D32F2F</color>
+    <color name="green_700">#388E3C</color>
+
+    <color name="confirmIndividualStartstatus_in_progress">#1976D2</color>
+    <color name="status_completed">#4CAF50</color>
+    <color name="status_expired">#F44336</color>
+    <color name="status_not_started">#757575</color>
+    <color name="status_retake">#FF9800</color>
+    <color name="status_cheating">#D32F2F</color>
+    <color name="colorPrimaryDark">#00574B</color>
+    <color name="status_in_progress">#4169E1</color>
+    <color name="status_retake_granted">#FF9800</color>
+    <color name="status_revoked">#FF9800</color>
+
+
 
 </resources>

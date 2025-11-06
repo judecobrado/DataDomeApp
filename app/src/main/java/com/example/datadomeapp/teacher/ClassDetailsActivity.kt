@@ -32,7 +32,9 @@ class ClassDetailsActivity : AppCompatActivity() {
     private lateinit var tvLoading: TextView
     private lateinit var recyclerView: RecyclerView
     private lateinit var btnCreateQuiz: Button
-    private lateinit var btnCreateAssessment: Button
+    private lateinit var btnCreateAssignment: Button
+    private lateinit var btnViewSubmissions: Button
+    private lateinit var btnViewAssignments: Button
     private lateinit var btnTakeAttendance: Button
     private lateinit var btnManageGrades: Button
     private lateinit var btnStartRoulette: Button
@@ -56,6 +58,9 @@ class ClassDetailsActivity : AppCompatActivity() {
         tvLoading = findViewById(R.id.tvLoading)
         recyclerView = findViewById(R.id.recyclerViewStudents)
         btnCreateQuiz = findViewById(R.id.btnCreateQuiz)
+        btnCreateAssignment = findViewById(R.id.btnCreateAssignment)
+        btnViewSubmissions = findViewById(R.id.btnViewSubmissions)
+        btnViewAssignments = findViewById(R.id.btnViewAssignments)
         btnTakeAttendance = findViewById(R.id.btnTakeAttendance)
         btnManageGrades = findViewById(R.id.btnManageGrades)
         btnStartRoulette = findViewById(R.id.btnStartRoulette)
@@ -80,6 +85,36 @@ class ClassDetailsActivity : AppCompatActivity() {
             val intent = Intent(this, ManageQuizzesActivity::class.java)
             intent.putExtra("ASSIGNMENT_ID", assignmentId)
             intent.putExtra("CLASS_NAME", className)
+            startActivity(intent)
+        }
+
+        btnCreateAssignment.setOnClickListener {
+            val intent = Intent(this, CreateAssignmentActivity::class.java)
+            intent.putExtra("assignmentId", assignmentId) // ✅ FIXED: Use assignmentId
+            intent.putExtra("CLASS_NAME", className)
+            Log.d("ClassDetails", "Creating assignment for assignmentId: $assignmentId")
+            Toast.makeText(this, "Creating assignment for this class", Toast.LENGTH_SHORT).show()
+            startActivity(intent)
+        }
+
+        btnViewAssignments.setOnClickListener {
+            if (assignmentId.isNullOrEmpty()) {
+                Toast.makeText(this, "No assignment ID found.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val intent = Intent(this, AssignmentListActivity::class.java)
+            intent.putExtra("assignmentId", assignmentId) // ✅ FIXED: Use assignmentId
+            intent.putExtra("CLASS_NAME", className)
+            Log.d("ClassDetails", "Opening AssignmentListActivity with assignmentId: $assignmentId")
+            Toast.makeText(this, "Opening assignments for this class", Toast.LENGTH_SHORT).show()
+            startActivity(intent)
+        }
+
+        btnViewSubmissions.setOnClickListener {
+            val intent = Intent(this, ViewSubmissionsActivity::class.java)
+            intent.putExtra("assignmentId", assignmentId)
+            intent.putExtra("assignmentTitle", className)
             startActivity(intent)
         }
 

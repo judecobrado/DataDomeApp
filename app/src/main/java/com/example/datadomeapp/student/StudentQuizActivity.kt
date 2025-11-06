@@ -191,7 +191,7 @@ class StudentQuizActivity : AppCompatActivity() {
     }
 
     private fun resetQuiz() {
-        Toast.makeText(this, "Quiz restarted due to cheating.", Toast.LENGTH_LONG).show()
+        Toast.makeText(this, "Restarted due to cheating.", Toast.LENGTH_LONG).show()
         removeCheatOverlay()
         viewModel.resetQuizProgress() // we'll define this in ViewModel
         viewModel.fetchServerTime()   // restart timer from server
@@ -303,10 +303,10 @@ class StudentQuizActivity : AppCompatActivity() {
         AlertDialog.Builder(this)
             .setTitle("Terms and Conditions")
             .setMessage(
-                "1. You cannot leave the quiz screen.\n" +
+                "1. You cannot leave the screen.\n" +
                         "2. Screenshots, recording, or multi-window count as cheat attempts.\n" +
                         "3. Max 5 cheat attempts; exceeding = 0 score.\n" +
-                        "4. Quiz will auto-submit when time is up.\n" +
+                        "4. Will auto-submit when time is up.\n" +
                         "5. All answers are logged in real-time."
             )
             .setCancelable(false)
@@ -453,7 +453,7 @@ class StudentQuizActivity : AppCompatActivity() {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (!notificationManager.isNotificationPolicyAccessGranted) {
             startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
-            Toast.makeText(this, "Grant 'Do Not Disturb' access to start the quiz.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Grant 'Do Not Disturb' access to start.", Toast.LENGTH_LONG).show()
         }
     }
 }

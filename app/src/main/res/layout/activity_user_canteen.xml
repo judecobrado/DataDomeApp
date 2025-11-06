@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Wallet Balance -->
+    <TextView
+        android:id="@+id/tvWalletBalance"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Wallet: ₱0.00"
+        android:textSize="18sp"
+        android:textColor="@android:color/black"
+        android:paddingBottom="8dp"/>
+
+    <!-- Search Menu -->
+    <EditText
+        android:id="@+id/etSearchMenu"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Search menu..."
+        android:padding="8dp"
+        android:background="@android:drawable/edit_text"
+        android:inputType="text"/>
+
+    <!-- Menu RecyclerView -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvMenuList"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingTop="8dp"/>
+
+    <!-- History Button -->
+    <Button
+        android:id="@+id/btnCanteenHistory"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="View History"
+        android:layout_marginTop="8dp"/>
+
+    <!-- Optional: No items message -->
+    <TextView
+        android:id="@+id/tvNoMenuItems"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="No menu items available."
+        android:textColor="@android:color/darker_gray"
+        android:gravity="center"
+        android:visibility="gone"
+        android:padding="8dp"/>
+</LinearLayout>

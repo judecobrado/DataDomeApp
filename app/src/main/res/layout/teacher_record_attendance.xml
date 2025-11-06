@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -11,54 +12,85 @@
         android:id="@+id/tvAttendanceHeader"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Record Attendance for [Class Name]"
-        android:textSize="22sp"
+        android:text="Record Attendance"
+        android:textSize="20sp"
         android:textStyle="bold"
-        android:layout_marginBottom="8dp"/>
+        android:layout_marginBottom="16dp"/>
 
     <EditText
         android:id="@+id/etAttendanceDate"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Date (Tap to select)"
+        android:hint="Petsa (YYYY-MM-DD)"
         android:focusable="false"
         android:clickable="true"
         android:inputType="date"
+        android:drawableEnd="@android:drawable/ic_menu_today"
         android:layout_marginBottom="8dp"/>
 
     <EditText
         android:id="@+id/etAttendanceTimeSlot"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Time Slot (Tap to select)"
+        android:hint="Time Slot"
         android:focusable="false"
         android:clickable="true"
-        android:inputType="none"
+        android:drawableEnd="@android:drawable/ic_lock_idle_alarm"
         android:layout_marginBottom="16dp"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Pumili ng Mode:"
+        android:textStyle="bold"
+        android:layout_marginTop="8dp"/>
+
+    <RadioGroup
+        android:id="@+id/rgModeSelection"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:checkedButton="@id/rbAttendanceMode"
+        android:layout_marginBottom="16dp">
+
+        <RadioButton
+            android:id="@+id/rbAttendanceMode"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Attendance" />
+
+        <RadioButton
+            android:id="@+id/rbRecitationMode"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Recitation" />
+
+    </RadioGroup>
 
     <TextView
         android:id="@+id/tvNoRecords"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="No attendance records found for this date."
-        android:textSize="18sp"
-        android:textColor="@android:color/holo_red_dark"
+        android:text="No students found for this class."
+        android:textAlignment="center"
         android:padding="16dp"
-        android:visibility="gone"
-        android:gravity="center"
-        android:layout_marginBottom="16dp"/>
+        android:visibility="gone" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewAttendance"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:layout_marginBottom="16dp"/>
+        android:scrollbars="vertical"
+        tools:listitem="@layout/teacher_item_attendance_student"/>
 
     <Button
         android:id="@+id/btnSaveAttendance"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Save Attendance Records"/>
+        android:text="I-Save ang Attendance at Recitation"
+        android:layout_marginTop="16dp"/>
 
 </LinearLayout>

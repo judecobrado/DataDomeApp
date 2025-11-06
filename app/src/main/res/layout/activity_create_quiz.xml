@@ -13,13 +13,42 @@
             android:id="@+id/etQuizTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Quiz Title" />
+            android:hint="Title" />
 
         <EditText
             android:id="@+id/etQuizDescription"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Description" />
+
+        <RadioGroup
+            android:id="@+id/rgQuizType"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Type: "
+                android:textStyle="bold"
+                android:paddingEnd="16dp"/>
+
+            <RadioButton
+                android:id="@+id/rbTypeQuiz"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Quiz"
+                android:checked="true"
+                android:paddingEnd="16dp"/>
+
+            <RadioButton
+                android:id="@+id/rbTypeExam"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Exam" />
+        </RadioGroup>
 
         <!-- Question Type Buttons -->
         <Button

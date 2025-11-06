@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Select the group(s) to grant retake and set the deadline:"
+        android:textAppearance="?attr/textAppearanceSubtitle1"
+        android:paddingBottom="16dp"/>
+
+    <CheckBox
+        android:id="@+id/chkFilterFailed"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Students who FAILED (Score &lt; 75%)"
+        android:checked="true"/>
+
+    <CheckBox
+        android:id="@+id/chkFilterMissed"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Students who MISSED the quiz"
+        android:checked="true"/>
+
+    <Button
+        android:id="@+id/btnSetDeadline"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Set Retake Deadline Date/Time"/>
+
+    <TextView
+        android:id="@+id/tvSelectedDeadline"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Deadline: Not Set"
+        android:visibility="gone"/>
+
+</LinearLayout>

@@ -1,0 +1,13 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_bulk_retake"
+        android:title="Grant Bulk Retake"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_reset_all"
+        android:title="Reset All Quiz Results"
+        app:showAsAction="never" />
+</menu>

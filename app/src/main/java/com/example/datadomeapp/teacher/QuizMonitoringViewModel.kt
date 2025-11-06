@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit
 // Model na ginagamit sa RecyclerView Adapter
 data class StudentMonitoringData(
     val studentUid: String,
+    val id: String = "N/A",
     var studentName: String,
     var status: String, // E.g., IN_PROGRESS, COMPLETED, TIME_EXPIRED, UNATTEMPTED_TIME_EXPIRED, ACCESS_REVOKED
     var score: Int,
@@ -144,13 +145,16 @@ class QuizMonitoringViewModel(
 
         authUids.forEach { uid ->
             val fullName = studentProfiles[uid] ?: "Unknown Student"
+            val studentDdsId = authUidToStudentId[uid] ?: "N/A"
+
             studentList[uid] = StudentMonitoringData(
                 studentUid = uid,
                 studentName = fullName,
+                id = studentDdsId,
                 status = initialStatus,
                 score = 0,
                 cheatCount = 0,
-                lastUpdate = 0L
+                lastUpdate = 0L,
             )
         }
 
@@ -244,7 +248,15 @@ class QuizMonitoringViewModel(
             )
 
             val actionData = when (action) {
-                "RETAKE", "REOPEN" -> hashMapOf(
+                "REOPEN" -> hashMapOf(
+                    "status" to "EXAM_READY",
+                    "score" to 0,
+                    "cheatCount" to 0,
+                    "retakeDeadline" to endTime,
+                    "answers" to emptyList<String>(),
+                    "cheatLog" to emptyList<String>()
+                )
+                "RETAKE" -> hashMapOf(
                     "status" to "RETAKE_GRANTED",
                     "score" to 0,
                     "cheatCount" to 0,
@@ -255,6 +267,14 @@ class QuizMonitoringViewModel(
                 "REVOKE" -> hashMapOf(
                     "status" to "ACCESS_REVOKED",
                     "retakeDeadline" to 0L
+                )
+                "RESTART" -> hashMapOf(
+                    // Ginawang EXAM_READY para mag-force ng bagong start at reset sa client side
+                    "status" to "EXAM_READY",
+                    "score" to 0,
+                    "cheatCount" to 0,
+                    "answers" to emptyList<String>(),
+                    "cheatLog" to emptyList<String>()
                 )
                 else -> return@forEach
             }
@@ -287,6 +307,40 @@ class QuizMonitoringViewModel(
                 callback(listOf("Error fetching detailed cheat log: ${it.message}"))
             }
     }
+
+    fun grantIndividualAccess(studentUid: String, endTime: Long) {
+        if (endTime <= System.currentTimeMillis()) {
+            android.util.Log.e("QuizMonitorVM", "Cannot grant access: Deadline must be in the future.")
+            return
+        }
+
+        val documentRef = firestore.collection("quizResults").document("${quizId}_$studentUid")
+
+        val updateData = hashMapOf<String, Any>(
+            "status" to "OPEN_ACESS", // Gagamitin ang status na ito
+            "timestamp" to System.currentTimeMillis(),
+            "quizId" to quizId,
+            "studentId" to studentUid,
+            "score" to 0,
+            "cheatCount" to 0,
+            "answers" to emptyMap<String, String>(),
+            "retakeDeadline" to endTime
+        )
+
+        // Mag-reset ng score at cheat count sa pag-grant ng access
+        updateData["score"] = 0
+        updateData["cheatCount"] = 0
+        updateData["answers"] = emptyMap<String, String>()
+
+        documentRef.set(updateData, com.google.firebase.firestore.SetOptions.merge())
+            .addOnSuccessListener {
+                android.util.Log.d("QuizMonitorVM", "Access granted (via SET MERGE) to $studentUid until $endTime")
+            }
+            .addOnFailureListener { e ->
+                android.util.Log.e("QuizMonitorVM", "Error granting access: ${e.message}")
+            }
+    }
+
 }
 
 class QuizMonitoringViewModelFactory(

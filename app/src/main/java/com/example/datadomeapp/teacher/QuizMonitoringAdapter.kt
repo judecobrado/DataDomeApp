@@ -18,7 +18,8 @@ import java.util.Locale
 class QuizMonitoringAdapter(
     // ⭐ UPDATE 1: INALIS ang onRetakeClick lambda
     private var dataList: List<StudentMonitoringData>,
-    private val onIntegrityClick: (StudentMonitoringData) -> Unit // Ito na lang ang natira
+    private val onIntegrityClick: (StudentMonitoringData) -> Unit,
+    private val onAccessControlClick: (StudentMonitoringData) -> Unit
 ) : RecyclerView.Adapter<QuizMonitoringAdapter.MonitorViewHolder>() {
 
     fun updateList(newList: List<StudentMonitoringData>) {
@@ -45,6 +46,7 @@ class QuizMonitoringAdapter(
 
     inner class MonitorViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val tvStudentName: TextView = itemView.findViewById(R.id.tvStudentName)
+        private val tvStudentId: TextView = itemView.findViewById(R.id.tvStudentId)
         private val tvStatus: TextView = itemView.findViewById(R.id.tvStatus)
         private val tvScore: TextView = itemView.findViewById(R.id.tvScore)
         private val tvCheats: TextView = itemView.findViewById(R.id.tvCheats)
@@ -52,10 +54,13 @@ class QuizMonitoringAdapter(
         // ⭐ UPDATE 2: INALIS ang btnRetake Button mula sa deklarasyon at layout
         // private val btnRetake: Button = itemView.findViewById(R.id.btnRetake) // ALISIN ITO
         private val btnViewIntegrity: ImageButton = itemView.findViewById(R.id.btnViewIntegrity)
+        private val btnAccessControl: ImageButton = itemView.findViewById(R.id.btnAccessControl)
 
 
         fun bind(data: StudentMonitoringData) {
             tvStudentName.text = data.studentName
+
+            tvStudentId.text = data.id
 
             // ⭐ UPDATE 3: SCORE LOGIC (Idinagdag ang ACCESS_REVOKED)
             tvScore.text = if (data.status == "COMPLETED" ||
@@ -80,6 +85,8 @@ class QuizMonitoringAdapter(
             // --- Status at Color Logic ---
             tvStatus.text = formatStatus(data.status, data.cheatCount)
             setStatusColor(data.status, data.cheatCount)
+
+            setupAccessControlButton(data)
 
             // ⭐ UPDATE 4: INALIS ang Retake Button Logic
 
@@ -107,15 +114,71 @@ class QuizMonitoringAdapter(
             }
         }
 
+        private fun setupAccessControlButton(data: StudentMonitoringData) {
+            val context = itemView.context
+
+            // ⭐ FIX: Tiyakin na lumabas ang button kahit IN_PROGRESS/CHEATING para sa RESTART
+            // Ipakita ang button kung may aksyon man para sa ongoing o finished.
+            val isManageable = data.status == "IN_PROGRESS" || data.status == "CHEATING" ||
+                    data.status == "COMPLETED" || data.status == "TIME_EXPIRED" ||
+                    data.status == "NOT_STARTED" || data.status == "EXAM_READY" ||
+                    data.status == "UNATTEMPTED_TIME_EXPIRED" || data.status == "ACCESS_REVOKED"
+
+            val shouldShowButton = isManageable
+
+            if (shouldShowButton) {
+                btnAccessControl.visibility = View.VISIBLE
+                btnAccessControl.setOnClickListener { onAccessControlClick(data) }
+
+                val iconRes: Int
+                val iconColor: Int
+
+                when (data.status) {
+                    "IN_PROGRESS", "CHEATING" -> {
+                        // Action: RESTART QUIZ (Taking/Cheating)
+                        iconRes = R.drawable.ic_security_info // Assuming you have an icon for refresh/restart
+                        iconColor = R.color.status_retake // Warning color
+                    }
+                    "COMPLETED", "TIME_EXPIRED", "CHEATED_MAX" -> {
+                        // Action: GRANT RETAKE (Finished)
+                        iconRes = R.drawable.ic_security_info
+                        iconColor = R.color.status_retake // Orange/Yellow
+                    }
+                    "EXAM_READY", "NOT_STARTED", "UNATTEMPTED_TIME_EXPIRED", "ACCESS_REVOKED" -> {
+                        // Action: START / OPEN ACCESS (Not yet started/Blocked)
+                        iconRes = R.drawable.ic_security_info
+                        iconColor = R.color.status_in_progress // Ongoing color
+                    }
+                    else -> {
+                        iconRes = R.drawable.ic_security_info
+                        iconColor = android.R.color.darker_gray
+                    }
+                }
+
+                try {
+                    btnAccessControl.setImageResource(iconRes)
+                } catch (e: Exception) {
+                    // Fallback kung walang ic_refresh
+                    btnAccessControl.setImageResource(R.drawable.ic_security_info)
+                }
+                btnAccessControl.setColorFilter(ContextCompat.getColor(context, iconColor))
+
+            } else {
+                // Itago ang button kung walang kailangang gawin
+                btnAccessControl.visibility = View.GONE
+                btnAccessControl.setOnClickListener(null)
+            }
+        }
+
         private fun formatStatus(status: String, cheatCount: Int): String {
             // ⭐ UPDATE 5: STATUS FORMATTING (Idinagdag ang ACCESS_REVOKED)
             return when (status) {
-                "IN_PROGRESS" -> if (cheatCount > 0) "CHEATING ALERT ⚠️" else "TAKING QUIZ ⏱️"
+                "IN_PROGRESS" -> if (cheatCount > 0) "CHEATING ALERT ⚠️" else "TAKING ⏱️"
                 "COMPLETED" -> "FINISHED ✅"
                 "NOT_STARTED" -> "PENDING ⚪"
                 "RETAKE_GRANTED" -> "RETAKE ALLOWED 🔄"
                 "TIME_EXPIRED" -> "TIME UP 🚨"
-                "UNATTEMPTED_TIME_EXPIRED" -> "MISSED QUIZ ❌"
+                "UNATTEMPTED_TIME_EXPIRED" -> "MISSED ❌"
                 "ACCESS_REVOKED" -> "BLOCKED 🔒" // CRITICAL NEW STATUS DISPLAY
                 else -> status
             }

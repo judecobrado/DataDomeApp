@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.widget.*
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.database.GenericTypeIndicator // <-- ADD THIS
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -31,6 +32,7 @@ class CreateQuizActivity : AppCompatActivity() {
     private lateinit var btnSaveQuiz: Button
     private lateinit var btnUploadQuiz: Button // NEW
     private lateinit var etQuizTitle: EditText
+    private lateinit var etQuizDescription: EditText
     private var currentAssignmentId: String? = null
     private val questionList = mutableListOf<Question>()
     private lateinit var adapter: QuestionAdapter
@@ -38,6 +40,11 @@ class CreateQuizActivity : AppCompatActivity() {
     private lateinit var rgQuizType: RadioGroup
     private lateinit var rbTypeQuiz: RadioButton
     private lateinit var rbTypeExam: RadioButton
+    private var academicTerm: String? = null
+    private var academicYear: String? = null
+    private var semester: String? = null
+    private val firestore = FirebaseFirestore.getInstance()
+
 
     // NEW: File picker for upload
     private val filePickerLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -59,6 +66,7 @@ class CreateQuizActivity : AppCompatActivity() {
         btnSaveQuiz = findViewById(R.id.btnSaveQuiz)
         btnUploadQuiz = findViewById(R.id.btnUploadQuiz) // NEW
         etQuizTitle = findViewById(R.id.etQuizTitle)
+        etQuizDescription = findViewById(R.id.etQuizDescription)
         rgQuizType = findViewById(R.id.rgQuizType)
         rbTypeQuiz = findViewById(R.id.rbTypeQuiz)
         rbTypeExam = findViewById(R.id.rbTypeExam)
@@ -89,6 +97,20 @@ class CreateQuizActivity : AppCompatActivity() {
             finish()
             return
         }
+        fetchCurrentTerm()
+    }
+
+    private fun fetchCurrentTerm() {
+        val docRef = firestore.document("systemSettings/currentTerm")
+        docRef.get()
+            .addOnSuccessListener { document ->
+                academicTerm = document?.getString("academicTerm")
+                academicYear = document?.getString("academicYear")
+                semester = document?.getString("semester")
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Error fetching term: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
     }
 
     // NEW: Open file picker for TXT files
@@ -280,6 +302,9 @@ class CreateQuizActivity : AppCompatActivity() {
         db.child("quizzes").child(quizId).get().addOnSuccessListener { snapshot ->
             val title = snapshot.child("title").getValue(String::class.java) ?: ""
             etQuizTitle.setText(title)
+
+            val description = snapshot.child("description").getValue(String::class.java) ?: ""
+            etQuizDescription.setText(description)
 
             val questionsSnapshot = snapshot.child("questions")
             questionList.clear()
@@ -620,6 +645,8 @@ class CreateQuizActivity : AppCompatActivity() {
     private fun saveQuiz() {
         val title = etQuizTitle.text.toString().trim()
 
+        val description = etQuizDescription.text.toString().trim()
+
         val selectedRadioButtonId = rgQuizType.checkedRadioButtonId
 
         val selectedRadioButton: RadioButton? = findViewById(selectedRadioButtonId)
@@ -660,11 +687,15 @@ class CreateQuizActivity : AppCompatActivity() {
                 assignmentId = finalAssignmentId,
                 teacherUid = auth.currentUser?.uid ?: "",
                 title = title,
+                description = description,
                 questions = questionList.toList(),
                 isPublished = oldIsPublished,
                 scheduledDateTime = oldScheduledDateTime,
                 scheduledEndDateTime = oldScheduledEndDateTime,
-                quizType = quizType
+                quizType = quizType,
+                academicTerm = academicTerm,
+                academicYear = academicYear,
+                semester = semester
             )
 
             db.child("quizzes").child(quizId).setValue(quiz)
