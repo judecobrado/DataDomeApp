@@ -12,6 +12,7 @@ import com.example.datadomeapp.models.ClassDisplayDetails
 import java.text.SimpleDateFormat
 import java.util.*
 
+
 class QuizAdapter(
     private val quizzes: MutableList<Quiz>,
     private val classDetailsMap: Map<String, ClassDisplayDetails>,
@@ -47,6 +48,7 @@ class QuizAdapter(
 
     inner class QuizViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val tvTitle: TextView = itemView.findViewById(R.id.tvQuizTitle)
+        private val tvType: TextView = itemView.findViewById(R.id.tvQuizType)
         private val tvDateTimeStatus: TextView = itemView.findViewById(R.id.tvQuizDateTime)
         private val tvClassDetails: TextView = itemView.findViewById(R.id.tvQuizClassDetails)
         private val btnEdit: Button = itemView.findViewById(R.id.btnEditQuiz)
@@ -84,6 +86,13 @@ class QuizAdapter(
 
 
             tvTitle.text = quiz.title
+
+            tvType.text = quiz.quizType.uppercase(Locale.getDefault())
+            tvType.setTextColor(
+                if (quiz.quizType.equals("Exam", ignoreCase = true)) 0xFFD32F2F.toInt()
+                else 0xFF1976D2.toInt() // blue for quizzes
+            )
+
             tvDateTimeStatus.text = formatDateTimeRange(
                 quiz.scheduledDateTime,
                 quiz.scheduledEndDateTime,
