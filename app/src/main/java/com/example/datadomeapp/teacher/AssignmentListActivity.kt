@@ -217,6 +217,8 @@ class AssignmentListActivity : AppCompatActivity() {
 
                 val assignment = getItem(position)
 
+                val btnViewSubmissions = view.findViewById<Button>(R.id.btnViewSubmissions)
+
                 // ✅ SAFE: Find views with null checks
                 val tvTitle = view.findViewById<TextView>(R.id.tvAssignmentTitle)
                 val tvDueDate = view.findViewById<TextView>(R.id.tvAssignmentDueDate)
@@ -225,6 +227,29 @@ class AssignmentListActivity : AppCompatActivity() {
                 val btnEdit = view.findViewById<ImageButton>(R.id.btnEditAssignment)
                 val btnDelete = view.findViewById<ImageButton>(R.id.btnDeleteAssignment)
                 val btnManageExtensions = view.findViewById<Button>(R.id.btnManageExtensions)
+
+                if (btnViewSubmissions != null) {
+                    btnViewSubmissions.setOnClickListener {
+                        try {
+                            // Tiyakin na ipapasa ang ID at Title ng specific assignment na ito!
+                            val intent = Intent(this@AssignmentListActivity, ViewSubmissionsActivity::class.java)
+
+                            // Ipasa ang ID ng specific assignment na ito (assignment.id)
+                            intent.putExtra("ASSIGNMENT_ID", assignment.id)
+                            // Ipasa ang Title ng specific assignment na ito
+                            intent.putExtra("ASSIGNMENT_TITLE", assignment.title)
+
+                            // Optional: Ipasa pa rin ang Class ID/Name
+                            intent.putExtra("assignmentId", assignmentId)
+                            intent.putExtra("CLASS_NAME", className)
+
+                            startActivity(intent)
+                        } catch (e: Exception) {
+                            Log.e("AssignmentList", "Error in View Submissions button: ${e.message}")
+                            Toast.makeText(this@AssignmentListActivity, "Error opening submissions", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
 
                 // ✅ SAFE: Set assignment data
                 tvTitle.text = assignment.title ?: "Untitled Assignment"
