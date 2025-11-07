@@ -35,15 +35,15 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Create Quiz"
+            android:text="Manage Quiz/Exam"
             android:layout_marginEnd="8dp"/>
 
         <Button
-            android:id="@+id/btnCreateAssignment"
+            android:id="@+id/btnViewAssignments"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Create Assessment"/>
+            android:text="Manage Assignments"/>
     </LinearLayout>
 
     <LinearLayout
@@ -89,13 +89,6 @@
         android:textSize="16sp"
         android:layout_marginBottom="16dp"
         android:textColor="@android:color/white"/>
-    <Button
-        android:id="@+id/btnViewAssignments"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="View Assignments"
-        android:layout_marginBottom="16dp"/>
-
 
     <TextView
         android:layout_width="match_parent"
