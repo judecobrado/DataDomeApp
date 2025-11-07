@@ -24,6 +24,8 @@ class ViewSubmissionsActivity : AppCompatActivity() {
     private lateinit var adapter: ArrayAdapter<String>
     private var classId: String? = null  // Changed from assignmentId to classId
     private var className: String? = null
+    private var assignmentId: String? = null
+    private var assignmentTitle: String? = null
     private lateinit var tvEmpty: TextView
     private lateinit var tvSubmissionCount: TextView
     private lateinit var progressBar: ProgressBar
@@ -45,9 +47,12 @@ class ViewSubmissionsActivity : AppCompatActivity() {
         classId = intent.getStringExtra("assignmentId")
         className = intent.getStringExtra("assignmentTitle")
 
+        assignmentId = intent.getStringExtra("ASSIGNMENT_ID")
+        assignmentTitle = intent.getStringExtra("ASSIGNMENT_TITLE")
+
         Log.d("SUBMISSIONS_DEBUG", "Class ID: $classId, Class Name: $className")
 
-        title = "Submissions: ${className ?: ""}"
+        title = "Submissions for: ${assignmentTitle ?: "Assignment"}"
 
         adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, ArrayList<String>())
         lv.adapter = adapter
@@ -62,47 +67,46 @@ class ViewSubmissionsActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        loadAssignmentsAndSubmissions()
+        loadSubmissionsForSingleAssignment()
     }
 
-    private fun loadAssignmentsAndSubmissions() {
-        val id = classId ?: return
+    private fun loadSubmissionsForSingleAssignment() {
+        val id = assignmentId ?: run {
+            Toast.makeText(this, "Error: Missing Assignment ID.", Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
 
         progressBar.visibility = View.VISIBLE
-        tvEmpty.text = "Loading assignments and submissions..."
+        tvEmpty.text = "Loading submissions..."
         tvSubmissionCount.text = "Loading..."
 
-        Log.d("SUBMISSIONS_DEBUG", "🔍 Step 1: Finding assignments for class: $id")
+        Log.d("SUBMISSIONS_DEBUG", "🔍 Finding submissions for single assignment: $id")
 
-        // First, find all assignments for this class
-        firestore.collection("assignments")
-            .whereEqualTo("classId", id)
+        // Direct query: No need to find all assignments first.
+        firestore.collection("submissions")
+            .whereEqualTo("assignmentId", id) // Query submissions by the single assignment ID
             .get()
-            .addOnSuccessListener { assignmentsSnapshot ->
-                Log.d("SUBMISSIONS_DEBUG", "✅ Found ${assignmentsSnapshot.documents.size} assignments for class $id")
+            .addOnSuccessListener { submissionsSnapshot ->
+                runOnUiThread {
+                    progressBar.visibility = View.GONE
 
-                if (assignmentsSnapshot.documents.isEmpty()) {
-                    runOnUiThread {
-                        progressBar.visibility = View.GONE
-                        tvEmpty.text = "No assignments found for this class."
-                        tvSubmissionCount.text = "0 assignments"
-                        Toast.makeText(this, "No assignments created for this class yet", Toast.LENGTH_LONG).show()
+                    Log.d("SUBMISSIONS_DEBUG", "✅ Found ${submissionsSnapshot.documents.size} submissions total")
+
+                    if (submissionsSnapshot.documents.isEmpty()) {
+                        tvEmpty.text = "No submissions found for this assignment."
+                        tvSubmissionCount.text = "0 submissions"
+                        return@runOnUiThread
                     }
-                    return@addOnSuccessListener
+
+                    processSubmissions(submissionsSnapshot.documents)
                 }
-
-                // Get all assignment IDs
-                val assignmentIds = assignmentsSnapshot.documents.map { it.id }
-                Log.d("SUBMISSIONS_DEBUG", "📋 Assignment IDs: $assignmentIds")
-
-                // Now find submissions for ALL assignments in this class
-                loadSubmissionsForAssignments(assignmentIds)
             }
             .addOnFailureListener { e ->
                 runOnUiThread {
                     progressBar.visibility = View.GONE
-                    Log.e("SUBMISSIONS_DEBUG", "❌ Failed to load assignments: ${e.message}")
-                    tvEmpty.text = "Error loading assignments: ${e.message}"
+                    Log.e("SUBMISSIONS_DEBUG", "❌ Failed to load submissions: ${e.message}")
+                    tvEmpty.text = "Error loading submissions: ${e.message}"
                 }
             }
     }
@@ -319,7 +323,7 @@ class ViewSubmissionsActivity : AppCompatActivity() {
                         runOnUiThread {
                             if (success) {
                                 Toast.makeText(this, "Submission reopened successfully!", Toast.LENGTH_SHORT).show()
-                                loadAssignmentsAndSubmissions()
+                                loadSubmissionsForSingleAssignment()
                             } else {
                                 Toast.makeText(this, "Error: $error", Toast.LENGTH_LONG).show()
                             }
@@ -347,7 +351,7 @@ class ViewSubmissionsActivity : AppCompatActivity() {
                     runOnUiThread {
                         if (ok) {
                             Toast.makeText(this, "Grade saved successfully!", Toast.LENGTH_SHORT).show()
-                            loadAssignmentsAndSubmissions()
+                            loadSubmissionsForSingleAssignment()
                         } else {
                             Toast.makeText(this, "Error: $err", Toast.LENGTH_LONG).show()
                         }
