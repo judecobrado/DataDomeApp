@@ -2,122 +2,148 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#FDFBF8"
+    tools:context=".MainActivity"
     android:paddingStart="32dp"
-    android:paddingEnd="32dp"
-    android:paddingTop="64dp"
-    android:paddingBottom="32dp"
-    android:background="#0A1833">
+    android:paddingEnd="32dp">
 
     <ImageView
         android:id="@+id/vMainIllustration"
-        android:layout_width="150dp"
-        android:layout_height="150dp"
-        android:src="@raw/logo_white"
+        android:layout_width="459dp"
+        android:layout_height="134dp"
+        android:layout_marginTop="32dp"
+        android:contentDescription="@string/app_name"
         android:scaleType="fitCenter"
-        android:contentDescription="Black and White App Logo"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/tvBranding"
-        app:layout_constraintStart_toStartOf="parent"
+            android:src="@raw/bg_main"
+        app:layout_constraintBottom_toTopOf="@id/brandingContainer"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="32dp"
-        app:layout_constraintVertical_chainStyle="packed"
-        app:tint="#D4AF37" />
+        app:layout_constraintHeight_percent="0.30"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_chainStyle="packed" />
 
-    <TextView
-        android:id="@+id/tvBranding"
+    <LinearLayout
+        android:id="@+id/brandingContainer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:fontFamily="sans-serif-light"
-        android:text="DATA DOME"
-        android:letterSpacing="0.1"
-        android:textColor="#FFFFFF" android:textSize="24sp"
-        android:textStyle="bold"
-        app:layout_constraintBottom_toTopOf="@+id/tvMainHeader"
+        android:background="@android:color/transparent"
+        android:elevation="0dp"
+        android:gravity="center"
+        android:orientation="vertical"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/vMainIllustration"
-        android:layout_marginBottom="8dp"/>
+        app:layout_constraintTop_toBottomOf="@id/vMainIllustration"
+        app:layout_constraintBottom_toTopOf="@id/tvMainHeader"
+        android:layout_marginTop="0dp" android:paddingTop="0dp"
+        android:paddingBottom="0dp">
+
+        <TextView
+            android:id="@+id/tvBranding"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="0.15"
+            android:text="DATA DOME"
+            android:textColor="#7B1113"
+            android:textSize="40sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
 
     <TextView
         android:id="@+id/tvMainHeader"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:gravity="center"
+        android:lineSpacingExtra="6dp"
         android:text="Secure School Data Platform"
+        android:textColor="#2C2C2C"
         android:textSize="30sp"
         android:textStyle="bold"
-        android:textColor="#D4AF37" android:gravity="center"
-        app:layout_constraintTop_toBottomOf="@id/tvBranding"
-        app:layout_constraintBottom_toTopOf="@id/tvDescription"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="0dp"/>
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/brandingContainer"
+        app:layout_constraintBottom_toTopOf="@id/tvDescription"
+        />
 
     <TextView
         android:id="@+id/tvDescription"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
         android:gravity="center"
+        android:lineSpacingExtra="6dp"
         android:text="Trusted infrastructure for administrative control, student performance tracking, and resource management."
-        android:textColor="#A9B8D1" android:textSize="16sp"
-        app:layout_constraintBottom_toTopOf="@id/btnLogin"
+        android:textColor="#5C5C5C"
+        android:textSize="15.5sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvMainHeader"
-        android:layout_marginBottom="40dp"/> <Button
-    android:id="@+id/btnLogin"
-    android:layout_width="0dp"
-    android:layout_height="56dp"
-    android:text="ACCESS PORTAL" android:textSize="17sp"
-    android:textStyle="bold"
-    android:backgroundTint="#D4AF37" android:textColor="#0A1833" app:cornerRadius="4dp"
-    app:layout_constraintBottom_toTopOf="@id/btnSignup"
-    app:layout_constraintStart_toStartOf="parent"
-    app:layout_constraintEnd_toEndOf="parent"
-    android:layout_marginBottom="12dp"/>
+        app:layout_constraintBottom_toTopOf="@id/btnLogin"
+        android:layout_marginBottom="32dp"
+        />
+
+    <Button
+        android:id="@+id/btnLogin"
+        android:layout_width="0dp"
+        android:layout_height="58dp"
+        android:backgroundTint="#7B1113"
+        android:text="ACCESS PORTAL"
+        android:textColor="#FDFBF8"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:elevation="4dp"
+        app:layout_constraintBottom_toTopOf="@id/btnSignup"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginBottom="12dp"
+        />
 
     <Button
         android:id="@+id/btnSignup"
         android:layout_width="0dp"
-        android:layout_height="56dp"
-        android:text="ENROLL"
-        android:textSize="17sp"
+        android:layout_height="58dp"
+        android:layout_marginBottom="12dp"
+        android:backgroundTint="#FFFFFF"  android:text="ENROLL"
+        android:textColor="#7B1113"  android:textSize="16sp"
         android:textStyle="bold"
-        android:backgroundTint="@android:color/transparent"
-        android:textColor="#92C4F7" app:strokeColor="#92C4F7"
-        app:strokeWidth="2dp"
-        app:cornerRadius="4dp"
         app:layout_constraintBottom_toTopOf="@id/btnViewMap"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="12dp"/>
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent" />
 
     <Button
         android:id="@+id/btnViewMap"
         android:layout_width="0dp"
-        android:layout_height="48dp"
-        android:text="VIEW SCHOOL LOCATION"
-        android:textSize="14sp"
-        android:textStyle="bold"
+        android:layout_height="50dp"
         android:backgroundTint="@android:color/transparent"
-        android:textColor="#FFFFFF"
-        app:cornerRadius="4dp"
+        android:text="VIEW SCHOOL LOCATION"
+        android:textColor="#7B1113"
+        android:textSize="13sp"
+        android:textStyle="bold"
         app:layout_constraintBottom_toTopOf="@id/tvFooter"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="16dp"/>
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginBottom="18dp" />
 
     <TextView
         android:id="@+id/tvFooter"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="© 2025 DataDome Solutions. All rights reserved."
-        android:textSize="12sp"
-        android:textColor="#59719E" app:layout_constraintBottom_toBottomOf="parent"
+        android:textColor="#8C8C8C"
+        android:textSize="11sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        android:layout_marginBottom="20dp"
+        />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
