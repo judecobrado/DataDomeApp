@@ -13,20 +13,14 @@ import com.example.datadomeapp.models.Student
 
 class GradeInputAdapter(
     private val students: List<Student>,
-    private val gradingPeriod: String
+    private val gradingPeriod: String,
+    private val initialGrades: MutableMap<String, GradeData>
 ) : RecyclerView.Adapter<GradeInputAdapter.GradeViewHolder>() {
 
-    // You can store temporary grades here if needed
-    private val studentGrades: MutableMap<String, GradeData> = mutableMapOf()
-
-    init {
-        // Initialize with empty grades
-        students.forEach {
-            studentGrades[it.id] = GradeData()
-        }
-    }
+    private val studentGrades: MutableMap<String, GradeData> = initialGrades.mapValues { (_, gradeData) -> gradeData.copy() }.toMutableMap()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): GradeViewHolder {
+        // Tiyakin na ang layout file na ito ay meron at tama ang IDs.
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_grade_input, parent, false)
         return GradeViewHolder(view)
@@ -38,6 +32,13 @@ class GradeInputAdapter(
     }
 
     override fun getItemCount(): Int = students.size
+
+    /**
+     * Kukunin ang lahat ng updated grades (kasama ang finalGrade) para i-save sa Firestore.
+     */
+    fun getCurrentGrades(): MutableMap<String, GradeData> {
+        return studentGrades
+    }
 
     inner class GradeViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val tvStudentName: TextView = itemView.findViewById(R.id.tvStudentName)
@@ -59,16 +60,38 @@ class GradeInputAdapter(
             etRecitation.setText(grades.recitation?.toString() ?: "")
             etAssignment.setText(grades.assignment?.toString() ?: "")
             etExam.setText(grades.exam?.toString() ?: "")
+            tvTotal.text = calculateTotal(grades) // Compute initial total
 
-            // TextWatchers to update values
-            etAttendance.addTextChangedListener(createTextWatcher(student.id, "attendance", tvTotal))
-            etQuiz.addTextChangedListener(createTextWatcher(student.id, "quiz", tvTotal))
-            etRecitation.addTextChangedListener(createTextWatcher(student.id, "recitation", tvTotal))
-            etAssignment.addTextChangedListener(createTextWatcher(student.id, "assignment", tvTotal))
-            etExam.addTextChangedListener(createTextWatcher(student.id, "exam", tvTotal))
+            // I-clear muna ang mga lumang TextWatchers kung meron
+            // (Ito ay kailangan para maiwasan ang multiple listener calls sa RecyclerView)
+            etAttendance.removeTextChangedListener(etAttendance.tag as? TextWatcher)
+            etQuiz.removeTextChangedListener(etQuiz.tag as? TextWatcher)
+            etRecitation.removeTextChangedListener(etRecitation.tag as? TextWatcher)
+            etAssignment.removeTextChangedListener(etAssignment.tag as? TextWatcher)
+            etExam.removeTextChangedListener(etExam.tag as? TextWatcher)
 
-            // Compute initial total
-            tvTotal.text = calculateTotal(grades)
+
+            // I-set up ang mga bagong TextWatchers at i-store ang reference sa tag
+            val attendanceWatcher = createTextWatcher(student.id, "attendance", tvTotal)
+            etAttendance.addTextChangedListener(attendanceWatcher)
+            etAttendance.tag = attendanceWatcher
+
+            val quizWatcher = createTextWatcher(student.id, "quiz", tvTotal)
+            etQuiz.addTextChangedListener(quizWatcher)
+            etQuiz.tag = quizWatcher
+
+            val recitationWatcher = createTextWatcher(student.id, "recitation", tvTotal)
+            etRecitation.addTextChangedListener(recitationWatcher)
+            etRecitation.tag = recitationWatcher
+
+            val assignmentWatcher = createTextWatcher(student.id, "assignment", tvTotal)
+            etAssignment.addTextChangedListener(assignmentWatcher)
+            etAssignment.tag = assignmentWatcher
+
+            val examWatcher = createTextWatcher(student.id, "exam", tvTotal)
+            etExam.addTextChangedListener(examWatcher)
+            etExam.tag = examWatcher
+
         }
 
         private fun createTextWatcher(studentId: String, field: String, tvTotal: TextView): TextWatcher {
@@ -92,25 +115,42 @@ class GradeInputAdapter(
         }
 
         private fun calculateTotal(grades: GradeData): String {
-            // Example weights:
-            // Attendance 10%, Quiz 20%, Recitation 10%, Assignment 20%, Exam 40%
+            // Weights based on a standard 100% component grading system
+            val WEIGHT_ATTENDANCE = 0.10 // 10%
+            val WEIGHT_RECITATION = 0.10  // 10%
+            val WEIGHT_QUIZ = 0.20        // 20%
+            val WEIGHT_ASSIGNMENT = 0.20  // 20%
+            val WEIGHT_EXAM = 0.40        // 40%
+
             val attendance = grades.attendance ?: 0.0
             val quiz = grades.quiz ?: 0.0
             val recitation = grades.recitation ?: 0.0
             val assignment = grades.assignment ?: 0.0
             val exam = grades.exam ?: 0.0
 
-            val total = attendance * 0.1 + quiz * 0.2 + recitation * 0.1 + assignment * 0.2 + exam * 0.4
-            return "%.2f".format(total)
+            val computedTotal = (attendance * WEIGHT_ATTENDANCE) +
+                    (quiz * WEIGHT_QUIZ) +
+                    (recitation * WEIGHT_RECITATION) +
+                    (assignment * WEIGHT_ASSIGNMENT) +
+                    (exam * WEIGHT_EXAM)
+
+            // I-save ang computedTotal sa GradeData bago i-display
+            grades.finalGrade = "%.2f".format(computedTotal).toDouble()
+
+            return "%.2f".format(computedTotal)
         }
     }
 
-    // Helper class to store grades temporarily
+    /**
+     * Helper class to store all grade components.
+     * Dapat pareho ang field names dito sa ginamit sa GradeInputActivity save logic.
+     */
     data class GradeData(
         var attendance: Double? = null,
         var quiz: Double? = null,
         var recitation: Double? = null,
         var assignment: Double? = null,
-        var exam: Double? = null
+        var exam: Double? = null,
+        var finalGrade: Double? = null
     )
 }
