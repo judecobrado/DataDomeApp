@@ -75,7 +75,7 @@ class GradeInputActivity : AppCompatActivity() {
         loadGradingData()
     }
 
-    // --- fetchAttendanceAndRecitationScores (A/R calculation) ---
+    // --- fetchAttendanceAndRecitationScores (A/R calculation - NO CHANGE) ---
     private suspend fun fetchAttendanceAndRecitationScores(
         enrolledStudents: List<Student>,
         studentGradesData: MutableMap<String, GradeInputAdapter.GradeData>
@@ -160,13 +160,12 @@ class GradeInputActivity : AppCompatActivity() {
         }
     }
 
-    // --- fetchQuizExamAndAssignmentScores (OPTIMIZED FOR CONCURRENCY) ---
+    // --- REVISED: fetchQuizExamAndAssignmentScores (Base 50% Per Activity) ---
     private suspend fun fetchQuizExamAndAssignmentScores(
         enrolledStudents: List<Student>,
         studentGradesData: MutableMap<String, GradeInputAdapter.GradeData>
     ) {
         val activityMetadata = mutableMapOf<String, Pair<String, Double>>()
-        // 🚨 Binago ang type: Magre-return ng List<DocumentSnapshot> imbes na Unit
         val fetchJobs = mutableListOf<kotlinx.coroutines.Deferred<List<com.google.firebase.firestore.DocumentSnapshot>>>()
         val allScoresDocuments = mutableListOf<com.google.firebase.firestore.DocumentSnapshot>()
 
@@ -178,38 +177,25 @@ class GradeInputActivity : AppCompatActivity() {
                 .orderByChild("assignmentId")
                 .equalTo(assignmentId!!)
                 .get()
-
             val quizMetadataDocuments = quizzesTask.await().children.toList()
-            Log.d("GradeDebug", "Raw documents fetched from Realtime DB: Quizzes=${quizMetadataDocuments.size}")
 
             Log.d("GradeDebug", "Querying ASSIGNMENT metadata from FIRESTORE (assignments).")
             val assignmentsSnapshot = firestore.collection("assignments")
                 .whereEqualTo("classId", assignmentId!!)
                 .get().await()
-            Log.d("GradeDebug", "Raw documents fetched from Firestore: Assignments=${assignmentsSnapshot.size()}")
 
-            // (Processing logic for metadata remains the same)
+            // Processing logic for Quizzes/Exams metadata
             quizMetadataDocuments.forEach { dataSnapshot: DataSnapshot ->
-                // ... (Logic to populate activityMetadata for Quizzes/Exams) ...
                 val docId = dataSnapshot.key ?: return@forEach
                 val map = dataSnapshot.value as? Map<*, *> ?: return@forEach
                 val activityId = docId
                 val rawQuestions = map["questions"]
                 var questionsCount = 0
                 val questionsMap: Map<*, *>?
-                if (rawQuestions is List<*>) {
-                    questionsCount = rawQuestions.size
-                    questionsMap = null
-                } else if (rawQuestions is Map<*, *>) {
-                    questionsMap = rawQuestions
-                    questionsMap.keys.forEach { key ->
-                        if (key.toString().toIntOrNull() != null) {
-                            questionsCount++
-                        }
-                    }
-                } else {
-                    questionsMap = null
-                }
+                if (rawQuestions is List<*>) { questionsCount = rawQuestions.size; questionsMap = null }
+                else if (rawQuestions is Map<*, *>) { questionsMap = rawQuestions; questionsMap.keys.forEach { key -> if (key.toString().toIntOrNull() != null) { questionsCount++ } } }
+                else { questionsMap = null }
+
                 val maxPoints = questionsCount.toDouble()
                 val rawType = map["quizType"] as? String ?: "Quiz"
                 val type = rawType.lowercase().let {
@@ -224,8 +210,8 @@ class GradeInputActivity : AppCompatActivity() {
                 }
             }
 
+            // Processing logic for Assignments metadata
             assignmentsSnapshot.documents.forEach { doc ->
-                // ... (Logic to populate activityMetadata for Assignments) ...
                 val activityId = doc.id
                 val rawType = doc.getString("type") ?: "assignment"
                 val maxPoints = doc.getDouble("maxPoints")
@@ -261,16 +247,9 @@ class GradeInputActivity : AppCompatActivity() {
             val quizChunks = quizIds.chunked(10)
             Log.d("GradeDebug", "Fetching Quiz/Exam scores concurrently in ${quizChunks.size} chunks from 'quizResults'.")
             for (chunk in quizChunks) {
-                val job: kotlinx.coroutines.Deferred<List<com.google.firebase.firestore.DocumentSnapshot>> = lifecycleScope.async {
-                    try {
-                        // 🚨 RETURN ang result imbes na i-update ang shared list
-                        return@async firestore.collection("quizResults")
-                            .whereIn("quizId", chunk)
-                            .get().await().documents
-                    } catch (e: Exception) {
-                        Log.e("GradeDebug", "Error in Quiz/Exam chunk query: ${e.message}")
-                        return@async emptyList()
-                    }
+                val job = lifecycleScope.async {
+                    try { return@async firestore.collection("quizResults").whereIn("quizId", chunk).get().await().documents }
+                    catch (e: Exception) { Log.e("GradeDebug", "Error in Quiz/Exam chunk query: ${e.message}"); return@async emptyList() }
                 }
                 fetchJobs.add(job)
             }
@@ -281,161 +260,115 @@ class GradeInputActivity : AppCompatActivity() {
             val assignmentChunks = assignmentIds.chunked(10)
             Log.d("GradeDebug", "Fetching Assignment scores concurrently in ${assignmentChunks.size} chunks from 'submissions'.")
             for (chunk in assignmentChunks) {
-                val job: kotlinx.coroutines.Deferred<List<com.google.firebase.firestore.DocumentSnapshot>> = lifecycleScope.async {
+                val job = lifecycleScope.async {
                     try {
-
-                        Log.d("submission", "Querying submissions with IDs: $chunk")
-
-                        // 🚨 RETURN ang result imbes na i-update ang shared list
-                        val documents = firestore.collection("submissions")
-                            .whereIn("assignmentId", chunk)
-                            .get().await().documents
-
-                        Log.d("submission", "Chunk finished. Fetched ${documents.size} submission documents.")
-
+                        val documents = firestore.collection("submissions").whereIn("assignmentId", chunk).get().await().documents
                         return@async documents
-
-                    } catch (e: Exception) {
-                        Log.e("submission", "Error in Assignment chunk query: ${e.message}")
-                        return@async emptyList()
                     }
+                    catch (e: Exception) { Log.e("submission", "Error in Assignment chunk query: ${e.message}"); return@async emptyList() }
                 }
                 fetchJobs.add(job)
             }
         }
 
-        // 🚨 HINTAYIN ANG LAHAT NG JOB AT PAGSAMAHIN ANG MGA RESULTA (TANGGAL ANG SYNCHRONIZED)
+        // HINTAYIN ANG LAHAT NG JOB AT PAGSAMAHIN ANG MGA RESULTA
         if (fetchJobs.isNotEmpty()) {
-            val allResults = fetchJobs.awaitAll() // Ito ang naghihintay ng sabay-sabay
-            allResults.forEach { docs ->
-                allScoresDocuments.addAll(docs) // Pagsamahin ang lahat ng listahan
-            }
+            val allResults = fetchJobs.awaitAll()
+            allResults.forEach { docs -> allScoresDocuments.addAll(docs) }
         }
 
         Log.d("GradeDebug", "Fetched ${allScoresDocuments.size} score documents in total.")
 
-        // --- HAKBANG 4: AGGREGATION AND COMPUTATION (No change) ---
-        val studentRawScoreAggregates = mutableMapOf<String, MutableMap<String, Pair<Double, Double>>>()
-        studentGradesData.keys.forEach { userDocId ->
-            studentRawScoreAggregates[userDocId] = mutableMapOf(
-                "Quiz" to Pair(0.0, 0.0),
-                "Exam" to Pair(0.0, 0.0),
-                "Assignment" to Pair(0.0, 0.0)
-            )
-        }
+        // --- HAKBANG 4: REVISED AGGREGATION & MISSING SCORE INJECTION ---
 
-        var aggregatedScoresCount = 0
-        allScoresDocuments.forEach { doc ->
-            val activityId = doc.getString("quizId") ?: doc.getString("assignmentId") ?: return@forEach
-            val rawStudentUid = doc.getString("studentId") ?: return@forEach
-
-            val studentDocId = studentUidToDocIdMap[rawStudentUid]
-
-            if (studentDocId.isNullOrBlank()) {
-                Log.w("GradeDebug", "Skipping score. Student UID ($rawStudentUid) not found in enrolled map.")
-                return@forEach
+        // Group raw score documents by Student Document ID
+        val studentSubmissions = allScoresDocuments
+            .mapNotNull { doc ->
+                val studentDocId = studentUidToDocIdMap[doc.getString("studentId")]
+                if (studentDocId != null) studentDocId to doc else null
             }
-
-            val studentId = studentDocId
-
-            if (!studentRawScoreAggregates.containsKey(studentId)) {
-                Log.w("GradeDebug", "Skipping score. Student Doc ID ($studentId) not in aggregation map.")
-                return@forEach
-            }
-
-            var score = 0.0
-            val gradeValue = doc.get("grade")
-            score = when (gradeValue) {
-                is Double -> gradeValue
-                is Long -> gradeValue.toDouble()
-                is String -> gradeValue.toDoubleOrNull() ?: 0.0
-                else -> 0.0
-            }
-
-            // 2. Fallback sa 'score' field
-            if (score <= 0.0) {
-                val scoreValue = doc.get("score")
-                score = when (scoreValue) {
-                    is Double -> scoreValue
-                    is Long -> scoreValue.toDouble()
-                    is String -> scoreValue.toDoubleOrNull() ?: 0.0
-                    else -> 0.0
-                }
-            }
-
-            // 3. Panghuling Fallback sa 'rawScore' field
-            if (score <= 0.0) {
-                val rawScoreValue = doc.get("rawScore")
-                score = when (rawScoreValue) {
-                    is Double -> rawScoreValue
-                    is Long -> rawScoreValue.toDouble()
-                    is String -> rawScoreValue.toDoubleOrNull() ?: 0.0
-                    else -> 0.0
-                }
-            }
-
-            val metadata = activityMetadata[activityId] ?: return@forEach
-            val type = metadata.first
-            val maxPoints = metadata.second
-
-            if (type in studentRawScoreAggregates[studentId]?.keys ?: emptySet()) {
-                val currentPair = studentRawScoreAggregates[studentId]?.get(type) ?: Pair(0.0, 0.0)
-                val newTotalScore = currentPair.first + score
-                val newTotalMaxPoints = currentPair.second + maxPoints
-
-                studentRawScoreAggregates[studentId]?.put(type, Pair(newTotalScore, newTotalMaxPoints))
-                aggregatedScoresCount++
-                Log.v("GradeDebug", "Aggregated: $type score $score/$maxPoints for $studentId. New Total Score/Max: $newTotalScore/$newTotalMaxPoints")
-            }
-        }
-        Log.d("GradeDebug", "Finished aggregation. Total scores tallied: $aggregatedScoresCount")
+            .groupBy { it.first }
+            .mapValues { it.value.map { it.second } }
 
         studentGradesData.keys.forEach { studentId ->
-            val grades = studentGradesData[studentId] ?: GradeInputAdapter.GradeData()
-            val aggregates = studentRawScoreAggregates[studentId]
 
-            if (aggregates != null) {
+            // Map to store the best 50%-based percentage score for each activity for this student.
+            // Map<ActivityId, Best50PercentScore>
+            val studentBestActivityScores = mutableMapOf<String, Double>()
 
-                // --- QUIZ CALCULATION ---
-                val quizPair = aggregates["Quiz"]
-                if (quizPair != null && quizPair.second > 0.0) {
-                    val calculatedScore = (quizPair.first / quizPair.second) * 100.0
-                    // Magiging 50.0 kung mas mababa sa 50.0
-                    grades.quiz = maxOf(50.0, calculatedScore).let { "%.2f".format(it).toDouble() }
-                } else {
-                    // Default 50.0 kung walang score data
-                    grades.quiz = 50.0
+            val submissionsForStudent = studentSubmissions[studentId] ?: emptyList()
+
+            // 1. Process all submissions to find the single best 50%-based score per activity
+            submissionsForStudent.forEach { doc ->
+                val activityId = doc.getString("quizId") ?: doc.getString("assignmentId") ?: return@forEach
+                val metadata = activityMetadata[activityId] ?: return@forEach
+                val maxPoints = metadata.second
+
+                // Extract score (using the robust fallback logic)
+                var score = 0.0
+                score = (doc.get("grade") as? Double) ?: (doc.get("grade") as? Long)?.toDouble() ?: (doc.get("grade") as? String)?.toDoubleOrNull() ?: score
+                if (score <= 0.0) score = (doc.get("score") as? Double) ?: (doc.get("score") as? Long)?.toDouble() ?: (doc.get("score") as? String)?.toDoubleOrNull() ?: score
+                if (score <= 0.0) score = (doc.get("rawScore") as? Double) ?: (doc.get("rawScore") as? Long)?.toDouble() ?: (doc.get("rawScore") as? String)?.toDoubleOrNull() ?: score
+
+                val rawPercentage = if (maxPoints > 0.0) (score / maxPoints) * 100.0 else 0.0
+
+                // 🚨 Apply 50% base to the INDIVIDUAL activity score
+                val finalPercentage = maxOf(50.0, rawPercentage)
+
+                // Store the highest 50%-based score found so far for this activity
+                val currentBest = studentBestActivityScores[activityId] ?: 0.0
+                if (finalPercentage > currentBest) {
+                    studentBestActivityScores[activityId] = finalPercentage
                 }
-
-                // --- EXAM CALCULATION (FIXED: Gumagamit na ng examPair) ---
-                val examPair = aggregates["Exam"]
-                if (examPair != null && examPair.second > 0.0) {
-                    val calculatedScore = (examPair.first / examPair.second) * 100.0
-                    // Magiging 50.0 kung mas mababa sa 50.0
-                    grades.exam = maxOf(50.0, calculatedScore).let { "%.2f".format(it).toDouble() }
-                } else {
-                    // Default 50.0 kung walang score data
-                    grades.exam = 50.0
-                }
-
-                // --- ASSIGNMENT CALCULATION ---
-                val assignmentPair = aggregates["Assignment"]
-                if (assignmentPair != null && assignmentPair.second > 0.0) {
-                    val calculatedScore = (assignmentPair.first / assignmentPair.second) * 100.0
-                    // Magiging 50.0 kung mas mababa sa 50.0
-                    grades.assignment = maxOf(50.0, calculatedScore).let { "%.2f".format(it).toDouble() }
-                } else {
-                    // Default 50.0 kung walang score data
-                    grades.assignment = 50.0
-                }
-
-                Log.d("GradeDebug", "Final Scores for $studentId: Q=${grades.quiz ?: "N/A"} E=${grades.exam ?: "N/A"} A=${grades.assignment ?: "N/A"}")
             }
+
+            // Variables for final category averaging
+            val categoryTotalScores = mutableMapOf("Quiz" to 0.0, "Exam" to 0.0, "Assignment" to 0.0)
+            val categoryActivityCount = mutableMapOf("Quiz" to 0, "Exam" to 0, "Assignment" to 0)
+
+            // 2. Iterate through ALL activities (present and missing) and tally scores
+            activityMetadata.forEach { (activityId, metadata) ->
+                val type = metadata.first
+
+                // 3. Inject Missing Score (50%) or use the calculated Best Score
+                // If the activity ID is NOT in the studentBestActivityScores map, it means they didn't submit (or got 0 points), so we assign 50.0.
+                val finalScoreForActivity = studentBestActivityScores[activityId] ?: 50.0
+
+                // Tally the results
+                if (categoryTotalScores.containsKey(type)) {
+                    categoryTotalScores[type] = categoryTotalScores[type]!! + finalScoreForActivity
+                    categoryActivityCount[type] = categoryActivityCount[type]!! + 1
+                }
+            }
+
+            // 4. Calculate Final Average for each category
+            val grades = studentGradesData[studentId] ?: GradeInputAdapter.GradeData()
+
+            categoryTotalScores.keys.forEach { type ->
+                val totalScore = categoryTotalScores[type]!!
+                val count = categoryActivityCount[type]!!
+
+                val finalCalculatedScore = if (count > 0) {
+                    // Average the 50%-based scores.
+                    totalScore / count
+                } else {
+                    50.0 // Default 50.0 if no activities were found at all for the subject
+                }
+
+                when (type) {
+                    "Quiz" -> grades.quiz = finalCalculatedScore.let { "%.2f".format(it).toDouble() }
+                    "Exam" -> grades.exam = finalCalculatedScore.let { "%.2f".format(it).toDouble() }
+                    "Assignment" -> grades.assignment = finalCalculatedScore.let { "%.2f".format(it).toDouble() }
+                }
+            }
+
             studentGradesData[studentId] = grades
+            Log.d("GradeDebug", "Final Scores (Revised) for $studentId: Q=${grades.quiz} E=${grades.exam} A=${grades.assignment}")
         }
     }
 
-    // 🚨 loadGradingData (No change needed dito dahil tama na ang logic)
+
+    // 🚨 loadGradingData (NO CHANGE)
     private fun loadGradingData() {
         tvLoadingStatus.text = "Fetching enrolled students..."
 
