@@ -14,9 +14,12 @@ import com.example.datadomeapp.models.Student
 class GradeInputAdapter(
     private val students: List<Student>,
     private val gradingPeriod: String,
-    private val initialGrades: MutableMap<String, GradeData>
+    private val initialGrades: MutableMap<String, GradeData>,
+    // --- NEW: Add the listener parameter ---
+    private val listener: OnStudentClickListener
 ) : RecyclerView.Adapter<GradeInputAdapter.GradeViewHolder>() {
 
+    // Kopyahin ang initial grades para sa local modification
     private val studentGrades: MutableMap<String, GradeData> = initialGrades.mapValues { (_, gradeData) -> gradeData.copy() }.toMutableMap()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): GradeViewHolder {
@@ -29,6 +32,11 @@ class GradeInputAdapter(
     override fun onBindViewHolder(holder: GradeViewHolder, position: Int) {
         val student = students[position]
         holder.bind(student)
+
+        // --- NEW: Add Click Listener to the entire item view ---
+        holder.itemView.setOnClickListener {
+            listener.onStudentClicked(student)
+        }
     }
 
     override fun getItemCount(): Int = students.size
@@ -55,6 +63,8 @@ class GradeInputAdapter(
             val grades = studentGrades[student.id]!!
 
             // Set existing values
+            // NOTE: The scores passed here (e.g., grades.attendance) are the CATEGORY AVERAGES calculated
+            // in GradeInputActivity, NOT the individual activity scores.
             etAttendance.setText(grades.attendance?.toString() ?: "")
             etQuiz.setText(grades.quiz?.toString() ?: "")
             etRecitation.setText(grades.recitation?.toString() ?: "")
@@ -63,7 +73,6 @@ class GradeInputAdapter(
             tvTotal.text = calculateTotal(grades) // Compute initial total
 
             // I-clear muna ang mga lumang TextWatchers kung meron
-            // (Ito ay kailangan para maiwasan ang multiple listener calls sa RecyclerView)
             etAttendance.removeTextChangedListener(etAttendance.tag as? TextWatcher)
             etQuiz.removeTextChangedListener(etQuiz.tag as? TextWatcher)
             etRecitation.removeTextChangedListener(etRecitation.tag as? TextWatcher)
