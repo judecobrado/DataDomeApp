@@ -9,37 +9,46 @@ import android.widget.EditText
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.datadomeapp.R
-import com.example.datadomeapp.models.Student
+import com.example.datadomeapp.models.Student // Still needed for the OnStudentClickListener interface
 
 class GradeInputAdapter(
-    private val students: List<Student>,
-    private val gradingPeriod: String,
-    private val initialGrades: MutableMap<String, GradeData>,
-    // --- NEW: Add the listener parameter ---
+    // ✅ FIX 1: Palitan ang input parameter sa List<GradeData>
+    private val gradeDataList: List<GradeData>,
     private val listener: OnStudentClickListener
 ) : RecyclerView.Adapter<GradeInputAdapter.GradeViewHolder>() {
 
-    // Kopyahin ang initial grades para sa local modification
-    private val studentGrades: MutableMap<String, GradeData> = initialGrades.mapValues { (_, gradeData) -> gradeData.copy() }.toMutableMap()
+    // ✅ FIX 2: Gawing map ang listahan para madali ang pag-access gamit ang Doc ID.
+    // Kopyahin ang initial grades para sa local modification (StudentDocId -> GradeData)
+    private val studentGrades: MutableMap<String, GradeData> =
+        gradeDataList.associateBy { it.studentDocId }.mapValues { (_, gradeData) -> gradeData.copy() }.toMutableMap()
+
+    // ✅ FIX 3: Gamitin ang gradeDataList para sa display.
+    private val studentsForDisplay: List<GradeData> = gradeDataList
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): GradeViewHolder {
-        // Tiyakin na ang layout file na ito ay meron at tama ang IDs.
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_grade_input, parent, false)
         return GradeViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: GradeViewHolder, position: Int) {
-        val student = students[position]
-        holder.bind(student)
+        val gradeData = studentsForDisplay[position] // ✅ FIX 4: Kumuha ng GradeData
+        holder.bind(gradeData)
+
+        // ✅ FIX 5: Gumawa ng Student object mula sa GradeData para ipasa sa listener
+        val studentForClick = Student(
+            id = gradeData.studentDocId,
+            firstName = gradeData.firstName,
+            lastName = gradeData.lastName
+        )
 
         // --- NEW: Add Click Listener to the entire item view ---
         holder.itemView.setOnClickListener {
-            listener.onStudentClicked(student)
+            listener.onStudentClicked(studentForClick)
         }
     }
 
-    override fun getItemCount(): Int = students.size
+    override fun getItemCount(): Int = studentsForDisplay.size // ✅ FIX 6: Use studentsForDisplay
 
     /**
      * Kukunin ang lahat ng updated grades (kasama ang finalGrade) para i-save sa Firestore.
@@ -57,19 +66,18 @@ class GradeInputAdapter(
         private val etExam: EditText = itemView.findViewById(R.id.etExam)
         private val tvTotal: TextView = itemView.findViewById(R.id.tvTotal)
 
-        fun bind(student: Student) {
-            tvStudentName.text = "${student.lastName}, ${student.firstName}"
+        // ✅ FIX 7: Binago ang input parameter sa GradeData
+        fun bind(gradeData: GradeData) {
+            tvStudentName.text = "${gradeData.lastName}, ${gradeData.firstName}"
 
-            val grades = studentGrades[student.id]!!
+            val grades = studentGrades[gradeData.studentDocId]!! // ✅ Kinuha gamit ang Doc ID
 
-            // Set existing values
-            // NOTE: The scores passed here (e.g., grades.attendance) are the CATEGORY AVERAGES calculated
-            // in GradeInputActivity, NOT the individual activity scores.
-            etAttendance.setText(grades.attendance?.toString() ?: "")
-            etQuiz.setText(grades.quiz?.toString() ?: "")
-            etRecitation.setText(grades.recitation?.toString() ?: "")
-            etAssignment.setText(grades.assignment?.toString() ?: "")
-            etExam.setText(grades.exam?.toString() ?: "")
+            // Set existing values. Removed ?: "" since default is 50.0
+            etAttendance.setText(grades.attendance.toString())
+            etQuiz.setText(grades.quiz.toString())
+            etRecitation.setText(grades.recitation.toString())
+            etAssignment.setText(grades.assignment.toString())
+            etExam.setText(grades.exam.toString())
             tvTotal.text = calculateTotal(grades) // Compute initial total
 
             // I-clear muna ang mga lumang TextWatchers kung meron
@@ -79,25 +87,27 @@ class GradeInputAdapter(
             etAssignment.removeTextChangedListener(etAssignment.tag as? TextWatcher)
             etExam.removeTextChangedListener(etExam.tag as? TextWatcher)
 
+            // ✅ FIX 8: Gumamit ng StudentDocId para sa Text Watcher
+            val studentDocId = gradeData.studentDocId
 
             // I-set up ang mga bagong TextWatchers at i-store ang reference sa tag
-            val attendanceWatcher = createTextWatcher(student.id, "attendance", tvTotal)
+            val attendanceWatcher = createTextWatcher(studentDocId, "attendance", tvTotal)
             etAttendance.addTextChangedListener(attendanceWatcher)
             etAttendance.tag = attendanceWatcher
 
-            val quizWatcher = createTextWatcher(student.id, "quiz", tvTotal)
+            val quizWatcher = createTextWatcher(studentDocId, "quiz", tvTotal)
             etQuiz.addTextChangedListener(quizWatcher)
             etQuiz.tag = quizWatcher
 
-            val recitationWatcher = createTextWatcher(student.id, "recitation", tvTotal)
+            val recitationWatcher = createTextWatcher(studentDocId, "recitation", tvTotal)
             etRecitation.addTextChangedListener(recitationWatcher)
             etRecitation.tag = recitationWatcher
 
-            val assignmentWatcher = createTextWatcher(student.id, "assignment", tvTotal)
+            val assignmentWatcher = createTextWatcher(studentDocId, "assignment", tvTotal)
             etAssignment.addTextChangedListener(assignmentWatcher)
             etAssignment.tag = assignmentWatcher
 
-            val examWatcher = createTextWatcher(student.id, "exam", tvTotal)
+            val examWatcher = createTextWatcher(studentDocId, "exam", tvTotal)
             etExam.addTextChangedListener(examWatcher)
             etExam.tag = examWatcher
 
@@ -108,15 +118,24 @@ class GradeInputAdapter(
                 override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
                 override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
                 override fun afterTextChanged(s: Editable?) {
-                    val value = s.toString().toDoubleOrNull()
+
                     val grades = studentGrades[studentId] ?: GradeData()
+
+                    // 1. Convert text to Double?
+                    val inputScore = s.toString().toDoubleOrNull()
+
+                    // 2. Safely assign the value:
+                    // Since all defaults are 50.0, any invalid input (like "") can be treated as 50.0
+                    val safeValue = inputScore ?: 50.0
+
                     when (field) {
-                        "attendance" -> grades.attendance = value
-                        "quiz" -> grades.quiz = value
-                        "recitation" -> grades.recitation = value
-                        "assignment" -> grades.assignment = value
-                        "exam" -> grades.exam = value
+                        "attendance" -> grades.attendance = safeValue
+                        "quiz" -> grades.quiz = safeValue
+                        "recitation" -> grades.recitation = safeValue
+                        "assignment" -> grades.assignment = safeValue
+                        "exam" -> grades.exam = safeValue
                     }
+
                     studentGrades[studentId] = grades
                     tvTotal.text = calculateTotal(grades)
                 }
@@ -151,15 +170,20 @@ class GradeInputAdapter(
     }
 
     /**
-     * Helper class to store all grade components.
-     * Dapat pareho ang field names dito sa ginamit sa GradeInputActivity save logic.
+     * Helper class to store all grade components and context.
      */
     data class GradeData(
-        var attendance: Double? = null,
-        var quiz: Double? = null,
-        var recitation: Double? = null,
-        var assignment: Double? = null,
-        var exam: Double? = null,
-        var finalGrade: Double? = null
+        val studentDocId: String = "",
+        val firstName: String = "",
+        val lastName: String = "",
+        val subjectId: String = "",
+        val gradingPeriod: String = "",
+        // Ginagamit ang 50.0 bilang default floor score para sa lahat ng kategorya
+        var attendance: Double = 50.0,
+        var recitation: Double = 50.0,
+        var quiz: Double = 50.0,
+        var exam: Double = 50.0,
+        var assignment: Double = 50.0,
+        var finalGrade: Double = 0.0
     )
 }

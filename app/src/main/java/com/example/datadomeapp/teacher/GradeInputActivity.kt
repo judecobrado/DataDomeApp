@@ -148,7 +148,6 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
     private suspend fun fetchDetailedScores(studentDocId: String): DetailedScores {
         // A. CONTEXT & METADATA
         val termDoc = firestore.document("systemSettings/currentTerm").get().await()
-        val academicTerm = termDoc.getString("academicTerm") ?: ""
         val semester = termDoc.getString("semester") ?: ""
 
         // Triple: ID -> (Type, MaxPoints, Title)
@@ -159,6 +158,10 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         quizzesTask.await().children.forEach { dataSnapshot ->
             val id = dataSnapshot.key ?: return@forEach
             val map = dataSnapshot.value as? Map<*, *> ?: return@forEach
+
+            val activityPeriod = map["academicTerm"] as? String
+            if (activityPeriod != gradingPeriod) return@forEach
+
             val title = map["title"] as? String ?: "Quiz/Exam ($id)"
 
             val rawQuestions = map["questions"]
@@ -174,7 +177,10 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         }
 
         // 2. Fetch Assignment Metadata (Firestore)
-        val assignmentsSnapshot = firestore.collection("assignments").whereEqualTo("classId", assignmentId!!).get().await()
+        val assignmentsSnapshot = firestore.collection("assignments")
+            .whereEqualTo("classId", assignmentId!!)
+            .whereEqualTo("academicTerm", gradingPeriod!!)
+            .get().await()
         assignmentsSnapshot.documents.forEach { doc ->
             val id = doc.id
             val title = doc.getString("title") ?: "Assignment ($id)"
@@ -194,7 +200,7 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
 
         val attendanceSnapshot = firestore.collection("dailyAttendanceRecords")
             .whereEqualTo("assignmentId", assignmentId!!)
-            .whereEqualTo("academicTerm", academicTerm)
+            .whereEqualTo("academicTerm", gradingPeriod!!)
             .whereEqualTo("semester", semester)
             .get().await()
 
@@ -369,7 +375,7 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
 
         val attendanceSnapshot = firestore.collection("dailyAttendanceRecords")
             .whereEqualTo("assignmentId", assignmentId!!)
-            .whereEqualTo("academicTerm", academicTerm)
+            .whereEqualTo("academicTerm", gradingPeriod!!)
             .whereEqualTo("semester", semester)
             .get().await()
 
@@ -462,12 +468,16 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
 
             // Assign result to outside variable
             assignmentsSnapshot = firestore.collection("assignments")
-                .whereEqualTo("classId", assignmentId!!).get().await().documents
+                .whereEqualTo("classId", assignmentId!!)
+                .whereEqualTo("academicTerm", gradingPeriod!!)
+                .get().await().documents
 
             // Processing logic for Quizzes/Exams metadata
             quizMetadataDocuments.forEach { dataSnapshot: DataSnapshot ->
                 val docId = dataSnapshot.key ?: return@forEach
                 val map = dataSnapshot.value as? Map<*, *> ?: return@forEach
+                val activityPeriod = map["academicTerm"] as? String // ⬅️ Check the field name here
+                if (activityPeriod != gradingPeriod) return@forEach
                 val activityId = docId
 
                 var questionsCount = 0
@@ -659,6 +669,7 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
                 val classDoc = firestore.collection("classAssignments").document(assignmentId!!).get().await()
                 val yearLevel = classDoc.getString("yearLevel") ?: ""
                 val semester = classDoc.getString("semester") ?: ""
+                val subjectId = classDoc.getString("subjectId") ?: ""
                 val sectionId = className?.split(" - ")?.lastOrNull() ?: ""
 
                 if (yearLevel.isEmpty() || semester.isEmpty() || sectionId.isEmpty()) { tvLoadingStatus.text = "Error: Missing class details." ; return@launch }
@@ -699,8 +710,15 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
                 if (enrolledStudents.isEmpty()) { tvLoadingStatus.text = "No students officially enrolled." ; return@launch }
 
                 val studentGradesData = mutableMapOf<String, GradeInputAdapter.GradeData>()
-                enrolledStudents.forEach { student -> studentGradesData[student.id] = GradeInputAdapter.GradeData() }
-
+                enrolledStudents.forEach { student ->
+                    studentGradesData[student.id] = GradeInputAdapter.GradeData(
+                        studentDocId = student.id,
+                        firstName = student.firstName,
+                        lastName = student.lastName,
+                        subjectId = subjectId, // Subject ID must be fetched at the start of loadGradingData
+                        gradingPeriod = gradingPeriod!!
+                    )
+                }
 
                 // 4. Fetch and Calculate Scores CONCURRENTLY
                 tvLoadingStatus.text = "Fetching all grades concurrently..."
@@ -721,10 +739,12 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
                 tvLoadingStatus.text = "Loading data into grade sheet..."
 
                 // Adapter initialization
+                val gradesList = studentGradesData.values.toList()
+
+                // Adapter initialization
                 gradeAdapter = GradeInputAdapter(
-                    students = enrolledStudents,
-                    gradingPeriod = gradingPeriod!!,
-                    initialGrades = studentGradesData,
+                    // ✅ Tanging gradeDataList at listener na lang ang kailangan
+                    gradeDataList = gradesList,
                     listener = this@GradeInputActivity
                 )
                 recyclerViewGrades.adapter = gradeAdapter
