@@ -64,11 +64,11 @@ class ManageGradesActivity : AppCompatActivity() {
 
         // ⚠️ I-assume na GAGAWA ka ng isang bagong Activity (e.g., GradeInputActivity)
         // para sa aktwal na pag-input ng grades
-        val intent = Intent(this, GradeInputActivity::class.java) // ⬅️ I-adjust ito
+        val intent = Intent(this, GradeInputActivity::class.java)
         intent.putExtra("ASSIGNMENT_ID", assignmentId)
         intent.putExtra("SUBJECT_CODE", subjectCode)
         intent.putExtra("CLASS_NAME", className)
-        intent.putExtra("GRADING_PERIOD", period) // ⬅️ I-pasa ang Period
+        intent.putExtra("GRADING_PERIOD", period)
         startActivity(intent)
     }
 }
