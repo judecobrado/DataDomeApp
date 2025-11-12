@@ -14,7 +14,7 @@ class EditableActivityScoreAdapter(
     private var scores: List<ActivityScoreData>,
     private val studentId: String,
     private val category: String,
-    private val isEditable: Boolean = true,
+    private var isEditable: Boolean = false, // Default to false (view mode)
     private val isPublished: Boolean = false,
     private val onScoreUpdate: (ActivityScoreData) -> Unit
 ) : RecyclerView.Adapter<EditableActivityScoreAdapter.EditableScoreViewHolder>() {
@@ -107,6 +107,12 @@ class EditableActivityScoreAdapter(
 
     fun updateScores(newScores: List<ActivityScoreData>) {
         scores = newScores
+        notifyDataSetChanged()
+    }
+
+    // NEW: Function to toggle edit mode
+    fun setEditable(editable: Boolean) {
+        isEditable = editable
         notifyDataSetChanged()
     }
 }
