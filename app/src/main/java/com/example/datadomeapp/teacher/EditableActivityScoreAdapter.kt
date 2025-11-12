@@ -7,14 +7,18 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.TextView
+import android.text.InputFilter
+import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
 import com.example.datadomeapp.R
+
+fun Double.isInteger(): Boolean = this % 1 == 0.0
 
 class EditableActivityScoreAdapter(
     private var scores: List<ActivityScoreData>,
     private val studentId: String,
     private val category: String,
-    private var isEditable: Boolean = false, // Default to false (view mode)
+    private var isEditable: Boolean = false,
     private val isPublished: Boolean = false,
     private val onScoreUpdate: (ActivityScoreData) -> Unit
 ) : RecyclerView.Adapter<EditableActivityScoreAdapter.EditableScoreViewHolder>() {
@@ -35,17 +39,24 @@ class EditableActivityScoreAdapter(
     override fun onBindViewHolder(holder: EditableScoreViewHolder, position: Int) {
         val scoreData = scores[position]
 
+        // Safety check
+        if (scoreData.maxPoints <= 0) {
+            holder.tvCalculatedPercent.text = "50%-Base: 0.00%"
+            holder.etRawScore.isEnabled = false
+            holder.etRawScore.setText("0")
+            return
+        }
+
         holder.tvActivityTitle.text = scoreData.title
 
-        // Format raw score display
-        holder.etRawScore.setText(if (scoreData.rawScore % 1.0 == 0.0) {
+        // Format displays
+        holder.etRawScore.setText(if (scoreData.rawScore.isInteger()) {
             "%.0f".format(scoreData.rawScore)
         } else {
             "%.1f".format(scoreData.rawScore)
         })
 
-        // Format max points display
-        holder.tvMaxPoints.text = " / ${if (scoreData.maxPoints % 1.0 == 0.0) {
+        holder.tvMaxPoints.text = " / ${if (scoreData.maxPoints.isInteger()) {
             "%.0f".format(scoreData.maxPoints)
         } else {
             "%.1f".format(scoreData.maxPoints)
@@ -53,7 +64,19 @@ class EditableActivityScoreAdapter(
 
         holder.tvCalculatedPercent.text = "50%-Base: ${"%.2f".format(scoreData.score50Base)}%"
 
-        // UPDATED: Better view mode handling
+        // IMPROVED INPUT FILTER
+        holder.etRawScore.filters = arrayOf<InputFilter>(InputFilter { source, start, end, dest, dstart, dend ->
+            val newText = dest.toString().replaceRange(dstart, dend, source.subSequence(start, end))
+
+            if (newText.isEmpty()) return@InputFilter source
+
+            if (newText.matches(Regex("^\\d+\\.?\\d*$")) && newText.count { it == '.' } <= 1) {
+                source
+            } else {
+                ""
+            }
+        })
+
         val shouldEnableEditing = isEditable && !isPublished
 
         if (shouldEnableEditing) {
@@ -61,7 +84,7 @@ class EditableActivityScoreAdapter(
             holder.etRawScore.alpha = 1.0f
             holder.etRawScore.hint = "Enter score"
 
-            // Remove previous watchers to avoid duplicates
+            // Clean up previous watcher
             holder.etRawScore.tag?.let {
                 holder.etRawScore.removeTextChangedListener(it as TextWatcher)
             }
@@ -70,11 +93,26 @@ class EditableActivityScoreAdapter(
                 override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
                 override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
                 override fun afterTextChanged(s: Editable?) {
-                    val newRawScore = s.toString().toDoubleOrNull() ?: 0.0
-                    val newPercentage = if (scoreData.maxPoints > 0) {
-                        (newRawScore / scoreData.maxPoints) * 100.0
-                    } else 0.0
+                    val inputText = s.toString()
+                    if (inputText.isBlank() || inputText == ".") {
+                        holder.tvCalculatedPercent.text = "50%-Base: 0.00%"
+                        return
+                    }
 
+                    val newRawScore = inputText.toDoubleOrNull() ?: 0.0
+
+                    if (!isValidScore(newRawScore, scoreData)) {
+                        // Reset to original
+                        holder.etRawScore.setText(if (scoreData.rawScore.isInteger()) {
+                            "%.0f".format(scoreData.rawScore)
+                        } else {
+                            "%.1f".format(scoreData.rawScore)
+                        })
+                        showValidationError(holder.itemView, scoreData)
+                        return
+                    }
+
+                    val newPercentage = (newRawScore / scoreData.maxPoints) * 100.0
                     val newScore50Base = maxOf(50.0, newPercentage)
 
                     val updatedScore = scoreData.copy(
@@ -83,7 +121,6 @@ class EditableActivityScoreAdapter(
                     )
 
                     holder.tvCalculatedPercent.text = "50%-Base: ${"%.2f".format(newScore50Base)}%"
-
                     onScoreUpdate(updatedScore)
                 }
             }
@@ -91,16 +128,61 @@ class EditableActivityScoreAdapter(
             holder.etRawScore.addTextChangedListener(textWatcher)
             holder.etRawScore.tag = textWatcher
         } else {
-            // View mode - disabled but still readable
             holder.etRawScore.isEnabled = false
-            holder.etRawScore.alpha = 0.8f // Slightly dimmed but still readable
+            holder.etRawScore.alpha = 0.8f
             holder.etRawScore.hint = ""
 
-            // Remove any text watchers in view mode
             holder.etRawScore.tag?.let {
                 holder.etRawScore.removeTextChangedListener(it as TextWatcher)
             }
         }
+    }
+
+    // Add this method
+    override fun onViewRecycled(holder: EditableScoreViewHolder) {
+        super.onViewRecycled(holder)
+        holder.etRawScore.tag?.let {
+            holder.etRawScore.removeTextChangedListener(it as TextWatcher)
+        }
+        holder.etRawScore.tag = null
+    }
+
+    /**
+     * Validate if the new score is within acceptable range
+     * Rules:
+     * 1. Cannot be lower than existing raw score
+     * 2. Cannot exceed maximum points
+     * 3. Must be non-negative
+     */
+    private fun isValidScore(newScore: Double, scoreData: ActivityScoreData): Boolean {
+        // Rule 1: Cannot be lower than existing score
+        if (newScore < scoreData.rawScore) {
+            return false
+        }
+
+        // Rule 2: Cannot exceed maximum points
+        if (newScore > scoreData.maxPoints) {
+            return false
+        }
+
+        // Rule 3: Must be non-negative
+        if (newScore < 0) {
+            return false
+        }
+
+        return true
+    }
+
+    /**
+     * Show appropriate validation error message
+     */
+    private fun showValidationError(view: View, scoreData: ActivityScoreData) {
+        val context = view.context
+        Toast.makeText(
+            context,
+            "Invalid score! Must be between ${scoreData.rawScore} and ${scoreData.maxPoints}",
+            Toast.LENGTH_SHORT
+        ).show()
     }
 
     override fun getItemCount() = scores.size
@@ -110,7 +192,7 @@ class EditableActivityScoreAdapter(
         notifyDataSetChanged()
     }
 
-    // NEW: Function to toggle edit mode
+    // Function to toggle edit mode
     fun setEditable(editable: Boolean) {
         isEditable = editable
         notifyDataSetChanged()

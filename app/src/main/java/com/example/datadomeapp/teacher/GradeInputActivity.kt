@@ -209,9 +209,36 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
 
                 val rawQuestions = map["questions"]
                 var questionsCount = 0
-                if (rawQuestions is List<*>) questionsCount = rawQuestions.size
-                else if (rawQuestions is Map<*, *>) {
-                    questionsCount = rawQuestions.keys.count { key -> key.toString().toIntOrNull() != null }
+
+                if (rawQuestions is List<*>) {
+                    // Process each question
+                    rawQuestions.forEach { question ->
+                        if (question is Map<*, *>) {
+                            val questionType = question["type"] as? String
+                            if (questionType == "MATCHING") {
+                                // For matching type, count the number of pairs
+                                val matchingOptions = question["options"] as? List<*>
+                                questionsCount += matchingOptions?.size ?: 0
+                            } else {
+                                // For other types (MC, TF), count as 1 question = 1 point
+                                questionsCount += 1
+                            }
+                        }
+                    }
+                } else if (rawQuestions is Map<*, *>) {
+                    // Alternative structure - count by question numbers
+                    questionsCount = rawQuestions.keys.count { key ->
+                        key.toString().toIntOrNull() != null
+                    }
+
+                    // Additional logic for matching type in map structure
+                    rawQuestions.values.forEach { question ->
+                        if (question is Map<*, *> && question["type"] == "MATCHING") {
+                            val matchingOptions = question["options"] as? List<*>
+                            // Adjust count: remove 1 (the original count) and add the actual pairs
+                            questionsCount += (matchingOptions?.size ?: 1) - 1
+                        }
+                    }
                 }
 
                 val maxPoints = questionsCount.toDouble()
@@ -504,6 +531,28 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
 
     // --- NEW: Editable dialog with score modification ---
     private fun showEditableScoreDialog(student: Student, detailedScores: DetailedScores) {
+        val dialog = ProgressDialog(this).apply {
+            setMessage("Fetching detailed scores for ${student.lastName}...")
+            setCancelable(false)
+            show()
+        }
+
+        lifecycleScope.launch {
+            try {
+                val detailedScores = fetchDetailedScores(student.id)
+                detailedScoresCache[student.id] = detailedScores
+                dialog.dismiss()
+                showEditableScoreDialogWithFixedTotal(student, detailedScores) // Use new function
+            } catch (e: Exception) {
+                dialog.dismiss()
+                Log.e("ScoreDetail", "Error fetching detailed scores: ${e.message}", e)
+                Toast.makeText(this@GradeInputActivity, "Error fetching details: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    // NEW FUNCTION WITH FIXED TOTAL ATTENDANCE
+    private fun showEditableScoreDialogWithFixedTotal(student: Student, detailedScores: DetailedScores) {
         val builder = AlertDialog.Builder(this)
         val inflater = LayoutInflater.from(this)
         val view = inflater.inflate(R.layout.dialog_editable_score_details, null)
@@ -521,22 +570,31 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         val rvExamScores = view.findViewById<RecyclerView>(R.id.rvExamScores)
         val rvAssignmentScores = view.findViewById<RecyclerView>(R.id.rvAssignmentScores)
 
-        // SET DEFAULT VALUES IF ZERO (NO EXISTING DATA)
-        val defaultPresent = if (detailedScores.attendanceDetails.first == 0) 1 else detailedScores.attendanceDetails.first
-        val defaultTotal = if (detailedScores.attendanceDetails.second == 0) 1 else detailedScores.attendanceDetails.second
-        val defaultRecitation = if (detailedScores.recitationDetails == 0) 1 else detailedScores.recitationDetails
+        // Store original values for validation
+        val originalAttendancePresent = detailedScores.attendanceDetails.first
+        val originalAttendanceTotal = detailedScores.attendanceDetails.second
+        val originalRecitationPoints = detailedScores.recitationDetails
 
-        // Set current values
+        // SET FIXED TOTAL ATTENDANCE - CANNOT BE CHANGED
+        etAttendanceTotal.setText(originalAttendanceTotal.toString())
+        etAttendanceTotal.isEnabled = false // Disable total field
+        etAttendanceTotal.alpha = 0.5f // Make it look disabled
+
+        // Set current present value
+        val defaultPresent = if (originalAttendancePresent == 0) 1 else originalAttendancePresent
         etAttendancePresent.setText(defaultPresent.toString())
-        etAttendanceTotal.setText(defaultTotal.toString())
         updateAttendancePercentage(etAttendancePresent, etAttendanceTotal, tvAttendancePercentage)
 
-        etRecitationPoints.setText(defaultRecitation.toString())
-        updateRecitationPercentage(etRecitationPoints.text.toString().toIntOrNull() ?: 0, tvRecitationPercentage)
+        etRecitationPoints.setText(originalRecitationPoints.toString())
+        updateRecitationPercentage(
+            etRecitationPoints.text.toString().toIntOrNull() ?: 0,
+            tvRecitationPercentage
+        )
 
         // Set title based on published state
         if (areGradesPublished) {
-            tvDialogTitle.text = "View Scores (Published): ${student.lastName}, ${student.firstName}"
+            tvDialogTitle.text =
+                "View Scores (Published): ${student.lastName}, ${student.firstName}"
             btnEdit.visibility = View.GONE // Hide edit button when published
         } else {
             tvDialogTitle.text = "View Scores: ${student.lastName}, ${student.firstName}"
@@ -567,10 +625,10 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         )
 
         // Initially set to view mode (not editable)
-        setViewModeEnabled(
+        setViewModeEnabledWithFixedTotal(
             enabled = false,
             etAttendancePresent = etAttendancePresent,
-            etAttendanceTotal = etAttendanceTotal,
+            etAttendanceTotal = etAttendanceTotal, // Total is always disabled
             etRecitationPoints = etRecitationPoints,
             tvAttendancePercentage = tvAttendancePercentage,
             tvRecitationPercentage = tvRecitationPercentage,
@@ -585,7 +643,7 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
 
             if (isCurrentlyEditable) {
                 // Switch back to view mode
-                setViewModeEnabled(
+                setViewModeEnabledWithFixedTotal(
                     enabled = false,
                     etAttendancePresent = etAttendancePresent,
                     etAttendanceTotal = etAttendanceTotal,
@@ -600,7 +658,7 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
                 tvDialogTitle.text = "View Scores: ${student.lastName}, ${student.firstName}"
             } else {
                 // Switch to edit mode
-                setViewModeEnabled(
+                setViewModeEnabledWithFixedTotal(
                     enabled = true,
                     etAttendancePresent = etAttendancePresent,
                     etAttendanceTotal = etAttendanceTotal,
@@ -621,12 +679,26 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         // Only show Save Changes button when not published
         if (!areGradesPublished) {
             builder.setPositiveButton("Save Changes") { dialog, _ ->
+                // VALIDATE ATTENDANCE AND RECITATION BEFORE SAVING
+                val newPresent = etAttendancePresent.text.toString().toIntOrNull() ?: 0
+                val total = originalAttendanceTotal // Use original total (fixed)
+                val newRecitation = etRecitationPoints.text.toString().toIntOrNull() ?: 0
+
+                if (!isValidAttendanceWithFixedTotal(newPresent, originalAttendanceTotal, originalAttendancePresent) ||
+                    !isValidRecitation(newRecitation, originalRecitationPoints)) {
+                    // Show error and prevent saving
+                    Toast.makeText(this@GradeInputActivity,
+                        "Cannot decrease attendance or recitation scores!",
+                        Toast.LENGTH_LONG).show()
+                    return@setPositiveButton
+                }
+
                 // SAVE BOTH ACTIVITY SCORES AND ATTENDANCE/RECITATION
                 saveModifiedAttendanceRecitation(
                     student.id,
-                    etAttendancePresent.text.toString().toIntOrNull() ?: 0,
-                    etAttendanceTotal.text.toString().toIntOrNull() ?: 1,
-                    etRecitationPoints.text.toString().toIntOrNull() ?: 0
+                    newPresent,
+                    total, // Use fixed total
+                    newRecitation
                 )
                 saveModifiedScores(student.id)
                 dialog.dismiss()
@@ -639,6 +711,101 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
 
         val dialog = builder.create()
         dialog.show()
+    }
+
+    /**
+     * NEW: Set view/edit mode with fixed total attendance
+     */
+    private fun setViewModeEnabledWithFixedTotal(
+        enabled: Boolean,
+        etAttendancePresent: EditText,
+        etAttendanceTotal: EditText, // Total is always disabled
+        etRecitationPoints: EditText,
+        tvAttendancePercentage: TextView,
+        tvRecitationPercentage: TextView,
+        rvQuizScores: RecyclerView,
+        rvExamScores: RecyclerView,
+        rvAssignmentScores: RecyclerView
+    ) {
+        // Set attendance fields - ONLY PRESENT CAN BE ENABLED
+        etAttendancePresent.isEnabled = enabled
+        etAttendanceTotal.isEnabled = false // TOTAL IS ALWAYS DISABLED
+        etRecitationPoints.isEnabled = enabled
+
+        val alphaEnabled = if (enabled) 1.0f else 0.6f
+        val alphaDisabled = 0.5f // For disabled fields
+
+        etAttendancePresent.alpha = alphaEnabled
+        etAttendanceTotal.alpha = alphaDisabled // Always looks disabled
+        etRecitationPoints.alpha = alphaEnabled
+
+        // Set RecyclerView adapters to editable mode
+        (rvQuizScores.adapter as? EditableActivityScoreAdapter)?.setEditable(enabled)
+        (rvExamScores.adapter as? EditableActivityScoreAdapter)?.setEditable(false) // Exams are always not editable
+        (rvAssignmentScores.adapter as? EditableActivityScoreAdapter)?.setEditable(enabled)
+
+        // Add/remove text watchers based on mode
+        if (enabled) {
+            // Add text watchers for real-time updates
+            etAttendancePresent.addTextChangedListener(createAttendanceWatcher(etAttendancePresent, etAttendanceTotal, tvAttendancePercentage))
+            etRecitationPoints.addTextChangedListener(createRecitationWatcher(etRecitationPoints, tvRecitationPercentage))
+        } else {
+            // Remove text watchers
+            etAttendancePresent.removeTextChangedListener(createAttendanceWatcher(etAttendancePresent, etAttendanceTotal, tvAttendancePercentage))
+            etRecitationPoints.removeTextChangedListener(createRecitationWatcher(etRecitationPoints, tvRecitationPercentage))
+        }
+    }
+
+    /**
+     * NEW: Validate attendance with fixed total
+     * Rules: Cannot decrease present days, present cannot exceed total
+     */
+    private fun isValidAttendanceWithFixedTotal(newPresent: Int, fixedTotal: Int, originalPresent: Int): Boolean {
+        // Cannot decrease present days
+        if (newPresent < originalPresent) {
+            Toast.makeText(this, "Cannot decrease present days from $originalPresent to $newPresent", Toast.LENGTH_LONG).show()
+            return false
+        }
+
+        // Present cannot exceed total
+        if (newPresent > fixedTotal) {
+            Toast.makeText(this, "Present days ($newPresent) cannot exceed total days ($fixedTotal)", Toast.LENGTH_LONG).show()
+            return false
+        }
+
+        return true
+    }
+
+    /**
+     * Validate attendance changes
+     * Rules: Cannot decrease present days or increase total days beyond original
+     */
+    private fun isValidAttendance(newPresent: Int, newTotal: Int, originalPresent: Int, originalTotal: Int): Boolean {
+        // Cannot decrease present days
+        if (newPresent < originalPresent) {
+            return false
+        }
+
+        // Cannot increase total days beyond original (you might want to adjust this based on your needs)
+        if (newTotal > originalTotal && originalTotal > 0) {
+            return false
+        }
+
+        // Present cannot exceed total
+        if (newPresent > newTotal) {
+            return false
+        }
+
+        return true
+    }
+
+    /**
+     * Validate recitation changes
+     * Rules: Cannot decrease recitation points
+     */
+    private fun isValidRecitation(newRecitation: Int, originalRecitation: Int): Boolean {
+        // Cannot decrease recitation points
+        return newRecitation >= originalRecitation
     }
 
     // NEW: Helper function to set view/edit mode
@@ -685,6 +852,7 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
     // Update the setupEditableActivityRecyclerView function
     // Update the setupEditableActivityRecyclerView function
     private fun setupEditableActivityRecyclerView(
+
         recyclerView: RecyclerView,
         scores: List<ActivityScoreData>,
         studentId: String,
@@ -820,12 +988,6 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         tvPercentage.text = "Percentage: ${"%.2f".format(percentage50Base)}% (50% base)"
     }
 
-    private fun updateRecitationPercentage(points: Int, tvPercentage: TextView) {
-        val percentage = if (points >= 5) 100.0 else (points.toDouble() / 5.0) * 100.0
-        val percentage50Base = maxOf(50.0, percentage)
-        tvPercentage.text = "Percentage: ${"%.2f".format(percentage50Base)}% (50% base)"
-    }
-
     private fun createAttendanceWatcher(etPresent: EditText, etTotal: EditText, tvPercentage: TextView): TextWatcher {
         return object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -838,13 +1000,72 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
 
     private fun createRecitationWatcher(etPoints: EditText, tvPercentage: TextView): TextWatcher {
         return object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            private var previousText = ""
+
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+                previousText = s?.toString() ?: ""
+            }
+
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+
             override fun afterTextChanged(s: Editable?) {
-                val points = etPoints.text.toString().toIntOrNull() ?: 0
+                val input = s?.toString() ?: ""
+
+                // Skip if text hasn't changed
+                if (input == previousText) return
+
+                // Normalize input: remove leading zeros AND apply max 10 limit
+                val normalizedText = normalizeNumericInput(input, 10)
+
+                // If normalization changed the text, update the EditText
+                if (normalizedText != input) {
+                    etPoints.removeTextChangedListener(this)
+                    etPoints.setText(normalizedText)
+                    etPoints.setSelection(normalizedText.length)
+                    etPoints.addTextChangedListener(this)
+                    return
+                }
+
+                val points = normalizedText.toIntOrNull() ?: 0
                 updateRecitationPercentage(points, tvPercentage)
             }
         }
+    }
+
+    /**
+     * Normalize numeric input by removing leading zeros and applying max limits
+     */
+    private fun normalizeNumericInput(input: String, maxValue: Int = Int.MAX_VALUE): String {
+        if (input.isEmpty()) return input
+
+        var normalized = input.trim()
+
+        // Remove leading zeros
+        if (normalized.length > 1 && normalized.startsWith("0")) {
+            normalized = normalized.replaceFirst("^0+".toRegex(), "")
+            // If we removed everything, keep at least one character
+            if (normalized.isEmpty()) {
+                normalized = "0"
+            }
+        }
+
+        // Apply max limit - MAX 10 FOR RECITATION
+        val value = normalized.toIntOrNull() ?: 0
+        if (value > maxValue) {
+            return maxValue.toString()
+        }
+
+        return normalized
+    }
+
+    /**
+     * Update recitation percentage calculation
+     */
+    private fun updateRecitationPercentage(points: Int, tvPercentage: TextView) {
+        // Use the actual points (already limited to max 10 by input)
+        val percentage = if (points >= 5) 100.0 else (points.toDouble() / 5.0) * 100.0
+        val percentage50Base = maxOf(50.0, percentage)
+        tvPercentage.text = "Percentage: ${"%.2f".format(percentage50Base)}% (50% base)"
     }
 
     private fun saveModifiedAttendanceRecitation(studentId: String, present: Int, total: Int, recitationPoints: Int) {
