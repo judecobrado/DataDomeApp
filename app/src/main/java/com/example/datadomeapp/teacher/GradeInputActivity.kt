@@ -254,10 +254,6 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
 
     // --- IMPLEMENTATION OF OnStudentClickListener ---
     override fun onStudentClicked(student: Student) {
-        if (areGradesPublished) {
-            Toast.makeText(this, "Grades are published and cannot be edited.", Toast.LENGTH_SHORT).show()
-            return
-        }
 
         if (assignmentId.isNullOrEmpty() || subjectCode.isNullOrEmpty() || gradingPeriod.isNullOrEmpty()) {
             Toast.makeText(this, "Error: Cannot fetch details due to missing context.", Toast.LENGTH_SHORT).show()
@@ -512,16 +508,18 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         val inflater = LayoutInflater.from(this)
         val view = inflater.inflate(R.layout.dialog_editable_score_details, null)
 
-        view.findViewById<TextView>(R.id.tvDialogTitle).text =
-            if (areGradesPublished) "View Scores (Published): ${student.lastName}, ${student.firstName}"
-            else "Edit Scores: ${student.lastName}, ${student.firstName}"
-
+        val tvDialogTitle = view.findViewById<TextView>(R.id.tvDialogTitle)
+        val btnEdit = view.findViewById<Button>(R.id.btnEdit)
         val etAttendancePresent = view.findViewById<EditText>(R.id.etAttendancePresent)
         val etAttendanceTotal = view.findViewById<EditText>(R.id.etAttendanceTotal)
         val tvAttendancePercentage = view.findViewById<TextView>(R.id.tvAttendancePercentage)
-
         val etRecitationPoints = view.findViewById<EditText>(R.id.etRecitationPoints)
         val tvRecitationPercentage = view.findViewById<TextView>(R.id.tvRecitationPercentage)
+
+        // Get references to RecyclerViews
+        val rvQuizScores = view.findViewById<RecyclerView>(R.id.rvQuizScores)
+        val rvExamScores = view.findViewById<RecyclerView>(R.id.rvExamScores)
+        val rvAssignmentScores = view.findViewById<RecyclerView>(R.id.rvAssignmentScores)
 
         // SET DEFAULT VALUES IF ZERO (NO EXISTING DATA)
         val defaultPresent = if (detailedScores.attendanceDetails.first == 0) 1 else detailedScores.attendanceDetails.first
@@ -536,46 +534,91 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         etRecitationPoints.setText(defaultRecitation.toString())
         updateRecitationPercentage(etRecitationPoints.text.toString().toIntOrNull() ?: 0, tvRecitationPercentage)
 
-        // DISABLE EDITING IF PUBLISHED
+        // Set title based on published state
         if (areGradesPublished) {
-            etAttendancePresent.isEnabled = false
-            etAttendanceTotal.isEnabled = false
-            etRecitationPoints.isEnabled = false
-            etAttendancePresent.alpha = 0.4f
-            etAttendanceTotal.alpha = 0.4f
-            etRecitationPoints.alpha = 0.4f
+            tvDialogTitle.text = "View Scores (Published): ${student.lastName}, ${student.firstName}"
+            btnEdit.visibility = View.GONE // Hide edit button when published
         } else {
-            // ADD TEXT WATCHERS FOR REAL-TIME UPDATES ONLY IF NOT PUBLISHED
-            etAttendancePresent.addTextChangedListener(createAttendanceWatcher(etAttendancePresent, etAttendanceTotal, tvAttendancePercentage))
-            etAttendanceTotal.addTextChangedListener(createAttendanceWatcher(etAttendancePresent, etAttendanceTotal, tvAttendancePercentage))
-            etRecitationPoints.addTextChangedListener(createRecitationWatcher(etRecitationPoints, tvRecitationPercentage))
+            tvDialogTitle.text = "View Scores: ${student.lastName}, ${student.firstName}"
+            btnEdit.visibility = View.VISIBLE
         }
 
-        // Setup editable recycler views with published state
+        // Setup RecyclerViews in view mode initially
         setupEditableActivityRecyclerView(
-            view.findViewById(R.id.rvQuizScores),
+            rvQuizScores,
             detailedScores.quizScores,
             student.id,
             "Quiz",
-            isEditable = !areGradesPublished // Disable if published
+            isEditable = false // Start in view mode
         )
         setupEditableActivityRecyclerView(
-            view.findViewById(R.id.rvExamScores),
+            rvExamScores,
             detailedScores.examScores,
             student.id,
             "Exam",
             isEditable = false // Exams are always not editable
         )
         setupEditableActivityRecyclerView(
-            view.findViewById(R.id.rvAssignmentScores),
+            rvAssignmentScores,
             detailedScores.assignmentScores,
             student.id,
             "Assignment",
-            isEditable = !areGradesPublished // Disable if published
+            isEditable = false // Start in view mode
         )
+
+        // Initially set to view mode (not editable)
+        setViewModeEnabled(
+            enabled = false,
+            etAttendancePresent = etAttendancePresent,
+            etAttendanceTotal = etAttendanceTotal,
+            etRecitationPoints = etRecitationPoints,
+            tvAttendancePercentage = tvAttendancePercentage,
+            tvRecitationPercentage = tvRecitationPercentage,
+            rvQuizScores = rvQuizScores,
+            rvExamScores = rvExamScores,
+            rvAssignmentScores = rvAssignmentScores
+        )
+
+        // Edit button click listener
+        btnEdit.setOnClickListener {
+            val isCurrentlyEditable = etAttendancePresent.isEnabled
+
+            if (isCurrentlyEditable) {
+                // Switch back to view mode
+                setViewModeEnabled(
+                    enabled = false,
+                    etAttendancePresent = etAttendancePresent,
+                    etAttendanceTotal = etAttendanceTotal,
+                    etRecitationPoints = etRecitationPoints,
+                    tvAttendancePercentage = tvAttendancePercentage,
+                    tvRecitationPercentage = tvRecitationPercentage,
+                    rvQuizScores = rvQuizScores,
+                    rvExamScores = rvExamScores,
+                    rvAssignmentScores = rvAssignmentScores
+                )
+                btnEdit.text = "Edit"
+                tvDialogTitle.text = "View Scores: ${student.lastName}, ${student.firstName}"
+            } else {
+                // Switch to edit mode
+                setViewModeEnabled(
+                    enabled = true,
+                    etAttendancePresent = etAttendancePresent,
+                    etAttendanceTotal = etAttendanceTotal,
+                    etRecitationPoints = etRecitationPoints,
+                    tvAttendancePercentage = tvAttendancePercentage,
+                    tvRecitationPercentage = tvRecitationPercentage,
+                    rvQuizScores = rvQuizScores,
+                    rvExamScores = rvExamScores,
+                    rvAssignmentScores = rvAssignmentScores
+                )
+                btnEdit.text = "View"
+                tvDialogTitle.text = "Edit Scores: ${student.lastName}, ${student.firstName}"
+            }
+        }
 
         builder.setView(view)
 
+        // Only show Save Changes button when not published
         if (!areGradesPublished) {
             builder.setPositiveButton("Save Changes") { dialog, _ ->
                 // SAVE BOTH ACTIVITY SCORES AND ATTENDANCE/RECITATION
@@ -598,22 +641,72 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         dialog.show()
     }
 
+    // NEW: Helper function to set view/edit mode
+    private fun setViewModeEnabled(
+        enabled: Boolean,
+        etAttendancePresent: EditText,
+        etAttendanceTotal: EditText,
+        etRecitationPoints: EditText,
+        tvAttendancePercentage: TextView,
+        tvRecitationPercentage: TextView,
+        rvQuizScores: RecyclerView,
+        rvExamScores: RecyclerView,
+        rvAssignmentScores: RecyclerView
+    ) {
+        // Set attendance fields
+        etAttendancePresent.isEnabled = enabled
+        etAttendanceTotal.isEnabled = enabled
+        etRecitationPoints.isEnabled = enabled
+
+        val alpha = if (enabled) 1.0f else 0.6f
+        etAttendancePresent.alpha = alpha
+        etAttendanceTotal.alpha = alpha
+        etRecitationPoints.alpha = alpha
+
+        // Set RecyclerView adapters to editable mode
+        (rvQuizScores.adapter as? EditableActivityScoreAdapter)?.setEditable(enabled)
+        (rvExamScores.adapter as? EditableActivityScoreAdapter)?.setEditable(false) // Exams are always not editable
+        (rvAssignmentScores.adapter as? EditableActivityScoreAdapter)?.setEditable(enabled)
+
+        // Add/remove text watchers based on mode
+        if (enabled) {
+            // Add text watchers for real-time updates
+            etAttendancePresent.addTextChangedListener(createAttendanceWatcher(etAttendancePresent, etAttendanceTotal, tvAttendancePercentage))
+            etAttendanceTotal.addTextChangedListener(createAttendanceWatcher(etAttendancePresent, etAttendanceTotal, tvAttendancePercentage))
+            etRecitationPoints.addTextChangedListener(createRecitationWatcher(etRecitationPoints, tvRecitationPercentage))
+        } else {
+            // Remove text watchers
+            etAttendancePresent.removeTextChangedListener(createAttendanceWatcher(etAttendancePresent, etAttendanceTotal, tvAttendancePercentage))
+            etAttendanceTotal.removeTextChangedListener(createAttendanceWatcher(etAttendancePresent, etAttendanceTotal, tvAttendancePercentage))
+            etRecitationPoints.removeTextChangedListener(createRecitationWatcher(etRecitationPoints, tvRecitationPercentage))
+        }
+    }
+
+    // Update the setupEditableActivityRecyclerView function
+    // Update the setupEditableActivityRecyclerView function
     private fun setupEditableActivityRecyclerView(
         recyclerView: RecyclerView,
         scores: List<ActivityScoreData>,
         studentId: String,
         category: String,
-        isEditable: Boolean = true
+        isEditable: Boolean = false // Default to false (view mode)
     ) {
         recyclerView.layoutManager = LinearLayoutManager(this)
+
+        // EXAMS ARE NEVER EDITABLE, regardless of published state
+        val shouldBeEditable = when (category) {
+            "Exam" -> false // Exams are always not editable
+            else -> isEditable && !areGradesPublished // Other categories follow normal rules
+        }
+
         recyclerView.adapter = EditableActivityScoreAdapter(
-            scores,
-            studentId,
-            category,
-            isEditable,
-            areGradesPublished, // NEW: Pass published state
+            scores = scores,
+            studentId = studentId,
+            category = category,
+            isEditable = shouldBeEditable, // Use the calculated editable state
+            isPublished = areGradesPublished,
             onScoreUpdate = { updatedScore ->
-                if (!areGradesPublished) {
+                if (!areGradesPublished && category != "Exam") { // Also prevent updates for exams
                     updateCachedScore(studentId, updatedScore, category)
                     recalculateStudentGrade(studentId)
                 }

@@ -113,7 +113,8 @@ class GradeInputAdapter(
 
             if (isPublished) {
                 itemView.alpha = 0.7f
-                itemView.isEnabled = false
+                itemView.isEnabled = true
+                itemView.isClickable = true
             } else {
                 itemView.alpha = 1.0f
                 itemView.isEnabled = true
