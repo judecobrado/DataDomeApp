@@ -311,6 +311,9 @@ class LoginActivity : AppCompatActivity() {
                 Intent(this, MainActivity::class.java)
             }
         }
+
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+
         // Ipinapasa ang UID sa Intent para gamitin sa dashboard (Ito ang solusyon)
         intent.putExtra("USER_UID", uid)
 
