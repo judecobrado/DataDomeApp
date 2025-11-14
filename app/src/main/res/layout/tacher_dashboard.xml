@@ -50,17 +50,30 @@
         android:id="@+id/btnCanteenMenu"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Canteen History" />
-
+        android:layout_marginBottom="10dp"
+        android:padding="15dp"
+        android:text="Canteen History"
+        android:textSize="18sp" />
 
     <Button
         android:id="@+id/btnVoiceDetection"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="40dp"
+        android:layout_marginBottom="10dp"
         android:padding="15dp"
         android:text="Voice Detection"
         android:textSize="18sp" />
+
+    <!-- 🎡 New Roleta Button -->
+    <Button
+        android:id="@+id/btnRoulette"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="40dp"
+        android:padding="15dp"
+        android:text="🎡 Roleta"
+        android:textSize="18sp"
+        android:textColor="@android:color/white" />
 
     <Button
         android:id="@+id/btnLogout"
@@ -71,6 +84,6 @@
         android:textColor="@android:color/white"
         android:backgroundTint="@android:color/holo_red_dark"
         android:paddingStart="30dp"
-        android:paddingEnd="30dp"/>
+        android:paddingEnd="30dp" />
 
 </LinearLayout>

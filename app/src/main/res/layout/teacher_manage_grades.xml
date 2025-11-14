@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    tools:context=".teacher.ManageGradesActivity">
+
+    <TextView
+        android:id="@+id/tvGradesHeader"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Manage Grades"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="32dp"/>
+
+    <Button
+        android:id="@+id/btnPrelim"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="📝 Prelim Grades"
+        android:layout_marginBottom="16dp"
+        android:padding="12dp"
+        android:textSize="18sp"/>
+
+    <Button
+        android:id="@+id/btnMidterm"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="📚 Midterm Grades"
+        android:layout_marginBottom="16dp"
+        android:padding="12dp"
+        android:textSize="18sp"/>
+
+    <Button
+        android:id="@+id/btnFinals"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🎓 Finals Grades"
+        android:layout_marginBottom="16dp"
+        android:padding="12dp"
+        android:textSize="18sp"/>
+
+</LinearLayout>

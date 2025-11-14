@@ -86,6 +86,14 @@
         android:text="Manage Student Extensions"
         android:layout_marginTop="8dp"/>
 
+    <Button
+        android:id="@+id/btnViewSubmissions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="View Submissions"
+        android:layout_alignParentEnd="true"
+        android:layout_below="@id/tvExtensionsCount"/>
+
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"

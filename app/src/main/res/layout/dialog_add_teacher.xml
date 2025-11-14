@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <EditText
+        android:id="@+id/etDialogTeacherEmail"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Teacher Email"
+        android:inputType="textEmailAddress"
+        android:autofillHints="emailAddress"
+        android:layout_marginBottom="10dp"/>
+
+    <EditText
+        android:id="@+id/etDialogTeacherName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Teacher Full Name"
+        android:inputType="textPersonName"
+        android:autofillHints="name"
+        android:layout_marginBottom="10dp"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Select Department:"
+        android:textStyle="bold"
+        android:layout_marginBottom="5dp"/>
+
+    <Spinner
+        android:id="@+id/spDialogDepartment"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+</LinearLayout>

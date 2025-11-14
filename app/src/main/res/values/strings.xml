@@ -29,7 +29,7 @@
         <item>Out of Stock</item>
     </string-array>
     <string name="book_image">Book cover image</string>
-
+    <string name="select_department_prompt">Select Department to Filter</string>
 
 
     <string name="status_in_progress">In Progress</string>
@@ -38,6 +38,7 @@
     <string name="status_not_started">Not Started</string>
     <string name="status_retake">Retake</string>
 
+    <string name="grade_status_missing">MISSING</string>
 
     <string name="title_manage_access">Manage Student Quiz Access</string>
 

@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:layout_marginBottom="8dp"
+    android:elevation="2dp">
+
+    <!-- Subject Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginBottom="12dp">
+
+        <TextView
+            android:id="@+id/tvSubjectCode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="CS101"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#333333" />
+
+        <TextView
+            android:id="@+id/tvSubjectTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Introduction to Computer Science"
+            android:textSize="12sp"
+            android:textColor="#666666"
+            android:maxLines="2"
+            android:ellipsize="end" />
+
+    </LinearLayout>
+
+    <!-- Grading Periods -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:weightSum="3"
+        android:layout_marginBottom="12dp">
+
+        <!-- Prelim -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="4dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Prelim"
+                android:textSize="10sp"
+                android:gravity="center"
+                android:textColor="#666666" />
+
+            <TextView
+                android:id="@+id/tvPrelimGrade"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="*"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:textColor="#333333" />
+
+        </LinearLayout>
+
+        <!-- Midterm -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="4dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Midterm"
+                android:textSize="10sp"
+                android:gravity="center"
+                android:textColor="#666666" />
+
+            <TextView
+                android:id="@+id/tvMidtermGrade"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="*"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:textColor="#333333" />
+
+        </LinearLayout>
+
+        <!-- Finals -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="4dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Finals"
+                android:textSize="10sp"
+                android:gravity="center"
+                android:textColor="#666666" />
+
+            <TextView
+                android:id="@+id/tvFinalGrade"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="*"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:textColor="#333333" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Final Results -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:weightSum="3"
+        android:padding="8dp">
+
+        <!-- Average Grade -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="4dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Average"
+                android:textSize="10sp"
+                android:gravity="center"
+                android:textColor="#666666" />
+
+            <TextView
+                android:id="@+id/tvAverageGrade"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="*"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:textColor="#333333" />
+
+        </LinearLayout>
+
+        <!-- Grade Point -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="4dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Grade Point"
+                android:textSize="10sp"
+                android:gravity="center"
+                android:textColor="#666666" />
+
+            <TextView
+                android:id="@+id/tvGradePoint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="*"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:textColor="#333333" />
+
+        </LinearLayout>
+
+        <!-- Status -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="4dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Status"
+                android:textSize="10sp"
+                android:gravity="center"
+                android:textColor="#666666" />
+
+            <TextView
+                android:id="@+id/tvStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="*"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:gravity="center" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

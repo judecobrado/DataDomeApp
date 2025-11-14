@@ -9,7 +9,7 @@
         android:id="@+id/tvSubmissionCount"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="0 submissions"
+        android:text="Loading students..."
         android:textSize="16sp"
         android:textStyle="bold"
         android:gravity="center"
@@ -27,7 +27,7 @@
         android:id="@+id/tvEmpty"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="No submissions yet"
+        android:text="Loading students and submissions..."
         android:textSize="14sp"
         android:gravity="center"
         android:layout_marginBottom="16dp" />

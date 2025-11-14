@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+
+    android:layout_marginTop="8dp"
+    android:layout_marginBottom="8dp"
+
+    app:cardCornerRadius="12dp"
+    app:cardElevation="6dp"
+    app:cardBackgroundColor="@android:color/white">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
+
+        <ImageView
+            android:id="@+id/ivSubjectIcon"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:contentDescription="Subject Icon"
+            app:tint="#1A237E"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="@id/tvSubjectTitleCode" />
+
+        <TextView
+            android:id="@+id/tvSubjectTitleCode"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:textSize="19sp"
+            android:textStyle="bold"
+            android:textColor="#1A237E"
+            app:layout_constraintStart_toEndOf="@id/ivSubjectIcon"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="IT 101 - Introduction to Programming" />
+
+        <ImageView
+            android:id="@+id/ivSectionIcon"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:contentDescription="Section Icon"
+            app:tint="#546E7A"
+            android:layout_marginTop="8dp"
+            app:layout_constraintStart_toStartOf="@id/tvSubjectTitleCode"
+            app:layout_constraintTop_toBottomOf="@id/tvSubjectTitleCode" />
+
+        <TextView
+            android:id="@+id/tvSectionBlock"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:textSize="14sp"
+            android:textColor="#546E7A"
+            app:layout_constraintStart_toEndOf="@id/ivSectionIcon"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/ivSectionIcon"
+            app:layout_constraintBottom_toBottomOf="@id/ivSectionIcon"
+            tools:text="Section: B - Block 3" />
+
+        <ImageView
+            android:id="@+id/ivAssignmentIcon"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:contentDescription="Assignment Icon"
+            app:tint="#388E3C"
+            android:layout_marginTop="8dp"
+            app:layout_constraintStart_toStartOf="@id/tvSectionBlock"
+            app:layout_constraintTop_toBottomOf="@id/tvSectionBlock" />
+
+        <TextView
+            android:id="@+id/tvAssignmentCount"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:textSize="14sp"
+            android:textColor="#388E3C"
+            app:layout_constraintStart_toEndOf="@id/ivAssignmentIcon"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/ivAssignmentIcon"
+            app:layout_constraintBottom_toBottomOf="@id/ivAssignmentIcon"
+            tools:text="Assignments: 5" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.cardview.widget.CardView>
