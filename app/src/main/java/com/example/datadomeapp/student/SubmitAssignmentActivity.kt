@@ -25,7 +25,9 @@ class SubmitAssignmentActivity : AppCompatActivity() {
     private var studentId: String? = null
     private var assignment: Assignment? = null
     private var existingSubmission: Submission? = null
-
+    private var submissionAcademicTerm: String? = null
+    private var submissionAcademicYear: String? = null
+    private var submissionSemester: String? = null
     private lateinit var tvAssignment: TextView
     private lateinit var tvSubmissionStatus: TextView
     private lateinit var tvDueDate: TextView
@@ -68,6 +70,9 @@ class SubmitAssignmentActivity : AppCompatActivity() {
         assignmentId = intent.getStringExtra("assignmentId")
         classId = intent.getStringExtra("classId")
         studentId = FirebaseUtils.currentUid()
+        submissionAcademicTerm = intent.getStringExtra("academicTerm")
+        submissionAcademicYear = intent.getStringExtra("academicYear")
+        submissionSemester = intent.getStringExtra("semester")
 
         if (assignmentId.isNullOrEmpty()) {
             showError("Assignment ID is missing")
@@ -271,7 +276,10 @@ class SubmitAssignmentActivity : AppCompatActivity() {
             imageUrl = null,
             submittedAt = System.currentTimeMillis(),
             status = "submitted",
-            isResubmitted = false
+            isResubmitted = false,
+            academicTerm = submissionAcademicTerm,
+            academicYear = submissionAcademicYear,
+            semester = submissionSemester
         )
 
         progressBar.visibility = View.VISIBLE
