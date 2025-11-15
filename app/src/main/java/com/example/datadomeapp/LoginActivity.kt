@@ -3,6 +3,7 @@ package com.example.datadomeapp
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import com.example.utils.ToastManager
 import android.nfc.NfcAdapter
 import android.nfc.Tag
 import android.os.Bundle
@@ -24,10 +25,6 @@ class LoginActivity : AppCompatActivity() {
 
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
-
-    // Hardcoded admin credentials for development bypass
-    private val adminEmail = "q"
-    private val adminPassword = "q"
 
     private lateinit var emailEditText: EditText
     private lateinit var passwordEditText: EditText
@@ -73,24 +70,11 @@ class LoginActivity : AppCompatActivity() {
             val password = passwordEditText.text.toString().trim()
 
             if (email.isEmpty() || password.isEmpty()) {
-                Toast.makeText(this, "Please enter email and password", Toast.LENGTH_SHORT).show()
+                ToastManager.showToast(this, "Please enter email and password")
                 return@setOnClickListener
             }
 
             showLoading()
-
-            // Hardcoded admin login (Development Bypass)
-            if (email == adminEmail && password == adminPassword) {
-                getSharedPreferences("user_prefs", Context.MODE_PRIVATE).edit()
-                    .putString("role", "admin")
-                    .apply()
-
-                hideLoading()
-                Toast.makeText(this, "Welcome Admin (Hardcoded)!", Toast.LENGTH_SHORT).show()
-                startActivity(Intent(this, AdminDashboardActivity::class.java))
-                finish()
-                return@setOnClickListener
-            }
 
             // Standard Firebase login
             auth.signInWithEmailAndPassword(email, password)
@@ -183,8 +167,6 @@ class LoginActivity : AppCompatActivity() {
         }
         return String(hexChars)
     }
-
-    // --- RFID Login Core Logic ---
 
     private fun showRfidDetectionDialog() {
         if (!isNfcSupported) {
