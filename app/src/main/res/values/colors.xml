@@ -73,4 +73,13 @@
     <color name="fair_orange">#FF9800</color>
     <color name="poor_red">#F44336</color>
 
+    <color name="gray_light">#E0E0E0</color>
+
+
+
+    <!-- Add these colors -->
+    <color name="text_primary">#333333</color>
+
+    <color name="primary_blue">#2196F3</color>
+
 </resources>

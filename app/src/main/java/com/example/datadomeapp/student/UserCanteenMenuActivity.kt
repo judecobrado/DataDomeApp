@@ -82,7 +82,7 @@ class UserCanteenMenuActivity : AppCompatActivity() {
 
     private fun loadWalletBalance() {
         if (userId.isEmpty()) {
-            tvWalletBalance.text = "Wallet: ₱0.00"
+            tvWalletBalance.text = "₱0.00"
             Log.w("UserBalance", "User ID is empty")
             return
         }
@@ -98,7 +98,7 @@ class UserCanteenMenuActivity : AppCompatActivity() {
                     if (doc != null) {
                         Log.d("UserBalance", "Teacher doc: ${doc.data}")
                         val balance = doc.getDouble("balance") ?: 0.0
-                        tvWalletBalance.text = "Wallet: ₱${String.format("%.2f", balance)}"
+                        tvWalletBalance.text = "₱${String.format("%.0f", balance)}"
 
                         // ⭐️ CRITICAL FIX: Kunin ang T-XXXX (teacherId) at i-store sa 'this.userId'
                         val teacherIdValue = doc.getString("teacherId")
@@ -109,13 +109,13 @@ class UserCanteenMenuActivity : AppCompatActivity() {
 
                     } else {
                         Log.w("UserBalance", "Teacher document not found for uid=$userId")
-                        tvWalletBalance.text = "Wallet: ₱₱0.00"
+                        tvWalletBalance.text = "₱0.00"
                         Toast.makeText(this, "Balance not found", Toast.LENGTH_SHORT).show()
                     }
                 }
                 .addOnFailureListener { e ->
                     Log.e("UserBalance", "Failed to fetch teacher balance", e)
-                    tvWalletBalance.text = "Wallet: ₱0.00"
+                    tvWalletBalance.text = "₱0.00"
                     Toast.makeText(this, "Failed to load balance", Toast.LENGTH_SHORT).show()
                 }
         } else {
@@ -127,17 +127,17 @@ class UserCanteenMenuActivity : AppCompatActivity() {
                     if (doc.exists()) {
                         Log.d("UserBalance", "Student doc: ${doc.data}")
                         val balance = doc.getDouble("balance") ?: 0.0
-                        tvWalletBalance.text = "Wallet: ₱${String.format("%.2f", balance)}"
+                        tvWalletBalance.text = "₱${String.format("%.0f", balance)}"
                         // Walang pagbabago, mananatiling DDS-XXXX ang this.userId
                     } else {
                         Log.w("UserBalance", "Student document not found for userId=$userId")
-                        tvWalletBalance.text = "Wallet: ₱0.00"
+                        tvWalletBalance.text = "₱0.00"
                         Toast.makeText(this, "Balance not found", Toast.LENGTH_SHORT).show()
                     }
                 }
                 .addOnFailureListener { e ->
                     Log.e("UserBalance", "Failed to fetch student balance", e)
-                    tvWalletBalance.text = "Wallet: ₱0.00"
+                    tvWalletBalance.text = "₱0.00"
                     Toast.makeText(this, "Failed to load balance", Toast.LENGTH_SHORT).show()
                 }
         }
@@ -177,7 +177,7 @@ class UserCanteenMenuActivity : AppCompatActivity() {
 
         // Texts
         tvName.text = item.name
-        tvPrice.text = "₱${String.format("%.2f", item.price)}"
+        tvPrice.text = "₱${String.format("%.0f", item.price)}"
 
         // Decode Base64 image
         if (item.imageBase64.isNotEmpty()) {

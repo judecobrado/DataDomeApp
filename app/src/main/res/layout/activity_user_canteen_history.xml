@@ -1,56 +1,111 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
-    android:padding="12dp"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/background_light"
+    android:orientation="vertical"
+    android:padding="16dp">
 
-    <!-- Date Range Filter -->
-    <LinearLayout
-        android:orientation="horizontal"
+    <!-- Header Section -->
+    <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:layout_marginBottom="12dp">
+        android:layout_marginBottom="16dp"
+        app:cardBackgroundColor="@color/white"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp">
 
-        <Button
-            android:id="@+id/btnSelectDate"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Select Date Range"/>
+            android:orientation="vertical"
+            android:padding="16dp">
 
-        <TextView
-            android:id="@+id/tvDateRange"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="MMM dd, yyyy - MMM dd, yyyy"
-            android:layout_marginStart="12dp"/>
-    </LinearLayout>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Transaction History"
+                android:textColor="@color/primary_red"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Date Range Filter -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    app:cardBackgroundColor="@color/primary_red"
+                    app:cardCornerRadius="8dp"
+                    app:cardElevation="2dp">
+
+                    <Button
+                        android:id="@+id/btnSelectDate"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@android:color/transparent"
+                        android:padding="12dp"
+                        android:text="Select Date Range"
+                        android:textAllCaps="false"
+                        android:textColor="@color/white"
+                        android:textSize="14sp" />
+
+                </androidx.cardview.widget.CardView>
+
+                <TextView
+                    android:id="@+id/tvDateRange"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:padding="12dp"
+                    android:background="@drawable/bg_date_range"
+                    android:text="MMM dd, yyyy - MMM dd, yyyy"
+                    android:textColor="@color/gray_text"
+                    android:textSize="12sp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </androidx.cardview.widget.CardView>
 
     <!-- Transactions RecyclerView -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvHistory"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"/>
+        android:layout_weight="1" />
 
     <!-- No History Text -->
     <TextView
         android:id="@+id/tvNoHistory"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="No transactions found."
         android:layout_gravity="center"
-        android:visibility="gone"
+        android:layout_marginTop="16dp"
+        android:text="No transactions found."
+        android:textColor="@color/text_secondary"
         android:textSize="16sp"
-        android:textColor="#555555"
-        android:layout_marginTop="16dp"/>
+        android:visibility="gone" />
 
     <!-- ProgressBar -->
     <ProgressBar
         android:id="@+id/progressBar"
+        style="?android:attr/progressBarStyleLarge"
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:layout_gravity="center"
-        android:visibility="gone"/>
+        android:indeterminateTint="@color/primary_red"
+        android:visibility="gone" />
+
 </LinearLayout>
