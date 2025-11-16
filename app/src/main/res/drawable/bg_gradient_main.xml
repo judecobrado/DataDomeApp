@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Main Gradient -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:startColor="#FDFBF8"
+                android:endColor="#FFF5F5"
+                android:angle="135"/>
+            <corners android:radius="20dp"/>
+        </shape>
+    </item>
+
+    <!-- Subtle Pattern Overlay -->
+    <item>
+        <bitmap
+            android:src="@drawable/bg_pattern"
+            android:tileMode="repeat"
+            android:alpha="0.03"/>
+    </item>
+</layer-list>

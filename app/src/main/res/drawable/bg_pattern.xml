@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="80dp"
+    android:height="80dp"
+    android:viewportWidth="80"
+    android:viewportHeight="80">
+
+    <!-- Subtle Dot Pattern -->
+    <path
+        android:fillColor="#7B1113"
+        android:pathData="M20,20 L20,20 A2,2 0 1,1 20.1,20 Z"/>
+    <path
+        android:fillColor="#7B1113"
+        android:pathData="M40,20 L40,20 A2,2 0 1,1 40.1,20 Z"/>
+    <path
+        android:fillColor="#7B1113"
+        android:pathData="M60,20 L60,20 A2,2 0 1,1 60.1,20 Z"/>
+
+    <path
+        android:fillColor="#7B1113"
+        android:pathData="M20,40 L20,40 A2,2 0 1,1 20.1,40 Z"/>
+    <path
+        android:fillColor="#7B1113"
+        android:pathData="M40,40 L40,40 A2,2 0 1,1 40.1,40 Z"/>
+    <path
+        android:fillColor="#7B1113"
+        android:pathData="M60,40 L60,40 A2,2 0 1,1 60.1,40 Z"/>
+
+    <path
+        android:fillColor="#7B1113"
+        android:pathData="M20,60 L20,60 A2,2 0 1,1 20.1,60 Z"/>
+    <path
+        android:fillColor="#7B1113"
+        android:pathData="M40,60 L40,60 A2,2 0 1,1 40.1,60 Z"/>
+    <path
+        android:fillColor="#7B1113"
+        android:pathData="M60,60 L60,60 A2,2 0 1,1 60.1,60 Z"/>
+
+</vector>
