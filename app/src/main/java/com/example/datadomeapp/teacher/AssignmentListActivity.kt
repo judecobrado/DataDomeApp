@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.example.datadomeapp.R
 import com.example.datadomeapp.models.Assignment
 import com.example.datadomeapp.repository.AssignmentRepository
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.QuerySnapshot
 import java.text.SimpleDateFormat
 import java.util.*
@@ -22,10 +23,12 @@ class AssignmentListActivity : AppCompatActivity() {
     private lateinit var tvAssignmentHeader: TextView
     private lateinit var btnAddAssignment: Button
 
-    private var assignmentId: String? = null // ✅ CHANGED: Use assignmentId
+    private var assignmentId: String? = null
     private var className: String? = null
     private val assignmentList = mutableListOf<Assignment>()
     private lateinit var assignmentAdapter: AssignmentAdapter
+
+    private val firestore = FirebaseFirestore.getInstance()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,6 +50,11 @@ class AssignmentListActivity : AppCompatActivity() {
         try {
             assignmentId = intent.getStringExtra("assignmentId")
             className = intent.getStringExtra("CLASS_NAME")
+
+            // 🆕 DEBUG: Log the received data
+            Log.d("AssignmentList", "📥 Received from intent:")
+            Log.d("AssignmentList", "   assignmentId: $assignmentId")
+            Log.d("AssignmentList", "   CLASS_NAME: $className")
 
             if (assignmentId.isNullOrEmpty()) {
                 Toast.makeText(this, "No assignment ID found!", Toast.LENGTH_LONG).show()
@@ -77,8 +85,14 @@ class AssignmentListActivity : AppCompatActivity() {
         btnAddAssignment.setOnClickListener {
             try {
                 val intent = Intent(this, CreateAssignmentActivity::class.java)
-                intent.putExtra("assignmentId", assignmentId) // ✅ FIXED: Use assignmentId
+                intent.putExtra("assignmentId", assignmentId)
                 intent.putExtra("CLASS_NAME", className)
+
+                // 🆕 DEBUG: Log what we're passing to CreateAssignment
+                Log.d("AssignmentList", "📤 Passing to CreateAssignment:")
+                Log.d("AssignmentList", "   assignmentId: $assignmentId")
+                Log.d("AssignmentList", "   CLASS_NAME: $className")
+
                 startActivity(intent)
             } catch (e: Exception) {
                 Log.e("AssignmentList", "Error opening CreateAssignment: ${e.message}")
@@ -94,12 +108,13 @@ class AssignmentListActivity : AppCompatActivity() {
             return
         }
 
+        Log.d("AssignmentList", "🔄 Loading assignments for class: $assignmentId")
         Toast.makeText(this, "Loading assignments...", Toast.LENGTH_SHORT).show()
 
         AssignmentRepository.getAssignmentsForClass(assignmentId!!) { success, snapshot, error ->
             if (!success || snapshot == null) {
                 val errorMessage = error ?: "Unknown error occurred"
-                Log.e("AssignmentList", "Failed to load assignments: $errorMessage")
+                Log.e("AssignmentList", "❌ Failed to load assignments: $errorMessage")
                 Toast.makeText(this, "Failed to load assignments: $errorMessage", Toast.LENGTH_LONG).show()
                 return@getAssignmentsForClass
             }
@@ -117,21 +132,37 @@ class AssignmentListActivity : AppCompatActivity() {
         try {
             assignmentList.clear()
 
+            Log.d("AssignmentList", "📋 Processing ${snapshot.documents.size} assignment documents")
+
             for (doc in snapshot.documents) {
                 try {
                     val assignment = doc.toObject(Assignment::class.java)
                     if (assignment != null) {
                         assignment.id = doc.id
                         assignmentList.add(assignment)
+
+                        // 🆕 DEBUG: Log each assignment found
+                        Log.d("AssignmentList", "✅ Found assignment:")
+                        Log.d("AssignmentList", "   ID: ${assignment.id}")
+                        Log.d("AssignmentList", "   Title: ${assignment.title}")
+                        Log.d("AssignmentList", "   Class ID: ${assignment.classId}")
+                        Log.d("AssignmentList", "   Due Date: ${assignment.dueDateMillis}")
+
+                        // 🆕 Check if this matches the known submission from screenshot
+                        if (assignment.id == "2609c2d0-2b87-debe-814f-5f21b387bcdc") {
+                            Log.d("AssignmentList", "   🎯 MATCHES KNOWN SUBMISSION ASSIGNMENT ID!")
+                        }
                     } else {
-                        Log.w("AssignmentList", "Failed to parse assignment: ${doc.id}")
+                        Log.w("AssignmentList", "❌ Failed to parse assignment: ${doc.id}")
+                        Log.w("AssignmentList", "   Document data: ${doc.data}")
                     }
                 } catch (e: Exception) {
-                    Log.e("AssignmentList", "Error parsing assignment ${doc.id}: ${e.message}")
+                    Log.e("AssignmentList", "❌ Error parsing assignment ${doc.id}: ${e.message}")
                 }
             }
 
             if (assignmentList.isEmpty()) {
+                Log.w("AssignmentList", "⚠️ No assignments found for this class")
                 Toast.makeText(this, "No assignments found for this class", Toast.LENGTH_SHORT).show()
                 assignmentAdapter.notifyDataSetChanged()
                 return
@@ -140,12 +171,13 @@ class AssignmentListActivity : AppCompatActivity() {
             // Sort by due date (soonest first)
             try {
                 assignmentList.sortBy { it.dueDateMillis }
+                Log.d("AssignmentList", "📊 Sorted ${assignmentList.size} assignments by due date")
             } catch (e: Exception) {
                 Log.e("AssignmentList", "Error sorting assignments: ${e.message}")
             }
 
-            assignmentAdapter.notifyDataSetChanged()
-            Toast.makeText(this, "Loaded ${assignmentList.size} assignments", Toast.LENGTH_SHORT).show()
+            // Load submission counts and extension counts for ALL assignments
+            loadAssignmentDetails()
 
         } catch (e: Exception) {
             Log.e("AssignmentList", "Error in displayAssignments: ${e.message}")
@@ -153,12 +185,60 @@ class AssignmentListActivity : AppCompatActivity() {
         }
     }
 
+    private fun loadAssignmentDetails() {
+        // Load submission counts and extensions for all assignments
+        Log.d("AssignmentList", "🔄 Loading details for ${assignmentList.size} assignments")
+        assignmentList.forEach { assignment ->
+            loadSubmissionCount(assignment)
+            loadExtensionCount(assignment)
+        }
+    }
+
+    private fun loadSubmissionCount(assignment: Assignment) {
+        AssignmentRepository.getSubmissionsForAssignment(assignment.id) { success, snapshot, error ->
+            if (success && snapshot != null) {
+                val submissionCount = snapshot.documents.size
+                assignment.submissionCount = submissionCount
+
+                // 🆕 DEBUG: Log submission count
+                Log.d("AssignmentList", "📊 Assignment '${assignment.title}': $submissionCount submissions")
+
+                runOnUiThread {
+                    assignmentAdapter.notifyDataSetChanged()
+                }
+            } else {
+                Log.e("AssignmentList", "❌ Error loading submissions for ${assignment.id}: $error")
+            }
+        }
+    }
+
+    private fun loadExtensionCount(assignment: Assignment) {
+        AssignmentRepository.getStudentExtensions(assignment.id) { extensions ->
+            val extensionCount = extensions?.size ?: 0
+            assignment.studentExtensions = extensions ?: mutableMapOf()
+
+            // 🆕 DEBUG: Log extension count
+            Log.d("AssignmentList", "📊 Assignment '${assignment.title}': $extensionCount extensions")
+
+            runOnUiThread {
+                assignmentAdapter.notifyDataSetChanged()
+            }
+        }
+    }
+
     private fun editAssignment(assignment: Assignment) {
         try {
             val intent = Intent(this, EditAssignmentActivity::class.java)
             intent.putExtra("assignment", assignment)
-            intent.putExtra("assignmentId", assignmentId) // ✅ FIXED: Use assignmentId
+            intent.putExtra("assignmentId", assignmentId)
             intent.putExtra("CLASS_NAME", className)
+
+            // 🆕 DEBUG: Log what we're passing to EditAssignment
+            Log.d("AssignmentList", "📤 Passing to EditAssignment:")
+            Log.d("AssignmentList", "   Assignment ID: ${assignment.id}")
+            Log.d("AssignmentList", "   Assignment Title: ${assignment.title}")
+            Log.d("AssignmentList", "   Class ID: $assignmentId")
+
             startActivity(intent)
         } catch (e: Exception) {
             Log.e("AssignmentList", "Error opening EditAssignment: ${e.message}")
@@ -172,14 +252,21 @@ class AssignmentListActivity : AppCompatActivity() {
                 .setTitle("Delete Assignment")
                 .setMessage("Are you sure you want to delete '${assignment.title}'? This action cannot be undone.")
                 .setPositiveButton("Delete") { dialog, which ->
+                    // 🆕 DEBUG: Log deletion attempt
+                    Log.d("AssignmentList", "🗑️ Attempting to delete assignment:")
+                    Log.d("AssignmentList", "   ID: ${assignment.id}")
+                    Log.d("AssignmentList", "   Title: ${assignment.title}")
+
                     AssignmentRepository.deleteAssignment(assignment.id) { success, error ->
                         if (success) {
+                            Log.d("AssignmentList", "✅ Successfully deleted assignment: ${assignment.id}")
                             Toast.makeText(this, "Assignment deleted successfully", Toast.LENGTH_SHORT).show()
                             // Remove from list and update UI
                             assignmentList.remove(assignment)
                             assignmentAdapter.notifyDataSetChanged()
                         } else {
                             val errorMessage = error ?: "Unknown error"
+                            Log.e("AssignmentList", "❌ Failed to delete assignment: $errorMessage")
                             Toast.makeText(this, "Failed to delete assignment: $errorMessage", Toast.LENGTH_LONG).show()
                         }
                     }
@@ -192,16 +279,59 @@ class AssignmentListActivity : AppCompatActivity() {
         }
     }
 
-    private fun manageExtensions(assignment: Assignment) {
+    private fun manageStudentSubmissions(assignment: Assignment) {
         try {
-            val intent = Intent(this, StudentExtensionsActivity::class.java)
+            val intent = Intent(this, StudentSubmissionsActivity::class.java)
             intent.putExtra("assignment", assignment)
-            intent.putExtra("assignmentId", assignmentId) // ✅ FIXED: Use assignmentId
+            intent.putExtra("assignmentId", assignment.id) // 🆕 FIX: Use assignment.id, not classId
             intent.putExtra("className", className)
+
+            // 🆕 ADD DEBUG LOGGING
+            Log.d("AssignmentList", "📤 Passing assignment to StudentSubmissions:")
+            Log.d("AssignmentList", "   Assignment ID: ${assignment.id}")
+            Log.d("AssignmentList", "   Assignment Title: ${assignment.title}")
+            Log.d("AssignmentList", "   Class ID: ${assignment.classId}")
+            Log.d("AssignmentList", "   Class Name: $className")
+            Log.d("AssignmentList", "   Expected ID from screenshot: 2609c2d0-2b87-debe-814f-5f21b387bcdc")
+
+            // 🆕 Check if this matches the known submission
+            if (assignment.id != "2609c2d0-2b87-debe-814f-5f21b387bcdc") {
+                Log.e("AssignmentList", "❌ ASSIGNMENT ID MISMATCH! Current: ${assignment.id}, Expected: 2609c2d0-2b87-debe-814f-5f21b387bcdc")
+            } else {
+                Log.d("AssignmentList", "✅ ASSIGNMENT ID MATCHES KNOWN SUBMISSION!")
+            }
+
             startActivity(intent)
         } catch (e: Exception) {
-            Log.e("AssignmentList", "Error opening StudentExtensions: ${e.message}")
-            Toast.makeText(this, "Error opening student extensions", Toast.LENGTH_LONG).show()
+            Log.e("AssignmentList", "Error opening StudentSubmissions: ${e.message}")
+            Toast.makeText(this, "Error opening student submissions & extensions", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun viewSubmissions(assignment: Assignment) {
+        try {
+            val intent = Intent(this@AssignmentListActivity, ViewSubmissionsActivity::class.java)
+
+            // 🆕 DEBUG: Log what we're passing to ViewSubmissions
+            Log.d("AssignmentList", "📤 Passing to ViewSubmissions:")
+            Log.d("AssignmentList", "   ASSIGNMENT_ID: ${assignment.id}")
+            Log.d("AssignmentList", "   ASSIGNMENT_TITLE: ${assignment.title}")
+            Log.d("AssignmentList", "   assignmentId (classId): $assignmentId")
+            Log.d("AssignmentList", "   CLASS_NAME: $className")
+
+            // Ipasa ang ID ng specific assignment na ito (assignment.id)
+            intent.putExtra("ASSIGNMENT_ID", assignment.id)
+            // Ipasa ang Title ng specific assignment na ito
+            intent.putExtra("ASSIGNMENT_TITLE", assignment.title)
+
+            // Optional: Ipasa pa rin ang Class ID/Name
+            intent.putExtra("assignmentId", assignmentId)
+            intent.putExtra("CLASS_NAME", className)
+
+            startActivity(intent)
+        } catch (e: Exception) {
+            Log.e("AssignmentList", "Error in View Submissions button: ${e.message}")
+            Toast.makeText(this@AssignmentListActivity, "Error opening submissions", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -217,8 +347,6 @@ class AssignmentListActivity : AppCompatActivity() {
 
                 val assignment = getItem(position)
 
-                val btnViewSubmissions = view.findViewById<Button>(R.id.btnViewSubmissions)
-
                 // ✅ SAFE: Find views with null checks
                 val tvTitle = view.findViewById<TextView>(R.id.tvAssignmentTitle)
                 val tvDueDate = view.findViewById<TextView>(R.id.tvAssignmentDueDate)
@@ -226,40 +354,26 @@ class AssignmentListActivity : AppCompatActivity() {
                 val tvExtensionsCount = view.findViewById<TextView>(R.id.tvExtensionsCount)
                 val btnEdit = view.findViewById<ImageButton>(R.id.btnEditAssignment)
                 val btnDelete = view.findViewById<ImageButton>(R.id.btnDeleteAssignment)
-                val btnManageExtensions = view.findViewById<Button>(R.id.btnManageExtensions)
-
-                if (btnViewSubmissions != null) {
-                    btnViewSubmissions.setOnClickListener {
-                        try {
-                            // Tiyakin na ipapasa ang ID at Title ng specific assignment na ito!
-                            val intent = Intent(this@AssignmentListActivity, ViewSubmissionsActivity::class.java)
-
-                            // Ipasa ang ID ng specific assignment na ito (assignment.id)
-                            intent.putExtra("ASSIGNMENT_ID", assignment.id)
-                            // Ipasa ang Title ng specific assignment na ito
-                            intent.putExtra("ASSIGNMENT_TITLE", assignment.title)
-
-                            // Optional: Ipasa pa rin ang Class ID/Name
-                            intent.putExtra("assignmentId", assignmentId)
-                            intent.putExtra("CLASS_NAME", className)
-
-                            startActivity(intent)
-                        } catch (e: Exception) {
-                            Log.e("AssignmentList", "Error in View Submissions button: ${e.message}")
-                            Toast.makeText(this@AssignmentListActivity, "Error opening submissions", Toast.LENGTH_LONG).show()
-                        }
-                    }
-                }
+                val btnManageStudentSubmissions = view.findViewById<Button>(R.id.btnManageExtensions)
+                //val btnViewSubmissions = view.findViewById<Button>(R.id.btnViewSubmissions)
 
                 // ✅ SAFE: Set assignment data
                 tvTitle.text = assignment.title ?: "Untitled Assignment"
                 tvDueDate.text = "Due: ${formatDueDate(assignment.dueDateMillis)}"
-                tvSubmissionCount.text = "Submissions: ${assignment.submissionCount ?: 0}"
+
+                // Set submission count (show loading if not loaded yet)
+                val submissionCount = assignment.submissionCount ?: -1
+                tvSubmissionCount.text = if (submissionCount >= 0) "Submissions: $submissionCount" else "Submissions: Loading..."
 
                 // Show extensions count
-                val extensionsCount = assignment.studentExtensions?.size ?: 0
-                tvExtensionsCount.text = "Extensions: $extensionsCount"
-                tvExtensionsCount.visibility = if (extensionsCount > 0) View.VISIBLE else View.GONE
+                val extensionsCount = assignment.studentExtensions?.size ?: -1
+                if (extensionsCount >= 0) {
+                    tvExtensionsCount.text = "Extensions: $extensionsCount"
+                    tvExtensionsCount.visibility = if (extensionsCount > 0) View.VISIBLE else View.GONE
+                } else {
+                    tvExtensionsCount.text = "Extensions: Loading..."
+                    tvExtensionsCount.visibility = View.VISIBLE
+                }
 
                 // Set due date color (red if overdue)
                 try {
@@ -275,6 +389,7 @@ class AssignmentListActivity : AppCompatActivity() {
                 // ✅ SAFE: Button click listeners
                 btnEdit.setOnClickListener {
                     try {
+                        Log.d("AssignmentList", "✏️ Edit clicked for: ${assignment.title} (${assignment.id})")
                         editAssignment(assignment)
                     } catch (e: Exception) {
                         Log.e("AssignmentList", "Error in edit button: ${e.message}")
@@ -283,19 +398,32 @@ class AssignmentListActivity : AppCompatActivity() {
 
                 btnDelete.setOnClickListener {
                     try {
+                        Log.d("AssignmentList", "🗑️ Delete clicked for: ${assignment.title} (${assignment.id})")
                         deleteAssignment(assignment)
                     } catch (e: Exception) {
                         Log.e("AssignmentList", "Error in delete button: ${e.message}")
                     }
                 }
 
-                btnManageExtensions.setOnClickListener {
+                // UPDATED: Combined functionality - Manage Student Submissions & Extensions
+                btnManageStudentSubmissions.setOnClickListener {
                     try {
-                        manageExtensions(assignment)
+                        Log.d("AssignmentList", "👥 Manage Student Submissions clicked for: ${assignment.title} (${assignment.id})")
+                        manageStudentSubmissions(assignment)
                     } catch (e: Exception) {
-                        Log.e("AssignmentList", "Error in extensions button: ${e.message}")
+                        Log.e("AssignmentList", "Error in student submissions button: ${e.message}")
                     }
                 }
+
+                // Keep the original View Submissions button for traditional view
+                //btnViewSubmissions.setOnClickListener {
+                    //try {
+                       // Log.d("AssignmentList", "📋 View Submissions clicked for: ${assignment.title} (${assignment.id})")
+                        //viewSubmissions(assignment)
+                   // } catch (e: Exception) {
+                        //Log.e("AssignmentList", "Error in view submissions button: ${e.message}")
+                   // }
+               // }
 
                 // Optional: Click on entire item to view submissions
                 view.setOnClickListener {
@@ -333,6 +461,7 @@ class AssignmentListActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         try {
+            Log.d("AssignmentList", "🔄 onResume: Refreshing assignments list")
             loadAssignments() // Refresh when returning from creating/editing an assignment
         } catch (e: Exception) {
             Log.e("AssignmentList", "Error in onResume: ${e.message}")
@@ -343,5 +472,6 @@ class AssignmentListActivity : AppCompatActivity() {
         super.onDestroy()
         // Clean up resources if needed
         assignmentList.clear()
+        Log.d("AssignmentList", "🧹 Activity destroyed")
     }
 }

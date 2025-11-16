@@ -35,9 +35,9 @@ class StudentDashboardActivity : AppCompatActivity() {
     private val firestore = FirebaseFirestore.getInstance()
     private lateinit var tlDailySchedule: TableLayout
     private lateinit var tvScheduleStatus: TextView
+    private lateinit var tvAssignmentAlert: TextView
+    private lateinit var tvQuizAlert: TextView
     private lateinit var tvUserInfo: TextView
-
-    // Variable para sa Section ID at Student ID
     private var studentSectionId: String? = null
     private var studentId: String? = null
 
@@ -50,6 +50,8 @@ class StudentDashboardActivity : AppCompatActivity() {
         tlDailySchedule = findViewById(R.id.tlDailySchedule)
         tvScheduleStatus = findViewById(R.id.tvScheduleStatus)
         tvUserInfo = findViewById(R.id.tvUserInfo)
+        tvAssignmentAlert = findViewById(R.id.tvAssignmentAlert)
+        tvQuizAlert = findViewById(R.id.tvQuizAlert)
 
         studentUid = intent.getStringExtra("USER_UID") ?: auth.currentUser?.uid
 
@@ -193,20 +195,6 @@ class StudentDashboardActivity : AppCompatActivity() {
                                 }
 
                                 // B. CRITICAL TIME FILTER: Check kung tapos na ang oras.
-                                try {
-                                    // I-parse ang oras mula sa Firestore (e.g., "8:30 AM")
-                                    val endTimeDate = timeFormatDisplay.parse(slot.endTime)
-                                    // I-convert sa Internal Format (e.g., "08:30")
-                                    val endTimeInternal = timeFormatInternal.format(endTimeDate)
-
-                                    if (endTimeInternal.compareTo(currentTimeInternal) < 0) {
-                                        Log.d("SCHEDULE_DEBUG", "Time passed. Skipping class ending at $endTimeInternal. Current time: $currentTimeInternal")
-                                        continue // Class ended. Skip.
-                                    }
-                                } catch (e: Exception) {
-                                    Log.e("SCHEDULE_DEBUG", "Time parsing error for ${subject.subjectCode} (${slot.endTime}): ${e.message}")
-                                    continue // Skip this slot if time parsing fails
-                                }
 
                                 // 4. I-add sa listahan
                                 todaySchedule.add(mapOf(
@@ -302,6 +290,13 @@ class StudentDashboardActivity : AppCompatActivity() {
         // Logout Button
         findViewById<Button>(R.id.btnLogout).setOnClickListener {
             auth.signOut()
+
+            val intent = Intent(this, com.example.datadomeapp.LoginActivity::class.java)
+
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+
+            startActivity(intent)
+
             // Dito mo ilalagay ang redirect sa Login Activity
             // startActivity(Intent(this, LoginActivity::class.java))
             finish()
@@ -318,9 +313,15 @@ class StudentDashboardActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
-        // Grades Button - Coming Soon
         findViewById<Button>(R.id.btnGrades).setOnClickListener {
-            Toast.makeText(this, "Grades: Coming Soon!", Toast.LENGTH_SHORT).show()
+            if (studentId.isNullOrEmpty()) {
+                Toast.makeText(this, "Student ID is missing. Cannot load grades.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val intent = Intent(this, StudentGradesActivity::class.java)
+            intent.putExtra("STUDENT_ID", studentId)
+            startActivity(intent)
         }
 
         // I-set up ang mga button na may "Coming Soon" Toast
@@ -395,9 +396,8 @@ class StudentDashboardActivity : AppCompatActivity() {
                 Toast.makeText(this, "Student ID is missing. Cannot load full schedule.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            // Tiyakin na tama ang target activity (StudentFullScheduleActivity)
+
             val intent = Intent(this, StudentFullScheduleActivity::class.java)
-            // Gamitin ang Student ID bilang "USER_ID" para sa schedule activity
             intent.putExtra("USER_ID", studentId)
             startActivity(intent)
         }

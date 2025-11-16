@@ -1,86 +1,542 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:background="#FDFBF8"
+    android:padding="20dp"
+    android:scrollbars="none">
 
     <LinearLayout
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
+        <!-- Add android:id="@+id/cardWelcome" here -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardWelcome"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="#FFFFFF"
+            app:strokeColor="#F0F0F0"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="20dp">
+
+                <ImageView
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
+                    android:src="@drawable/ic_admin"
+                    android:layout_marginEnd="16dp"
+                    app:tint="#7B1113" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tvDashboard"
+                        android:text="Welcome Admin!"
+                        android:textSize="24sp"
+                        android:textStyle="bold"
+                        android:textColor="#7B1113"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+
+                    <TextView
+                        android:text="School Management System"
+                        android:textSize="14sp"
+                        android:textColor="#666666"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"/>
+                </LinearLayout>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/btnLogout"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:clickable="true"
+                    android:focusable="true"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="1dp"
+                    app:cardBackgroundColor="#F8F0F0"
+                    android:layout_marginStart="8dp">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:padding="12dp"
+                        android:gravity="center">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/ic_logout"
+                            android:layout_marginEnd="6dp"
+                            app:tint="#7B1113" />
+
+                        <TextView
+                            android:text="Logout"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            android:textColor="#7B1113"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
         <TextView
-            android:id="@+id/tvDashboard"
-            android:text="Welcome Admin!"
-            android:textSize="24sp"
+            android:text="Quick Overview"
+            android:textSize="18sp"
             android:textStyle="bold"
+            android:textColor="#7B1113"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:paddingBottom="24dp"/>
+            android:layout_marginBottom="16dp"
+            android:paddingStart="4dp"/>
 
-        <Button
-            android:id="@+id/btnManageStudents"
-            android:layout_width="match_parent"
-            android:text="Manage Student"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"/>
-
-        <Button
-            android:id="@+id/btnManageEnrollment"
-            android:layout_width="match_parent"
-            android:text="Manage Enrollment"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"/>
-
-        <Button
-            android:id="@+id/btnManageTeachers"
-            android:text="Manage Teachers"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"/>
+            android:orientation="horizontal"
+            android:weightSum="2"
+            android:layout_marginBottom="32dp">
 
-        <Button
-            android:id="@+id/btnManageCanteenStaff"
-            android:text="Manage Canteen Staff"
+            <!-- Add android:id="@+id/cardStudents" and android:id="@+id/tvStudentCount" -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardStudents"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="3dp"
+                app:cardBackgroundColor="#7B1113">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp"
+                    android:gravity="center">
+
+                    <TextView
+                        android:id="@+id/tvStudentCount"
+                        android:text="205"
+                        android:textSize="28sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+
+                    <TextView
+                        android:text="Students"
+                        android:textSize="14sp"
+                        android:textColor="#E8E8E8"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Add android:id="@+id/cardTeachers" and android:id="@+id/tvTeacherCount" -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardTeachers"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="3dp"
+                app:cardBackgroundColor="#7B1113">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:id="@+id/tvTeacherCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="48"
+                        android:textColor="#FFFFFF"
+                        android:textSize="28sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Teachers"
+                        android:textColor="#E8E8E8"
+                        android:textSize="14sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+
+        <TextView
+            android:text="Management Tools"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#7B1113"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:paddingStart="4dp"/>
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"/>
+            android:orientation="horizontal"
+            android:weightSum="2"
+            android:layout_marginBottom="12dp">
 
-        <Button
-            android:id="@+id/btnManageCourses"
-            android:text="Manage Courses"
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/btnManageStudents"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="#7B1113"
+                android:foreground="?attr/selectableItemBackground">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:padding="16dp"
+                    android:gravity="center">
+
+                    <ImageView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:src="@drawable/ic_student"
+                        android:layout_marginBottom="8dp"
+                        app:tint="#FFFFFF" />
+
+                    <TextView
+                        android:text="Students"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/btnManageTeachers"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="#7B1113"
+                android:foreground="?attr/selectableItemBackground">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:padding="16dp"
+                    android:gravity="center">
+
+                    <ImageView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:src="@drawable/ic_teacher"
+                        android:layout_marginBottom="8dp"
+                        app:tint="#FFFFFF" />
+
+                    <TextView
+                        android:text="Teachers"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"/>
+            android:orientation="horizontal"
+            android:weightSum="2"
+            android:layout_marginBottom="12dp">
 
-        <Button
-            android:id="@+id/btnManageLibrary"
-            android:text="Manage Library"
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/btnManageEnrollment"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="#7B1113"
+                android:foreground="?attr/selectableItemBackground">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:padding="16dp"
+                    android:gravity="center">
+
+                    <ImageView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:src="@drawable/ic_enrollment"
+                        android:layout_marginBottom="8dp"
+                        app:tint="#FFFFFF" />
+
+                    <TextView
+                        android:text="Enrollment"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/btnManageCourses"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="#7B1113"
+                android:foreground="?attr/selectableItemBackground">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:padding="16dp"
+                    android:gravity="center">
+
+                    <ImageView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:src="@drawable/ic_courses"
+                        android:layout_marginBottom="8dp"
+                        app:tint="#FFFFFF" />
+
+                    <TextView
+                        android:text="Courses"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"/>
+            android:orientation="horizontal"
+            android:weightSum="2"
+            android:layout_marginBottom="12dp">
 
-        <Button
-            android:id="@+id/btnManageCurriculum"
-            android:text="Manage Curriculum"
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/btnManageSchedules"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="#7B1113"
+                android:foreground="?attr/selectableItemBackground">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:padding="16dp"
+                    android:gravity="center">
+
+                    <ImageView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:src="@drawable/ic_schedule"
+                        android:layout_marginBottom="8dp"
+                        app:tint="#FFFFFF" />
+
+                    <TextView
+                        android:text="Schedules"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/btnManageLibrary"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="#7B1113"
+                android:foreground="?attr/selectableItemBackground">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:padding="16dp"
+                    android:gravity="center">
+
+                    <ImageView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:src="@drawable/ic_library"
+                        android:layout_marginBottom="8dp"
+                        app:tint="#FFFFFF" />
+
+                    <TextView
+                        android:text="Library"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"/>
+            android:orientation="horizontal"
+            android:weightSum="2"
+            android:layout_marginBottom="24dp">
 
-        <Button
-            android:id="@+id/btnManageSchedules"
-            android:text="Manage Schedules"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"/>
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/btnManageCurriculum"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="#7B1113"
+                android:foreground="?attr/selectableItemBackground">
 
-        <Button
-            android:id="@+id/btnLogout"
-            android:text="Logout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"/>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:padding="16dp"
+                    android:gravity="center">
+
+                    <ImageView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:src="@drawable/ic_curriculum"
+                        android:layout_marginBottom="8dp"
+                        app:tint="#FFFFFF" />
+
+                    <TextView
+                        android:text="Curriculum"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/btnManageCanteenStaff"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="#7B1113"
+                android:foreground="?attr/selectableItemBackground">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:padding="16dp"
+                    android:gravity="center">
+
+                    <ImageView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:src="@drawable/ic_canteen"
+                        android:layout_marginBottom="8dp"
+                        app:tint="#FFFFFF" />
+
+                    <TextView
+                        android:text="Canteen"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+
     </LinearLayout>
 </ScrollView>

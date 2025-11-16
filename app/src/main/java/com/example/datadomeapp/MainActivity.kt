@@ -81,23 +81,24 @@ class MainActivity : AppCompatActivity() {
 
         // Add this inside onCreate(), after btnSignup is initialized
         firestore.collection("appSettings").document("mainActivity")
-            .get()
-            .addOnSuccessListener { doc ->
-                val signupEnabled = doc?.getBoolean("signupEnabled") ?: true
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    // Firestore failed, default to HIDING button
+                    btnSignup.visibility = View.GONE
+                    Log.e(TAG, "Real-time listener error, keeping button hidden", error)
+                    return@addSnapshotListener
+                }
+
+                val signupEnabled = snapshot?.getBoolean("signupEnabled") ?: false // Default to false
                 if (signupEnabled) {
                     btnSignup.visibility = View.VISIBLE
                     btnSignup.setOnClickListener {
                         startActivity(Intent(this, ChooseStudentTypeActivity::class.java))
                     }
+                    Log.i(TAG, "Signup enabled - showing button")
                 } else {
-                    btnSignup.visibility = View.GONE // completely hides the button
-                }
-            }
-            .addOnFailureListener { e ->
-                // Default behavior if Firestore fails
-                btnSignup.visibility = View.VISIBLE
-                btnSignup.setOnClickListener {
-                    startActivity(Intent(this, ChooseStudentTypeActivity::class.java))
+                    btnSignup.visibility = View.GONE
+                    Log.i(TAG, "Signup disabled - hiding button")
                 }
             }
 

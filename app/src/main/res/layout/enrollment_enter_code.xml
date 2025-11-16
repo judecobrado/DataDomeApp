@@ -1,44 +1,60 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="24dp"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:gravity="center">
 
     <TextView
-        android:id="@+id/tvInfo"
-        android:text="Enter code"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:text="Enter Verification Code"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:id="@+id/tvEmail"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Code sent to: email@example.com"
+        android:textSize="14sp"
+        android:gravity="center"
+        android:layout_marginBottom="32dp" />
 
     <EditText
         android:id="@+id/etCode"
-        android:hint="Verification code"
-        android:inputType="number"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"/>
+        android:hint="Enter 6-digit code"
+        android:inputType="number"
+        android:maxLength="6"
+        android:gravity="center"
+        android:textSize="18sp"
+        android:layout_marginBottom="16dp" />
 
     <Button
         android:id="@+id/btnSubmit"
-        android:text="Submit Code"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"/>
-
-    <Button
-        android:id="@+id/btnResend"
-        android:text="Resend Code"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"/>
+        android:text="Verify Code"
+        android:layout_marginBottom="16dp" />
 
     <TextView
         android:id="@+id/tvTimer"
-        android:text=""
-        android:textColor="#FF0000"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"/>
+        android:text="Resend available in 60s"
+        android:gravity="center"
+        android:layout_marginBottom="8dp" />
+
+    <Button
+        android:id="@+id/btnResend"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Resend Code"
+        android:enabled="false" />
 
 </LinearLayout>

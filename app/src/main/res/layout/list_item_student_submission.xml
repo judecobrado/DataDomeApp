@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@drawable/list_item_background"
+    android:layout_margin="8dp">
+
+    <!-- Student Name -->
+    <TextView
+        android:id="@+id/tvStudentName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Student Name"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="#7B1113" />
+
+    <!-- Submission Status -->
+    <TextView
+        android:id="@+id/tvSubmissionStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Status: Not submitted"
+        android:textSize="14sp"
+        android:layout_marginTop="4dp"
+        android:textColor="#000000" />
+
+    <!-- Due Date Info -->
+    <TextView
+        android:id="@+id/tvDueDate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Due: Not set"
+        android:textSize="14sp"
+        android:textColor="#000000" />
+
+    <!-- Extension Info (Visible only when extension exists) -->
+    <TextView
+        android:id="@+id/tvExtensionInfo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Extension granted"
+        android:textSize="12sp"
+        android:textColor="#7B1113"
+        android:background="#FDFBF8"
+        android:padding="4dp"
+        android:visibility="gone" />
+
+    <!-- File Info -->
+    <TextView
+        android:id="@+id/tvFileInfo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="No file submitted"
+        android:textSize="12sp"
+        android:layout_marginTop="4dp"
+        android:textColor="#9B1C1F"
+        android:visibility="gone" />
+
+    <!-- Action Buttons Container - VERTICAL LAYOUT -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="12dp">
+
+        <!-- Grade/View Submission Button - FULL WIDTH -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnGradeSubmission"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="No Submission"
+            app:backgroundTint="#7B1113"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:maxLines="1"
+            app:cornerRadius="8dp"
+            android:enabled="false"
+            android:visibility="visible" />
+
+        <!-- Horizontal container for Extend and Remove buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp"
+            android:weightSum="2">
+
+            <!-- Extend Due Date Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnExtendDueDate"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Extend Due Date"
+                android:layout_marginEnd="4dp"
+                app:backgroundTint="#7B1113"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:maxLines="1"
+                app:cornerRadius="8dp"
+                android:visibility="gone" />
+
+            <!-- Remove Extension Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRemoveExtension"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Remove Extension"
+                android:layout_marginStart="4dp"
+                app:backgroundTint="#9B1C1F"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:maxLines="1"
+                app:cornerRadius="8dp"
+                android:visibility="gone" />
+
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#9B1C1F"
+        android:layout_marginTop="12dp"
+        android:alpha="0.3" />
+
+</LinearLayout>

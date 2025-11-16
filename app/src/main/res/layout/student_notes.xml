@@ -1,25 +1,123 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
-    android:padding="16dp"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#FDFBF8"
+    tools:context=".student.StudentNotesActivity">
 
-    <Button
-        android:id="@+id/btnAddNote"
-        android:text="Add Note"
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"/>
+        android:layout_margin="16dp"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="4dp"
+        app:cardBackgroundColor="#7B1113">
 
-    <ScrollView
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="10dp"
+            android:gravity="center">
+
+            <ImageView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/ic_notes_header"
+                android:layout_marginBottom="8dp"
+                app:tint="@android:color/white" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="My Notes"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/white"
+                android:gravity="center"
+                android:letterSpacing="0.02"/>
+
+
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="20dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAddNote"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Add New Note"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:paddingVertical="16dp"
+            app:cornerRadius="12dp"
+            app:icon="@drawable/ic_add_note"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp"
+            app:backgroundTint="#9B1C1F"
+            android:textColor="@android:color/white"/>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="16dp">
 
         <LinearLayout
             android:id="@+id/notesContainer"
-            android:orientation="vertical"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
-    </ScrollView>
+            android:layout_height="wrap_content"
+            android:orientation="vertical"/>
+
+    </androidx.core.widget.NestedScrollView>
+
+    <LinearLayout
+        android:id="@+id/emptyState"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="40dp"
+        android:visibility="gone">
+
+        <ImageView
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:src="@drawable/ic_empty_notes"
+            android:layout_marginBottom="24dp"
+            app:tint="#CCCCCC" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="No Notes Yet"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="#666666"
+            android:gravity="center"
+            android:layout_marginBottom="8dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Create your first note to get started!"
+            android:textSize="16sp"
+            android:textColor="#888888"
+            android:gravity="center"/>
+
+    </LinearLayout>
+
 </LinearLayout>

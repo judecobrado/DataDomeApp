@@ -8,7 +8,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.datadomeapp.R
 import com.example.datadomeapp.models.OnlineClassAssignment
-import com.google.firebase.auth.FirebaseAuth // Still needed for context
+import com.example.datadomeapp.models.ClassSchedule
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -17,10 +17,9 @@ import kotlinx.coroutines.tasks.await
 
 class StudentOnlineClassesActivity : AppCompatActivity() {
 
-    private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
     private lateinit var recyclerView: RecyclerView
-    private var studentId: String? = null // To hold the Student ID (e.g., DDS-0005)
+    private var studentId: String? = null
     private val classList = mutableListOf<OnlineClassAssignment>()
     private lateinit var classAdapter: OnlineClassAdapter
 
@@ -31,7 +30,6 @@ class StudentOnlineClassesActivity : AppCompatActivity() {
         supportActionBar?.title = "Online Class Links"
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        // GET THE STUDENT ID FROM THE INTENT
         studentId = intent.getStringExtra("STUDENT_ID")
 
         if (studentId.isNullOrEmpty()) {
@@ -59,9 +57,9 @@ class StudentOnlineClassesActivity : AppCompatActivity() {
 
         CoroutineScope(Dispatchers.Main).launch {
             try {
-                // 1. FETCH ALL ENROLLED SUBJECTS (using the path from your image)
-                val subjectRecords = firestore.collection("students") // <--- FIXED COLLECTION
-                    .document(currentStudentId) // <--- FIXED DOCUMENT ID (DDS-0005)
+                // 1. FETCH ALL ENROLLED SUBJECTS
+                val subjectRecords = firestore.collection("students")
+                    .document(currentStudentId)
                     .collection("subjects")
                     .get()
                     .await()
@@ -79,7 +77,7 @@ class StudentOnlineClassesActivity : AppCompatActivity() {
                     val subjectTitle = doc.getString("subjectTitle") ?: "Subject Title Missing"
                     val teacherName = doc.getString("teacherName") ?: "N/A"
                     val sectionBlock = doc.getString("sectionBlock") ?: "N/A"
-                    val assignmentNo = doc.getString("assignmentNo") // <--- CRITICAL REFERENCE ID
+                    val assignmentNo = doc.getString("assignmentNo")
 
                     if (assignmentNo.isNullOrEmpty()) {
                         Log.w("OnlineClasses", "Subject $subjectCode is missing assignmentNo.")
@@ -95,8 +93,9 @@ class StudentOnlineClassesActivity : AppCompatActivity() {
 
                     val onlineLink = assignmentDoc.getString("onlineClassLink")
 
-                    // Optional: Fetch basic schedule info from the assignment doc
-                    val firstSlot = assignmentDoc.get("scheduleSlots.slot1") as? Map<String, String> // Assuming 'slot1' is the key
+                    // ✅ GET ALL SCHEDULE SLOTS
+                    val scheduleSlots = assignmentDoc.get("scheduleSlots") as? Map<String, Map<String, String>>
+                    val allSchedules = formatAllSchedules(scheduleSlots)
 
                     // 4. ADD TO LIST
                     classList.add(
@@ -106,10 +105,11 @@ class StudentOnlineClassesActivity : AppCompatActivity() {
                             teacherName = teacherName,
                             sectionName = sectionBlock,
                             onlineClassLink = onlineLink ?: "No online class link yet.",
-                            day = firstSlot?.get("day") ?: "",
-                            startTime = firstSlot?.get("startTime") ?: "",
-                            endTime = firstSlot?.get("endTime") ?: "",
-                            roomNumber = firstSlot?.get("roomLocation") ?: ""
+                            day = allSchedules.firstOrNull()?.day ?: "",
+                            startTime = allSchedules.firstOrNull()?.startTime ?: "",
+                            endTime = allSchedules.firstOrNull()?.endTime ?: "",
+                            roomNumber = allSchedules.firstOrNull()?.room ?: "",
+                            allSchedules = allSchedules
                         )
                     )
                 }
@@ -123,6 +123,24 @@ class StudentOnlineClassesActivity : AppCompatActivity() {
         }
     }
 
+    // ✅ FUNCTION TO FORMAT ALL SCHEDULE SLOTS
+    private fun formatAllSchedules(scheduleSlots: Map<String, Map<String, String>>?): List<ClassSchedule> {
+        val schedules = mutableListOf<ClassSchedule>()
+
+        scheduleSlots?.forEach { (slotKey, slotData) ->
+            val day = slotData["day"] ?: ""
+            val startTime = slotData["startTime"] ?: ""
+            val endTime = slotData["endTime"] ?: ""
+            val room = slotData["roomLocation"] ?: ""
+
+            if (day.isNotEmpty() && startTime.isNotEmpty()) {
+                schedules.add(ClassSchedule(day, startTime, endTime, room))
+            }
+        }
+
+        return schedules
+    }
+
     private fun createPlaceholder(code: String, title: String, teacher: String, section: String): OnlineClassAssignment {
         return OnlineClassAssignment(
             subjectTitle = title,
@@ -133,7 +151,8 @@ class StudentOnlineClassesActivity : AppCompatActivity() {
             day = "",
             startTime = "",
             endTime = "",
-            roomNumber = ""
+            roomNumber = "",
+            allSchedules = emptyList()
         )
     }
 }

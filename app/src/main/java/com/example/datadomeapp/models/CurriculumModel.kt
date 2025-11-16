@@ -1,6 +1,5 @@
 package com.example.datadomeapp.models
 
-// Ginagamit para sa Subject Assignment sa ilalim ng Student record
 data class StudentSubject(
     val subjectCode: String = "",
     val subjectTitle: String = "",
@@ -27,6 +26,13 @@ data class StudentSubject(
     val yearLevel: String? = null,
 )
 
+data class ClassSchedule(
+    val day: String,
+    val startTime: String,
+    val endTime: String,
+    val room: String
+)
+
 data class OnlineClassAssignment(
     // Identifiers
     val assignmentId: String = "",
@@ -44,6 +50,7 @@ data class OnlineClassAssignment(
 
     // Online Link
     val onlineClassLink: String? = null,
+    val allSchedules: List<ClassSchedule> = emptyList(),
 
     // Iba pang fields
     val enrolledCount: Int = 0,

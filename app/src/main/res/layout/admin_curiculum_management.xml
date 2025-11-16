@@ -1,77 +1,413 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
+    android:background="#FDFBF8"
     android:padding="16dp"
+    android:scrollbars="none"
     tools:context=".admin.ManageCurriculumActivity">
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Curriculum Management"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="16dp"
-        android:gravity="center"/>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="8dp">
-        <Spinner
-            android:id="@+id/spnCurriculumCourse"
-            android:layout_width="0dp"
+        android:orientation="vertical">
+
+        <!-- Header Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:minHeight="48dp"
-            android:layout_marginEnd="8dp"/>
-        <Spinner
-            android:id="@+id/spnCurriculumYear"
-            android:layout_width="0dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingBottom="20dp"
+            android:paddingTop="40dp">
+
+            <ImageView
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/ic_curriculum"
+                android:layout_marginEnd="12dp"
+                app:tint="#7B1113" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:text="Curriculum Management"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    android:textColor="#7B1113"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <TextView
+                    android:text="Manage course subjects and curriculum"
+                    android:textSize="14sp"
+                    android:textColor="#666666"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Course Selection Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:minHeight="48dp"/>
+            app:cardCornerRadius="16dp"
+            app:cardElevation="6dp"
+            app:cardBackgroundColor="#7B1113"
+            android:layout_marginBottom="20dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp">
+
+                <!-- Card Header with Icon -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="20dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_courses"
+                        android:layout_marginEnd="12dp"
+                        app:tint="#FFFFFF" />
+
+                    <TextView
+                        android:text="Course Selection"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+
+                <!-- Course and Year Selection -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="8dp">
+
+                    <!-- Course Spinner -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="8dp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:text="Select Course"
+                            android:textSize="12sp"
+                            android:textColor="#FFFFFF"
+                            android:textStyle="bold"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="4dp"/>
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            app:cardCornerRadius="12dp"
+                            app:cardElevation="2dp"
+                            app:cardBackgroundColor="#FFFFFF">
+
+                            <Spinner
+                                android:id="@+id/spnCurriculumCourse"
+                                android:layout_width="match_parent"
+                                android:layout_height="52dp"
+                                android:background="@android:color/transparent"
+                                android:paddingStart="16dp"
+                                android:paddingEnd="16dp"
+                                android:textColor="#333333"
+                                android:textSize="14sp"/>
+                        </com.google.android.material.card.MaterialCardView>
+                    </LinearLayout>
+
+                    <!-- Year Level Spinner -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:text="Year Level"
+                            android:textSize="12sp"
+                            android:textColor="#FFFFFF"
+                            android:textStyle="bold"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="4dp"/>
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            app:cardCornerRadius="12dp"
+                            app:cardElevation="2dp"
+                            app:cardBackgroundColor="#FFFFFF">
+
+                            <Spinner
+                                android:id="@+id/spnCurriculumYear"
+                                android:layout_width="match_parent"
+                                android:layout_height="52dp"
+                                android:background="@android:color/transparent"
+                                android:paddingStart="16dp"
+                                android:paddingEnd="16dp"
+                                android:textColor="#333333"
+                                android:textSize="14sp"/>
+                        </com.google.android.material.card.MaterialCardView>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Info Text -->
+                <TextView
+                    android:text="Select a course and year level to manage its curriculum"
+                    android:textSize="12sp"
+                    android:textColor="#E8E8E8"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"/>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Add Subject Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="6dp"
+            app:strokeColor="#9B1C1F"
+            app:strokeWidth="1dp"
+            android:layout_marginBottom="20dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp">
+
+                <!-- Card Header with Icon -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="20dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_add"
+                        android:layout_marginEnd="12dp"
+                        app:tint="#7B1113" />
+
+                    <TextView
+                        android:text="Add New Subject"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:textColor="#7B1113"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+
+                <!-- Subject Inputs -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="16dp">
+
+                    <!-- Subject Code -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="8dp"
+                        app:boxCornerRadiusBottomEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusTopStart="12dp"
+                        app:boxStrokeColor="#7B1113"
+                        app:hintTextColor="#7B1113"
+                        app:startIconDrawable="@drawable/ic_code"
+                        app:startIconTint="#7B1113">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etSubjectCode"
+                            android:hint="Subject Code"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="#333333"
+                            android:textSize="14sp"/>
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- Subject Title -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        app:boxCornerRadiusBottomEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusTopStart="12dp"
+                        app:boxStrokeColor="#7B1113"
+                        app:hintTextColor="#7B1113"
+                        app:startIconDrawable="@drawable/ic_title"
+                        app:startIconTint="#7B1113">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etSubjectTitle"
+                            android:hint="Subject Title"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="#333333"
+                            android:textSize="14sp"/>
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+
+                <!-- Add Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAddSubjectToCurriculum"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:text="Add Subject to Curriculum"
+                    app:backgroundTint="#7B1113"
+                    app:cornerRadius="12dp"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:icon="@drawable/ic_add"
+                    app:iconTint="#FFFFFF"
+                    app:iconPadding="8dp"
+                    android:letterSpacing="0.02"/>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Subjects List Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="6dp"
+            app:strokeColor="#9B1C1F"
+            app:strokeWidth="1dp"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp">
+
+                <!-- Card Header with Icon -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_list"
+                        android:layout_marginEnd="12dp"
+                        app:tint="#7B1113" />
+
+                    <TextView
+                        android:text="Required Subjects"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:textColor="#7B1113"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"/>
+
+                    <TextView
+                        android:id="@+id/tvSubjectCount"
+                        android:text="0 subjects"
+                        android:textSize="12sp"
+                        android:textColor="#666666"
+                        android:textStyle="bold"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_subject_count"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="4dp"/>
+                </LinearLayout>
+
+                <!-- Subjects List -->
+                <LinearLayout
+                    android:id="@+id/llRequiredSubjectsContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:background="#F8F8F8"
+                    android:divider="#E8E8E8"
+                    android:showDividers="middle"
+                    android:dividerHeight="1dp"/>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Action Buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnDeleteCurriculumSubject"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:layout_weight="1"
+                android:text="Remove Selected"
+                app:backgroundTint="#9B1C1F"
+                app:cornerRadius="12dp"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                app:icon="@drawable/ic_delete"
+                app:iconTint="#FFFFFF"
+                app:iconPadding="4dp"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnBackCurriculum"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:layout_weight="1"
+                android:text="Back to Dashboard"
+                android:layout_marginStart="12dp"
+                app:backgroundTint="#666666"
+                app:cornerRadius="12dp"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                app:icon="@drawable/ic_arrow_back"
+                app:iconTint="#FFFFFF"
+                app:iconPadding="4dp"/>
+
+        </LinearLayout>
+
     </LinearLayout>
-
-    <EditText
-        android:id="@+id/etSubjectCode"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Subject Code (e.g., MATH101)"
-        android:minHeight="48dp"/>
-    <EditText
-        android:id="@+id/etSubjectTitle"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Subject Title"
-        android:minHeight="48dp"/>
-    <Button
-        android:id="@+id/btnAddSubjectToCurriculum"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Add Subject to Curriculum"
-        android:layout_marginBottom="16dp"/>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Required Subjects:"
-        android:textStyle="bold"/>
-    <ListView
-        android:id="@+id/lvRequiredSubjects"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:minHeight="200dp"
-        android:choiceMode="singleChoice"/>
-
-    <Button
-        android:id="@+id/btnDeleteCurriculumSubject"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Remove Selected Subject"
-        android:backgroundTint="@android:color/holo_red_dark"/>
-
-</LinearLayout>
+</ScrollView>

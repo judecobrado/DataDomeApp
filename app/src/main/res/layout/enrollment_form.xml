@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="24dp"
@@ -60,12 +61,98 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"/>
 
+        <!-- Address Information Section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Address Information (Required)"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Country -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Country *"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp" />
+
+        <!-- Region/State -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Region/State *"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp" />
+
         <EditText
-            android:id="@+id/etAddress"
-            android:hint="Address (Required)"
+            android:id="@+id/etRegion"
+            android:hint="Region/State (Required)"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"/>
+            android:layout_marginBottom="12dp"
+            android:inputType="text"/>
+
+        <!-- Province -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Province *"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp" />
+
+        <EditText
+            android:id="@+id/etProvince"
+            android:hint="Province (Required)"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:inputType="text"/>
+
+        <!-- Municipality/City -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Municipality/City *"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp" />
+
+        <EditText
+            android:id="@+id/etMunicipality"
+            android:hint="Municipality/City (Required)"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:inputType="text"/>
+
+        <!-- Barangay -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Barangay *"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp" />
+
+        <EditText
+            android:id="@+id/etBarangay"
+            android:hint="Barangay (Required)"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:inputType="text"/>
+
+        <!-- Street Address -->
+        <EditText
+            android:id="@+id/etStreetAddress"
+            android:hint="Street, Building, House No. (Optional)"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:inputType="textMultiLine"
+            android:minLines="2"
+            android:maxLines="3"/>
 
         <EditText
             android:id="@+id/etDOB"
@@ -98,6 +185,129 @@
             android:layout_marginBottom="24dp"
             style="@style/Widget.AppCompat.Spinner.Underlined"/>
 
+        <!-- Father Information Section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Father's Information (Required)"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            android:layout_gravity="start"
+            android:paddingBottom="12dp" />
+
+        <EditText
+            android:id="@+id/etFatherFirstName"
+            android:hint="Father's First Name (Required)"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:inputType="textPersonName"/>
+
+        <EditText
+            android:id="@+id/etFatherMiddleName"
+            android:hint="Father's Middle Name (Optional)"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:inputType="textPersonName"/>
+
+        <EditText
+            android:id="@+id/etFatherLastName"
+            android:hint="Father's Last Name (Required)"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:inputType="textPersonName"/>
+
+        <EditText
+            android:id="@+id/etFatherDOB"
+            android:hint="Father's Date of Birth (MM/DD/YYYY) - Tap to Select"
+            android:focusable="false"
+            android:clickable="true"
+            android:drawableEnd="@android:drawable/ic_menu_today"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"/>
+
+        <EditText
+            android:id="@+id/etFatherPhone"
+            android:hint="Father's Contact Number (Required)"
+            android:inputType="phone"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"/>
+
+        <EditText
+            android:id="@+id/etFatherOccupation"
+            android:hint="Father's Occupation (Required)"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:inputType="textPersonName"/>
+
+        <!-- Mother Information Section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Mother's Information (Required)"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            android:layout_gravity="start"
+            android:paddingBottom="12dp" />
+
+        <EditText
+            android:id="@+id/etMotherFirstName"
+            android:hint="Mother's First Name (Required)"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:inputType="textPersonName"/>
+
+        <EditText
+            android:id="@+id/etMotherMiddleName"
+            android:hint="Mother's Middle Name (Optional)"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:inputType="textPersonName"/>
+
+        <EditText
+            android:id="@+id/etMotherLastName"
+            android:hint="Mother's Last Name (Required)"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:inputType="textPersonName"/>
+
+        <EditText
+            android:id="@+id/etMotherDOB"
+            android:hint="Mother's Date of Birth (MM/DD/YYYY) - Tap to Select"
+            android:focusable="false"
+            android:clickable="true"
+            android:drawableEnd="@android:drawable/ic_menu_today"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"/>
+
+        <EditText
+            android:id="@+id/etMotherPhone"
+            android:hint="Mother's Contact Number (Required)"
+            android:inputType="phone"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"/>
+
+        <EditText
+            android:id="@+id/etMotherOccupation"
+            android:hint="Mother's Occupation (Required)"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:inputType="textPersonName"/>
+
+        <!-- Guardian Information Section -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -113,7 +323,8 @@
             android:hint="Guardian Name (Required)"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"/>
+            android:layout_marginBottom="12dp"
+            android:inputType="textPersonName"/>
 
         <EditText
             android:id="@+id/etGuardianPhone"
@@ -121,7 +332,31 @@
             android:inputType="phone"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"/>
+            android:layout_marginBottom="12dp"/>
+
+        <!-- Guardian Relationship -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Relationship to Student *"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp" />
+
+        <Spinner
+            android:id="@+id/spinnerGuardianRelationship"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginBottom="24dp"
+            style="@style/Widget.AppCompat.Spinner.Underlined"/>
+
+        <!-- Loading Progress Bar -->
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginBottom="16dp"
+            android:visibility="gone" />
 
         <Button
             android:id="@+id/btnSubmitEnrollment"

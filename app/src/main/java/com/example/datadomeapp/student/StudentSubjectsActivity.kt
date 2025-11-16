@@ -6,6 +6,7 @@ import android.util.Log
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.RecyclerView // Import para sa RecyclerView
 import com.example.datadomeapp.R
 import com.example.datadomeapp.models.StudentSubject
 import com.google.firebase.firestore.FirebaseFirestore
@@ -13,9 +14,13 @@ import java.util.*
 
 class StudentSubjectsActivity : AppCompatActivity() {
 
-    private lateinit var lvSubjects: ListView
+    // Pinalitan ang ListView ng RecyclerView
+    private lateinit var rvSubjects: RecyclerView
     private lateinit var tvEmpty: TextView
     private lateinit var progressBar: ProgressBar
+
+    // Gagamitin ang bagong custom adapter
+    private lateinit var subjectAdapter: SubjectRecyclerAdapter
 
     private val firestore = FirebaseFirestore.getInstance()
     private var studentId: String? = null
@@ -23,9 +28,11 @@ class StudentSubjectsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // I-set ang layout na may RecyclerView
         setContentView(R.layout.activity_student_subjects)
 
-        lvSubjects = findViewById(R.id.lvSubjects)
+        // Pinalitan ang ID reference
+        rvSubjects = findViewById(R.id.rvSubjects)
         tvEmpty = findViewById(R.id.tvEmptySubjects)
         progressBar = findViewById(R.id.progressBar)
 
@@ -37,32 +44,31 @@ class StudentSubjectsActivity : AppCompatActivity() {
             return
         }
 
-        setupListView()
+        setupRecyclerView() // Pinalitan ang setupListView
         loadStudentSubjects()
     }
 
-    private fun setupListView() {
-        val adapter = ArrayAdapter<String>(
-            this,
-            android.R.layout.simple_list_item_1,
-            mutableListOf("Loading subjects...")
-        )
-        lvSubjects.adapter = adapter
-
-        lvSubjects.setOnItemClickListener { _, _, position, _ ->
-            if (position < subjects.size) {
-                val subject = subjects[position]
-                val intent = Intent(this, StudentAssignmentsActivity::class.java)
-                intent.putExtra("classId", subject.assignmentNo) // This becomes the classId
-                intent.putExtra("subjectName", "${subject.subjectCode} - ${subject.subjectTitle}")
-                startActivity(intent)
-            }
+    private fun setupRecyclerView() {
+        // I-define ang click action para sa RecyclerView items
+        val onItemClick: (StudentSubject) -> Unit = { subject ->
+            val intent = Intent(this, StudentAssignmentsActivity::class.java)
+            intent.putExtra("classId", subject.assignmentNo)
+            intent.putExtra("subjectName", "${subject.subjectCode} - ${subject.subjectTitle}")
+            startActivity(intent)
         }
+
+        // Initialize ang Recycler Adapter
+        subjectAdapter = SubjectRecyclerAdapter(subjects, onItemClick)
+        rvSubjects.adapter = subjectAdapter
+
+        // I-set ang initial loading state
+        tvEmpty.text = "Loading subjects..."
     }
 
     private fun loadStudentSubjects() {
         progressBar.visibility = View.VISIBLE
-        tvEmpty.text = "Loading subjects..."
+        tvEmpty.visibility = View.VISIBLE
+        rvSubjects.visibility = View.GONE
 
         firestore.collection("students")
             .document(studentId!!)
@@ -70,14 +76,11 @@ class StudentSubjectsActivity : AppCompatActivity() {
             .get()
             .addOnSuccessListener { snapshot ->
                 subjects.clear()
-                val displayList = mutableListOf<String>()
 
                 for (doc in snapshot.documents) {
                     val subject = doc.toObject(StudentSubject::class.java)
                     if (subject != null) {
                         subjects.add(subject)
-                        val displayText = buildSubjectDisplayText(subject)
-                        displayList.add(displayText)
                     }
                 }
 
@@ -86,21 +89,13 @@ class StudentSubjectsActivity : AppCompatActivity() {
 
                     if (subjects.isEmpty()) {
                         tvEmpty.text = "No subjects enrolled for this semester"
-                        val adapter = ArrayAdapter<String>(
-                            this,
-                            android.R.layout.simple_list_item_1,
-                            mutableListOf("No subjects found")
-                        )
-                        lvSubjects.adapter = adapter
+                        tvEmpty.visibility = View.VISIBLE
+                        rvSubjects.visibility = View.GONE
                     } else {
-                        tvEmpty.text = ""
-                        val adapter = ArrayAdapter(
-                            this,
-                            android.R.layout.simple_list_item_1,
-                            displayList
-                        )
-                        lvSubjects.adapter = adapter
+                        tvEmpty.visibility = View.GONE
+                        rvSubjects.visibility = View.VISIBLE
 
+                        subjectAdapter.notifyDataSetChanged() // I-notify ang adapter
                         loadAssignmentsCount()
                     }
                 }
@@ -109,31 +104,14 @@ class StudentSubjectsActivity : AppCompatActivity() {
                 runOnUiThread {
                     progressBar.visibility = View.GONE
                     tvEmpty.text = "Error loading subjects: ${e.message}"
+                    tvEmpty.visibility = View.VISIBLE
+                    rvSubjects.visibility = View.GONE
                     Toast.makeText(this, "Failed to load subjects", Toast.LENGTH_SHORT).show()
                 }
             }
     }
 
-    private fun buildSubjectDisplayText(subject: StudentSubject): String {
-        return buildString {
-            append(subject.subjectCode)
-            append("\n")
-            append(subject.subjectTitle)
-
-            if (subject.sectionBlock.isNotEmpty() || subject.sectionName.isNotEmpty()) {
-                append("\nSection: ")
-                if (subject.sectionBlock.isNotEmpty()) {
-                    append(subject.sectionBlock)
-                }
-                if (subject.sectionName.isNotEmpty()) {
-                    if (subject.sectionBlock.isNotEmpty()) append(" - ")
-                    append(subject.sectionName)
-                }
-            }
-
-            append("\nAssignments: Loading...")
-        }
-    }
+    // Tinanggal ang buildSubjectDisplayText dahil ang logic ay nasa adapter na.
 
     private fun loadAssignmentsCount() {
         val assignmentNos = subjects.map { it.assignmentNo }.distinct()
@@ -148,7 +126,8 @@ class StudentSubjectsActivity : AppCompatActivity() {
                     val assignmentCount = assignmentsSnapshot.documents.size
 
                     runOnUiThread {
-                        updateSubjectDisplayWithCount(assignmentNo, assignmentCount)
+                        // Ginagamit ang dedikadong function ng Recycler Adapter
+                        subjectAdapter.updateAssignmentCount(assignmentNo, assignmentCount)
                     }
                 }
                 .addOnFailureListener { e ->
@@ -157,32 +136,5 @@ class StudentSubjectsActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateSubjectDisplayWithCount(assignmentNo: String, count: Int) {
-        val adapter = lvSubjects.adapter as? ArrayAdapter<*> ?: return
-
-        val updatedDisplayList = mutableListOf<String>()
-        for (subject in subjects) {
-            if (subject.assignmentNo == assignmentNo) {
-                val baseText = buildSubjectDisplayText(subject)
-                val updatedText = baseText.replace("Assignments: Loading...", "Assignments: $count")
-                updatedDisplayList.add(updatedText)
-            } else {
-                val currentPosition = updatedDisplayList.size
-                if (currentPosition < adapter.count) {
-                    val currentText = adapter.getItem(currentPosition) as? String ?: ""
-                    updatedDisplayList.add(currentText)
-                } else {
-                    val displayText = buildSubjectDisplayText(subject)
-                    updatedDisplayList.add(displayText)
-                }
-            }
-        }
-
-        val newAdapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_list_item_1,
-            updatedDisplayList
-        )
-        lvSubjects.adapter = newAdapter
-    }
+    // Tinanggal ang updateSubjectDisplayWithCount dahil ang logic ay nasa adapter na.
 }

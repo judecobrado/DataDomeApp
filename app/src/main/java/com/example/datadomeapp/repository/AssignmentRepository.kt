@@ -233,6 +233,8 @@ object AssignmentRepository {
             "submittedAt" to 0L,
             "fileUrl" to null,
             "imageUrl" to null,
+            "grade" to null,
+            "feedback" to null,
             "isResubmitted" to true
         )
 

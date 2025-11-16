@@ -38,7 +38,7 @@
             android:exported="true"
             android:resizeableActivity="false"
             android:supportsPictureInPicture="false"
-            android:screenOrientation="portrait">>
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -78,6 +78,10 @@
         <activity android:name=".student.StudentAttendanceActivity" />
         <activity android:name=".student.StudentQuizListActivity" />
         <activity android:name=".student.QuizResultActivity" />
+        <activity
+            android:name=".student.StudentGradesActivity"
+            android:label="Grade Summary"
+            android:parentActivityName=".student.StudentDashboardActivity" />
         <activity android:name=".student.UserCanteenItemDetailActivity" />
 
         <activity
@@ -112,6 +116,8 @@
         <activity android:name=".teacher.ManageQuizzesActivity" />
         <activity android:name=".teacher.CreateAssignmentActivity" />
         <activity android:name=".teacher.ViewSubmissionsActivity" />
+        <activity android:name=".teacher.GradeInputActivity" />
+        <activity android:name=".teacher.StudentSubmissionsActivity" />
         <activity android:name=".admin.ManageLibrary" /> <!-- Canteen Module -->
         <activity android:name=".canteen.CanteenStaffDashboardActivity" />
         <activity android:name=".canteen.MenuManagementActivity" />

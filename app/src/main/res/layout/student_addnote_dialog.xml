@@ -1,22 +1,296 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
-    android:padding="16dp"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="28dp"
+    android:background="#FFFBEEE6"
+    android:layout_margin="16dp">
 
-    <EditText
-        android:id="@+id/etTitle"
-        android:hint="Title"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"/>
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="28dp"
+        android:paddingBottom="16dp">
 
-    <EditText
-        android:id="@+id/etContent"
-        android:hint="Content"
+        <View
+            android:layout_width="8dp"
+            android:layout_height="8dp"
+            android:background="#7B1113"
+            android:layout_marginEnd="12dp"/>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Create New Note"
+                android:textColor="#2C1810"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.03"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Express your thoughts beautifully"
+                android:textColor="#8D6E63"
+                android:textSize="13sp"
+                android:fontFamily="sans-serif"
+                android:letterSpacing="0.01"
+                android:layout_marginTop="2dp"/>
+
+        </LinearLayout>
+
+
+    </LinearLayout>
+
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:minHeight="80dp"
-        android:gravity="top"/>
+        android:layout_marginBottom="20dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="4dp"
+        app:strokeColor="#FFE0E0"
+        app:strokeWidth="1dp"
+        app:cardBackgroundColor="#FFFFFF">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="16dp"
+                android:paddingTop="12dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="8dp">
+
+                <TextView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:text="T"
+                    android:textColor="#7B1113"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:layout_marginEnd="8dp"/>
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="TITLE"
+                    android:textColor="#7B1113"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-medium"
+                    android:letterSpacing="0.05"/>
+
+                <TextView
+                    android:id="@+id/tvTitleCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0/100"
+                    android:textColor="#BCAAA4"
+                    android:textSize="10sp"
+                    android:fontFamily="sans-serif"/>
+
+            </LinearLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Enter note title"
+                app:hintTextColor="#8D6E63"
+                app:boxBackgroundMode="none"
+                app:endIconMode="clear_text"
+                app:endIconTint="#7B1113"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="12dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textCapSentences"
+                    android:maxLines="1"
+                    android:maxLength="100"
+                    android:textColor="#2C1810"
+                    android:textSize="16sp"
+                    android:fontFamily="sans-serif-medium"
+                    android:background="@android:color/transparent"
+                    android:paddingVertical="12dp"
+                    android:paddingHorizontal="8dp"/>
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="4dp"
+        app:strokeColor="#FFE0E0"
+        app:strokeWidth="1dp"
+        app:cardBackgroundColor="#FFFFFF">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="16dp"
+                android:paddingTop="12dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="8dp">
+
+                <TextView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:text="C"
+                    android:textColor="#7B1113"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:layout_marginEnd="8dp"/>
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="CONTENT"
+                    android:textColor="#7B1113"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-medium"
+                    android:letterSpacing="0.05"/>
+
+                <TextView
+                    android:id="@+id/tvContentCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0/1000"
+                    android:textColor="#BCAAA4"
+                    android:textSize="10sp"
+                    android:fontFamily="sans-serif"/>
+
+            </LinearLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Write your thoughts..."
+                app:hintTextColor="#8D6E63"
+                app:boxBackgroundMode="none"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="16dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etContent"
+                    android:layout_width="match_parent"
+                    android:layout_height="180dp"
+                    android:inputType="textMultiLine|textCapSentences"
+                    android:gravity="top"
+                    android:maxLines="10"
+                    android:textColor="#2C1810"
+                    android:textSize="15sp"
+                    android:lineSpacingExtra="6dp"
+                    android:fontFamily="sans-serif"
+                    android:background="@android:color/transparent"
+                    android:paddingVertical="12dp"
+                    android:paddingHorizontal="8dp"
+                    android:scrollbars="vertical"/>
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="24dp"
+        android:paddingTop="16dp">
+
+        <TextView
+            android:id="@+id/btnCancel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="DISCARD"
+            android:textColor="#7B1113"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:paddingVertical="16dp"
+            android:background="#107B1113"
+            android:layout_marginEnd="12dp"
+            android:fontFamily="sans-serif-medium"
+            android:clickable="true"
+            android:focusable="true"
+            android:letterSpacing="0.02"/>
+
+        <TextView
+            android:id="@+id/btnSave"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="SAVE NOTE"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:paddingVertical="16dp"
+            android:background="#7B1113"
+            android:fontFamily="sans-serif-medium"
+            android:clickable="true"
+            android:focusable="true"
+            android:letterSpacing="0.02"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="16dp"
+        android:paddingTop="12dp">
+
+        <View
+            android:layout_width="4dp"
+            android:layout_height="4dp"
+            android:background="#7B1113"
+            android:layout_marginEnd="6dp"/>
+
+    </LinearLayout>
+
 </LinearLayout>

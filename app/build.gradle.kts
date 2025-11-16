@@ -40,11 +40,24 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+    packaging {
+        resources {
+            excludes += listOf(
+                "META-INF/NOTICE.md",
+                "META-INF/LICENSE.md",
+                "META-INF/DEPENDENCIES",
+                "META-INF/INDEX.LIST"
+            )
+        }
+    }
 }
 
 dependencies {
 
     implementation(platform("com.google.firebase:firebase-bom:34.3.0"))
+
+    implementation("com.sun.mail:android-mail:1.6.7")
+    implementation("com.sun.mail:android-activation:1.6.7")
 
     implementation("com.google.firebase:firebase-storage-ktx:20.2.1")
     implementation("com.squareup.picasso:picasso:2.8")
@@ -55,10 +68,10 @@ dependencies {
     implementation("com.github.bumptech.glide:glide:4.16.0")
 
     implementation("com.github.bumptech.glide:glide:4.15.1")
+    implementation(libs.androidx.gridlayout)
     kapt("com.github.bumptech.glide:compiler:4.15.1")
 
     implementation("com.google.firebase:firebase-appcheck-debug:17.0.0")
-
 
     //eto na add
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
@@ -79,7 +92,7 @@ dependencies {
 
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
-    
+
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

@@ -1,58 +1,187 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
+    android:background="#FDFBF8"
     tools:context=".student.StudentToDoListActivity">
 
-    <TextView
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="My To-Do List"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:layout_marginBottom="16dp"/>
+        android:layout_margin="16dp"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="4dp"
+        app:cardBackgroundColor="#7B1113">
 
-    <Button
-        android:id="@+id/btnAddTask"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="+ Add New Task"
-        android:layout_marginBottom="16dp"/>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="10dp"
+            android:gravity="center">
 
-    <TextView
-        android:id="@+id/tvToggleDone"
+            <ImageView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/ic_todo_header"
+                android:layout_marginBottom="8dp"
+                app:tint="@android:color/white" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="My To-Do List"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/white"
+                android:gravity="center"
+                android:letterSpacing="0.02"/>
+
+            <TextView
+                android:id="@+id/tvTaskStats"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="0 tasks total • 0 completed"
+                android:textSize="14sp"
+                android:textColor="#E8E8E8"
+                android:gravity="center"
+                android:layout_marginTop="4dp"/>
+
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="▼ Show Completed Tasks (0)"
-        android:textColor="@android:color/holo_blue_dark"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp"
-        android:gravity="center_vertical"
-        android:clickable="true"
-        android:focusable="true"
-        android:background="?attr/selectableItemBackground"
+        android:layout_marginHorizontal="16dp"
         android:layout_marginBottom="16dp"
-        android:visibility="gone"
-        tools:visibility="visible"/>
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp">
 
-    <ScrollView
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAddTask"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Add New Task"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:paddingVertical="16dp"
+            app:cornerRadius="12dp"
+            app:icon="@drawable/ic_add_task"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp"
+            app:backgroundTint="#9B1C1F"
+            android:textColor="@android:color/white"/>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardToggleDone"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="16dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp"
+        app:strokeColor="#E8E8E8"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:id="@+id/toggleLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="16dp"
+            android:gravity="center_vertical"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:id="@+id/ivToggleArrow"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_arrow_down"
+                android:layout_marginEnd="12dp"
+                app:tint="#7B1113" />
+
+            <TextView
+                android:id="@+id/tvToggleDone"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Show Completed Tasks"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="#7B1113"/>
+
+            <TextView
+                android:id="@+id/tvCompletedCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="#9B1C1F"
+                android:background="@drawable/badge_background"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="4dp"/>
+
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="16dp">
 
         <LinearLayout
             android:id="@+id/taskContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:dividerPadding="8dp"
-            android:showDividers="middle"/>
+            android:orientation="vertical"/>
 
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
+
+    <LinearLayout
+        android:id="@+id/emptyState"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="40dp"
+        android:visibility="gone">
+
+        <ImageView
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:src="@drawable/ic_empty_tasks"
+            android:layout_marginBottom="24dp"
+            app:tint="#CCCCCC" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="No Tasks Yet"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="#666666"
+            android:gravity="center"
+            android:layout_marginBottom="8dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Add your first task to get started!"
+            android:textSize="16sp"
+            android:textColor="#888888"
+            android:gravity="center"/>
+
+    </LinearLayout>
 
 </LinearLayout>

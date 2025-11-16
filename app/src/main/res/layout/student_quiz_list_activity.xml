@@ -1,45 +1,286 @@
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp"
-    android:background="#F5F5F5">
+    android:orientation="vertical"
+    android:background="#FAFAFA"
+    android:padding="20dp">
 
-    <TextView
-        android:id="@+id/tvHeader"
+    <!-- MODERN HEADER -->
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Quizzes"
-        android:textSize="22sp"
-        android:textStyle="bold"
-        android:padding="8dp"
-        android:gravity="center"
-        android:background="#1B5E20"
-        android:textColor="#FFFFFF"
-        android:elevation="4dp"/>
+        app:cardCornerRadius="16dp"
+        app:cardElevation="8dp"
+        app:cardBackgroundColor="#7B1113"
+        android:layout_marginBottom="24dp">
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/tvQuizTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="QUIZZES"
+                android:textColor="#FFFFFF"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.03"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Test Your Knowledge"
+                android:textColor="#FFE0E0"
+                android:textSize="14sp"
+                android:layout_marginTop="4dp"
+                android:letterSpacing="0.02"
+                android:fontFamily="sans-serif"/>
+
+            <View
+                android:layout_width="40dp"
+                android:layout_height="2dp"
+                android:background="#FFFFFF"
+                android:alpha="0.8"
+                android:layout_marginTop="12dp"/>
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- STATS OVERVIEW -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="24dp">
+
+        <!-- TOTAL QUIZZES -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            app:strokeColor="#E0E0E0"
+            app:strokeWidth="1dp"
+            android:layout_marginEnd="8dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:gravity="center">
+
+                <TextView
+                    android:id="@+id/tvTotalQuizzes"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textColor="#7B1113"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-medium"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Total"
+                    android:textColor="#666666"
+                    android:textSize="12sp"
+                    android:layout_marginTop="2dp"
+                    android:fontFamily="sans-serif"/>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- COMPLETED QUIZZES -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            app:strokeColor="#E0E0E0"
+            app:strokeWidth="1dp"
+            android:layout_marginStart="8dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:gravity="center">
+
+                <TextView
+                    android:id="@+id/tvCompletedQuizzes"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textColor="#7B1113"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-medium"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Completed"
+                    android:textColor="#666666"
+                    android:textSize="12sp"
+                    android:layout_marginTop="2dp"
+                    android:fontFamily="sans-serif"/>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+    </LinearLayout>
+
+    <!-- SECTION HEADER -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="16dp">
+
+        <View
+            android:layout_width="4dp"
+            android:layout_height="20dp"
+            android:background="#7B1113"
+            android:layout_marginEnd="12dp"/>
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Available Quizzes"
+            android:textColor="#333333"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-medium"/>
+
+        <TextView
+            android:id="@+id/tvQuizCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0 active"
+            android:textColor="#7B1113"
+            android:textSize="12sp"
+            android:background="#F8E8E8"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="6dp"
+            android:fontFamily="sans-serif-medium"/>
+
+    </LinearLayout>
+
+    <!-- QUIZ LIST -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewQuizzes"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:clipToPadding="false"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp"/>
+        android:paddingVertical="4dp"
+        android:scrollbars="vertical"/>
 
-    <TextView
-        android:id="@+id/tvEmpty"
+    <!-- EMPTY STATE -->
+    <LinearLayout
+        android:id="@+id/emptyState"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone"
+        android:padding="40dp">
+
+        <View
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:background="#F0F0F0"
+            android:shape="oval"
+            android:layout_marginBottom="24dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="No Quizzes Available"
+            android:textColor="#666666"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"
+            android:fontFamily="sans-serif-medium"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Check back later for new content"
+            android:textColor="#999999"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:layout_marginBottom="20dp"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnRefresh"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Refresh"
+            android:textColor="#FFFFFF"
+            app:backgroundTint="#7B1113"
+            app:cornerRadius="8dp"
+            android:elevation="2dp"
+            android:paddingHorizontal="20dp"
+            android:paddingVertical="10dp"/>
+
+    </LinearLayout>
+
+    <!-- LOADING INDICATOR -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/progressCard"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="No quizzes available"
-        android:textSize="18sp"
-        android:textColor="@android:color/darker_gray"
-        android:layout_centerInParent="true"
-        android:visibility="gone"/>
+        android:layout_gravity="center"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="6dp"
+        android:visibility="gone"
+        android:layout_marginBottom="20dp">
 
-    <ProgressBar
-        android:id="@+id/progressBar"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
-        android:layout_centerInParent="true"
-        android:visibility="gone"/>
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="16dp">
+
+            <ProgressBar
+                android:id="@+id/progressBar"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginEnd="12dp"
+                android:indeterminateTint="#7B1113"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Loading quizzes..."
+                android:textColor="#333333"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-medium"/>
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
 </LinearLayout>

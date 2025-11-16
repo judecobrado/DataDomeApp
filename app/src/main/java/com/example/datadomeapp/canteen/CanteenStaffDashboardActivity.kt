@@ -5,6 +5,8 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.util.Base64
+import com.google.android.material.card.MaterialCardView
+import android.widget.LinearLayout
 import android.view.View // Import para sa View.GONE at View.VISIBLE
 import android.widget.Button
 import android.widget.ImageView
@@ -23,14 +25,12 @@ class CanteenStaffDashboardActivity : AppCompatActivity() {
 
     private lateinit var tvCanteenTitle: TextView
     private lateinit var tvWelcome: TextView
-    private lateinit var btnLogout: Button
-    private lateinit var btnMenu: Button
-    private lateinit var btnOrders: Button
-    private lateinit var btnReports: Button
-    private lateinit var btnBalance: Button
-    private lateinit var btnTopUp: Button
-
-    private lateinit var ivCanteenImage: ImageView
+    private lateinit var btnLogout: LinearLayout
+    private lateinit var btnMenu: LinearLayout
+    private lateinit var btnOrders: LinearLayout
+    private lateinit var btnReports: LinearLayout
+    private lateinit var btnBalance: LinearLayout
+    private lateinit var btnTopUp: LinearLayout
 
     private var staffUid: String? = null
     private var staffCanteenName: String? = null
@@ -49,7 +49,6 @@ class CanteenStaffDashboardActivity : AppCompatActivity() {
         btnReports = findViewById(R.id.btnReports)
         btnBalance = findViewById(R.id.btnBalance)
         btnTopUp = findViewById(R.id.btnTopUp)
-        ivCanteenImage = findViewById(R.id.ivCanteenImage)
 
         val currentUser = auth.currentUser
         if (currentUser == null) {
@@ -108,16 +107,7 @@ class CanteenStaffDashboardActivity : AppCompatActivity() {
                     tvWelcome.textSize = 18f
 
                     // Retrieve image path (storeImageUrl) and display
-                    val base64Image = staffDoc.getString("storeImageUrl")
 
-                    if (!base64Image.isNullOrEmpty()) {
-                        try {
-                            ivCanteenImage.setImageBitmap(base64ToBitmap(base64Image))
-                        } catch (e: Exception) {
-                            ivCanteenImage.setImageDrawable(null)
-                            Toast.makeText(this, "Error loading canteen image.", Toast.LENGTH_SHORT).show()
-                        }
-                    }
                 } else {
                     tvCanteenTitle.text = "Error"
                     tvWelcome.text = "Staff data not found."

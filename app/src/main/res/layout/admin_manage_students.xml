@@ -1,51 +1,268 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
+    android:background="#FDFBF8"
+    android:scrollbars="none"
     android:padding="16dp">
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Student Management"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="16dp"/>
-
-    <EditText
-        android:id="@+id/etSearchStudent"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Search by Name or Student ID..."
-        android:inputType="text"
-        android:layout_marginBottom="8dp"/>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="16dp">
+        android:orientation="vertical">
 
-        <Spinner
-            android:id="@+id/spinnerFilterCourse"
-            android:layout_width="0dp"
+        <!-- Header Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginEnd="8dp"/>
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingBottom="24dp"
+            android:paddingTop="10dp">
 
-        <Spinner
-            android:id="@+id/spinnerFilterYear"
-            android:layout_width="0dp"
+            <ImageView
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/ic_students_professional"
+                android:layout_marginEnd="12dp"
+                app:tint="#7B1113" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Student Management"
+                    android:textColor="#7B1113"
+                    android:textSize="24sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Manage student records and profiles"
+                    android:textColor="#666666"
+                    android:textSize="14sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Search Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"/>
+            android:layout_marginBottom="20dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            app:strokeColor="#9B1C1F"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <!-- Card Header -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_search"
+                        android:layout_marginEnd="12dp"
+                        app:tint="#7B1113" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/search_filter"
+                        android:textColor="#7B1113"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- Search Input -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:boxStrokeColor="#7B1113"
+                    app:hintTextColor="#7B1113"
+                    app:startIconDrawable="@drawable/ic_search"
+                    app:startIconTint="#7B1113">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etSearchStudent"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Search by Name or Student ID..."
+                        android:textColor="#333333"
+                        android:textSize="14sp"
+                        android:minHeight="52dp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Filter Section -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <!-- Course Filter -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="8dp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="4dp"
+                            android:text="Course"
+                            android:textColor="#7B1113"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            app:cardCornerRadius="12dp"
+                            app:cardElevation="2dp"
+                            app:strokeColor="#7B1113"
+                            app:strokeWidth="1dp">
+
+                            <Spinner
+                                android:id="@+id/spinnerFilterCourse"
+                                android:layout_width="match_parent"
+                                android:layout_height="52dp"
+                                android:background="@android:color/transparent"
+                                android:paddingStart="16dp"
+                                android:paddingEnd="16dp"
+                                android:textColor="#333333" />
+                        </com.google.android.material.card.MaterialCardView>
+                    </LinearLayout>
+
+                    <!-- Year Filter -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="4dp"
+                            android:text="Year Level"
+                            android:textColor="#7B1113"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            app:cardCornerRadius="12dp"
+                            app:cardElevation="2dp"
+                            app:strokeColor="#7B1113"
+                            app:strokeWidth="1dp">
+
+                            <Spinner
+                                android:id="@+id/spinnerFilterYear"
+                                android:layout_width="match_parent"
+                                android:layout_height="52dp"
+                                android:background="@android:color/transparent"
+                                android:paddingStart="16dp"
+                                android:paddingEnd="16dp"
+                                android:textColor="#333333" />
+                        </com.google.android.material.card.MaterialCardView>
+                    </LinearLayout>
+                </LinearLayout>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Students List Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            app:strokeColor="#9B1C1F"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <!-- Card Header -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_group"
+                        android:layout_marginEnd="12dp"
+                        app:tint="#7B1113" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Student Records"
+                        android:textColor="#7B1113"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+                        android:layout_weight="1" />
+
+                    <TextView
+                        android:id="@+id/tvStudentCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_count_badge_maroon"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="6dp"
+                        android:text="0 students"
+                        android:textColor="#7B1113"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- Students RecyclerView -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvStudents"
+                    android:layout_width="match_parent"
+                    android:layout_height="400dp"
+                    android:background="#F8F8F8"
+                    android:padding="4dp" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
     </LinearLayout>
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvStudents"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
-
-</LinearLayout>
+</ScrollView>

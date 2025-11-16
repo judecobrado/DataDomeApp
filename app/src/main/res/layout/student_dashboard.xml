@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F5F5"
+    android:background="#FDFBF8"
     tools:context=".student.StudentDashboardActivity">
 
     <LinearLayout
@@ -13,107 +13,166 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <RelativeLayout
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="20dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="#7B1113">
 
-            <TextView
-                android:id="@+id/tvDashboard"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Welcome Student!"
-                android:textSize="28sp"
-                android:textStyle="bold"
-                android:textColor="@color/design_default_color_primary_dark" />
+                android:orientation="horizontal"
+                android:padding="20dp"
+                android:gravity="center_vertical">
 
-            <Button
-                android:id="@+id/btnLogout"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
-                android:text="Logout"
-                android:textSize="12sp"
-                android:backgroundTint="@color/design_default_color_error" />
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/tvUserInfo"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@id/tvDashboard"
-                android:layout_marginTop="4dp"
-                android:text="Section: Loading..."
-                android:textSize="16sp"
-                android:textColor="#555555" />
+                    <TextView
+                        android:id="@+id/tvDashboard"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Welcome Student!"
+                        android:textSize="24sp"
+                        android:textStyle="bold"
+                        android:textColor="@android:color/white" />
 
-        </RelativeLayout>
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="?android:attr/listDivider"
-            android:layout_marginBottom="16dp" />
+                    <TextView
+                        android:id="@+id/tvUserInfo"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Section: Loading..."
+                        android:textSize="14sp"
+                        android:textColor="#E8E8E8" />
+                </LinearLayout>
 
-        <androidx.cardview.widget.CardView
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLogout"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="LOGOUT"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="8dp"
+                    app:cornerRadius="8dp"
+                    app:backgroundTint="@android:color/white"
+                    app:icon="@drawable/ic_logout"
+                    app:iconTint="#7B1113"
+                    android:textColor="#7B1113" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardSchedulePreview"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="10dp"
+            android:layout_marginBottom="20dp"
+            app:cardCornerRadius="16dp"
             app:cardElevation="6dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="20dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="📅 Today's Schedule"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/design_default_color_primary"
-                    android:layout_marginBottom="12dp" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
 
-                <androidx.cardview.widget.CardView
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_schedule"
+                        android:layout_marginEnd="8dp"
+                        app:tint="#7B1113" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Today's Schedule"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:textColor="#7B1113" />
+                </LinearLayout>
+
+                <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
-                    app:cardCornerRadius="6dp"
-                    app:cardElevation="0dp"
-                    android:backgroundTint="#E1F5FE">
+                    app:cardCornerRadius="12dp"
+                    app:cardBackgroundColor="#FBEFEF"
+                    app:strokeColor="#7B1113"
+                    app:strokeWidth="1dp">
+
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="12dp">
+                        android:padding="16dp">
+
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="NEXT UP: Loading Time..."
+                            android:text="NEXT CLASS"
                             android:textSize="12sp"
                             android:textStyle="bold"
-                            android:textColor="#0288D1" />
+                            android:textColor="#9B1C1F"
+                            android:letterSpacing="0.1" />
+
                         <TextView
                             android:id="@+id/tvNextClassDetails"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Subject (Room/Online)"
+                            android:layout_marginTop="4dp"
+                            android:text="Loading next class..."
                             android:textSize="16sp"
-                            android:textStyle="italic"
+                            android:textStyle="bold"
                             android:textColor="#333333" />
                     </LinearLayout>
-                </androidx.cardview.widget.CardView>
+                </com.google.android.material.card.MaterialCardView>
+
                 <TableLayout
                     android:id="@+id/tlDailySchedule"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:stretchColumns="1,2">
-                    <TableRow android:background="#F0F0F0">
-                        <TextView android:text="Time" android:textStyle="bold" android:padding="8dp" android:textSize="12sp" />
-                        <TextView android:text="Subject" android:textStyle="bold" android:padding="8dp" android:textSize="14sp" />
-                        <TextView android:text="Room" android:textStyle="bold" android:padding="8dp" android:textSize="14sp" />
+
+                    <TableRow
+                        android:background="#FBEFEF"
+                        android:padding="8dp">
+
+                        <TextView
+                            android:text="Time"
+                            android:textStyle="bold"
+                            android:padding="12dp"
+                            android:textSize="12sp"
+                            android:textColor="#7B1113"/>
+                        <TextView
+                            android:text="Subject"
+                            android:textStyle="bold"
+                            android:padding="12dp"
+                            android:textSize="14sp"
+                            android:textColor="#7B1113"/>
+                        <TextView
+                            android:text="Room"
+                            android:textStyle="bold"
+                            android:padding="12dp"
+                            android:textSize="14sp"
+                            android:textColor="#7B1113"/>
                     </TableRow>
 
                     <TextView
@@ -122,245 +181,431 @@
                         android:layout_height="wrap_content"
                         android:text="Fetching today's classes..."
                         android:gravity="center"
-                        android:paddingTop="10dp"
-                        android:paddingBottom="10dp"
-                        android:layout_span="3" android:textColor="#888888" />
+                        android:padding="20dp"
+                        android:layout_span="3"
+                        android:textColor="#888888" />
+
                 </TableLayout>
 
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
-        <androidx.cardview.widget.CardView
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardAlertsDeadlines"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
-            app:cardCornerRadius="10dp"
-            app:cardElevation="2dp"
-            app:contentPadding="12dp">
+            android:layout_marginBottom="20dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp">
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:padding="20dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="🔔 Upcoming Deadlines"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:textColor="#F44336"
-                    android:layout_marginBottom="8dp" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp">
 
-                <TextView
-                    android:id="@+id/tvAssignmentAlert"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Loading assignments..."
-                    android:textColor="#555555"
-                    android:drawableStart="@android:drawable/ic_notification_overlay"
-                    android:drawablePadding="8dp"
-                    android:paddingBottom="4dp" />
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_alert"
+                        android:layout_marginEnd="8dp"
+                        app:tint="#9B1C1F" />
 
-                <TextView
-                    android:id="@+id/tvQuizAlert"
-                    android:layout_width="wrap_content"
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Upcoming Deadlines"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#9B1C1F" />
+                </LinearLayout>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Loading quizzes..."
-                    android:textColor="#555555"
-                    android:drawableStart="@android:drawable/ic_input_get"
-                    android:drawablePadding="8dp" />
+                    app:cardCornerRadius="8dp"
+                    app:cardBackgroundColor="#FBEFEF"
+                    app:cardElevation="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:id="@+id/tvAssignmentAlert"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Loading assignments..."
+                            android:textColor="#555555"
+                            android:drawableStart="@drawable/ic_assignment"
+                            android:drawablePadding="8dp"
+                            android:drawableTint="#9B1C1F"
+                            android:paddingBottom="8dp" />
+
+                        <TextView
+                            android:id="@+id/tvQuizAlert"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Loading quizzes..."
+                            android:textColor="#555555"
+                            android:drawableStart="@drawable/ic_quiz"
+                            android:drawablePadding="8dp"
+                            android:drawableTint="#9B1C1F" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
-        <LinearLayout
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="🛠 ACADEMIC TOOLS"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:textColor="#333333"
-                android:layout_marginTop="16dp"
-                android:layout_marginBottom="4dp"
-                android:paddingStart="8dp" />
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            android:layout_marginBottom="20dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:orientation="vertical"
+                android:padding="20dp">
 
-                <Button
-                    android:id="@+id/btnSubjects"
-                    style="@style/Widget.AppCompat.Button.Colored"
-                    android:layout_width="0dp"
-                    android:layout_height="100dp"
-                    android:layout_weight="1"
-                    android:layout_margin="8dp"
-                    android:drawableTop="@android:drawable/ic_menu_sort_by_size"
-                    android:text="Subjects"
-                    android:textSize="14sp" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
 
-                <Button
-                    android:id="@+id/btnGrades"
-                    style="@style/Widget.AppCompat.Button.Colored"
-                    android:layout_width="0dp"
-                    android:layout_height="100dp"
-                    android:layout_weight="1"
-                    android:layout_margin="8dp"
-                    android:drawableTop="@android:drawable/ic_menu_agenda"
-                    android:text="Grades"
-                    android:textSize="14sp" />
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_academic"
+                        android:layout_marginEnd="8dp"
+                        app:tint="#7B1113" />
 
-                <Button
-                    android:id="@+id/btnQuizzes"
-                    style="@style/Widget.AppCompat.Button.Colored"
-                    android:layout_width="0dp"
-                    android:layout_height="100dp"
-                    android:layout_weight="1"
-                    android:layout_margin="8dp"
-                    android:drawableTop="@android:drawable/ic_menu_help"
-                    android:text="Quizzes"
-                    android:textSize="14sp" />
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="ACADEMIC TOOLS"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#7B1113" />
+                </LinearLayout>
 
-                <Button
-                    android:id="@+id/btnExam"
-                    style="@style/Widget.AppCompat.Button.Colored"
-                    android:layout_width="0dp"
-                    android:layout_height="100dp"
-                    android:layout_weight="1"
-                    android:layout_margin="8dp"
-                    android:drawableTop="@android:drawable/ic_menu_help"
-                    android:text="Exam"
-                    android:textSize="14sp" />
+                <androidx.gridlayout.widget.GridLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:columnCount="3"
+                    app:rowCount="4">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSubjects"
+                        android:layout_width="0dp"
+                        android:layout_height="100dp"
+                        android:layout_margin="4dp"
+                        android:text="Subjects"
+                        android:textColor="@android:color/white"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        app:backgroundTint="#7B1113"
+                        app:cornerRadius="12dp"
+                        app:icon="@drawable/ic_subjects"
+                        app:iconGravity="textTop"
+                        app:layout_column="0"
+                        app:layout_columnWeight="1"
+                        app:layout_gravity="fill"
+                        app:layout_row="0"
+                        app:layout_rowWeight="1" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnGrades"
+                        android:layout_width="0dp"
+                        android:layout_height="100dp"
+                        android:text="Grades"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        app:cornerRadius="12dp"
+                        app:icon="@drawable/ic_grades"
+                        app:iconGravity="textTop"
+                        app:backgroundTint="#9B1C1F"
+                        android:textColor="@android:color/white"
+                        app:layout_columnWeight="1"
+                        app:layout_rowWeight="1"
+                        app:layout_gravity="fill"
+                        android:layout_margin="4dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnQuizzes"
+                        android:layout_width="0dp"
+                        android:layout_height="100dp"
+                        android:text="Quizzes"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        app:cornerRadius="12dp"
+                        app:icon="@drawable/ic_quiz"
+                        app:iconGravity="textTop"
+                        app:backgroundTint="#7B1113"
+                        android:textColor="@android:color/white"
+                        app:layout_columnWeight="1"
+                        app:layout_rowWeight="1"
+                        app:layout_gravity="fill"
+                        android:layout_margin="4dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnExam"
+                        android:layout_width="0dp"
+                        android:layout_height="100dp"
+                        android:text="Exam"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        app:cornerRadius="12dp"
+                        app:icon="@drawable/ic_exam"
+                        app:iconGravity="textTop"
+                        app:backgroundTint="#9B1C1F"
+                        android:textColor="@android:color/white"
+                        app:layout_columnWeight="1"
+                        app:layout_rowWeight="1"
+                        app:layout_gravity="fill"
+                        android:layout_margin="4dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSchedule"
+                        android:layout_width="0dp"
+                        android:layout_height="100dp"
+                        android:text="Full Schedule"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        app:cornerRadius="12dp"
+                        app:icon="@drawable/ic_schedule"
+                        app:iconGravity="textTop"
+                        app:backgroundTint="#7B1113"
+                        android:textColor="@android:color/white"
+                        app:layout_columnWeight="1"
+                        app:layout_rowWeight="1"
+                        app:layout_gravity="fill"
+                        android:layout_margin="4dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnAttendance"
+                        android:layout_width="0dp"
+                        android:layout_height="100dp"
+                        android:text="Attendance"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        app:cornerRadius="12dp"
+                        app:icon="@drawable/ic_attendance"
+                        app:iconGravity="textTop"
+                        app:backgroundTint="#9B1C1F"
+                        android:textColor="@android:color/white"
+                        app:layout_columnWeight="1"
+                        app:layout_rowWeight="1"
+                        app:layout_gravity="fill"
+                        android:layout_margin="4dp" />
+
+                </androidx.gridlayout.widget.GridLayout>
+
             </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            android:layout_marginBottom="20dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:orientation="vertical"
+                android:padding="20dp">
 
-                <Button
-                    android:id="@+id/btnSchedule"
-                    style="@style/Widget.AppCompat.Button.Colored"
-                    android:layout_width="0dp"
-                    android:layout_height="100dp"
-                    android:layout_weight="1"
-                    android:layout_margin="8dp"
-                    android:drawableTop="@android:drawable/ic_menu_today"
-                    android:text="Full Schedule"
-                    android:textSize="14sp" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
 
-                <Button
-                    android:id="@+id/btnAttendance"
-                    style="@style/Widget.AppCompat.Button.Colored"
-                    android:layout_width="0dp"
-                    android:layout_height="100dp"
-                    android:layout_weight="1"
-                    android:layout_margin="8dp"
-                    android:drawableTop="@android:drawable/ic_menu_compass"
-                    android:text="Attendance"
-                    android:textSize="14sp" />
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_productivity"
+                        android:layout_marginEnd="8dp"
+                        app:tint="#7B1113" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="PRODUCTIVITY &amp; E-LEARNING"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#7B1113" />
+                </LinearLayout>
+
+                <androidx.gridlayout.widget.GridLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:columnCount="3"
+                    app:rowCount="1">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnOnlineClasses"
+                        android:layout_width="0dp"
+                        android:layout_height="100dp"
+                        android:text="Online Classes"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        app:cornerRadius="12dp"
+                        app:icon="@drawable/ic_online_class"
+                        app:iconGravity="textTop"
+                        app:backgroundTint="#7B1113"
+                        android:textColor="@android:color/white"
+                        app:layout_columnWeight="1"
+                        app:layout_rowWeight="1"
+                        app:layout_gravity="fill"
+                        android:layout_margin="4dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnToDoList"
+                        android:layout_width="0dp"
+                        android:layout_height="100dp"
+                        android:text="To-Do List"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        app:cornerRadius="12dp"
+                        app:icon="@drawable/ic_todo"
+                        app:iconGravity="textTop"
+                        app:backgroundTint="#9B1C1F"
+                        android:textColor="@android:color/white"
+                        app:layout_columnWeight="1"
+                        app:layout_rowWeight="1"
+                        app:layout_gravity="fill"
+                        android:layout_margin="4dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnNotes"
+                        android:layout_width="0dp"
+                        android:layout_height="100dp"
+                        android:text="Notes"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        app:cornerRadius="12dp"
+                        app:icon="@drawable/ic_notes"
+                        app:iconGravity="textTop"
+                        app:backgroundTint="#7B1113"
+                        android:textColor="@android:color/white"
+                        app:layout_columnWeight="1"
+                        app:layout_rowWeight="1"
+                        app:layout_gravity="fill"
+                        android:layout_margin="4dp" />
+
+                </androidx.gridlayout.widget.GridLayout>
+
             </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="💡 PRODUCTIVITY &amp; E-LEARNING"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:textColor="#333333"
-                android:layout_marginTop="16dp"
-                android:layout_marginBottom="4dp"
-                android:paddingStart="8dp" />
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:orientation="vertical"
+                android:padding="20dp">
 
-                <Button
-                    android:id="@+id/btnOnlineClasses"
-                    style="@style/Widget.AppCompat.Button.Colored"
-                    android:layout_width="0dp"
-                    android:layout_height="100dp"
-                    android:layout_weight="1"
-                    android:layout_margin="8dp"
-                    android:drawableTop="@android:drawable/ic_menu_view"
-                    android:text="Online Classes"
-                    android:textSize="14sp" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
 
-                <Button
-                    android:id="@+id/btnToDoList"
-                    style="@style/Widget.AppCompat.Button.Colored"
-                    android:layout_width="0dp"
-                    android:layout_height="100dp"
-                    android:layout_weight="1"
-                    android:layout_margin="8dp"
-                    android:drawableTop="@android:drawable/ic_menu_gallery"
-                    android:text="To-Do List"
-                    android:textSize="14sp" />
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_campus"
+                        android:layout_marginEnd="8dp"
+                        app:tint="#7B1113" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="CAMPUS SERVICES"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#7B1113" />
+                </LinearLayout>
+
+                <androidx.gridlayout.widget.GridLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:columnCount="3"
+                    app:rowCount="1">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCanteen"
+                        android:layout_width="0dp"
+                        android:layout_height="100dp"
+                        android:text="Canteen"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        app:cornerRadius="12dp"
+                        app:icon="@drawable/ic_canteen"
+                        app:iconGravity="textTop"
+                        app:backgroundTint="#9B1C1F"
+                        android:textColor="@android:color/white"
+                        app:layout_columnWeight="1"
+                        app:layout_rowWeight="1"
+                        app:layout_gravity="fill"
+                        android:layout_margin="4dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnProfile"
+                        android:layout_width="0dp"
+                        android:layout_height="100dp"
+                        android:text="Profile"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        app:cornerRadius="12dp"
+                        app:icon="@drawable/ic_profile"
+                        app:iconGravity="textTop"
+                        app:backgroundTint="#7B1113"
+                        android:textColor="@android:color/white"
+                        app:layout_columnWeight="1"
+                        app:layout_rowWeight="1"
+                        app:layout_gravity="fill"
+                        android:layout_margin="4dp" />
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="100dp"
+                        app:layout_columnWeight="1"
+                        app:layout_rowWeight="1"
+                        android:layout_margin="4dp"
+                        android:visibility="invisible" />
+
+                </androidx.gridlayout.widget.GridLayout>
+
             </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="🗺️ CAMPUS SERVICES"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:textColor="#333333"
-                android:layout_marginTop="16dp"
-                android:layout_marginBottom="4dp"
-                android:paddingStart="8dp" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <Button
-                    android:id="@+id/btnCanteen"
-                    style="@style/Widget.AppCompat.Button.Colored"
-                    android:layout_width="0dp"
-                    android:layout_height="100dp"
-                    android:layout_weight="1"
-                    android:layout_margin="8dp"
-                    android:drawableTop="@android:drawable/ic_menu_mapmode"
-                    android:text="Canteen"
-                    android:textSize="14sp" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <Button
-                    android:id="@+id/btnNotes"
-                    style="@style/Widget.AppCompat.Button.Colored"
-                    android:layout_width="0dp"
-                    android:layout_height="100dp"
-                    android:layout_weight="1"
-                    android:layout_margin="8dp"
-                    android:drawableTop="@android:drawable/ic_menu_edit"
-                    android:text="Notes"
-                    android:textSize="14sp" />
-
-                <Button
-                    android:id="@+id/btnProfile"
-                    style="@style/Widget.AppCompat.Button.Colored"
-                    android:layout_width="0dp"
-                    android:layout_height="100dp"
-                    android:layout_weight="1"
-                    android:layout_margin="8dp"
-                    android:drawableTop="@android:drawable/ic_menu_myplaces"
-                    android:text="Profile"
-                    android:textSize="14sp" />
-            </LinearLayout>
-
-        </LinearLayout>
     </LinearLayout>
 </ScrollView>

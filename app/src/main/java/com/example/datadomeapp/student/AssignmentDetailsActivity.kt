@@ -21,7 +21,9 @@ class AssignmentDetailsActivity : AppCompatActivity() {
     private var studentId: String? = null
     private var submission: Submission? = null
     private var dueDateMillis: Long = 0L
-
+    private var academicTerm: String? = null
+    private var academicYear: String? = null
+    private var semester: String? = null
     private lateinit var tvAssignmentTitle: TextView
     private lateinit var tvDueDate: TextView
     private lateinit var tvInstructions: TextView
@@ -67,7 +69,9 @@ class AssignmentDetailsActivity : AppCompatActivity() {
         classId = intent.getStringExtra("classId")
         assignmentFileUrl = intent.getStringExtra("assignmentFileUrl")
         dueDateMillis = intent.getLongExtra("dueDateMillis", 0L)
-
+        academicTerm = intent.getStringExtra("academicTerm")
+        academicYear = intent.getStringExtra("academicYear")
+        semester = intent.getStringExtra("semester")
         // Get submission data if exists
         val submissionId = intent.getStringExtra("submissionId")
         val submissionFileUrl = intent.getStringExtra("submissionFileUrl")
@@ -99,6 +103,9 @@ class AssignmentDetailsActivity : AppCompatActivity() {
                 intent.putExtra("assignmentId", assignmentId)
                 intent.putExtra("assignmentTitle", tvAssignmentTitle.text.toString())
                 intent.putExtra("classId", classId)
+                intent.putExtra("academicTerm", academicTerm)
+                intent.putExtra("academicYear", academicYear)
+                intent.putExtra("semester", semester)
                 startActivity(intent)
             }
         }

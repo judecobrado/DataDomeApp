@@ -1,20 +1,75 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#FDFBF8"
+    android:padding="24dp"
     android:orientation="vertical"
-    android:padding="40dp"
-    android:gravity="center">
+    tools:context=".enrollment.ChooseStudentTypeActivity">
 
-    <Button
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="DATADOME"
+        android:textColor="#7B1113"
+        android:textSize="36sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Student Portal"
+        android:textColor="#9B1C1F"
+        android:textSize="16sp"
+        android:gravity="center"
+        android:layout_marginBottom="32dp" />
+
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnNewStudent"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="I'm a New Student"
-        android:layout_marginBottom="20dp" />
+        android:layout_height="60dp"
+        android:backgroundTint="#7B1113"
+        android:text="I'M A NEW STUDENT"
+        android:textColor="#FFFFFF"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        app:cornerRadius="30dp"
+        android:layout_marginBottom="12dp" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnExistingStudent"
         android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:backgroundTint="#FDFBF8"
+        android:text="I'M AN EXISTING STUDENT"
+        android:textColor="#7B1113"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        app:cornerRadius="30dp"
+        app:strokeColor="#7B1113"
+        app:strokeWidth="2dp" />
+
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <TextView
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="I'm an Existing Student" />
+        android:text="© 2025 DataDome Solutions"
+        android:textColor="#A8A8A8"
+        android:textSize="11sp"
+        android:gravity="center" />
+
 </LinearLayout>

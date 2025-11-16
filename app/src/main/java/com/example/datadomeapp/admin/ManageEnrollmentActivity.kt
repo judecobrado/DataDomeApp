@@ -144,12 +144,32 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
         val tvCourse = dialogView.findViewById<TextView>(R.id.tvCourse)
         val tvGuardian = dialogView.findViewById<TextView>(R.id.tvGuardian)
         val tvApplicationType = dialogView.findViewById<TextView>(R.id.tvApplicationType)
+        val tvFatherInfo = dialogView.findViewById<TextView>(R.id.tvFatherInfo)
+        val tvMotherInfo = dialogView.findViewById<TextView>(R.id.tvMotherInfo)
+        val tvGuardianRelationship = dialogView.findViewById<TextView>(R.id.tvGuardianRelationship)
         val spinnerFinalYearLevel = dialogView.findViewById<Spinner>(R.id.spinnerFinalYearLevel)
         val spinnerFinalEnrollmentType = dialogView.findViewById<Spinner>(R.id.spinnerFinalEnrollmentType)
 
 
         val courseName = e.data["courseName"] as? String ?: e.course
         val courseCode = e.data["courseCode"] as? String ?: ""
+
+        // Parent information from data map
+        val fatherFirstName = e.data["fatherFirstName"] as? String ?: ""
+        val fatherMiddleName = e.data["fatherMiddleName"] as? String ?: ""
+        val fatherLastName = e.data["fatherLastName"] as? String ?: ""
+        val fatherDOB = e.data["fatherDOB"] as? String ?: ""
+        val fatherPhone = e.data["fatherPhone"] as? String ?: ""
+        val fatherOccupation = e.data["fatherOccupation"] as? String ?: ""
+
+        val motherFirstName = e.data["motherFirstName"] as? String ?: ""
+        val motherMiddleName = e.data["motherMiddleName"] as? String ?: ""
+        val motherLastName = e.data["motherLastName"] as? String ?: ""
+        val motherDOB = e.data["motherDOB"] as? String ?: ""
+        val motherPhone = e.data["motherPhone"] as? String ?: ""
+        val motherOccupation = e.data["motherOccupation"] as? String ?: ""
+
+        val guardianRelationship = e.data["guardianRelationship"] as? String ?: "Unknown"
 
         tvName.text = "Name: ${e.lastName}, ${e.firstName} ${e.middleName.firstOrNull() ?: ""}"
         tvEmail.text = "Email: ${e.email}"
@@ -159,6 +179,23 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
         tvGender.text = "Gender: ${e.gender}"
         tvCourse.text = "Course Applied: $courseName (Code: $courseCode)"
         tvGuardian.text = "Guardian: ${e.guardianName} (${e.guardianPhone})"
+        tvGuardianRelationship.text = "Guardian Relationship: $guardianRelationship"
+
+        // Parent information
+        val fatherFullName = buildString {
+            append(fatherFirstName)
+            if (fatherMiddleName.isNotEmpty()) append(" $fatherMiddleName")
+            append(" $fatherLastName")
+        }
+
+        val motherFullName = buildString {
+            append(motherFirstName)
+            if (motherMiddleName.isNotEmpty()) append(" $motherMiddleName")
+            append(" $motherLastName")
+        }
+
+        tvFatherInfo.text = "Father: $fatherFullName\nPhone: $fatherPhone\nOccupation: $fatherOccupation\nDOB: ${if (fatherDOB.isNotEmpty()) fatherDOB else "Not provided"}"
+        tvMotherInfo.text = "Mother: $motherFullName\nPhone: $motherPhone\nOccupation: $motherOccupation\nDOB: ${if (motherDOB.isNotEmpty()) motherDOB else "Not provided"}"
 
         val applicationType = e.data["applicationType"] as? String ?: "N/A"
         tvApplicationType.text = "Application Status: $applicationType"
@@ -643,11 +680,27 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                                     batch.set(subjectRef, studentAssignmentRecordMap)
                                 }
 
-                                // 4. CREATE/UPDATE STUDENT MASTER RECORD (UPDATED: Added dateEnrolled)
+                                // 4. CREATE/UPDATE STUDENT MASTER RECORD (UPDATED: Added parent information)
                                 val masterRef = firestore.collection("students").document(studentId)
 
+                                // Get parent information from enrollment data
+                                val fatherFirstName = e.data["fatherFirstName"] as? String ?: ""
+                                val fatherMiddleName = e.data["fatherMiddleName"] as? String ?: ""
+                                val fatherLastName = e.data["fatherLastName"] as? String ?: ""
+                                val fatherDOB = e.data["fatherDOB"] as? String ?: ""
+                                val fatherPhone = e.data["fatherPhone"] as? String ?: ""
+                                val fatherOccupation = e.data["fatherOccupation"] as? String ?: ""
+
+                                val motherFirstName = e.data["motherFirstName"] as? String ?: ""
+                                val motherMiddleName = e.data["motherMiddleName"] as? String ?: ""
+                                val motherLastName = e.data["motherLastName"] as? String ?: ""
+                                val motherDOB = e.data["motherDOB"] as? String ?: ""
+                                val motherPhone = e.data["motherPhone"] as? String ?: ""
+                                val motherOccupation = e.data["motherOccupation"] as? String ?: ""
+
+                                val guardianRelationship = e.data["guardianRelationship"] as? String ?: "Unknown"
+
                                 batch.set(masterRef, mapOf(
-                                    // ... (Existing fields) ...
                                     "id" to studentId,
                                     "userUid" to userUid,
                                     // 🌟 UPDATED FIELD: Using the consistent Timestamp
@@ -670,7 +723,22 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                                     "gender" to e.gender,
                                     "guardianName" to e.guardianName,
                                     "guardianPhone" to e.guardianPhone,
-                                    "guardianRelationship" to "Unknown"
+                                    // 🌟 NEW FIELDS: Parent information and guardian relationship
+                                    "guardianRelationship" to guardianRelationship,
+                                    // Father information
+                                    "fatherFirstName" to fatherFirstName,
+                                    "fatherMiddleName" to fatherMiddleName,
+                                    "fatherLastName" to fatherLastName,
+                                    "fatherDOB" to fatherDOB,
+                                    "fatherPhone" to fatherPhone,
+                                    "fatherOccupation" to fatherOccupation,
+                                    // Mother information
+                                    "motherFirstName" to motherFirstName,
+                                    "motherMiddleName" to motherMiddleName,
+                                    "motherLastName" to motherLastName,
+                                    "motherDOB" to motherDOB,
+                                    "motherPhone" to motherPhone,
+                                    "motherOccupation" to motherOccupation
                                 ))
 
                                 // 5. Clean up pending enrollment (No change)
@@ -714,7 +782,41 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
     // Mark as Not Passed (Reject)
     // -----------------------------
     private fun markAsNotPassed(e: Enrollment) {
-        firestore.collection("notPassedEnrollments").document(e.id).set(e)
+        // Include parent information in the rejection record
+        val rejectionData = hashMapOf<String, Any>(
+            "id" to e.id,
+            "firstName" to e.firstName,
+            "middleName" to e.middleName,
+            "lastName" to e.lastName,
+            "email" to e.email,
+            "phone" to e.phone,
+            "address" to e.address,
+            "dateOfBirth" to e.dateOfBirth,
+            "gender" to e.gender,
+            "course" to e.course,
+            "yearLevel" to e.yearLevel,
+            "guardianName" to e.guardianName,
+            "guardianPhone" to e.guardianPhone,
+            "guardianRelationship" to (e.data["guardianRelationship"] as? String ?: "Unknown"),
+            // Father information
+            "fatherFirstName" to (e.data["fatherFirstName"] as? String ?: ""),
+            "fatherMiddleName" to (e.data["fatherMiddleName"] as? String ?: ""),
+            "fatherLastName" to (e.data["fatherLastName"] as? String ?: ""),
+            "fatherDOB" to (e.data["fatherDOB"] as? String ?: ""),
+            "fatherPhone" to (e.data["fatherPhone"] as? String ?: ""),
+            "fatherOccupation" to (e.data["fatherOccupation"] as? String ?: ""),
+            // Mother information
+            "motherFirstName" to (e.data["motherFirstName"] as? String ?: ""),
+            "motherMiddleName" to (e.data["motherMiddleName"] as? String ?: ""),
+            "motherLastName" to (e.data["motherLastName"] as? String ?: ""),
+            "motherDOB" to (e.data["motherDOB"] as? String ?: ""),
+            "motherPhone" to (e.data["motherPhone"] as? String ?: ""),
+            "motherOccupation" to (e.data["motherOccupation"] as? String ?: ""),
+            "status" to "rejected",
+            "rejectedAt" to Timestamp.now()
+        )
+
+        firestore.collection("notPassedEnrollments").document(e.id).set(rejectionData)
         firestore.collection("pendingEnrollments").document(e.id).delete()
 
         val rejectData = hashMapOf("email" to e.email)

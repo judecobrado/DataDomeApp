@@ -18,7 +18,7 @@
         android:layout_marginTop="32dp"
         android:contentDescription="@string/app_name"
         android:scaleType="fitCenter"
-            android:src="@raw/bg_main"
+        android:src="@raw/bg_main"
         app:layout_constraintBottom_toTopOf="@id/brandingContainer"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHeight_percent="0.30"
@@ -90,7 +90,7 @@
         android:layout_marginBottom="32dp"
         />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnLogin"
         android:layout_width="0dp"
         android:layout_height="58dp"
@@ -99,36 +99,40 @@
         android:textColor="#FDFBF8"
         android:textSize="16sp"
         android:textStyle="bold"
-        android:elevation="4dp"
-        app:layout_constraintBottom_toTopOf="@id/btnSignup"
+        android:elevation="13dp"  app:cornerRadius="15dp" app:rippleColor="#FFFFFF" app:layout_constraintBottom_toTopOf="@id/btnSignup"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         android:layout_marginBottom="12dp"
         />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnSignup"
         android:layout_width="0dp"
         android:layout_height="58dp"
         android:layout_marginBottom="12dp"
-        android:backgroundTint="#FFFFFF"  android:text="ENROLL"
-        android:textColor="#7B1113"  android:textSize="16sp"
+        android:text="ENROLL"
+        android:visibility="gone"
+        android:textSize="16sp"
         android:textStyle="bold"
-        app:layout_constraintBottom_toTopOf="@id/btnViewMap"
+        android:backgroundTint="#FDFBF8"
+        android:textColor="#7B1113"
+        app:cornerRadius="15dp" app:strokeColor="#7B1113"
+        app:strokeWidth="2dp"
+        app:rippleColor="#9B1C1F" app:layout_constraintBottom_toTopOf="@id/btnViewMap"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnViewMap"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
         android:layout_width="0dp"
         android:layout_height="50dp"
-        android:backgroundTint="@android:color/transparent"
         android:text="VIEW SCHOOL LOCATION"
         android:textColor="#7B1113"
         android:textSize="13sp"
         android:textStyle="bold"
-        app:layout_constraintBottom_toTopOf="@id/tvFooter"
+        app:rippleColor="#FDFBF8" app:layout_constraintBottom_toTopOf="@id/tvFooter"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         android:layout_marginBottom="18dp" />

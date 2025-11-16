@@ -13,7 +13,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.isVisible
 import com.example.datadomeapp.R
+import com.google.android.material.card.MaterialCardView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -39,7 +41,13 @@ class StudentToDoListActivity : AppCompatActivity() {
     private val db = FirebaseFirestore.getInstance()
 
     private lateinit var taskContainer: LinearLayout
+    private lateinit var emptyState: LinearLayout
+    private lateinit var tvTaskStats: TextView
+    private lateinit var toggleLayout: LinearLayout
     private lateinit var tvToggleDone: TextView
+    private lateinit var tvCompletedCount: TextView
+    private lateinit var ivToggleArrow: ImageView
+    private lateinit var cardToggleDone: MaterialCardView
 
     // State Variables
     private var isDoneTasksVisible = false
@@ -61,19 +69,49 @@ class StudentToDoListActivity : AppCompatActivity() {
             return
         }
 
-        taskContainer = findViewById(R.id.taskContainer)
-        tvToggleDone = findViewById(R.id.tvToggleDone)
+        initializeViews()
+        setupClickListeners()
+        loadTasks()
+    }
 
-        findViewById<Button>(R.id.btnAddTask).setOnClickListener {
+    private fun initializeViews() {
+        taskContainer = findViewById(R.id.taskContainer)
+        emptyState = findViewById(R.id.emptyState)
+        tvTaskStats = findViewById(R.id.tvTaskStats)
+        toggleLayout = findViewById(R.id.toggleLayout)
+        tvToggleDone = findViewById(R.id.tvToggleDone)
+        tvCompletedCount = findViewById(R.id.tvCompletedCount)
+        ivToggleArrow = findViewById(R.id.ivToggleArrow)
+        cardToggleDone = findViewById(R.id.cardToggleDone)
+    }
+
+    private fun setupClickListeners() {
+        findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAddTask).setOnClickListener {
             showAddEditTaskDialog()
         }
 
-        tvToggleDone.setOnClickListener {
-            isDoneTasksVisible = !isDoneTasksVisible
-            renderTasks()
+        // Make entire toggle layout clickable
+        toggleLayout.setOnClickListener {
+            toggleCompletedTasksVisibility()
         }
+    }
 
-        loadTasks()
+    // ----------------------------------------------------
+    // TOGGLE COMPLETED TASKS FUNCTIONALITY
+    // ----------------------------------------------------
+    private fun toggleCompletedTasksVisibility() {
+        isDoneTasksVisible = !isDoneTasksVisible
+
+        // Animate arrow rotation
+        ivToggleArrow.animate()
+            .rotation(if (isDoneTasksVisible) 180f else 0f)
+            .setDuration(200)
+            .start()
+
+        // Update toggle text
+        tvToggleDone.text = if (isDoneTasksVisible) "Hide Completed Tasks" else "Show Completed Tasks"
+
+        renderTasks()
     }
 
     // ----------------------------------------------------
@@ -93,7 +131,6 @@ class StudentToDoListActivity : AppCompatActivity() {
 
                 Log.d("ToDoListDebug", "Query successful. Found ${result.size()} tasks.")
 
-                // Paggamit ng standard na toObject(TaskItem::class.java)
                 allTasks = result.documents.mapNotNull { doc ->
                     doc.toObject(TaskItem::class.java)?.copy(
                         taskId = doc.id,
@@ -101,12 +138,34 @@ class StudentToDoListActivity : AppCompatActivity() {
                     )
                 }
 
+                updateTaskStats()
                 renderTasks()
             }
             .addOnFailureListener { e ->
                 Log.e("ToDoListDebug", "Firestore Query Failed!", e)
                 Toast.makeText(this, "Error loading tasks: ${e.message}.", Toast.LENGTH_LONG).show()
             }
+    }
+
+    // ----------------------------------------------------
+    // UPDATED TASK STATS AND COMPLETED COUNT
+    // ----------------------------------------------------
+    private fun updateTaskStats() {
+        val totalTasks = allTasks.size
+        val completedTasks = allTasks.count { it.done }
+        val activeTasks = totalTasks - completedTasks
+
+        // Update main task stats
+        tvTaskStats.text = "$activeTasks tasks active • $completedTasks completed"
+
+        // Update completed count badge
+        tvCompletedCount.text = completedTasks.toString()
+
+        // Show/hide toggle card based on completed tasks
+        cardToggleDone.isVisible = completedTasks > 0
+
+        // Show/hide empty state
+        emptyState.isVisible = allTasks.isEmpty()
     }
 
     // ----------------------------------------------------
@@ -118,35 +177,21 @@ class StudentToDoListActivity : AppCompatActivity() {
         val activeTasks = allTasks.filter { !it.done }
         val doneTasks = allTasks.filter { it.done }
 
-        val arrow = if (isDoneTasksVisible) "▲ Hide" else "▼ Show"
-        tvToggleDone.text = "$arrow Completed Tasks (${doneTasks.size})"
-        tvToggleDone.visibility = if (doneTasks.isNotEmpty()) View.VISIBLE else View.GONE
-
         // 1. Render Active Tasks
         if (activeTasks.isNotEmpty()) {
             activeTasks.forEach { task ->
                 taskContainer.addView(createTaskView(task))
             }
         } else if (allTasks.isEmpty()) {
-            val tvEmpty = TextView(this).apply {
-                text = "You have no tasks yet. Click 'Add Task' to start!"
-                textSize = 16f
-                setTextColor(Color.GRAY)
-                setPadding(0, 50, 0, 0)
-                gravity = Gravity.CENTER_HORIZONTAL
-            }
-            taskContainer.addView(tvEmpty)
+            // Empty state is handled by updateTaskStats()
+            return
         }
 
-        // 2. Render Done Tasks
+        // 2. Render Done Tasks if visible
         if (isDoneTasksVisible && doneTasks.isNotEmpty()) {
-            val divider = View(this).apply {
-                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 2).apply {
-                    setMargins(0, 32, 0, 16)
-                }
-                setBackgroundColor(Color.LTGRAY)
-            }
-            taskContainer.addView(divider)
+            // Add section header for completed tasks
+            val sectionHeader = createSectionHeader("Completed Tasks (${doneTasks.size})")
+            taskContainer.addView(sectionHeader)
 
             doneTasks.forEach { task ->
                 taskContainer.addView(createTaskView(task))
@@ -154,44 +199,84 @@ class StudentToDoListActivity : AppCompatActivity() {
         }
     }
 
+    private fun createSectionHeader(title: String): View {
+        return TextView(this).apply {
+            text = title
+            textSize = 16f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            setTextColor(Color.parseColor("#7B1113"))
+            setPadding(0, 32, 0, 16)
+            gravity = Gravity.CENTER_HORIZONTAL
+        }
+    }
+
     // ----------------------------------------------------
-    // 3. TASK VIEW CREATION (Utility)
+    // 3. TASK VIEW CREATION (Improved Styling)
     // ----------------------------------------------------
     private fun createTaskView(task: TaskItem): View {
         val userId = auth.currentUser?.uid ?: return LinearLayout(this)
 
         val container = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(20, 20, 20, 20)
-            setBackgroundColor(if (task.done) 0xFFDDDDDD.toInt() else 0xFFEFEFEF.toInt())
+            setPadding(24, 20, 24, 20)
+            setBackgroundResource(if (task.done) R.drawable.task_background_completed else R.drawable.task_background_active)
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { setMargins(0, 0, 0, 16) }
+            ).apply { setMargins(0, 0, 0, 12) }
         }
 
         // --- View Elements ---
         val tvTitle = TextView(this).apply {
-            text = "Title: ${task.title}"
+            text = task.title
             textSize = 18f
             setTypeface(null, android.graphics.Typeface.BOLD)
             setTextColor(if (task.done) Color.GRAY else Color.BLACK)
         }
-        val tvDetails = TextView(this).apply { text = "Details: ${task.details}" }
-        val tvDateTime = TextView(this).apply { text = "Date: ${task.date}  Time: ${task.time}" }
+
+        val tvDetails = TextView(this).apply {
+            text = task.details
+            textSize = 14f
+            setTextColor(if (task.done) Color.GRAY else Color.DKGRAY)
+        }
+
+        val tvDateTime = TextView(this).apply {
+            text = "${task.date} • ${task.time}"
+            textSize = 12f
+            setTextColor(if (task.done) Color.GRAY else Color.parseColor("#666666"))
+        }
+
         val cbDone = CheckBox(this).apply {
-            text = "Mark as Done"
+            text = if (task.done) "Completed" else "Mark as Done"
             isChecked = task.done
             isEnabled = !task.done
+            setTextColor(if (task.done) Color.GRAY else Color.BLACK)
         }
-        val btnEdit = Button(this).apply { text = "Edit"; isEnabled = !task.done }
-        val btnDelete = Button(this).apply { text = "Delete"; isEnabled = !task.done }
 
         val btnLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            addView(btnEdit)
-            addView(btnDelete)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { setMargins(0, 16, 0, 0) }
         }
+
+        val btnEdit = Button(this).apply {
+            text = "Edit"
+            isEnabled = !task.done
+            setBackgroundColor(Color.TRANSPARENT)
+            setTextColor(Color.parseColor("#7B1113"))
+        }
+
+        val btnDelete = Button(this).apply {
+            text = "Delete"
+            isEnabled = !task.done
+            setBackgroundColor(Color.TRANSPARENT)
+            setTextColor(Color.parseColor("#FF0000"))
+        }
+
+        btnLayout.addView(btnEdit)
+        btnLayout.addView(btnDelete)
 
         // --- Deadline Status Logic ---
         var statusMessage = ""
@@ -208,10 +293,10 @@ class StudentToDoListActivity : AppCompatActivity() {
 
                     if (deadlineTimeMs != null) {
                         if (deadlineTimeMs < now) {
-                            statusMessage = "❗️ OVERDUE (Expired)"
+                            statusMessage = "❗️ OVERDUE"
                             statusColor = Color.RED
                         } else if (deadlineTimeMs - now <= UPCOMING_THRESHOLD_MS) {
-                            statusMessage = "⚠️ UPCOMING (Deadline soon)"
+                            statusMessage = "⚠️ DEADLINE SOON"
                             statusColor = Color.parseColor("#FFA500") // Orange
                         }
                     }
@@ -221,8 +306,7 @@ class StudentToDoListActivity : AppCompatActivity() {
             }
         }
 
-
-        // --- Final Assembly and Styling ---
+        // --- Final Assembly ---
         container.addView(tvTitle)
         container.addView(tvDetails)
         container.addView(tvDateTime)
@@ -231,7 +315,8 @@ class StudentToDoListActivity : AppCompatActivity() {
             val tvStatus = TextView(this).apply {
                 text = statusMessage
                 setTextColor(statusColor)
-                textSize = 14f
+                textSize = 12f
+                setTypeface(null, android.graphics.Typeface.BOLD)
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
@@ -242,15 +327,16 @@ class StudentToDoListActivity : AppCompatActivity() {
         }
 
         container.addView(cbDone)
-        container.addView(btnLayout)
+
+        if (!task.done) {
+            container.addView(btnLayout)
+        }
 
         // Apply Strike-Through if Done
         if (task.done) {
             tvTitle.paintFlags = tvTitle.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
             tvDetails.paintFlags = tvDetails.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
             tvDateTime.paintFlags = tvDateTime.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
-            btnEdit.visibility = View.GONE
-            btnDelete.visibility = View.GONE
         }
 
         // --- Action Listeners ---
@@ -262,7 +348,12 @@ class StudentToDoListActivity : AppCompatActivity() {
                         .collection("tasks").document(task.taskId)
                         .update(doneMap as Map<String, Any>)
                         .addOnSuccessListener {
+                            Toast.makeText(this, "Task marked as completed!", Toast.LENGTH_SHORT).show()
                             loadTasks()
+                        }
+                        .addOnFailureListener { e ->
+                            Toast.makeText(this, "Error updating task: ${e.message}", Toast.LENGTH_SHORT).show()
+                            cbDone.isChecked = false
                         }
                 }
             }
@@ -274,12 +365,15 @@ class StudentToDoListActivity : AppCompatActivity() {
             btnDelete.setOnClickListener {
                 AlertDialog.Builder(this)
                     .setTitle("Delete Task")
-                    .setMessage("Are you sure you want to delete this task?")
+                    .setMessage("Are you sure you want to delete \"${task.title}\"?")
                     .setPositiveButton("Delete") { _, _ ->
                         db.collection("students").document(userId)
                             .collection("tasks").document(task.taskId)
                             .delete()
-                            .addOnSuccessListener { loadTasks() }
+                            .addOnSuccessListener {
+                                Toast.makeText(this, "Task deleted", Toast.LENGTH_SHORT).show()
+                                loadTasks()
+                            }
                     }
                     .setNegativeButton("Cancel", null)
                     .show()
@@ -290,7 +384,7 @@ class StudentToDoListActivity : AppCompatActivity() {
     }
 
     // ----------------------------------------------------
-    // 4. ADD/EDIT DIALOG (Helper)
+    // 4. ADD/EDIT DIALOG (Helper) - UNCHANGED
     // ----------------------------------------------------
     private fun showAddEditTaskDialog(
         taskId: String? = null,
@@ -313,7 +407,7 @@ class StudentToDoListActivity : AppCompatActivity() {
         btnDate.text = selectedDate
         btnTime.text = selectedTime
 
-        // Date Picker Logic - NAAYOS NA ANG PAST DATE
+        // Date Picker Logic
         btnDate.setOnClickListener {
             val c = Calendar.getInstance()
             val year = c.get(Calendar.YEAR)
@@ -327,9 +421,7 @@ class StudentToDoListActivity : AppCompatActivity() {
                 btnDate.text = selectedDate
             }, year, month, day)
 
-            // ✅ FIX: Hahadlangan ang Past Dates
             dpd.datePicker.minDate = System.currentTimeMillis()
-
             dpd.show()
         }
 
@@ -349,7 +441,6 @@ class StudentToDoListActivity : AppCompatActivity() {
             tpd.show()
         }
 
-
         AlertDialog.Builder(this)
             .setTitle(if (taskId == null) "Add New Task" else "Edit Task")
             .setView(dialogView)
@@ -368,7 +459,7 @@ class StudentToDoListActivity : AppCompatActivity() {
     }
 
     // ----------------------------------------------------
-    // 5. SAVE TASK (Firebase Write)
+    // 5. SAVE TASK (Firebase Write) - UNCHANGED
     // ----------------------------------------------------
     private fun saveTask(
         taskId: String?,
@@ -402,37 +493,23 @@ class StudentToDoListActivity : AppCompatActivity() {
         val taskRef = db.collection("students").document(userId).collection("tasks")
 
         if (taskId == null) {
-            // New Task
             taskRef.add(taskMap)
                 .addOnSuccessListener {
-                    Toast.makeText(this, "Task Added.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Task Added Successfully!", Toast.LENGTH_SHORT).show()
                     loadTasks()
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(this, "Error adding task: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
         } else {
-            // Update Existing Task
             taskRef.document(taskId).update(taskMap as Map<String, Any>)
                 .addOnSuccessListener {
-                    Toast.makeText(this, "Task Updated.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Task Updated Successfully!", Toast.LENGTH_SHORT).show()
                     loadTasks()
                 }
-        }
-    }
-
-    // ----------------------------------------------------
-    // 6. DELETE OLD TASKS (Optional Cleanup)
-    // ----------------------------------------------------
-    private fun deleteOldTasks(userId: String) {
-        val thirtyDaysAgo = System.currentTimeMillis() - (30L * 24 * 60 * 60 * 1000)
-
-        db.collection("students").document(userId)
-            .collection("tasks")
-            .whereEqualTo("done", true)
-            .whereLessThan("timestamp", thirtyDaysAgo)
-            .get()
-            .addOnSuccessListener { snapshot ->
-                for (doc in snapshot.documents) {
-                    doc.reference.delete()
+                .addOnFailureListener { e ->
+                    Toast.makeText(this, "Error updating task: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
-            }
+        }
     }
 }

@@ -1,10 +1,9 @@
 package com.example.datadomeapp.models
 
-import com.google.firebase.Timestamp // Don't forget this import!
+import com.google.firebase.Timestamp
 
-// 🧑‍🎓 Student model
 data class Student(
-    val id: String = "",
+    var id: String = "",
     val firstName: String = "",
     val lastName: String = "",
     val email: String = "",

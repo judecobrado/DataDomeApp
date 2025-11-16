@@ -14,6 +14,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.datadomeapp.R
 import com.example.datadomeapp.models.Question
 import com.example.datadomeapp.models.Quiz
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.card.MaterialCardView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 import com.google.firebase.firestore.FirebaseFirestore
@@ -23,7 +25,7 @@ import java.util.*
 // Data class na gagamitin sa Adapter
 data class StudentQuizItem(
     val quiz: Quiz,
-    var studentStatus: String = "NOT_STARTED", // E.g., COMPLETED, RETAKE_GRANTED, ACCESS_REVOKED, UNATTEMPTED_TIME_EXPIRED
+    var studentStatus: String = "NOT_STARTED",
     var retakeDeadline: Long = 0L,
     var rawScore: Int = 0,
     var totalQuestions: Int = 0,
@@ -35,16 +37,22 @@ class StudentQuizListActivity : AppCompatActivity() {
     private lateinit var rvQuizzes: RecyclerView
     private lateinit var quizAdapter: StudentQuizAdapter
     private val quizItemList = mutableListOf<StudentQuizItem>()
-    private lateinit var progressBar: ProgressBar
-    private lateinit var tvEmpty: TextView
-    private var quizTypeFilter: String? = null
-    private lateinit var tvHeader: TextView
 
+    // BAGONG MGA VIEWS PARA SA MODERN LAYOUT
+    private lateinit var tvTotalQuizzes: TextView
+    private lateinit var tvCompletedQuizzes: TextView
+    private lateinit var tvQuizCount: TextView
+    private lateinit var btnRefresh: MaterialButton
+    private lateinit var progressCard: MaterialCardView
+    private lateinit var emptyState: android.widget.LinearLayout
+    private lateinit var progressBar: ProgressBar
+
+    private var quizTypeFilter: String? = null
     private val studentUid = FirebaseAuth.getInstance().currentUser?.uid ?: ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.student_quiz_list_activity)
+        setContentView(R.layout.student_quiz_list_activity) // GAMITIN ANG BAGONG LAYOUT
 
         if (studentUid.isEmpty()) {
             Toast.makeText(this, "User not logged in. Please re-login.", Toast.LENGTH_LONG).show()
@@ -52,45 +60,107 @@ class StudentQuizListActivity : AppCompatActivity() {
             return
         }
 
-        tvHeader = findViewById(R.id.tvHeader)
+        initializeViews()
+        setupRecyclerView()
+        loadAllQuizzesFromRTDB()
+    }
+
+    // BAGONG METHOD PARA INITIALIZE NG MGA VIEWS
+    private fun initializeViews() {
         rvQuizzes = findViewById(R.id.recyclerViewQuizzes)
+
+        // INITIALIZE MGA BAGONG VIEWS MULA SA MODERN LAYOUT
+        tvTotalQuizzes = findViewById(R.id.tvTotalQuizzes)
+        tvCompletedQuizzes = findViewById(R.id.tvCompletedQuizzes)
+        tvQuizCount = findViewById(R.id.tvQuizCount)
+        btnRefresh = findViewById(R.id.btnRefresh)
+        progressCard = findViewById(R.id.progressCard)
+        emptyState = findViewById(R.id.emptyState)
         progressBar = findViewById(R.id.progressBar)
-        tvEmpty = findViewById(R.id.tvEmpty)
+
+        val tvQuizTitle = findViewById<TextView>(R.id.tvQuizTitle)
 
         quizTypeFilter = intent.getStringExtra("QUIZ_TYPE") ?: "Quiz"
 
-        tvHeader.text = quizTypeFilter
-        tvHeader.setBackgroundColor(
-            if (quizTypeFilter.equals("Exam", true)) Color.parseColor("#C62828")
-            else Color.parseColor("#1B5E20")
-        )
+        // SETUP REFRESH BUTTON
+        btnRefresh.setOnClickListener {
+            loadAllQuizzesFromRTDB()
+        }
 
         // FIXED: Ipapasa na ang buong quizItem sa checkQuizStatusAndLaunch
         quizAdapter = StudentQuizAdapter(quizItemList) { quizItem ->
             checkQuizStatusAndLaunch(quizItem)
         }
 
+        when (quizTypeFilter?.lowercase() ?: "quiz") {
+            "quiz" -> {
+                tvQuizTitle.text = "QUIZZES"
+            }
+            "exam" -> {
+                tvQuizTitle.text = "EXAM"
+            }
+            else -> {
+                tvQuizTitle.text = quizTypeFilter?.uppercase() ?: "QUIZ"
+            }
+        }
+
+        btnRefresh.setOnClickListener {
+            loadAllQuizzesFromRTDB()
+        }
+
+        quizAdapter = StudentQuizAdapter(quizItemList) { quizItem ->
+            checkQuizStatusAndLaunch(quizItem)
+        }
+    }
+
+    private fun setupRecyclerView() {
         rvQuizzes.apply {
             layoutManager = LinearLayoutManager(this@StudentQuizListActivity)
             adapter = quizAdapter
+            setHasFixedSize(true)
         }
+    }
 
-        loadAllQuizzesFromRTDB()
+    // BAGONG METHODS PARA SA LOADING AT EMPTY STATE
+    private fun showLoading(show: Boolean) {
+        if (show) {
+            progressCard.visibility = View.VISIBLE
+            emptyState.visibility = View.GONE
+            rvQuizzes.visibility = View.GONE
+        } else {
+            progressCard.visibility = View.GONE
+        }
+    }
+
+    private fun showEmptyState(show: Boolean) {
+        if (show) {
+            emptyState.visibility = View.VISIBLE
+            rvQuizzes.visibility = View.GONE
+            progressCard.visibility = View.GONE
+        } else {
+            emptyState.visibility = View.GONE
+            rvQuizzes.visibility = View.VISIBLE
+        }
+    }
+
+    // BAGONG METHOD PARA I-UPDATE ANG STATS
+    private fun updateStats(quizzes: List<Quiz>, completedCount: Int) {
+        tvTotalQuizzes.text = quizzes.size.toString()
+        tvCompletedQuizzes.text = completedCount.toString()
+        tvQuizCount.text = "${quizzes.size} active"
     }
 
     private fun loadAllQuizzesFromRTDB() {
-        progressBar.visibility = View.VISIBLE
-        tvEmpty.visibility = View.GONE
+        showLoading(true)
 
         val quizzesRef = FirebaseDatabase.getInstance().getReference("quizzes")
 
-        quizzesRef.addValueEventListener(object : ValueEventListener {
+        quizzesRef.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val fetchedQuizzes = mutableListOf<Quiz>()
 
                 snapshot.children.forEach { childSnapshot ->
                     val map = childSnapshot.value as? Map<String, Any> ?: return@forEach
-                    // Deserialization (assuming Quiz model has been created)
                     val quiz = Quiz(
                         quizId = map["quizId"] as? String ?: "",
                         assignmentId = map["assignmentId"] as? String ?: "",
@@ -109,14 +179,17 @@ class StudentQuizListActivity : AppCompatActivity() {
 
                 val filteredQuizzes = fetchedQuizzes.filter { it.quizType.equals(quizTypeFilter, true) }
 
+                // UPDATE STATS
+                updateStats(filteredQuizzes, 0) // 0 muna, i-update later sa fetchStudentStatuses
+
                 // NEW STEP: Fetch student statuses and update the adapter
                 fetchStudentStatuses(filteredQuizzes)
             }
 
             override fun onCancelled(error: DatabaseError) {
+                showLoading(false)
+                showEmptyState(true)
                 Toast.makeText(this@StudentQuizListActivity, "Failed to load: ${error.message}", Toast.LENGTH_SHORT).show()
-                progressBar.visibility = View.GONE
-                tvEmpty.visibility = View.VISIBLE
             }
         })
     }
@@ -144,7 +217,6 @@ class StudentQuizListActivity : AppCompatActivity() {
         }
     }
 
-
     // FIXED: Nilagyan ng logic para i-load ang score, total questions, at cheat count
     private fun fetchStudentStatuses(quizzes: List<Quiz>) {
         // I-set ang totalQuestions dito bago ang fetch
@@ -158,11 +230,12 @@ class StudentQuizListActivity : AppCompatActivity() {
         var countdown = quizItems.size
         if (countdown == 0) {
             quizAdapter.updateList(quizItems)
-            progressBar.visibility = View.GONE
-            tvEmpty.visibility = if (quizItems.isEmpty()) View.VISIBLE else View.GONE
+            showLoading(false)
+            showEmptyState(quizItems.isEmpty())
             return
         }
 
+        var completedCount = 0
 
         quizItems.forEachIndexed { index, item ->
             val quizId = item.quiz.quizId
@@ -184,6 +257,11 @@ class StudentQuizListActivity : AppCompatActivity() {
                         // I-update ang item na may score
                         item.rawScore = rawScore
                         item.cheatCount = cheatCount
+
+                        // COUNT COMPLETED QUIZZES
+                        if (status == "COMPLETED") {
+                            completedCount++
+                        }
                     } else {
                         // Walang record. Check kung expired na ang time
                         val currentTime = System.currentTimeMillis()
@@ -206,8 +284,11 @@ class StudentQuizListActivity : AppCompatActivity() {
                     countdown--
                     if (countdown == 0) {
                         quizAdapter.updateList(quizItems)
-                        progressBar.visibility = View.GONE
-                        tvEmpty.visibility = if (quizItems.isEmpty()) View.VISIBLE else View.GONE
+                        showLoading(false)
+                        showEmptyState(quizItems.isEmpty())
+
+                        // UPDATE STATS WITH ACTUAL COMPLETED COUNT
+                        updateStats(quizzes, completedCount)
                     }
                 }
         }

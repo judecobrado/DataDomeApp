@@ -1,97 +1,360 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
+    android:background="#FDFBF8"
     android:padding="16dp"
     tools:context=".admin.ManageCoursesActivity">
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Manage Courses &amp; Sections"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="16dp"/>
-
-    <EditText
-        android:id="@+id/etCourseName"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Course Name (e.g., Bachelor of Science in IT)"
-        android:minHeight="48dp"
-        android:layout_marginBottom="8dp"/>
-
-    <EditText
-        android:id="@+id/etCourseCode"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Course Code (e.g., BSIT)"
-        android:minHeight="48dp"
-        android:maxLength="5"
-        android:inputType="textCapCharacters"
-        android:layout_marginBottom="8dp"/>
-
-    <EditText
-        android:id="@+id/etCourseDescription"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Course Description"
-        android:minHeight="48dp"
-        android:layout_marginBottom="16dp"/>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="16dp">
+        android:orientation="vertical">
 
-        <Button
-            android:id="@+id/btnAddCourse"
-            android:layout_width="0dp"
+        <!-- Header Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Add New Course"
-            android:layout_marginEnd="8dp"/>
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingBottom="24dp"
+            android:paddingTop="10dp">
 
-        <Button
-            android:id="@+id/btnDeleteCourse"
-            android:layout_width="0dp"
+            <ImageView
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/ic_courses_professional"
+                android:layout_marginEnd="12dp"
+                app:tint="#7B1113" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Course Management"
+                    android:textColor="#7B1113"
+                    android:textSize="24sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Manage academic courses and programs"
+                    android:textColor="#666666"
+                    android:textSize="14sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Add Course Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Delete Selected Course" />
+            android:layout_marginBottom="20dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="6dp"
+            app:strokeColor="#9B1C1F"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp">
+
+                <!-- Card Header -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="20dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_add_circle"
+                        android:layout_marginEnd="12dp"
+                        app:tint="#7B1113" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Add New Course"
+                        android:textColor="#7B1113"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- Course Name -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:boxStrokeColor="#7B1113"
+                    app:hintTextColor="#7B1113"
+                    app:startIconDrawable="@drawable/ic_school"
+                    app:startIconTint="#7B1113">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etCourseName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Course Name (e.g., Bachelor of Science in IT)"
+                        android:textColor="#333333"
+                        android:textSize="14sp"
+                        android:minHeight="52dp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Course Code -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:boxStrokeColor="#7B1113"
+                    app:hintTextColor="#7B1113"
+                    app:startIconDrawable="@drawable/ic_code"
+                    app:startIconTint="#7B1113">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etCourseCode"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Course Code (e.g., BSIT)"
+                        android:textColor="#333333"
+                        android:textSize="14sp"
+                        android:maxLength="5"
+                        android:inputType="textCapCharacters"
+                        android:minHeight="52dp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Course Description -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="20dp"
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:boxStrokeColor="#7B1113"
+                    app:hintTextColor="#7B1113"
+                    app:startIconDrawable="@drawable/ic_description"
+                    app:startIconTint="#7B1113">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etCourseDescription"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Course Description"
+                        android:textColor="#333333"
+                        android:textSize="14sp"
+                        android:minHeight="52dp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Action Buttons -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnAddCourse"
+                        android:layout_width="0dp"
+                        android:layout_height="52dp"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="8dp"
+                        android:text="Add Course"
+                        android:textColor="#FFFFFF"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        app:backgroundTint="#7B1113"
+                        app:cornerRadius="12dp"
+                        app:icon="@drawable/ic_add"
+                        app:iconTint="#FFFFFF"
+                        app:iconPadding="8dp"
+                        android:letterSpacing="0.02" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnDeleteCourse"
+                        android:layout_width="0dp"
+                        android:layout_height="52dp"
+                        android:layout_weight="1"
+                        android:text="Delete"
+                        android:textColor="#FFFFFF"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        app:backgroundTint="#9B1C1F"
+                        app:cornerRadius="12dp"
+                        app:icon="@drawable/ic_delete"
+                        app:iconTint="#FFFFFF"
+                        app:iconPadding="8dp"
+                        android:letterSpacing="0.02" />
+                </LinearLayout>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Courses List Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="6dp"
+            app:strokeColor="#9B1C1F"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp">
+
+                <!-- Card Header -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="20dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_list"
+                        android:layout_marginEnd="12dp"
+                        app:tint="#7B1113" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Existing Courses"
+                        android:textColor="#7B1113"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+                        android:layout_weight="1" />
+
+                    <TextView
+                        android:id="@+id/tvCourseCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_count_badge_maroon"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="6dp"
+                        android:text="0 courses"
+                        android:textColor="#7B1113"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- Courses List -->
+                <ListView
+                    android:id="@+id/lvCourses"
+                    android:layout_width="match_parent"
+                    android:layout_height="300dp"
+                    android:background="#F8F8F8"
+                    android:choiceMode="singleChoice"
+                    android:divider="#E8E8E8"
+                    android:dividerHeight="1dp"
+                    android:padding="8dp" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Management Actions Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="6dp"
+            app:strokeColor="#9B1C1F"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp">
+
+                <!-- Card Header -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="20dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_management"
+                        android:layout_marginEnd="12dp"
+                        app:tint="#7B1113" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Management Tools"
+                        android:textColor="#7B1113"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- Action Buttons -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnManageRooms"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:layout_marginBottom="12dp"
+                    android:text="@string/manage_school_rooms_venues"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="#7B1113"
+                    app:cornerRadius="12dp"
+                    app:icon="@drawable/ic_room"
+                    app:iconTint="#FFFFFF"
+                    app:iconPadding="8dp"
+                    android:letterSpacing="0.02" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnManageSections"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:text="@string/manage_course_sections"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="#9B1C1F"
+                    app:cornerRadius="12dp"
+                    app:icon="@drawable/ic_sections"
+                    app:iconTint="#FFFFFF"
+                    app:iconPadding="8dp"
+                    android:letterSpacing="0.02"
+                    android:enabled="false" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
     </LinearLayout>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Existing Courses (Select to Manage Sections):"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="8dp"/>
-
-    <ListView
-        android:id="@+id/lvCourses"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:choiceMode="singleChoice"
-        android:background="@android:color/white"
-        android:layout_marginBottom="16dp"/>
-
-    <Button
-        android:id="@+id/btnManageRooms"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Manage School Rooms/Venues"
-        android:layout_marginBottom="8dp"/>
-
-    <Button
-        android:id="@+id/btnManageSections"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Manage Sections for Selected Course"
-        android:enabled="false"/>
-
-</LinearLayout>
+</ScrollView>

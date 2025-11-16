@@ -18,7 +18,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.datadomeapp.R
 import com.example.datadomeapp.models.Student
-import com.google.firebase.database.DataSnapshot
+import com.example.datadomeapp.utils.*
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
@@ -56,7 +56,6 @@ data class ActivityMetadata(
 interface OnStudentClickListener {
     fun onStudentClicked(student: Student)
 }
-// --- END DATA CLASSES ---
 
 class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
 
@@ -65,7 +64,6 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
 
     private var studentUidToDocIdMap: Map<String, String> = emptyMap()
     private var activityMetadata: Map<String, ActivityMetadata> = emptyMap()
-    private var cachedActivityMetadata: Map<String, ActivityMetadata> = emptyMap()
 
     private lateinit var tvGradeTitle: TextView
     private lateinit var tvLoadingStatus: TextView
@@ -79,7 +77,21 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
     private var gradingPeriod: String? = null
     private var areGradesPublished: Boolean = false
 
-    private val detailedScoresCache = mutableMapOf<String, DetailedScores>()
+    // Enhanced caching system
+    private val metadataCache = MetadataCache()
+    private val studentScoresCache = StudentScoresCache()
+
+    // Batch operation helper
+    private suspend fun <T> processInBatches(
+        items: List<T>,
+        batchSize: Int = 10,
+        processor: suspend (List<T>) -> Unit
+    ) {
+        val batches = items.chunked(batchSize)
+        for (batch in batches) {
+            processor(batch)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -132,9 +144,6 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
 
     private suspend fun checkIfGradesPublished() {
         try {
-            val gradingPeriodClean = gradingPeriod!!.replace(" ", "")
-            val subjectCodeClean = subjectCode!!.replace(" ", "")
-
             // Check if any grade exists with isPublished = true for this class
             val publishedGradesQuery = firestore.collection("finalStudentGrades")
                 .whereEqualTo("assignmentId", assignmentId!!)
@@ -160,7 +169,6 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         }
     }
 
-    // NEW: Show confirmation dialog before publishing
     private fun showPublishConfirmationDialog() {
         AlertDialog.Builder(this)
             .setTitle("Publish Grades")
@@ -175,30 +183,53 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
             .show()
     }
 
-    // --- OPTIMIZED: Pre-load activity metadata ---
-    private suspend fun loadActivityMetadata() {
-        try {
-            cachedActivityMetadata = fetchActivityMetadata()
-            Log.d("GradeDebug", "Pre-loaded ${cachedActivityMetadata.size} activity metadata")
+    // OPTIMIZED: Faster metadata loading with caching
+    private suspend fun loadActivityMetadata(): Map<String, ActivityMetadata> {
+        // Use cache if valid
+        if (metadataCache.isCacheValid()) {
+            Log.d("GradeDebug", "Using cached activity metadata")
+            return metadataCache.getCache()
+        }
+
+        return try {
+            val metadata = fetchActivityMetadata()
+            metadataCache.updateCache(metadata)
+            Log.d("GradeDebug", "Loaded ${metadata.size} activity metadata items")
+            metadata
         } catch (e: Exception) {
-            Log.e("GradeDebug", "Error pre-loading metadata: ${e.message}")
+            Log.e("GradeDebug", "Error loading metadata: ${e.message}")
+            emptyMap()
         }
     }
 
+    // OPTIMIZED: Parallel metadata fetching
     private suspend fun fetchActivityMetadata(): Map<String, ActivityMetadata> {
         val metadata = mutableMapOf<String, ActivityMetadata>()
 
-        // Fetch quizzes from Realtime DB
-        try {
+        // Fetch quizzes and assignments in parallel
+        val quizzesDeferred = lifecycleScope.async { fetchQuizMetadata() }
+        val assignmentsDeferred = lifecycleScope.async { fetchAssignmentMetadata() }
+
+        val quizzes = quizzesDeferred.await()
+        val assignments = assignmentsDeferred.await()
+
+        metadata.putAll(quizzes)
+        metadata.putAll(assignments)
+
+        return metadata
+    }
+
+    private suspend fun fetchQuizMetadata(): Map<String, ActivityMetadata> {
+        return try {
             val quizzesSnapshot = realtimeDb.reference.child("quizzes")
                 .orderByChild("assignmentId").equalTo(assignmentId!!).get().await()
 
-            quizzesSnapshot.children.forEach { snapshot ->
-                val id = snapshot.key ?: return@forEach
-                val map = snapshot.value as? Map<*, *> ?: return@forEach
+            quizzesSnapshot.children.mapNotNull { snapshot ->
+                val id = snapshot.key ?: return@mapNotNull null
+                val map = snapshot.value as? Map<*, *> ?: return@mapNotNull null
 
                 val activityPeriod = map["academicTerm"] as? String
-                if (activityPeriod != gradingPeriod) return@forEach
+                if (activityPeriod != gradingPeriod) return@mapNotNull null
 
                 val title = map["title"] as? String ?: "Quiz/Exam ($id)"
                 val rawType = map["quizType"] as? String ?: "Quiz"
@@ -207,57 +238,25 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
                     else -> "Quiz"
                 }
 
-                val rawQuestions = map["questions"]
-                var questionsCount = 0
-
-                if (rawQuestions is List<*>) {
-                    // Process each question
-                    rawQuestions.forEach { question ->
-                        if (question is Map<*, *>) {
-                            val questionType = question["type"] as? String
-                            if (questionType == "MATCHING") {
-                                // For matching type, count the number of pairs
-                                val matchingOptions = question["options"] as? List<*>
-                                questionsCount += matchingOptions?.size ?: 0
-                            } else {
-                                // For other types (MC, TF), count as 1 question = 1 point
-                                questionsCount += 1
-                            }
-                        }
-                    }
-                } else if (rawQuestions is Map<*, *>) {
-                    // Alternative structure - count by question numbers
-                    questionsCount = rawQuestions.keys.count { key ->
-                        key.toString().toIntOrNull() != null
-                    }
-
-                    // Additional logic for matching type in map structure
-                    rawQuestions.values.forEach { question ->
-                        if (question is Map<*, *> && question["type"] == "MATCHING") {
-                            val matchingOptions = question["options"] as? List<*>
-                            // Adjust count: remove 1 (the original count) and add the actual pairs
-                            questionsCount += (matchingOptions?.size ?: 1) - 1
-                        }
-                    }
-                }
-
+                val questionsCount = calculateQuestionsCount(map["questions"])
                 val maxPoints = questionsCount.toDouble()
-                if (maxPoints > 0) {
-                    metadata[id] = ActivityMetadata(type, maxPoints, title)
-                }
-            }
+
+                if (maxPoints > 0) id to ActivityMetadata(type, maxPoints, title) else null
+            }.toMap()
         } catch (e: Exception) {
             Log.e("GradeDebug", "Error fetching quiz metadata: ${e.message}")
+            emptyMap()
         }
+    }
 
-        // Fetch assignments from Firestore
-        try {
+    private suspend fun fetchAssignmentMetadata(): Map<String, ActivityMetadata> {
+        return try {
             val assignmentsSnapshot = firestore.collection("assignments")
                 .whereEqualTo("classId", assignmentId!!)
                 .whereEqualTo("academicTerm", gradingPeriod!!)
                 .get().await()
 
-            assignmentsSnapshot.documents.forEach { doc ->
+            assignmentsSnapshot.documents.mapNotNull { doc ->
                 val id = doc.id
                 val title = doc.getString("title") ?: "Assignment ($id)"
                 val rawType = doc.getString("type") ?: "assignment"
@@ -268,41 +267,58 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
                     else -> ""
                 }
 
-                if (type.isNotBlank() && maxPoints > 0.0) {
-                    metadata[id] = ActivityMetadata(type, maxPoints, title)
-                }
-            }
+                if (type.isNotBlank() && maxPoints > 0.0) id to ActivityMetadata(type, maxPoints, title) else null
+            }.toMap()
         } catch (e: Exception) {
             Log.e("GradeDebug", "Error fetching assignment metadata: ${e.message}")
+            emptyMap()
         }
-
-        return metadata
     }
 
-    // --- IMPLEMENTATION OF OnStudentClickListener ---
+    private fun calculateQuestionsCount(rawQuestions: Any?): Int {
+        var count = 0
+        when (rawQuestions) {
+            is List<*> -> {
+                rawQuestions.forEach { question ->
+                    if (question is Map<*, *>) {
+                        count += when (question["type"] as? String) {
+                            "MATCHING" -> (question["options"] as? List<*>)?.size ?: 0
+                            else -> 1
+                        }
+                    }
+                }
+            }
+            is Map<*, *> -> {
+                count = rawQuestions.keys.count { key -> key.toString().toIntOrNull() != null }
+                // Additional logic for matching type
+                rawQuestions.values.forEach { question ->
+                    if (question is Map<*, *> && question["type"] == "MATCHING") {
+                        val matchingOptions = question["options"] as? List<*>
+                        count += (matchingOptions?.size ?: 1) - 1
+                    }
+                }
+            }
+        }
+        return count
+    }
+
+    // OPTIMIZED: Show dialog with cached data
     override fun onStudentClicked(student: Student) {
-
         if (assignmentId.isNullOrEmpty() || subjectCode.isNullOrEmpty() || gradingPeriod.isNullOrEmpty()) {
             Toast.makeText(this, "Error: Cannot fetch details due to missing context.", Toast.LENGTH_SHORT).show()
             return
         }
-
-        if (assignmentId.isNullOrEmpty() || subjectCode.isNullOrEmpty() || gradingPeriod.isNullOrEmpty()) {
-            Toast.makeText(this, "Error: Cannot fetch details due to missing context.", Toast.LENGTH_SHORT).show()
-            return
-        }
-
 
         // Check cache first for instant loading
-        val cachedScores = detailedScoresCache[student.id]
+        studentScoresCache.cleanupExpired()
+        val cachedScores = studentScoresCache.get(student.id)
         if (cachedScores != null) {
-            showEditableScoreDialog(student, cachedScores)
+            showEditableScoreDialogWithFixedTotal(student, cachedScores)
         } else {
             showDetailedScoreDialog(student)
         }
     }
 
-    // --- Function to Fetch and Display Detailed Scores ---
     private fun showDetailedScoreDialog(student: Student) {
         val dialog = ProgressDialog(this).apply {
             setMessage("Fetching detailed scores for ${student.lastName}...")
@@ -313,9 +329,9 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         lifecycleScope.launch {
             try {
                 val detailedScores = fetchDetailedScores(student.id)
-                detailedScoresCache[student.id] = detailedScores
+                studentScoresCache.put(student.id, detailedScores)
                 dialog.dismiss()
-                showEditableScoreDialog(student, detailedScores)
+                showEditableScoreDialogWithFixedTotal(student, detailedScores)
             } catch (e: Exception) {
                 dialog.dismiss()
                 Log.e("ScoreDetail", "Error fetching detailed scores: ${e.message}", e)
@@ -324,15 +340,15 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         }
     }
 
-    // --- OPTIMIZED: Faster detailed scores fetch using pre-loaded metadata ---
+    // OPTIMIZED: Faster detailed scores fetch using pre-loaded metadata
     private suspend fun fetchDetailedScores(studentDocId: String): DetailedScores {
-        activityMetadata = cachedActivityMetadata
+        activityMetadata = metadataCache.getCache()
 
         val studentUserUid = studentUidToDocIdMap.entries.firstOrNull { it.value == studentDocId }?.key
             ?: return DetailedScores(Pair(0,0), 0, emptyList(), emptyList(), emptyList())
 
         // CHECK FOR MANUAL OVERRIDES FIRST
-        var attendanceDetails = try {
+        val attendanceDetails = try {
             val overrideDoc = firestore.collection("manualGradeOverrides")
                 .document("${studentDocId}_${assignmentId!!}_${gradingPeriod!!}")
                 .get().await()
@@ -350,7 +366,7 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
             fetchOriginalAttendance(studentDocId)
         }
 
-        var recitationDetails = try {
+        val recitationDetails = try {
             val overrideDoc = firestore.collection("manualGradeOverrides")
                 .document("${studentDocId}_${assignmentId!!}_${gradingPeriod!!}")
                 .get().await()
@@ -381,7 +397,6 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         )
     }
 
-    // ADD THESE HELPER FUNCTIONS FOR ATTENDANCE/RECITATION
     private suspend fun fetchOriginalAttendance(studentDocId: String): Pair<Int, Int> {
         var presentCount = 0
         var totalClassSessions = 0
@@ -425,37 +440,36 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         return totalRecitationPoints
     }
 
-    // UPDATE THIS FUNCTION TO CHECK FOR OVERRIDES
-    private suspend fun fetchStudentActivityScoresWithOverrides(studentUserUid: String, studentDocId: String): List<ActivityScoreData> {
+    // OPTIMIZED: Faster student scores fetching with batching
+    private suspend fun fetchStudentActivityScoresWithOverrides(
+        studentUserUid: String,
+        studentDocId: String
+    ): List<ActivityScoreData> {
         val studentScores = mutableListOf<ActivityScoreData>()
 
         // Group activity IDs by type for batch querying
         val quizIds = activityMetadata.filter { it.value.type == "Quiz" || it.value.type == "Exam" }.keys.toList()
         val assignmentIds = activityMetadata.filter { it.value.type == "Assignment" }.keys.toList()
 
-        // Fetch quiz scores
-        if (quizIds.isNotEmpty()) {
-            val quizChunks = quizIds.chunked(10)
-            for (chunk in quizChunks) {
-                val scores = firestore.collection("quizResults")
-                    .whereIn("quizId", chunk)
-                    .whereEqualTo("studentId", studentUserUid)
-                    .get().await()
-                studentScores.addAll(processQuizScores(scores.documents))
+        // Fetch scores in parallel
+        val quizScoresDeferred = lifecycleScope.async {
+            if (quizIds.isNotEmpty()) {
+                fetchQuizScoresInBatches(quizIds, studentUserUid)
+            } else {
+                emptyList()
             }
         }
 
-        // Fetch assignment scores
-        if (assignmentIds.isNotEmpty()) {
-            val assignmentChunks = assignmentIds.chunked(10)
-            for (chunk in assignmentChunks) {
-                val scores = firestore.collection("submissions")
-                    .whereIn("assignmentId", chunk)
-                    .whereEqualTo("studentId", studentUserUid)
-                    .get().await()
-                studentScores.addAll(processAssignmentScores(scores.documents))
+        val assignmentScoresDeferred = lifecycleScope.async {
+            if (assignmentIds.isNotEmpty()) {
+                fetchAssignmentScoresInBatches(assignmentIds, studentUserUid)
+            } else {
+                emptyList()
             }
         }
+
+        studentScores.addAll(quizScoresDeferred.await())
+        studentScores.addAll(assignmentScoresDeferred.await())
 
         // Add missing activities with 50% base score
         activityMetadata.forEach { (activityId, metadata) ->
@@ -477,14 +491,50 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         return studentScores
     }
 
+    private suspend fun fetchQuizScoresInBatches(quizIds: List<String>, studentUserUid: String): List<ActivityScoreData> {
+        val allScores = mutableListOf<ActivityScoreData>()
+
+        processInBatches(quizIds, 10) { batch ->
+            try {
+                val scores = firestore.collection("quizResults")
+                    .whereIn("quizId", batch)
+                    .whereEqualTo("studentId", studentUserUid)
+                    .get().await()
+                allScores.addAll(processQuizScores(scores.documents))
+            } catch (e: Exception) {
+                Log.e("GradeDebug", "Error fetching quiz batch: ${e.message}")
+            }
+        }
+
+        return allScores
+    }
+
+    private suspend fun fetchAssignmentScoresInBatches(assignmentIds: List<String>, studentUserUid: String): List<ActivityScoreData> {
+        val allScores = mutableListOf<ActivityScoreData>()
+
+        processInBatches(assignmentIds, 10) { batch ->
+            try {
+                val scores = firestore.collection("submissions")
+                    .whereIn("assignmentId", batch)
+                    .whereEqualTo("studentId", studentUserUid)
+                    .get().await()
+                allScores.addAll(processAssignmentScores(scores.documents))
+            } catch (e: Exception) {
+                Log.e("GradeDebug", "Error fetching assignment batch: ${e.message}")
+            }
+        }
+
+        return allScores
+    }
+
     private fun processQuizScores(docs: List<DocumentSnapshot>): List<ActivityScoreData> {
         return docs.mapNotNull { doc ->
             val activityId = doc.getString("quizId") ?: return@mapNotNull null
             val metadata = activityMetadata[activityId] ?: return@mapNotNull null
 
             val rawScore = extractScore(doc)
-            val percentage = if (metadata.maxPoints > 0) (rawScore / metadata.maxPoints) * 100.0 else 0.0
-            val score50Base = maxOf(50.0, percentage).roundToTwoDecimals()
+            val percentage = rawScore.safePercentage(metadata.maxPoints)
+            val score50Base = percentage.safeMax(50.0).roundToTwoDecimals()
 
             ActivityScoreData(
                 title = metadata.title,
@@ -503,8 +553,8 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
             val metadata = activityMetadata[activityId] ?: return@mapNotNull null
 
             val rawScore = extractScore(doc)
-            val percentage = if (metadata.maxPoints > 0) (rawScore / metadata.maxPoints) * 100.0 else 0.0
-            val score50Base = maxOf(50.0, percentage).roundToTwoDecimals()
+            val percentage = rawScore.safePercentage(metadata.maxPoints)
+            val score50Base = percentage.safeMax(50.0).roundToTwoDecimals()
 
             ActivityScoreData(
                 title = metadata.title,
@@ -529,29 +579,7 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         (doc.get("rawScore") as? String)?.toDoubleOrNull() ?: 0.0
     }
 
-    // --- NEW: Editable dialog with score modification ---
-    private fun showEditableScoreDialog(student: Student, detailedScores: DetailedScores) {
-        val dialog = ProgressDialog(this).apply {
-            setMessage("Fetching detailed scores for ${student.lastName}...")
-            setCancelable(false)
-            show()
-        }
-
-        lifecycleScope.launch {
-            try {
-                val detailedScores = fetchDetailedScores(student.id)
-                detailedScoresCache[student.id] = detailedScores
-                dialog.dismiss()
-                showEditableScoreDialogWithFixedTotal(student, detailedScores) // Use new function
-            } catch (e: Exception) {
-                dialog.dismiss()
-                Log.e("ScoreDetail", "Error fetching detailed scores: ${e.message}", e)
-                Toast.makeText(this@GradeInputActivity, "Error fetching details: ${e.message}", Toast.LENGTH_LONG).show()
-            }
-        }
-    }
-
-    // NEW FUNCTION WITH FIXED TOTAL ATTENDANCE
+    // FIXED FUNCTION WITH PROPER EMPTY FIELD HANDLING
     private fun showEditableScoreDialogWithFixedTotal(student: Student, detailedScores: DetailedScores) {
         val builder = AlertDialog.Builder(this)
         val inflater = LayoutInflater.from(this)
@@ -575,17 +603,16 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         val originalAttendanceTotal = detailedScores.attendanceDetails.second
         val originalRecitationPoints = detailedScores.recitationDetails
 
-        // SET FIXED TOTAL ATTENDANCE - CANNOT BE CHANGED
+        // FIXED: Show empty for zero values, not "1"
+        etAttendancePresent.setText(if (originalAttendancePresent == 0) "" else originalAttendancePresent.toString())
         etAttendanceTotal.setText(originalAttendanceTotal.toString())
-        etAttendanceTotal.isEnabled = false // Disable total field
-        etAttendanceTotal.alpha = 0.5f // Make it look disabled
+        etAttendanceTotal.isEnabled = false
+        etAttendanceTotal.alpha = 0.5f
 
-        // Set current present value
-        val defaultPresent = if (originalAttendancePresent == 0) 1 else originalAttendancePresent
-        etAttendancePresent.setText(defaultPresent.toString())
+        etRecitationPoints.setText(if (originalRecitationPoints == 0) "" else originalRecitationPoints.toString())
+
+        // Update percentages
         updateAttendancePercentage(etAttendancePresent, etAttendanceTotal, tvAttendancePercentage)
-
-        etRecitationPoints.setText(originalRecitationPoints.toString())
         updateRecitationPercentage(
             etRecitationPoints.text.toString().toIntOrNull() ?: 0,
             tvRecitationPercentage
@@ -593,9 +620,8 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
 
         // Set title based on published state
         if (areGradesPublished) {
-            tvDialogTitle.text =
-                "View Scores (Published): ${student.lastName}, ${student.firstName}"
-            btnEdit.visibility = View.GONE // Hide edit button when published
+            tvDialogTitle.text = "View Scores (Published): ${student.lastName}, ${student.firstName}"
+            btnEdit.visibility = View.GONE
         } else {
             tvDialogTitle.text = "View Scores: ${student.lastName}, ${student.firstName}"
             btnEdit.visibility = View.VISIBLE
@@ -607,28 +633,28 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
             detailedScores.quizScores,
             student.id,
             "Quiz",
-            isEditable = false // Start in view mode
+            isEditable = false
         )
         setupEditableActivityRecyclerView(
             rvExamScores,
             detailedScores.examScores,
             student.id,
             "Exam",
-            isEditable = false // Exams are always not editable
+            isEditable = false
         )
         setupEditableActivityRecyclerView(
             rvAssignmentScores,
             detailedScores.assignmentScores,
             student.id,
             "Assignment",
-            isEditable = false // Start in view mode
+            isEditable = false
         )
 
         // Initially set to view mode (not editable)
         setViewModeEnabledWithFixedTotal(
             enabled = false,
             etAttendancePresent = etAttendancePresent,
-            etAttendanceTotal = etAttendanceTotal, // Total is always disabled
+            etAttendanceTotal = etAttendanceTotal,
             etRecitationPoints = etRecitationPoints,
             tvAttendancePercentage = tvAttendancePercentage,
             tvRecitationPercentage = tvRecitationPercentage,
@@ -681,14 +707,13 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
             builder.setPositiveButton("Save Changes") { dialog, _ ->
                 // VALIDATE ATTENDANCE AND RECITATION BEFORE SAVING
                 val newPresent = etAttendancePresent.text.toString().toIntOrNull() ?: 0
-                val total = originalAttendanceTotal // Use original total (fixed)
+                val total = originalAttendanceTotal
                 val newRecitation = etRecitationPoints.text.toString().toIntOrNull() ?: 0
 
                 if (!isValidAttendanceWithFixedTotal(newPresent, originalAttendanceTotal, originalAttendancePresent) ||
                     !isValidRecitation(newRecitation, originalRecitationPoints)) {
-                    // Show error and prevent saving
                     Toast.makeText(this@GradeInputActivity,
-                        "Cannot decrease attendance or recitation scores!",
+                        "Scores must be between 0 and maximum allowed!",
                         Toast.LENGTH_LONG).show()
                     return@setPositiveButton
                 }
@@ -697,7 +722,7 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
                 saveModifiedAttendanceRecitation(
                     student.id,
                     newPresent,
-                    total, // Use fixed total
+                    total,
                     newRecitation
                 )
                 saveModifiedScores(student.id)
@@ -713,103 +738,7 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         dialog.show()
     }
 
-    /**
-     * NEW: Set view/edit mode with fixed total attendance
-     */
     private fun setViewModeEnabledWithFixedTotal(
-        enabled: Boolean,
-        etAttendancePresent: EditText,
-        etAttendanceTotal: EditText, // Total is always disabled
-        etRecitationPoints: EditText,
-        tvAttendancePercentage: TextView,
-        tvRecitationPercentage: TextView,
-        rvQuizScores: RecyclerView,
-        rvExamScores: RecyclerView,
-        rvAssignmentScores: RecyclerView
-    ) {
-        // Set attendance fields - ONLY PRESENT CAN BE ENABLED
-        etAttendancePresent.isEnabled = enabled
-        etAttendanceTotal.isEnabled = false // TOTAL IS ALWAYS DISABLED
-        etRecitationPoints.isEnabled = enabled
-
-        val alphaEnabled = if (enabled) 1.0f else 0.6f
-        val alphaDisabled = 0.5f // For disabled fields
-
-        etAttendancePresent.alpha = alphaEnabled
-        etAttendanceTotal.alpha = alphaDisabled // Always looks disabled
-        etRecitationPoints.alpha = alphaEnabled
-
-        // Set RecyclerView adapters to editable mode
-        (rvQuizScores.adapter as? EditableActivityScoreAdapter)?.setEditable(enabled)
-        (rvExamScores.adapter as? EditableActivityScoreAdapter)?.setEditable(false) // Exams are always not editable
-        (rvAssignmentScores.adapter as? EditableActivityScoreAdapter)?.setEditable(enabled)
-
-        // Add/remove text watchers based on mode
-        if (enabled) {
-            // Add text watchers for real-time updates
-            etAttendancePresent.addTextChangedListener(createAttendanceWatcher(etAttendancePresent, etAttendanceTotal, tvAttendancePercentage))
-            etRecitationPoints.addTextChangedListener(createRecitationWatcher(etRecitationPoints, tvRecitationPercentage))
-        } else {
-            // Remove text watchers
-            etAttendancePresent.removeTextChangedListener(createAttendanceWatcher(etAttendancePresent, etAttendanceTotal, tvAttendancePercentage))
-            etRecitationPoints.removeTextChangedListener(createRecitationWatcher(etRecitationPoints, tvRecitationPercentage))
-        }
-    }
-
-    /**
-     * NEW: Validate attendance with fixed total
-     * Rules: Cannot decrease present days, present cannot exceed total
-     */
-    private fun isValidAttendanceWithFixedTotal(newPresent: Int, fixedTotal: Int, originalPresent: Int): Boolean {
-        // Cannot decrease present days
-        if (newPresent < originalPresent) {
-            Toast.makeText(this, "Cannot decrease present days from $originalPresent to $newPresent", Toast.LENGTH_LONG).show()
-            return false
-        }
-
-        // Present cannot exceed total
-        if (newPresent > fixedTotal) {
-            Toast.makeText(this, "Present days ($newPresent) cannot exceed total days ($fixedTotal)", Toast.LENGTH_LONG).show()
-            return false
-        }
-
-        return true
-    }
-
-    /**
-     * Validate attendance changes
-     * Rules: Cannot decrease present days or increase total days beyond original
-     */
-    private fun isValidAttendance(newPresent: Int, newTotal: Int, originalPresent: Int, originalTotal: Int): Boolean {
-        // Cannot decrease present days
-        if (newPresent < originalPresent) {
-            return false
-        }
-
-        // Cannot increase total days beyond original (you might want to adjust this based on your needs)
-        if (newTotal > originalTotal && originalTotal > 0) {
-            return false
-        }
-
-        // Present cannot exceed total
-        if (newPresent > newTotal) {
-            return false
-        }
-
-        return true
-    }
-
-    /**
-     * Validate recitation changes
-     * Rules: Cannot decrease recitation points
-     */
-    private fun isValidRecitation(newRecitation: Int, originalRecitation: Int): Boolean {
-        // Cannot decrease recitation points
-        return newRecitation >= originalRecitation
-    }
-
-    // NEW: Helper function to set view/edit mode
-    private fun setViewModeEnabled(
         enabled: Boolean,
         etAttendancePresent: EditText,
         etAttendanceTotal: EditText,
@@ -820,61 +749,78 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         rvExamScores: RecyclerView,
         rvAssignmentScores: RecyclerView
     ) {
-        // Set attendance fields
+        // Set attendance fields - ONLY PRESENT CAN BE ENABLED
         etAttendancePresent.isEnabled = enabled
-        etAttendanceTotal.isEnabled = enabled
+        etAttendanceTotal.isEnabled = false
         etRecitationPoints.isEnabled = enabled
 
-        val alpha = if (enabled) 1.0f else 0.6f
-        etAttendancePresent.alpha = alpha
-        etAttendanceTotal.alpha = alpha
-        etRecitationPoints.alpha = alpha
+        val alphaEnabled = if (enabled) 1.0f else 0.6f
+        val alphaDisabled = 0.5f
+
+        etAttendancePresent.alpha = alphaEnabled
+        etAttendanceTotal.alpha = alphaDisabled
+        etRecitationPoints.alpha = alphaEnabled
 
         // Set RecyclerView adapters to editable mode
         (rvQuizScores.adapter as? EditableActivityScoreAdapter)?.setEditable(enabled)
-        (rvExamScores.adapter as? EditableActivityScoreAdapter)?.setEditable(false) // Exams are always not editable
+        (rvExamScores.adapter as? EditableActivityScoreAdapter)?.setEditable(false)
         (rvAssignmentScores.adapter as? EditableActivityScoreAdapter)?.setEditable(enabled)
 
         // Add/remove text watchers based on mode
         if (enabled) {
-            // Add text watchers for real-time updates
             etAttendancePresent.addTextChangedListener(createAttendanceWatcher(etAttendancePresent, etAttendanceTotal, tvAttendancePercentage))
-            etAttendanceTotal.addTextChangedListener(createAttendanceWatcher(etAttendancePresent, etAttendanceTotal, tvAttendancePercentage))
             etRecitationPoints.addTextChangedListener(createRecitationWatcher(etRecitationPoints, tvRecitationPercentage))
         } else {
-            // Remove text watchers
             etAttendancePresent.removeTextChangedListener(createAttendanceWatcher(etAttendancePresent, etAttendanceTotal, tvAttendancePercentage))
-            etAttendanceTotal.removeTextChangedListener(createAttendanceWatcher(etAttendancePresent, etAttendanceTotal, tvAttendancePercentage))
             etRecitationPoints.removeTextChangedListener(createRecitationWatcher(etRecitationPoints, tvRecitationPercentage))
         }
     }
 
-    // Update the setupEditableActivityRecyclerView function
-    // Update the setupEditableActivityRecyclerView function
-    private fun setupEditableActivityRecyclerView(
+    private fun isValidAttendanceWithFixedTotal(newPresent: Int, fixedTotal: Int, originalPresent: Int): Boolean {
+        //if (newPresent < originalPresent) {
+            //Toast.makeText(this, "Cannot decrease present days from $originalPresent to $newPresent", Toast.LENGTH_LONG).show()
+            //return false
+        //}
 
+        if (newPresent < 0) {
+            Toast.makeText(this, "Present days cannot be negative", Toast.LENGTH_LONG).show()
+            return false
+        }
+
+        if (newPresent > fixedTotal) {
+            Toast.makeText(this, "Present days ($newPresent) cannot exceed total days ($fixedTotal)", Toast.LENGTH_LONG).show()
+            return false
+        }
+
+        return true
+    }
+
+    private fun isValidRecitation(newRecitation: Int, originalRecitation: Int): Boolean {
+        return newRecitation >= 0
+    }
+
+    private fun setupEditableActivityRecyclerView(
         recyclerView: RecyclerView,
         scores: List<ActivityScoreData>,
         studentId: String,
         category: String,
-        isEditable: Boolean = false // Default to false (view mode)
+        isEditable: Boolean = false
     ) {
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        // EXAMS ARE NEVER EDITABLE, regardless of published state
         val shouldBeEditable = when (category) {
-            "Exam" -> false // Exams are always not editable
-            else -> isEditable && !areGradesPublished // Other categories follow normal rules
+            "Exam" -> false
+            else -> isEditable && !areGradesPublished
         }
 
         recyclerView.adapter = EditableActivityScoreAdapter(
             scores = scores,
             studentId = studentId,
             category = category,
-            isEditable = shouldBeEditable, // Use the calculated editable state
+            isEditable = shouldBeEditable,
             isPublished = areGradesPublished,
             onScoreUpdate = { updatedScore ->
-                if (!areGradesPublished && category != "Exam") { // Also prevent updates for exams
+                if (!areGradesPublished && category != "Exam") {
                     updateCachedScore(studentId, updatedScore, category)
                     recalculateStudentGrade(studentId)
                 }
@@ -884,29 +830,22 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
     }
 
     private fun updateCachedScore(studentId: String, updatedScore: ActivityScoreData, category: String) {
-        val cachedScores = detailedScoresCache[studentId] ?: return
+        val cachedScores = studentScoresCache.get(studentId) ?: return
 
-        when (category) {
-            "Quiz" -> {
-                val updatedList = cachedScores.quizScores.map {
-                    if (it.activityId == updatedScore.activityId) updatedScore else it
-                }
-                detailedScoresCache[studentId] = cachedScores.copy(quizScores = updatedList)
-            }
-            "Exam" -> {
-                val updatedList = cachedScores.examScores.map {
-                    if (it.activityId == updatedScore.activityId) updatedScore else it
-                }
-                detailedScoresCache[studentId] = cachedScores.copy(examScores = updatedList)
-            }
-            "Assignment" -> {
-                val updatedList = cachedScores.assignmentScores.map {
-                    if (it.activityId == updatedScore.activityId) updatedScore else it
-                }
-                detailedScoresCache[studentId] = cachedScores.copy(assignmentScores = updatedList)
-            }
+        val updatedScores = when (category) {
+            "Quiz" -> cachedScores.copy(quizScores = cachedScores.quizScores.map {
+                if (it.activityId == updatedScore.activityId) updatedScore else it
+            })
+            "Exam" -> cachedScores.copy(examScores = cachedScores.examScores.map {
+                if (it.activityId == updatedScore.activityId) updatedScore else it
+            })
+            "Assignment" -> cachedScores.copy(assignmentScores = cachedScores.assignmentScores.map {
+                if (it.activityId == updatedScore.activityId) updatedScore else it
+            })
+            else -> cachedScores
         }
 
+        studentScoresCache.put(studentId, updatedScores)
         Log.d("ScoreEdit", "Updated cached score for $studentId: ${updatedScore.title} = ${updatedScore.rawScore}")
     }
 
@@ -944,8 +883,8 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
                             "examScore" to gradeData.exam,
                             "assignmentScore" to gradeData.assignment,
                             "finalGrade" to gradeData.finalGrade,
-                            "isPublished" to true, // NEW: Mark as published
-                            "publishedAt" to System.currentTimeMillis(), // NEW: Publication timestamp
+                            "isPublished" to true,
+                            "publishedAt" to System.currentTimeMillis(),
                             "timestamp" to System.currentTimeMillis()
                         )
 
@@ -980,11 +919,12 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         }
     }
 
+    // FIXED: Percentage calculation methods with NaN protection
     private fun updateAttendancePercentage(etPresent: EditText, etTotal: EditText, tvPercentage: TextView) {
         val present = etPresent.text.toString().toIntOrNull() ?: 0
         val total = etTotal.text.toString().toIntOrNull() ?: 1
         val percentage = if (total > 0) (present.toDouble() / total) * 100 else 0.0
-        val percentage50Base = maxOf(50.0, percentage)
+        val percentage50Base = percentage.safeMax(50.0)
         tvPercentage.text = "Percentage: ${"%.2f".format(percentage50Base)}% (50% base)"
     }
 
@@ -1011,13 +951,10 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
             override fun afterTextChanged(s: Editable?) {
                 val input = s?.toString() ?: ""
 
-                // Skip if text hasn't changed
                 if (input == previousText) return
 
-                // Normalize input: remove leading zeros AND apply max 10 limit
                 val normalizedText = normalizeNumericInput(input, 10)
 
-                // If normalization changed the text, update the EditText
                 if (normalizedText != input) {
                     etPoints.removeTextChangedListener(this)
                     etPoints.setText(normalizedText)
@@ -1032,24 +969,18 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         }
     }
 
-    /**
-     * Normalize numeric input by removing leading zeros and applying max limits
-     */
     private fun normalizeNumericInput(input: String, maxValue: Int = Int.MAX_VALUE): String {
         if (input.isEmpty()) return input
 
         var normalized = input.trim()
 
-        // Remove leading zeros
         if (normalized.length > 1 && normalized.startsWith("0")) {
             normalized = normalized.replaceFirst("^0+".toRegex(), "")
-            // If we removed everything, keep at least one character
             if (normalized.isEmpty()) {
                 normalized = "0"
             }
         }
 
-        // Apply max limit - MAX 10 FOR RECITATION
         val value = normalized.toIntOrNull() ?: 0
         if (value > maxValue) {
             return maxValue.toString()
@@ -1058,45 +989,41 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         return normalized
     }
 
-    /**
-     * Update recitation percentage calculation
-     */
     private fun updateRecitationPercentage(points: Int, tvPercentage: TextView) {
-        // Use the actual points (already limited to max 10 by input)
         val percentage = if (points >= 5) 100.0 else (points.toDouble() / 5.0) * 100.0
-        val percentage50Base = maxOf(50.0, percentage)
+        val percentage50Base = percentage.safeMax(50.0)
         tvPercentage.text = "Percentage: ${"%.2f".format(percentage50Base)}% (50% base)"
     }
 
     private fun saveModifiedAttendanceRecitation(studentId: String, present: Int, total: Int, recitationPoints: Int) {
-        val cachedScores = detailedScoresCache[studentId] ?: return
+        val cachedScores = studentScoresCache.get(studentId) ?: return
 
         // Update the cache with new values
-        detailedScoresCache[studentId] = cachedScores.copy(
+        studentScoresCache.put(studentId, cachedScores.copy(
             attendanceDetails = Pair(present, total),
             recitationDetails = recitationPoints
-        )
+        ))
 
         // Recalculate the main grade
         recalculateStudentGrade(studentId)
     }
 
     private fun recalculateStudentGrade(studentId: String) {
-        val cachedScores = detailedScoresCache[studentId] ?: return
+        val cachedScores = studentScoresCache.get(studentId) ?: return
 
-        // Recalculate category averages based on modified scores
-        val quizAverage = cachedScores.quizScores.map { it.score50Base }.average()
-        val examAverage = cachedScores.examScores.map { it.score50Base }.average()
-        val assignmentAverage = cachedScores.assignmentScores.map { it.score50Base }.average()
+        // Recalculate category averages based on modified scores with safe average
+        val quizAverage = cachedScores.quizScores.map { it.score50Base }.safeAverage()
+        val examAverage = cachedScores.examScores.map { it.score50Base }.safeAverage()
+        val assignmentAverage = cachedScores.assignmentScores.map { it.score50Base }.safeAverage()
 
         // RECALCULATE ATTENDANCE AND RECITATION
         val (present, total) = cachedScores.attendanceDetails
         val attendanceScoreRaw = if (total > 0) (present.toDouble() / total) * 100 else 50.0
-        val attendanceAverage = maxOf(50.0, attendanceScoreRaw)
+        val attendanceAverage = attendanceScoreRaw.safeMax(50.0)
 
         val recitationPoints = cachedScores.recitationDetails
         val recitationScore = if (recitationPoints >= 5) 100.0 else (recitationPoints.toDouble() / 5.0) * 100.0
-        val recitationAverage = maxOf(50.0, recitationScore)
+        val recitationAverage = recitationScore.safeMax(50.0)
 
         // Update the main adapter
         if (::gradeAdapter.isInitialized) {
@@ -1106,7 +1033,6 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
                 examAverage.roundToTwoDecimals(),
                 assignmentAverage.roundToTwoDecimals()
             )
-            // UPDATE ATTENDANCE AND RECITATION IN THE MAIN ADAPTER
             updateAttendanceRecitationInAdapter(studentId, attendanceAverage, recitationAverage)
         }
     }
@@ -1122,12 +1048,12 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
     }
 
     private fun saveModifiedScores(studentId: String) {
-        val cachedScores = detailedScoresCache[studentId] ?: return
+        val cachedScores = studentScoresCache.get(studentId) ?: return
 
         lifecycleScope.launch {
             try {
                 saveModifiedActivityScores(studentId, cachedScores)
-                saveAttendanceRecitationOverrides(studentId, cachedScores) // ADD THIS
+                saveAttendanceRecitationOverrides(studentId, cachedScores)
                 Toast.makeText(this@GradeInputActivity, "Scores updated successfully!", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 Log.e("ScoreEdit", "Error saving modified scores: ${e.message}", e)
@@ -1136,66 +1062,64 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         }
     }
 
-    // FIXED: AUTOMATICALLY CREATE RECORDS IF NOT EXISTS
+    // OPTIMIZED: Batch save operations
     private suspend fun saveModifiedActivityScores(studentId: String, scores: DetailedScores) {
         val studentUserUid = studentUidToDocIdMap.entries.firstOrNull { it.value == studentId }?.key ?: return
 
-        // Save all modified scores - CREATE NEW RECORDS IF NOT EXISTS
         val allScores = scores.quizScores + scores.examScores + scores.assignmentScores
 
-        allScores.forEach { scoreData ->
-            when (scoreData.activityType) {
-                "Quiz", "Exam" -> {
-                    // ALWAYS CREATE OR UPDATE - USE COMPOSITE ID FOR CONSISTENCY
-                    val quizResultData = hashMapOf(
-                        "quizId" to scoreData.activityId,
-                        "studentId" to studentUserUid,
-                        "grade" to scoreData.rawScore,
-                        "score" to scoreData.rawScore,
-                        "rawScore" to scoreData.rawScore,
-                        "modified" to true,
-                        "modifiedAt" to System.currentTimeMillis(),
-                        "createdAt" to System.currentTimeMillis()
-                    )
+        // Process in batches for better performance
+        processInBatches(allScores, 5) { batch ->
+            batch.forEach { scoreData ->
+                when (scoreData.activityType) {
+                    "Quiz", "Exam" -> {
+                        val quizResultData = hashMapOf(
+                            "quizId" to scoreData.activityId,
+                            "studentId" to studentUserUid,
+                            "grade" to scoreData.rawScore,
+                            "score" to scoreData.rawScore,
+                            "rawScore" to scoreData.rawScore,
+                            "modified" to true,
+                            "modifiedAt" to System.currentTimeMillis(),
+                            "createdAt" to System.currentTimeMillis()
+                        )
 
-                    // Use composite document ID to avoid duplicates
-                    val docId = "${scoreData.activityId}_${studentUserUid}"
-                    firestore.collection("quizResults")
-                        .document(docId)
-                        .set(quizResultData, SetOptions.merge())
-                        .await()
+                        val docId = "${scoreData.activityId}_${studentUserUid}"
+                        firestore.collection("quizResults")
+                            .document(docId)
+                            .set(quizResultData, SetOptions.merge())
+                    }
+                    "Assignment" -> {
+                        val submissionData = hashMapOf(
+                            "assignmentId" to scoreData.activityId,
+                            "studentId" to studentUserUid,
+                            "grade" to scoreData.rawScore,
+                            "score" to scoreData.rawScore,
+                            "rawScore" to scoreData.rawScore,
+                            "status" to "submitted",
+                            "modified" to true,
+                            "modifiedAt" to System.currentTimeMillis(),
+                            "submittedAt" to System.currentTimeMillis(),
+                            "createdAt" to System.currentTimeMillis()
+                        )
 
-                    Log.d("ScoreEdit", "Saved quiz result: $docId with score ${scoreData.rawScore}")
-                }
-                "Assignment" -> {
-                    val submissionData = hashMapOf(
-                        "assignmentId" to scoreData.activityId,
-                        "studentId" to studentUserUid,
-                        "grade" to scoreData.rawScore,
-                        "score" to scoreData.rawScore,
-                        "rawScore" to scoreData.rawScore,
-                        "status" to "submitted",
-                        "modified" to true,
-                        "modifiedAt" to System.currentTimeMillis(),
-                        "submittedAt" to System.currentTimeMillis(),
-                        "createdAt" to System.currentTimeMillis()
-                    )
-
-                    val docId = "${scoreData.activityId}_${studentUserUid}"
-                    firestore.collection("submissions")
-                        .document(docId)
-                        .set(submissionData, SetOptions.merge())
-                        .await()
-
-                    Log.d("ScoreEdit", "Saved assignment submission: $docId with score ${scoreData.rawScore}")
+                        val docId = "${scoreData.activityId}_${studentUserUid}"
+                        firestore.collection("submissions")
+                            .document(docId)
+                            .set(submissionData, SetOptions.merge())
+                    }
                 }
             }
         }
+
+        // Invalidate cache for this student
+        studentScoresCache.remove(studentId)
     }
 
-    // ADD THIS NEW FUNCTION FOR ATTENDANCE/RECITATION OVERRIDES
     private suspend fun saveAttendanceRecitationOverrides(studentId: String, scores: DetailedScores) {
-        val (present, total) = scores.attendanceDetails
+        val attendanceDetails = scores.attendanceDetails
+        val present = attendanceDetails.first
+        val total = attendanceDetails.second
         val recitationPoints = scores.recitationDetails
 
         val overrideData = hashMapOf(
@@ -1211,7 +1135,6 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
             "createdAt" to System.currentTimeMillis()
         )
 
-        // Use composite ID for consistency
         val docId = "${studentId}_${assignmentId!!}_${gradingPeriod!!}"
         firestore.collection("manualGradeOverrides")
             .document(docId)
@@ -1221,310 +1144,7 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         Log.d("ScoreEdit", "Saved attendance/recitation override: $docId - Present: $present/$total, Recitation: $recitationPoints")
     }
 
-    // --- KEEP EXISTING METHODS (with fixes) ---
-
-    private fun Double.roundToTwoDecimals(): Double {
-        return String.format("%.2f", this).toDouble()
-    }
-
-    // --- fetchAttendanceAndRecitationScores (A/R calculation) ---
-    private suspend fun fetchAttendanceAndRecitationScores(
-        enrolledStudents: List<Student>,
-        studentGradesData: MutableMap<String, GradeInputAdapter.GradeData>
-    ) {
-        val termDoc = firestore.document("systemSettings/currentTerm").get().await()
-        val academicTerm = termDoc.getString("academicTerm") ?: ""
-        val semester = termDoc.getString("semester") ?: ""
-
-        if (academicTerm.isEmpty() || semester.isEmpty()) {
-            Log.e("GradeInput", "Missing current term or semester info.")
-            return
-        }
-
-        val attendanceSnapshot = firestore.collection("dailyAttendanceRecords")
-            .whereEqualTo("assignmentId", assignmentId!!)
-            .whereEqualTo("academicTerm", gradingPeriod!!)
-            .whereEqualTo("semester", semester)
-            .get().await()
-
-        if (attendanceSnapshot.isEmpty) {
-            Log.d("GradeDebug", "No daily attendance records found for this term.")
-        } else {
-            Log.d("GradeDebug", "Fetched ${attendanceSnapshot.size()} attendance records.")
-        }
-
-        val studentAttendanceCounts = mutableMapOf<String, Int>()
-        var totalClassSessions = 0
-        val studentRecitationPoints = mutableMapOf<String, Int>()
-
-        enrolledStudents.forEach { student ->
-            studentAttendanceCounts[student.id] = 0
-            studentRecitationPoints[student.id] = 0
-        }
-
-        attendanceSnapshot.documents.forEach { doc ->
-            val statuses = doc.get("statuses") as? Map<String, String> ?: emptyMap()
-            totalClassSessions++
-
-            statuses.forEach { (studentId, status) -> // studentId here is Student Document ID
-                if (status == "Present") {
-                    if (studentAttendanceCounts.containsKey(studentId)) {
-                        studentAttendanceCounts[studentId] = studentAttendanceCounts[studentId]!! + 1
-                    }
-                }
-            }
-
-            val recitationLong = doc.get("recitationPoints") as? Map<String, Long> ?: emptyMap()
-            val recitationPoints = recitationLong.mapValues { it.value.toInt() }
-
-            recitationPoints.forEach { (studentUid, points) -> // studentUid here is Student Document ID
-                if (studentRecitationPoints.containsKey(studentUid)) {
-                    studentRecitationPoints[studentUid] = studentRecitationPoints[studentUid]!! + points
-                }
-            }
-        }
-
-        enrolledStudents.forEach { student ->
-            val studentDocId = student.id
-            val grades = studentGradesData[studentDocId] ?: GradeInputAdapter.GradeData()
-
-            val presentCount = studentAttendanceCounts[studentDocId] ?: 0
-            val attendanceScoreRaw = if (totalClassSessions > 0) {
-                (presentCount.toDouble() / totalClassSessions.toDouble()) * 100.0
-            } else { 50.0 } // Default 50.0 kung walang sessions
-
-            // 2. APPLY 50% BASE
-            grades.attendance = maxOf(50.0, attendanceScoreRaw).roundToTwoDecimals()
-
-            val totalRecitationPoints = studentRecitationPoints[studentDocId] ?: 0
-
-            val recitationScore = if (totalRecitationPoints >= 5) {
-                100.0
-            } else {
-                (totalRecitationPoints.toDouble() / 5.0) * 100.0
-            }
-
-            // 3. APPLY 50% BASE
-            grades.recitation = maxOf(50.0, recitationScore).roundToTwoDecimals()
-
-            studentGradesData[studentDocId] = grades
-            Log.d("GradeDebug", "A/R Calculated for ${student.lastName} (${student.id}): Att=${grades.attendance}, Rec=${grades.recitation}")
-        }
-    }
-
-    // --- REVISED: fetchQuizExamAndAssignmentScores ---
-    private suspend fun fetchQuizExamAndAssignmentScores(
-        enrolledStudents: List<Student>,
-        studentGradesData: MutableMap<String, GradeInputAdapter.GradeData>
-    ) {
-        val activityMetadata = mutableMapOf<String, Pair<String, Double>>()
-        val fetchJobs = mutableListOf<Deferred<List<DocumentSnapshot>>>()
-        val allScoresDocuments = mutableListOf<DocumentSnapshot>()
-
-        // FIX: Declare variables outside try block for correct scoping
-        var quizMetadataDocuments: List<DataSnapshot> = emptyList()
-        var assignmentsSnapshot: List<DocumentSnapshot> = emptyList()
-
-        try {
-            // --- HAKBANG 1 & 2: FETCH & PROCESS METADATA ---
-            Log.d("GradeDebug", "Querying activity metadata...")
-
-            val quizzesTask = realtimeDb.reference.child("quizzes").orderByChild("assignmentId").equalTo(assignmentId!!).get()
-            // Assign result to outside variable
-            quizMetadataDocuments = quizzesTask.await().children.toList()
-
-            // Assign result to outside variable
-            assignmentsSnapshot = firestore.collection("assignments")
-                .whereEqualTo("classId", assignmentId!!)
-                .whereEqualTo("academicTerm", gradingPeriod!!)
-                .get().await().documents
-
-            // Processing logic for Quizzes/Exams metadata
-            quizMetadataDocuments.forEach { dataSnapshot: DataSnapshot ->
-                val docId = dataSnapshot.key ?: return@forEach
-                val map = dataSnapshot.value as? Map<*, *> ?: return@forEach
-                val activityPeriod = map["academicTerm"] as? String // ⬅️ Check the field name here
-                if (activityPeriod != gradingPeriod) return@forEach
-                val activityId = docId
-
-                var questionsCount = 0
-                val rawQuestions = map["questions"]
-                if (rawQuestions is List<*>) { questionsCount = rawQuestions.size }
-                else if (rawQuestions is Map<*, *>) { questionsCount = rawQuestions.keys.count { key -> key.toString().toIntOrNull() != null } }
-
-                val maxPoints = questionsCount.toDouble()
-                val rawType = map["quizType"] as? String ?: "Quiz"
-                val type = rawType.lowercase().let {
-                    when (it) { "quiz" -> "Quiz"; "exam" -> "Exam"; else -> "Quiz" }
-                }
-                if (activityId.isNotBlank() && maxPoints > 0.0) {
-                    activityMetadata[activityId] = Pair(type, maxPoints)
-                }
-            }
-
-            // Processing logic for Assignments metadata
-            assignmentsSnapshot.forEach { doc ->
-                val activityId = doc.id
-                val rawType = doc.getString("type") ?: "assignment"
-                val maxPoints = doc.getDouble("maxPoints") ?: doc.getDouble("totalPoints") ?: 100.0
-                val type = when (rawType.lowercase()) {
-                    "assignment", "project", "homework", "activity" -> "Assignment"
-                    else -> ""
-                }
-                if (type.isNotBlank() && maxPoints > 0.0) {
-                    activityMetadata[activityId] = Pair(type, maxPoints)
-                }
-            }
-
-            Log.d("GradeDebug", "Total valid activities fetched after filtering: ${activityMetadata.size}")
-
-        } catch (e: Exception) {
-            Log.e("GradeDebug", "Error fetching activity metadata: ${e.message}")
-            return
-        }
-
-        if (activityMetadata.isEmpty()) {
-            Log.d("GradeDebug", "No valid activities found. Cannot proceed to fetch scores.")
-            return
-        }
-
-        // --- HAKBANG 3: FETCH SCORES MULA SA FIRESTORE CONCURRENTLY ---
-
-        val quizIds = activityMetadata.filter { it.value.first == "Quiz" || it.value.first == "Exam" }.keys.toList()
-        val assignmentIds = activityMetadata.filter { it.value.first == "Assignment" }.keys.toList()
-
-        // Fetch Quiz Scores (Concurrent Chunking)
-        if (quizIds.isNotEmpty()) {
-            val quizChunks = quizIds.chunked(10)
-            Log.d("GradeDebug", "Fetching Quiz/Exam scores concurrently in ${quizChunks.size} chunks from 'quizResults'.")
-            for (chunk in quizChunks) {
-                val job = lifecycleScope.async<List<DocumentSnapshot>> {
-                    try {
-                        return@async firestore.collection("quizResults").whereIn("quizId", chunk).get().await().documents
-                    }
-                    catch (e: Exception) {
-                        Log.e("GradeDebug", "Error in Quiz/Exam chunk query: ${e.message}");
-                        return@async emptyList<DocumentSnapshot>()
-                    }
-                }
-                fetchJobs.add(job)
-            }
-        }
-
-        // Fetch Assignment Scores (Concurrent Chunking)
-        if (assignmentIds.isNotEmpty()) {
-            val assignmentChunks = assignmentIds.chunked(10)
-            Log.d("GradeDebug", "Fetching Assignment scores concurrently in ${assignmentChunks.size} chunks from 'submissions'.")
-            for (chunk in assignmentChunks) {
-                val job = lifecycleScope.async<List<DocumentSnapshot>> {
-                    try {
-                        val documents = firestore.collection("submissions").whereIn("assignmentId", chunk).get().await().documents
-                        return@async documents
-                    }
-                    catch (e: Exception) {
-                        Log.e("submission", "Error in Assignment chunk query: ${e.message}");
-                        return@async emptyList<DocumentSnapshot>()
-                    }
-                }
-                fetchJobs.add(job)
-            }
-        }
-
-        // HINTAYIN ANG LAHAT NG JOB AT PAGSAMAHIN ANG MGA RESULTA
-        if (fetchJobs.isNotEmpty()) {
-            val allResults = fetchJobs.awaitAll()
-            allResults.forEach { docs -> allScoresDocuments.addAll(docs) }
-        }
-
-        Log.d("GradeDebug", "Fetched ${allScoresDocuments.size} score documents in total.")
-
-        // --- HAKBANG 4: REVISED AGGREGATION & MISSING SCORE INJECTION ---
-
-        // Group raw score documents by Student Document ID
-        val studentSubmissions = allScoresDocuments
-            .mapNotNull { doc ->
-                // FIX: CORRECT MAPPING USAGE. Map the fetched User UID (doc.getString("studentId")) to the Student Document ID.
-                val studentDocId = studentUidToDocIdMap[doc.getString("studentId")]
-                if (studentDocId != null) studentDocId to doc else null
-            }
-            .groupBy { it.first }
-            .mapValues { it.value.map { it.second } }
-
-        studentGradesData.keys.forEach { studentId ->
-
-            // Map to store the best 50%-based percentage score for each activity for this student.
-            val studentBestActivityScores = mutableMapOf<String, Double>()
-
-            val submissionsForStudent = studentSubmissions[studentId] ?: emptyList()
-
-            // 1. Process all submissions to find the single best 50%-based score per activity
-            submissionsForStudent.forEach { doc ->
-                val activityId = doc.getString("quizId") ?: doc.getString("assignmentId") ?: return@forEach
-                val metadata = activityMetadata[activityId] ?: return@forEach
-                val maxPoints = metadata.second
-
-                // Extract score (using the robust fallback logic)
-                var score = 0.0
-                score = (doc.get("grade") as? Double) ?: (doc.get("grade") as? Long)?.toDouble() ?: (doc.get("grade") as? String)?.toDoubleOrNull() ?: score
-                if (score <= 0.0) score = (doc.get("score") as? Double) ?: (doc.get("score") as? Long)?.toDouble() ?: (doc.get("score") as? String)?.toDoubleOrNull() ?: score
-                if (score <= 0.0) score = (doc.get("rawScore") as? Double) ?: (doc.get("rawScore") as? Long)?.toDouble() ?: (doc.get("rawScore") as? String)?.toDoubleOrNull() ?: score
-
-                val rawPercentage = if (maxPoints > 0.0) (score / maxPoints) * 100.0 else 0.0
-
-                // Apply 50% base to the INDIVIDUAL activity score
-                val finalPercentage = maxOf(50.0, rawPercentage)
-
-                // Store the highest 50%-based score found so far for this activity
-                val currentBest = studentBestActivityScores[activityId] ?: 0.0
-                if (finalPercentage > currentBest) {
-                    studentBestActivityScores[activityId] = finalPercentage
-                }
-            }
-
-            // Variables for final category averaging
-            val categoryTotalScores = mutableMapOf("Quiz" to 0.0, "Exam" to 0.0, "Assignment" to 0.0)
-            val categoryActivityCount = mutableMapOf("Quiz" to 0, "Exam" to 0, "Assignment" to 0)
-
-            // 2. Iterate through ALL activities (present and missing) and tally scores
-            activityMetadata.forEach { (activityId, metadata) ->
-                val type = metadata.first
-
-                // 3. Inject Missing Score (50%) or use the calculated Best Score
-                val finalScoreForActivity = studentBestActivityScores[activityId] ?: 50.0
-
-                // Tally the results
-                if (categoryTotalScores.containsKey(type)) {
-                    categoryTotalScores[type] = categoryTotalScores[type]!! + finalScoreForActivity
-                    categoryActivityCount[type] = categoryActivityCount[type]!! + 1
-                }
-            }
-
-            // 4. Calculate Final Average for each category
-            val grades = studentGradesData[studentId] ?: GradeInputAdapter.GradeData()
-
-            categoryTotalScores.keys.forEach { type ->
-                val totalScore = categoryTotalScores[type]!!
-                val count = categoryActivityCount[type]!!
-
-                val finalCalculatedScore = if (count > 0) {
-                    totalScore / count
-                } else {
-                    50.0
-                }
-
-                when (type) {
-                    "Quiz" -> grades.quiz = finalCalculatedScore.roundToTwoDecimals()
-                    "Exam" -> grades.exam = finalCalculatedScore.roundToTwoDecimals()
-                    "Assignment" -> grades.assignment = finalCalculatedScore.roundToTwoDecimals()
-                }
-            }
-
-            studentGradesData[studentId] = grades
-            Log.d("GradeDebug", "Final Scores (Revised) for $studentId: Q=${grades.quiz} E=${grades.exam} A=${grades.assignment}")
-        }
-    }
-
-    // 🚨 loadGradingData (FIXED AND COMPLETED)
+    // OPTIMIZED: Main data loading with performance improvements
     private fun loadGradingData() {
         tvLoadingStatus.text = "Fetching enrolled students..."
 
@@ -1631,57 +1251,224 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         }
     }
 
-    // FINAL GRADE SAVING LOGIC (No changes needed)
-    private fun saveFinalGrades() {
-        if (!::gradeAdapter.isInitialized) {
-            Toast.makeText(this, "Grades not loaded yet. Please wait.", Toast.LENGTH_SHORT).show()
+    // OPTIMIZED: Attendance and recitation calculation
+    private suspend fun fetchAttendanceAndRecitationScores(
+        enrolledStudents: List<Student>,
+        studentGradesData: MutableMap<String, GradeInputAdapter.GradeData>
+    ) {
+        val termDoc = firestore.document("systemSettings/currentTerm").get().await()
+        val academicTerm = termDoc.getString("academicTerm") ?: ""
+        val semester = termDoc.getString("semester") ?: ""
+
+        if (academicTerm.isEmpty() || semester.isEmpty()) {
+            Log.e("GradeInput", "Missing current term or semester info.")
             return
         }
 
-        tvLoadingStatus.text = "Saving final grades..."
+        val attendanceSnapshot = firestore.collection("dailyAttendanceRecords")
+            .whereEqualTo("assignmentId", assignmentId!!)
+            .whereEqualTo("academicTerm", gradingPeriod!!)
+            .whereEqualTo("semester", semester)
+            .get().await()
 
-        lifecycleScope.launch {
-            try {
-                val gradesToSave = gradeAdapter.getCurrentGrades()
-                val gradingPeriodClean = gradingPeriod!!.replace(" ", "")
-                val subjectCodeClean = subjectCode!!.replace(" ", "")
+        if (attendanceSnapshot.isEmpty) {
+            Log.d("GradeDebug", "No daily attendance records found for this term.")
+        } else {
+            Log.d("GradeDebug", "Fetched ${attendanceSnapshot.size()} attendance records.")
+        }
 
-                val saveJobs = gradesToSave.map { (studentId, gradeData) ->
-                    async {
-                        val documentId = "${studentId}_${subjectCodeClean}_${gradingPeriodClean}"
+        val studentAttendanceCounts = mutableMapOf<String, Int>()
+        var totalClassSessions = 0
+        val studentRecitationPoints = mutableMapOf<String, Int>()
 
-                        val data = hashMapOf(
-                            "studentId" to studentId,
-                            "assignmentId" to assignmentId!!,
-                            "subjectCode" to subjectCode!!,
-                            "gradingPeriod" to gradingPeriod!!,
-                            "attendanceScore" to gradeData.attendance,
-                            "recitationScore" to gradeData.recitation,
-                            "quizScore" to gradeData.quiz,
-                            "examScore" to gradeData.exam,
-                            "assignmentScore" to gradeData.assignment,
-                            "finalGrade" to gradeData.finalGrade,
-                            "isSubmitted" to true,
-                            "timestamp" to System.currentTimeMillis()
-                        )
+        enrolledStudents.forEach { student ->
+            studentAttendanceCounts[student.id] = 0
+            studentRecitationPoints[student.id] = 0
+        }
 
-                        firestore.collection("finalStudentGrades")
-                            .document(documentId)
-                            .set(data, SetOptions.merge())
-                            .await()
-                    }
+        attendanceSnapshot.documents.forEach { doc ->
+            val statuses = doc.get("statuses") as? Map<String, String> ?: emptyMap()
+            totalClassSessions++
+
+            statuses.forEach { (studentId, status) ->
+                if (status == "Present") {
+                    studentAttendanceCounts[studentId] = studentAttendanceCounts.getOrDefault(studentId, 0) + 1
                 }
+            }
 
-                saveJobs.awaitAll()
+            val recitationLong = doc.get("recitationPoints") as? Map<String, Long> ?: emptyMap()
+            val recitationPoints = recitationLong.mapValues { it.value.toInt() }
 
-                tvLoadingStatus.text = "✅ Grades successfully saved for ${gradesToSave.size} students."
-                Toast.makeText(this@GradeInputActivity, "All grades saved successfully!", Toast.LENGTH_LONG).show()
-
-            } catch (e: Exception) {
-                Log.e("GradeInput", "Error saving grades: ${e.message}", e)
-                tvLoadingStatus.text = "Error saving grades."
-                Toast.makeText(this@GradeInputActivity, "Saving error: ${e.message}", Toast.LENGTH_LONG).show()
+            recitationPoints.forEach { (studentUid, points) ->
+                studentRecitationPoints[studentUid] = studentRecitationPoints.getOrDefault(studentUid, 0) + points
             }
         }
+
+        enrolledStudents.forEach { student ->
+            val studentDocId = student.id
+            val grades = studentGradesData[studentDocId] ?: GradeInputAdapter.GradeData()
+
+            val presentCount = studentAttendanceCounts[studentDocId] ?: 0
+            val attendanceScoreRaw = if (totalClassSessions > 0) {
+                (presentCount.toDouble() / totalClassSessions.toDouble()) * 100.0
+            } else { 50.0 }
+
+            grades.attendance = attendanceScoreRaw.safeMax(50.0).roundToTwoDecimals()
+
+            val totalRecitationPoints = studentRecitationPoints[studentDocId] ?: 0
+            val recitationScore = if (totalRecitationPoints >= 5) {
+                100.0
+            } else {
+                (totalRecitationPoints.toDouble() / 5.0) * 100.0
+            }
+
+            grades.recitation = recitationScore.safeMax(50.0).roundToTwoDecimals()
+
+            studentGradesData[studentDocId] = grades
+            Log.d("GradeDebug", "A/R Calculated for ${student.lastName} (${student.id}): Att=${grades.attendance}, Rec=${grades.recitation}")
+        }
+    }
+
+    // OPTIMIZED: Quiz and assignment scores with better performance
+    private suspend fun fetchQuizExamAndAssignmentScores(
+        enrolledStudents: List<Student>,
+        studentGradesData: MutableMap<String, GradeInputAdapter.GradeData>
+    ) {
+        val activityMetadata = metadataCache.getCache()
+
+        if (activityMetadata.isEmpty()) {
+            Log.d("GradeDebug", "No valid activities found. Cannot proceed to fetch scores.")
+            // Set default scores for all students
+            enrolledStudents.forEach { student ->
+                val grades = studentGradesData[student.id] ?: GradeInputAdapter.GradeData()
+                grades.quiz = 50.0
+                grades.exam = 50.0
+                grades.assignment = 50.0
+                studentGradesData[student.id] = grades
+            }
+            return
+        }
+
+        val fetchJobs = mutableListOf<Deferred<List<DocumentSnapshot>>>()
+        val allScoresDocuments = mutableListOf<DocumentSnapshot>()
+
+        val quizIds = activityMetadata.filter { it.value.type == "Quiz" || it.value.type == "Exam" }.keys.toList()
+        val assignmentIds = activityMetadata.filter { it.value.type == "Assignment" }.keys.toList()
+
+        // Fetch Quiz Scores (Concurrent Chunking)
+        if (quizIds.isNotEmpty()) {
+            val quizChunks = quizIds.chunked(10)
+            for (chunk in quizChunks) {
+                val job = lifecycleScope.async<List<DocumentSnapshot>> {
+                    try {
+                        firestore.collection("quizResults").whereIn("quizId", chunk).get().await().documents
+                    } catch (e: Exception) {
+                        Log.e("GradeDebug", "Error in Quiz/Exam chunk query: ${e.message}")
+                        emptyList()
+                    }
+                }
+                fetchJobs.add(job)
+            }
+        }
+
+        // Fetch Assignment Scores (Concurrent Chunking)
+        if (assignmentIds.isNotEmpty()) {
+            val assignmentChunks = assignmentIds.chunked(10)
+            for (chunk in assignmentChunks) {
+                val job = lifecycleScope.async<List<DocumentSnapshot>> {
+                    try {
+                        firestore.collection("submissions").whereIn("assignmentId", chunk).get().await().documents
+                    } catch (e: Exception) {
+                        Log.e("submission", "Error in Assignment chunk query: ${e.message}")
+                        emptyList()
+                    }
+                }
+                fetchJobs.add(job)
+            }
+        }
+
+        // Wait for all jobs and combine results
+        if (fetchJobs.isNotEmpty()) {
+            val allResults = fetchJobs.awaitAll()
+            allResults.forEach { docs -> allScoresDocuments.addAll(docs) }
+        }
+
+        Log.d("GradeDebug", "Fetched ${allScoresDocuments.size} score documents in total.")
+
+        // Group raw score documents by Student Document ID
+        val studentSubmissions = allScoresDocuments
+            .mapNotNull { doc ->
+                val studentDocId = studentUidToDocIdMap[doc.getString("studentId")]
+                if (studentDocId != null) studentDocId to doc else null
+            }
+            .groupBy { it.first }
+            .mapValues { it.value.map { it.second } }
+
+        studentGradesData.keys.forEach { studentId ->
+            val studentBestActivityScores = mutableMapOf<String, Double>()
+
+            val submissionsForStudent = studentSubmissions[studentId] ?: emptyList()
+
+            // Process all submissions to find the best score per activity
+            submissionsForStudent.forEach { doc ->
+                val activityId = doc.getString("quizId") ?: doc.getString("assignmentId") ?: return@forEach
+                val metadata = activityMetadata[activityId] ?: return@forEach
+                val maxPoints = metadata.maxPoints
+
+                val score = extractScore(doc)
+                val rawPercentage = score.safePercentage(maxPoints)
+                val finalPercentage = rawPercentage.safeMax(50.0)
+
+                val currentBest = studentBestActivityScores[activityId] ?: 0.0
+                if (finalPercentage > currentBest) {
+                    studentBestActivityScores[activityId] = finalPercentage
+                }
+            }
+
+            // Variables for final category averaging
+            val categoryTotalScores = mutableMapOf("Quiz" to 0.0, "Exam" to 0.0, "Assignment" to 0.0)
+            val categoryActivityCount = mutableMapOf("Quiz" to 0, "Exam" to 0, "Assignment" to 0)
+
+            // Iterate through ALL activities and tally scores
+            activityMetadata.forEach { (activityId, metadata) ->
+                val type = metadata.type
+                val finalScoreForActivity = studentBestActivityScores[activityId] ?: 50.0
+
+                if (categoryTotalScores.containsKey(type)) {
+                    categoryTotalScores[type] = categoryTotalScores[type]!! + finalScoreForActivity
+                    categoryActivityCount[type] = categoryActivityCount[type]!! + 1
+                }
+            }
+
+            // Calculate Final Average for each category
+            val grades = studentGradesData[studentId] ?: GradeInputAdapter.GradeData()
+
+            categoryTotalScores.keys.forEach { type ->
+                val totalScore = categoryTotalScores[type]!!
+                val count = categoryActivityCount[type]!!
+
+                val finalCalculatedScore = if (count > 0) {
+                    totalScore / count
+                } else {
+                    50.0
+                }
+
+                when (type) {
+                    "Quiz" -> grades.quiz = finalCalculatedScore.roundToTwoDecimals()
+                    "Exam" -> grades.exam = finalCalculatedScore.roundToTwoDecimals()
+                    "Assignment" -> grades.assignment = finalCalculatedScore.roundToTwoDecimals()
+                }
+            }
+
+            studentGradesData[studentId] = grades
+            Log.d("GradeDebug", "Final Scores for $studentId: Q=${grades.quiz} E=${grades.exam} A=${grades.assignment}")
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Clean up caches to prevent memory leaks
+        metadataCache.clear()
+        studentScoresCache.clear()
     }
 }

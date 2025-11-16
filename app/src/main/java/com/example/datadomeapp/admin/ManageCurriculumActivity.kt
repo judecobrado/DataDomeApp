@@ -1,56 +1,69 @@
 package com.example.datadomeapp.admin
 
+import android.graphics.Color
 import android.os.Bundle
-import android.view.View // ⬅️ Add this import
+import android.util.TypedValue
+import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import com.example.datadomeapp.R
-import com.example.datadomeapp.models.Curriculum // Assuming your models are here
-import com.example.datadomeapp.models.SubjectEntry // Assuming your models are here
+import com.example.datadomeapp.models.Curriculum
+import com.example.datadomeapp.models.SubjectEntry
 import com.google.firebase.firestore.FirebaseFirestore
 
 class ManageCurriculumActivity : AppCompatActivity() {
 
+    // --- Firebase Setup ---
     private val firestore = FirebaseFirestore.getInstance()
     private val curriculumCollection = firestore.collection("curriculums")
 
+    // --- View Declarations ---
     private lateinit var spnCourse: Spinner
     private lateinit var spnYear: Spinner
-    private lateinit var lvSubjects: ListView
+    // FIX: Corrected type from ListView to LinearLayout
+    private lateinit var llSubjectsContainer: LinearLayout
     private lateinit var etCode: EditText
     private lateinit var etTitle: EditText
     private lateinit var btnAdd: Button
     private lateinit var btnDelete: Button
+    private lateinit var btnBack: Button
 
+    // --- Data & State ---
     private val yearLevels = arrayOf("1st Year", "2nd Year", "3rd Year", "4th Year")
-    private val courseList = mutableListOf<String>() // Listahan ng Course Codes
-    private val currentSubjectList = mutableListOf<SubjectEntry>() // Subjects ng napiling curriculum
-    private lateinit var subjectAdapter: ArrayAdapter<String>
+    private val courseList = mutableListOf<String>()
+    private val currentSubjectList = mutableListOf<SubjectEntry>()
+
+    // Tracks the index of the subject selected for removal
+    private var selectedSubjectIndex: Int = -1
+    private var selectedSubjectView: View? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.admin_curiculum_management)
 
+        // 1. Initialize Views
         spnCourse = findViewById(R.id.spnCurriculumCourse)
         spnYear = findViewById(R.id.spnCurriculumYear)
-        lvSubjects = findViewById(R.id.lvRequiredSubjects)
+
+        // FIX: Correctly finds the LinearLayout by its ID
+        llSubjectsContainer = findViewById(R.id.llRequiredSubjectsContainer)
+
         etCode = findViewById(R.id.etSubjectCode)
         etTitle = findViewById(R.id.etSubjectTitle)
         btnAdd = findViewById(R.id.btnAddSubjectToCurriculum)
         btnDelete = findViewById(R.id.btnDeleteCurriculumSubject)
+        btnBack = findViewById(R.id.btnBackCurriculum)
 
+        // 2. Setup Spinners
         spnYear.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, yearLevels)
 
-        subjectAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_single_choice, mutableListOf())
-        lvSubjects.adapter = subjectAdapter
-        lvSubjects.choiceMode = ListView.CHOICE_MODE_SINGLE
-
+        // 3. Load Data & Listeners
         loadCourses()
         setupListeners()
     }
 
     private fun loadCourses() {
-        // Assume courses are stored in a 'courses' collection (from ManageCoursesActivity)
         firestore.collection("courses").get()
             .addOnSuccessListener { snapshot ->
                 courseList.clear()
@@ -60,29 +73,26 @@ class ManageCurriculumActivity : AppCompatActivity() {
                 spnCourse.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, courseList)
             }
             .addOnFailureListener {
-                Toast.makeText(this, "Failed to load courses.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Failed to load courses: ${it.message}", Toast.LENGTH_SHORT).show()
             }
     }
 
     private fun setupListeners() {
-        // Whenever Course or Year changes, load the corresponding curriculum
         val listener = object : AdapterView.OnItemSelectedListener {
-
-            // ➡️ INAYOS: Tamang parameter signature para sa onItemSelected
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+                clearSelection()
                 loadCurriculum()
             }
-
-            // ➡️ INAYOS: Idinagdag ang kailangang onNothingSelected
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-                // Do nothing
-            }
+            override fun onNothingSelected(parent: AdapterView<*>?) { /* Do nothing */ }
         }
         spnCourse.onItemSelectedListener = listener
         spnYear.onItemSelectedListener = listener
 
         btnAdd.setOnClickListener { addSubject() }
         btnDelete.setOnClickListener { removeSubject() }
+        btnBack.setOnClickListener {
+            finish()
+        }
     }
 
     private fun loadCurriculum() {
@@ -101,17 +111,75 @@ class ManageCurriculumActivity : AppCompatActivity() {
                 updateSubjectListView()
             }
             .addOnFailureListener {
-                // Kung walang Curriculum pa, clear lang ang listahan at mag-umpisa
                 currentSubjectList.clear()
                 updateSubjectListView()
             }
     }
 
+    // FIX: Uses LinearLayout's addView() method to display subjects
     private fun updateSubjectListView() {
-        val displayList = currentSubjectList.map { "${it.subjectCode} - ${it.subjectTitle}" }
-        (subjectAdapter as ArrayAdapter<String>).clear()
-        (subjectAdapter as ArrayAdapter<String>).addAll(displayList)
-        subjectAdapter.notifyDataSetChanged()
+        llSubjectsContainer.removeAllViews()
+        clearSelection()
+
+        val subjectCountText = findViewById<TextView>(R.id.tvSubjectCount)
+        subjectCountText.text = "${currentSubjectList.size} subjects"
+
+        // Calculate 1dp height for the divider on the fly
+        val oneDpInPx = TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP,
+            1f,
+            resources.displayMetrics
+        ).toInt()
+
+        val dividerColor = Color.parseColor("#E8E8E8")
+
+        currentSubjectList.forEachIndexed { index, subject ->
+            val textView = TextView(this).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                text = "${subject.subjectCode} - ${subject.subjectTitle}"
+                textSize = 16f
+                setPadding(24, 16, 24, 16)
+                tag = index
+
+                // Custom click listener for selection
+                setOnClickListener { selectSubject(it, index) }
+                setBackgroundColor(Color.TRANSPARENT)
+            }
+            llSubjectsContainer.addView(textView)
+
+            // Manually add dividers
+            if (index < currentSubjectList.size - 1) {
+                val divider = View(this).apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        oneDpInPx
+                    )
+                    setBackgroundColor(dividerColor)
+                }
+                llSubjectsContainer.addView(divider)
+            }
+        }
+    }
+
+    private fun selectSubject(view: View, index: Int) {
+        clearSelection()
+
+        // Highlight color
+        val highlightColor = ContextCompat.getColor(this, android.R.color.holo_blue_light)
+        view.setBackgroundColor(highlightColor)
+
+        // Update state
+        selectedSubjectIndex = index
+        selectedSubjectView = view
+    }
+
+    private fun clearSelection() {
+        selectedSubjectView?.setBackgroundColor(Color.TRANSPARENT)
+        selectedSubjectIndex = -1
+        selectedSubjectView = null
     }
 
     private fun saveCurriculum() {
@@ -126,7 +194,7 @@ class ManageCurriculumActivity : AppCompatActivity() {
                 Toast.makeText(this, "Curriculum saved for $courseCode $yearLevel", Toast.LENGTH_SHORT).show()
             }
             .addOnFailureListener {
-                Toast.makeText(this, "Failed to save curriculum.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Failed to save curriculum: ${it.message}", Toast.LENGTH_SHORT).show()
             }
     }
 
@@ -144,9 +212,8 @@ class ManageCurriculumActivity : AppCompatActivity() {
             return
         }
 
-        val newSubject = SubjectEntry(code, title, units = 3) // Default 3 units
+        val newSubject = SubjectEntry(code, title, units = 3)
 
-        // Simple check para maiwasan ang duplicate subject code
         if(currentSubjectList.any { it.subjectCode == code }) {
             Toast.makeText(this, "Subject code $code already exists in this curriculum.", Toast.LENGTH_SHORT).show()
             return
@@ -161,10 +228,9 @@ class ManageCurriculumActivity : AppCompatActivity() {
     }
 
     private fun removeSubject() {
-        val pos = lvSubjects.checkedItemPosition
-        if (pos != ListView.INVALID_POSITION && pos < currentSubjectList.size) {
-            currentSubjectList.removeAt(pos)
-            lvSubjects.setItemChecked(pos, false) // Uncheck
+        if (selectedSubjectIndex != -1 && selectedSubjectIndex < currentSubjectList.size) {
+            currentSubjectList.removeAt(selectedSubjectIndex)
+            clearSelection()
             updateSubjectListView()
             saveCurriculum()
             Toast.makeText(this, "Subject removed.", Toast.LENGTH_SHORT).show()

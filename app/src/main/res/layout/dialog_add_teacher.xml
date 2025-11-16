@@ -1,39 +1,115 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:padding="20dp">
 
-    <EditText
-        android:id="@+id/etDialogTeacherEmail"
+    <!-- Dialog Header -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Teacher Email"
-        android:inputType="textEmailAddress"
-        android:autofillHints="emailAddress"
-        android:layout_marginBottom="10dp"/>
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="20dp">
 
-    <EditText
-        android:id="@+id/etDialogTeacherName"
+        <ImageView
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/ic_teacher"
+            android:layout_marginEnd="12dp"
+            app:tint="#7B1113" />
+
+        <TextView
+            android:id="@+id/tvDialogTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Add New Teacher"
+            android:textColor="#7B1113"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Email Input -->
+    <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Teacher Full Name"
-        android:inputType="textPersonName"
-        android:autofillHints="name"
-        android:layout_marginBottom="10dp"/>
+        android:layout_marginBottom="16dp"
+        app:boxCornerRadiusBottomEnd="12dp"
+        app:boxCornerRadiusBottomStart="12dp"
+        app:boxCornerRadiusTopEnd="12dp"
+        app:boxCornerRadiusTopStart="12dp"
+        app:boxStrokeColor="#7B1113"
+        app:hintTextColor="#7B1113"
+        app:startIconDrawable="@drawable/ic_email"
+        app:startIconTint="#7B1113">
 
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etDialogTeacherEmail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Teacher Email"
+            android:inputType="textEmailAddress"
+            android:autofillHints="emailAddress"
+            android:textColor="#333333"
+            android:textSize="14sp"
+            android:minHeight="52dp" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Name Input -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        app:boxCornerRadiusBottomEnd="12dp"
+        app:boxCornerRadiusBottomStart="12dp"
+        app:boxCornerRadiusTopEnd="12dp"
+        app:boxCornerRadiusTopStart="12dp"
+        app:boxStrokeColor="#7B1113"
+        app:hintTextColor="#7B1113"
+        app:startIconDrawable="@drawable/ic_person"
+        app:startIconTint="#7B1113">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etDialogTeacherName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Teacher Full Name"
+            android:inputType="textPersonName"
+            android:autofillHints="name"
+            android:textColor="#333333"
+            android:textSize="14sp"
+            android:minHeight="52dp" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Department Selection -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Select Department:"
+        android:text="Select Department"
+        android:textColor="#7B1113"
+        android:textSize="14sp"
         android:textStyle="bold"
-        android:layout_marginBottom="5dp"/>
+        android:layout_marginBottom="8dp" />
 
-    <Spinner
-        android:id="@+id/spDialogDepartment"
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp"
+        app:strokeColor="#7B1113"
+        app:strokeWidth="1dp">
+
+        <Spinner
+            android:id="@+id/spDialogDepartment"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:background="@android:color/transparent"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:textColor="#333333" />
+    </com.google.android.material.card.MaterialCardView>
 
 </LinearLayout>

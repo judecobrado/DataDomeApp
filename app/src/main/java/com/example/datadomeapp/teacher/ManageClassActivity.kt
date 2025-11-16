@@ -7,6 +7,8 @@ import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.View
+import android.widget.ProgressBar
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -24,10 +26,13 @@ class ManageClassesActivity : AppCompatActivity() {
     private val firestore = FirebaseFirestore.getInstance()
     private lateinit var recyclerView: RecyclerView
     private lateinit var classAdapter: ClassAdapter
+    private lateinit var progressBar: ProgressBar
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.teacher_classes_assign)
+
+        progressBar = findViewById(R.id.progressBar)
 
         recyclerView = findViewById(R.id.recyclerViewClasses)
         recyclerView.layoutManager = LinearLayoutManager(this)
@@ -43,6 +48,8 @@ class ManageClassesActivity : AppCompatActivity() {
             return
         }
 
+        progressBar.visibility = View.VISIBLE
+
         firestore.collection("classAssignments")
             .whereEqualTo("teacherUid", currentTeacherUid)
             .get()
@@ -52,6 +59,8 @@ class ManageClassesActivity : AppCompatActivity() {
                     val assignment = document.toObject(ClassAssignment::class.java)
                     if (assignment != null) classList.add(assignment.copy(assignmentNo = document.id))
                 }
+
+                progressBar.visibility = View.GONE
 
                 if (classList.isEmpty()) {
                     Toast.makeText(this, "You currently have no classes assigned.", Toast.LENGTH_LONG).show()
@@ -65,6 +74,7 @@ class ManageClassesActivity : AppCompatActivity() {
                 recyclerView.adapter = classAdapter
             }
             .addOnFailureListener { e ->
+                progressBar.visibility = View.GONE
                 Toast.makeText(this, "Failed to load classes: ${e.message}", Toast.LENGTH_LONG).show()
             }
     }
@@ -172,13 +182,18 @@ class ManageClassesActivity : AppCompatActivity() {
     }
 
     private fun setOnlineClassLink(assignmentNo: String, link: String) {
+
+        progressBar.visibility = View.VISIBLE
+
         firestore.collection("classAssignments").document(assignmentNo)
             .update("onlineClassLink", link)
             .addOnSuccessListener {
+                progressBar.visibility = View.GONE
                 Toast.makeText(this, "Online Class Link saved successfully!", Toast.LENGTH_LONG).show()
                 loadAssignedClasses()
             }
             .addOnFailureListener { e ->
+                progressBar.visibility = View.GONE
                 Toast.makeText(this, "Failed to save link: ${e.message}", Toast.LENGTH_LONG).show()
             }
     }

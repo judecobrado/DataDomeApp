@@ -1,51 +1,76 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
+    <!-- Basic Colors -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="design_default_color_error">#B00020</color>
     <color name="design_default_color_primary">#6200EE</color>
     <color name="color_success">#00796B</color>
     <color name="color_warning">#FFC107</color>
+    <color name="green_success">#4CAF50</color>
+    <color name="gray_hint_color">#808080</color>
 
-    <color name="blue_primary">#1E3A8A</color> <!-- Deep Navy Blue -->
-    <color name="blue_secondary">#3B82F6</color> <!-- Soft Sky Blue -->
-    <color name="blue_light">#E0E7FF</color> <!-- Very Light Blue -->
+    <!-- Blue Theme -->
+    <color name="blue_primary">#1E3A8A</color>
+    <color name="blue_secondary">#3B82F6</color>
+    <color name="blue_light">#E0E7FF</color>
 
-    <!-- 💛 Golden Accent Shades -->
-    <color name="gold_primary">#CA8A04</color> <!-- Royal Gold -->
-    <color name="gold_secondary">#FACC15</color> <!-- Soft Gold -->
-    <color name="gold_light">#FEF9C3</color> <!-- Light Golden Background -->
+    <!-- Gold Theme -->
+    <color name="gold_primary">#CA8A04</color>
+    <color name="gold_secondary">#FACC15</color>
+    <color name="gold_light">#FEF9C3</color>
 
-    <!-- 🌸 Extra Accent Colors (optional) -->
+    <!-- Extra Accents -->
     <color name="gray_text">#374151</color>
     <color name="divider_blue">#1E40AF</color>
-    <color name="elegantBlue">#0A1E3F</color> <!-- Deep navy blue for background -->
-    <color name="royalBlue">#123E73</color> <!-- Slightly lighter blue for contrast -->
-    <color name="gold">#D4AF37</color> <!-- Classic gold -->
-    <color name="softGold">#F5E6B3</color> <!-- Soft gold for lighter accents -->
+    <color name="elegantBlue">#0A1E3F</color>
+    <color name="royalBlue">#123E73</color>
+    <color name="gold">#D4AF37</color>
+    <color name="softGold">#F5E6B3</color>
     <color name="darkText">#EDEDED</color>
 
+    <!-- App Theme Colors -->
     <color name="colorPrimary">#00796B</color>
     <color name="colorAccent">#D81B60</color>
+    <color name="colorPrimaryDark">#00574B</color>
 
-    <!--Attendace Adapter-->
+    <!-- Attendance Adapter -->
     <color name="color_default_button">#2196F3</color>
-    <color name="color_absent">#F44336</color>
     <color name="color_present">#4CAF50</color>
+    <color name="color_absent">#F44336</color>
     <color name="red_700">#D32F2F</color>
     <color name="green_700">#388E3C</color>
 
+    <!-- Status Colors -->
     <color name="confirmIndividualStartstatus_in_progress">#1976D2</color>
     <color name="status_completed">#4CAF50</color>
     <color name="status_expired">#F44336</color>
     <color name="status_not_started">#757575</color>
     <color name="status_retake">#FF9800</color>
     <color name="status_cheating">#D32F2F</color>
-    <color name="colorPrimaryDark">#00574B</color>
     <color name="status_in_progress">#4169E1</color>
     <color name="status_retake_granted">#FF9800</color>
     <color name="status_revoked">#FF9800</color>
 
+    <!-- Red Theme -->
+    <color name="primary_red">#7B1113</color>
+    <color name="primary_red_dark">#9B1C1F</color>
+    <color name="_9b1c1f">#9B1C1F</color>
 
+    <!-- UI Background Colors -->
+    <color name="background_light">#FDFBF8</color>
+    <color name="card_background">#FBEFEF</color>
+    <color name="card_stroke_color">#E8E8E8</color>
+
+    <!-- Text Colors -->
+    <color name="text_secondary">#666666</color>
+    <color name="text_tertiary">#888888</color>
+
+    <!-- Grade Colors -->
+    <color name="excellent_green">#4CAF50</color>
+    <color name="good_green">#8BC34A</color>
+    <color name="fair_orange">#FF9800</color>
+    <color name="poor_red">#F44336</color>
 
 </resources>

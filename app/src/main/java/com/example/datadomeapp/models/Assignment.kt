@@ -14,9 +14,9 @@ data class Assignment(
     var classId: String = "",
     var submissionCount: Int? = 0,
     var createdAt: Long = System.currentTimeMillis(),
-    val academicTerm: String? = null,
-    val academicYear: String? = null,
-    val semester: String? = null,
+    var academicTerm: String? = null,
+    var academicYear: String? = null,
+    var semester: String? = null,
     // 🆕 Individual student extensions
     var studentExtensions: Map<String, StudentExtension> = emptyMap()
 ) : Parcelable

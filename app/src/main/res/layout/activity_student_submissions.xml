@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Header -->
+    <TextView
+        android:id="@+id/tvAssignmentTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Student Submissions &amp; Extensions"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:padding="12dp"
+        android:textColor="@color/black"/>
+
+    <!-- Tab Layout for Switching between Submissions and Extensions -->
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tabLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp">
+
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Submissions" />
+
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Extensions" />
+
+    </com.google.android.material.tabs.TabLayout>
+
+    <!-- Loading Indicator -->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_margin="16dp"
+        android:visibility="gone" />
+
+    <!-- Loading Text -->
+    <TextView
+        android:id="@+id/tvLoading"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Loading students..."
+        android:textSize="16sp"
+        android:gravity="center"
+        android:padding="16dp"
+        android:visibility="visible" />
+
+    <!-- Student List -->
+    <ListView
+        android:id="@+id/lvStudents"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="gone" />
+
+    <!-- Back Button -->
+    <Button
+        android:id="@+id/btnBack"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="16dp"
+        android:text="Back" />
+
+</LinearLayout>

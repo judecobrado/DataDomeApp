@@ -1,75 +1,195 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView
+<com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="8dp"
-    android:layout_marginBottom="8dp"
-    app:cardCornerRadius="10dp"
-    app:cardElevation="3dp">
+    android:layout_marginHorizontal="12dp"
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="4dp"
+    app:strokeColor="#E8E8E8"
+    app:strokeWidth="1dp">
 
     <LinearLayout
         android:id="@+id/llClassItem"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp"
+        android:padding="20dp"
         android:background="?android:attr/selectableItemBackground">
 
-        <!-- Subject Code and Title -->
-        <TextView
-            android:id="@+id/tvSubjectCode"
-            android:layout_width="wrap_content"
+        <!-- Header Row with Subject Only -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="IT 101 (Programming Fundamentals)"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:textColor="#333333"/>
-
-        <!-- Teacher Name -->
-        <TextView
-            android:id="@+id/tvTeacherName"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Teacher: Mr. Dela Cruz"
-            android:textSize="14sp"
-            android:textColor="#666666"
-            android:paddingTop="2dp"
-            android:paddingBottom="4dp"/>
-
-        <!-- Section Name -->
-        <TextView
-            android:id="@+id/tvSectionName"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Section: BSIT 3-A"
-            android:textSize="14sp"
-            android:textColor="#666666"
-            android:paddingBottom="4dp"/>
-
-        <!-- Schedule Info -->
-        <TextView
-            android:id="@+id/tvScheduleTime"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Schedule: Monday 08:00 - 10:00"
-            android:textSize="14sp"
-            android:textColor="#000000"
-            android:textStyle="normal"
-            android:paddingBottom="8dp"/>
-
-        <!-- Online Link Status -->
-        <TextView
-            android:id="@+id/tvOnlineLinkStatus"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="No Online Link Set"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:drawablePadding="8dp"
+            android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:paddingVertical="4dp"/>
+            android:layout_marginBottom="8dp">
+
+            <!-- Subject Info -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvSubjectCode"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="IT 101"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:textColor="#7B1113"
+                    android:letterSpacing="0.02"/>
+
+                <TextView
+                    android:id="@+id/tvSubjectTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Programming Fundamentals"
+                    android:textSize="16sp"
+                    android:textColor="#333333"
+                    android:layout_marginTop="2dp"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Teacher and Section Info -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/ic_teacher"
+                android:layout_marginEnd="8dp"
+                app:tint="#7B1113" />
+
+            <TextView
+                android:id="@+id/tvTeacherName"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Mr. Dela Cruz"
+                android:textSize="14sp"
+                android:textColor="#666666"/>
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="12dp"
+                android:background="#DDDDDD"
+                android:layout_marginHorizontal="12dp"/>
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/ic_section"
+                android:layout_marginEnd="8dp"
+                app:tint="#7B1113" />
+
+            <TextView
+                android:id="@+id/tvSectionName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="BSIT 3-A"
+                android:textSize="14sp"
+                android:textColor="#666666"
+                android:textStyle="bold"/>
+
+        </LinearLayout>
+
+        <!-- Online Status Badge - Moved to third line -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/ic_online"
+                android:layout_marginEnd="8dp"
+                app:tint="#7B1113" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="8dp"
+                app:cardBackgroundColor="#FBEFEF"
+                app:strokeColor="#9B1C1F"
+                app:strokeWidth="1dp">
+
+                <TextView
+                    android:id="@+id/tvOnlineLinkStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="No Link"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="#9B1C1F"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="6dp"
+                    android:drawablePadding="4dp"
+                    android:gravity="center_vertical"/>
+
+            </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
+
+        <!-- Schedule Info with Icon -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="@drawable/background_rounded"
+            android:padding="12dp">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:src="@drawable/ic_schedule"
+                android:layout_marginEnd="12dp"
+                app:tint="#7B1113" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvScheduleTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Monday 08:00 - 10:00"
+                    android:textSize="14sp"
+                    android:textColor="#333333"
+                    android:textStyle="bold"
+                    android:maxLines="3"
+                    android:ellipsize="none"/>
+
+                <TextView
+                    android:id="@+id/tvRoom"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Room: Lab 301"
+                    android:textSize="12sp"
+                    android:textColor="#666666"
+                    android:layout_marginTop="2dp"
+                    android:maxLines="2"
+                    android:ellipsize="none"/>
+
+            </LinearLayout>
+
+        </LinearLayout>
 
     </LinearLayout>
-</androidx.cardview.widget.CardView>
+</com.google.android.material.card.MaterialCardView>

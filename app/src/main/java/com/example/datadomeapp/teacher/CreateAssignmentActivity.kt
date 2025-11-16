@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.widget.*
+import com.google.firebase.firestore.FirebaseFirestore
 import androidx.appcompat.app.AppCompatActivity
 import com.example.datadomeapp.R
 import com.example.datadomeapp.models.Assignment
@@ -30,6 +31,13 @@ class CreateAssignmentActivity : AppCompatActivity() {
     private var assignmentId: String = "" // ✅ CHANGED: Use assignmentId instead of classId
     private var className: String? = null
     private val PICK_FILE_REQUEST = 1001
+
+    private val db = FirebaseFirestore.getInstance()
+
+    private var academicTerm: String = ""
+    private var academicYear: String = ""
+    private var semester: String = ""
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,6 +64,8 @@ class CreateAssignmentActivity : AppCompatActivity() {
             Toast.makeText(this, "Creating for class: $className", Toast.LENGTH_SHORT).show()
         }
 
+        loadSystemSettings()
+
         // 🔹 Set listeners
         btnSelectDueDate.setOnClickListener { showDateTimePicker() }
         btnUploadFile.setOnClickListener { openFileChooser() }
@@ -64,6 +74,24 @@ class CreateAssignmentActivity : AppCompatActivity() {
             createAssignment()
         }
     }
+
+    private fun loadSystemSettings() {
+        db.collection("systemSettings").document("currentTerm").get()
+            .addOnSuccessListener { doc ->
+                if (doc.exists()) {
+                    academicTerm = doc.getString("academicTerm") ?: ""
+                    academicYear = doc.getString("academicYear") ?: ""
+                    semester = doc.getString("semester") ?: ""
+                    Log.d("SystemSettings", "Loaded: term=$academicTerm, year=$academicYear, sem=$semester")
+                } else {
+                    Log.w("SystemSettings", "No currentTerm document found")
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e("SystemSettings", "Failed to load system settings: ${e.message}")
+            }
+    }
+
 
     private fun createAssignment() {
         val title = etTitle.text.toString().trim()
@@ -95,6 +123,7 @@ class CreateAssignmentActivity : AppCompatActivity() {
 
         val newAssignmentId = UUID.randomUUID().toString()
 
+
         // ✅ CREATE ASSIGNMENT WITH PROPER assignmentId
         val assignment = Assignment(
             id = newAssignmentId,
@@ -105,6 +134,10 @@ class CreateAssignmentActivity : AppCompatActivity() {
             dueDateMillis = dueDateMillis,
             createdAt = System.currentTimeMillis()
         )
+
+        assignment.academicTerm = academicTerm
+        assignment.academicYear = academicYear
+        assignment.semester = semester
 
         Log.d("CreateAssignment", "Creating assignment: ${assignment.title} for assignmentId: ${assignment.classId}")
 

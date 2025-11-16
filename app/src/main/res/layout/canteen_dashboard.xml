@@ -1,100 +1,320 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/layoutCanteenStaff"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:gravity="center_horizontal"
-    android:padding="24dp"
-    android:background="#F8F8F8">
+    android:background="#FDFBF8">
 
-    <TextView
-        android:id="@+id/tvCanteenTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Canteen Name Placeholder"
-        android:textSize="28sp"
-        android:textStyle="bold"
-        android:textColor="#333333"
-        android:gravity="center_horizontal"
-        android:layout_marginTop="16dp" />
-
-    <TextView
-        android:id="@+id/tvWelcome"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Welcome, Staff Name!"
-        android:textSize="18sp"
-        android:textColor="#555555"
-        android:gravity="center_horizontal"
-        android:layout_marginBottom="8dp"/>
-
-    <ImageView
-        android:id="@+id/ivCanteenImage"
-        android:layout_width="200dp"
-        android:layout_height="150dp"
-        android:layout_marginTop="24dp"
-        android:scaleType="centerCrop"
-        android:contentDescription="Canteen Image"
-        android:src="@drawable/ic_launcher_background"
-        android:background="@android:color/darker_gray"
-        android:clipToOutline="true"
-        android:outlineProvider="background" />
-
-    <Button
-        android:id="@+id/btnMenu"
+    <!-- Header Section with Primary Color -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Menu Management"
-        android:layout_marginTop="5dp"
-        android:padding="14dp"
-        android:textSize="16sp"/>
+        android:orientation="vertical"
+        android:background="#7B1113"
+        android:padding="24dp"
+        android:gravity="center_horizontal">
 
-    <Button
-        android:id="@+id/btnTopUp"
+        <ImageView
+            android:id="@+id/ivCanteenImage"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_marginBottom="16dp"
+            android:scaleType="centerCrop"
+            android:contentDescription="Canteen Image"
+            android:src="@raw/logo_final"
+            android:background="@drawable/circle_background_white"
+            android:clipToOutline="true"
+            android:outlineProvider="background" />
+
+        <TextView
+            android:id="@+id/tvCanteenTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Campus Canteen"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:gravity="center_horizontal" />
+
+        <TextView
+            android:id="@+id/tvWelcome"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Welcome, Staff Name!"
+            android:textSize="18sp"
+            android:textColor="#E8E8E8"
+            android:gravity="center_horizontal"
+            android:layout_marginTop="8dp"/>
+    </LinearLayout>
+
+    <!-- Quick Actions Grid -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="TOP-UP / CASH-IN"
-        android:backgroundTint="#009688"
-        android:layout_marginTop="5dp"
-        android:padding="14dp"
-        android:textSize="16sp"/>
+        android:orientation="vertical"
+        android:padding="20dp"
+        android:layout_marginTop="-40dp">
 
-    <Button
-        android:id="@+id/btnOrders"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Orders (POS)"
-        android:layout_marginTop="5dp"
-        android:padding="14dp"
-        android:textSize="16sp"/>
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="8dp"
+            android:layout_marginBottom="16dp">
 
-    <Button
-        android:id="@+id/btnReports"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Sales Reports"
-        android:layout_marginTop="5dp"
-        android:padding="14dp"
-        android:textSize="16sp"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
 
-    <Button
-        android:id="@+id/btnBalance"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Balance Inquiry"
-        android:layout_marginTop="5dp"
-        android:padding="14dp"
-        android:textSize="16sp"/>
+                <!-- First Row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="12dp">
 
-    <Button
-        android:id="@+id/btnLogout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Logout"
-        android:backgroundTint="#D32F2F"
-        android:layout_marginTop="32dp"
-        android:padding="14dp"
-        android:textSize="16sp"/>
+                    <!-- Menu Management -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="120dp"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="4dp"
+                        app:strokeColor="#7B1113"
+                        app:strokeWidth="1dp">
 
+                        <LinearLayout
+                            android:id="@+id/btnMenu"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:background="#7B1113"
+                            android:padding="16dp">
+
+                            <ImageView
+                                android:layout_width="48dp"
+                                android:layout_height="48dp"
+                                android:src="@drawable/ic_menu_management"
+                                app:tint="#FFFFFF" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Menu"
+                                android:textColor="#FFFFFF"
+                                android:textSize="14sp"
+                                android:textStyle="bold"
+                                android:layout_marginTop="8dp" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- TOP-UP / CASH-IN -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="120dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="6dp"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="4dp"
+                        app:strokeColor="#9B1C1F"
+                        app:strokeWidth="2dp">
+
+                        <LinearLayout
+                            android:id="@+id/btnTopUp"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:background="#9B1C1F"
+                            android:padding="16dp">
+
+                            <ImageView
+                                android:layout_width="48dp"
+                                android:layout_height="48dp"
+                                android:src="@drawable/ic_top_up"
+                                app:tint="#FFFFFF" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="TOP-UP"
+                                android:textColor="#FFFFFF"
+                                android:textSize="14sp"
+                                android:textStyle="bold"
+                                android:layout_marginTop="8dp" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
+
+                <!-- Second Row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="12dp">
+
+                    <!-- Orders (POS) -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="120dp"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="4dp"
+                        app:strokeColor="#7B1113"
+                        app:strokeWidth="2dp">
+
+                        <LinearLayout
+                            android:id="@+id/btnOrders"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:background="#7B1113"
+                            android:padding="16dp">
+
+                            <ImageView
+                                android:layout_width="48dp"
+                                android:layout_height="48dp"
+                                android:src="@drawable/ic_pos"
+                                app:tint="#FFFFFF" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="POS"
+                                android:textColor="#FFFFFF"
+                                android:textSize="14sp"
+                                android:textStyle="bold"
+                                android:layout_marginTop="8dp" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Sales Reports -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="120dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="6dp"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="4dp"
+                        app:strokeColor="#9B1C1F"
+                        app:strokeWidth="1dp">
+
+                        <LinearLayout
+                            android:id="@+id/btnReports"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:background="#9B1C1F"
+                            android:padding="16dp">
+
+                            <ImageView
+                                android:layout_width="48dp"
+                                android:layout_height="48dp"
+                                android:src="@drawable/ic_reports"
+                                app:tint="#FFFFFF" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Reports"
+                                android:textColor="#FFFFFF"
+                                android:textSize="14sp"
+                                android:textStyle="bold"
+                                android:layout_marginTop="8dp" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
+
+                <!-- Third Row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <!-- Balance Inquiry -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="120dp"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="4dp"
+                        app:strokeColor="#7B1113"
+                        app:strokeWidth="1dp">
+
+                        <LinearLayout
+                            android:id="@+id/btnBalance"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:background="#7B1113"
+                            android:padding="16dp">
+
+                            <ImageView
+                                android:layout_width="48dp"
+                                android:layout_height="48dp"
+                                android:src="@drawable/ic_balance"
+                                app:tint="#FFFFFF" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Balance"
+                                android:textColor="#FFFFFF"
+                                android:textSize="14sp"
+                                android:textStyle="bold"
+                                android:layout_marginTop="8dp" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Logout -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="120dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="6dp"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="4dp"
+                        app:strokeColor="#9B1C1F"
+                        app:strokeWidth="1dp">
+
+                        <LinearLayout
+                            android:id="@+id/btnLogout"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:background="#9B1C1F"
+                            android:padding="16dp">
+
+                            <ImageView
+                                android:layout_width="48dp"
+                                android:layout_height="48dp"
+                                android:src="@drawable/ic_logout"
+                                app:tint="#FFFFFF" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Logout"
+                                android:textColor="#FFFFFF"
+                                android:textSize="14sp"
+                                android:textStyle="bold"
+                                android:layout_marginTop="8dp" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
 </LinearLayout>

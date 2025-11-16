@@ -1,5 +1,6 @@
 package com.example.datadomeapp.teacher
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -15,8 +16,7 @@ import com.google.firebase.firestore.FieldPath
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.tasks.await
-import com.google.firebase.firestore.toObject
-import kotlinx.coroutines.tasks.await
+
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 
@@ -33,17 +33,18 @@ class ClassDetailsActivity : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var btnCreateQuiz: Button
     private lateinit var btnCreateAssignment: Button
-    private lateinit var btnViewSubmissions: Button
-    private lateinit var btnViewAssignments: Button
     private lateinit var btnTakeAttendance: Button
     private lateinit var btnManageGrades: Button
     private lateinit var btnStartRoulette: Button
     private var studentNamesForRoulette: ArrayList<String> = ArrayList()
-
+    private var autoStartRoulette: Boolean = false
     private var assignmentId: String? = null
     private var subjectCode: String? = null
     private var className: String? = null
+    private var sectionId: String? = null
+    private var yearLevel: String? = null
 
+    @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.teacher_class_details)
@@ -53,14 +54,15 @@ class ClassDetailsActivity : AppCompatActivity() {
         className = intent.getStringExtra("CLASS_NAME")
         subjectCode = intent.getStringExtra("SUBJECT_CODE")
 
+        autoStartRoulette = intent.getBooleanExtra("AUTO_START_ROULETTE", false)
+
+
         // --- View Binding ---
         tvClassNameHeader = findViewById(R.id.tvClassNameHeader)
         tvLoading = findViewById(R.id.tvLoading)
         recyclerView = findViewById(R.id.recyclerViewStudents)
         btnCreateQuiz = findViewById(R.id.btnCreateQuiz)
         btnCreateAssignment = findViewById(R.id.btnCreateAssignment)
-        btnViewSubmissions = findViewById(R.id.btnViewSubmissions)
-        btnViewAssignments = findViewById(R.id.btnViewAssignments)
         btnTakeAttendance = findViewById(R.id.btnTakeAttendance)
         btnManageGrades = findViewById(R.id.btnManageGrades)
         btnStartRoulette = findViewById(R.id.btnStartRoulette)
@@ -81,6 +83,21 @@ class ClassDetailsActivity : AppCompatActivity() {
 
         loadClassDetails(assignmentId!!)
 
+        // After loadClassDetails(assignmentId!!)
+        val autoStartRoulette = intent.getBooleanExtra("AUTO_START_ROULETTE", false)
+        if (autoStartRoulette) {
+            // Maghintay ng kaunti hanggang matapos magload ang students
+            lifecycleScope.launch {
+                kotlinx.coroutines.delay(2500) // small delay (2.5s) para makuha ang students
+                if (studentNamesForRoulette.isNotEmpty()) {
+                    navigateToRoulette()
+                } else {
+                    Toast.makeText(this@ClassDetailsActivity, "Loading students... please wait.", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+
         btnCreateQuiz.setOnClickListener {
             val intent = Intent(this, ManageQuizzesActivity::class.java)
             intent.putExtra("ASSIGNMENT_ID", assignmentId)
@@ -89,32 +106,21 @@ class ClassDetailsActivity : AppCompatActivity() {
         }
 
         btnCreateAssignment.setOnClickListener {
-            val intent = Intent(this, CreateAssignmentActivity::class.java)
-            intent.putExtra("assignmentId", assignmentId) // ✅ FIXED: Use assignmentId
-            intent.putExtra("CLASS_NAME", className)
-            Log.d("ClassDetails", "Creating assignment for assignmentId: $assignmentId")
-            Toast.makeText(this, "Creating assignment for this class", Toast.LENGTH_SHORT).show()
-            startActivity(intent)
-        }
-
-        btnViewAssignments.setOnClickListener {
-            if (assignmentId.isNullOrEmpty()) {
-                Toast.makeText(this, "No assignment ID found.", Toast.LENGTH_SHORT).show()
+            if (assignmentId.isNullOrEmpty() || sectionId.isNullOrEmpty() || yearLevel.isNullOrEmpty()) {
+                Toast.makeText(this, "Class details not fully loaded.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
             val intent = Intent(this, AssignmentListActivity::class.java)
-            intent.putExtra("assignmentId", assignmentId) // ✅ FIXED: Use assignmentId
-            intent.putExtra("CLASS_NAME", className)
-            Log.d("ClassDetails", "Opening AssignmentListActivity with assignmentId: $assignmentId")
-            Toast.makeText(this, "Opening assignments for this class", Toast.LENGTH_SHORT).show()
-            startActivity(intent)
-        }
 
-        btnViewSubmissions.setOnClickListener {
-            val intent = Intent(this, ViewSubmissionsActivity::class.java)
-            intent.putExtra("assignmentId", assignmentId)
-            intent.putExtra("assignmentTitle", className)
+            // ➡️ PASS CRITICAL CONTEXT TO AssignmentListActivity
+            intent.putExtra("assignmentId", assignmentId) // (This is the Class ID)
+            intent.putExtra("CLASS_NAME", className)
+            intent.putExtra("SECTION_ID", sectionId)      // ⬅️ CRITICAL FIX
+            intent.putExtra("YEAR_LEVEL", yearLevel)    // ⬅️ CRITICAL FIX
+
+            Log.d("ClassDetails", "Opening AssignmentListActivity with assignmentId: $assignmentId, Section: $sectionId, Year: $yearLevel")
+            Toast.makeText(this, "Opening assignments for this class", Toast.LENGTH_SHORT).show()
             startActivity(intent)
         }
 
@@ -143,10 +149,12 @@ class ClassDetailsActivity : AppCompatActivity() {
             .addOnSuccessListener { doc ->
                 // Kuhanin ang data na kailangan para buuin ang Enrollment ID
                 val fetchedSubjectCode = doc.getString("subjectCode")
+                yearLevel = doc.getString("yearLevel")  // <--- CRITICAL
                 val fetchedSemester = doc.getString("semester")    // <--- CRITICAL
                 val fetchedYearLevel = doc.getString("yearLevel")  // <--- CRITICAL
 
                 val classNameHeader = className
+                sectionId = classNameHeader?.split(" - ")?.lastOrNull()
                 // NOTE: Ina-assume na ang section name ay palaging huling item pagkatapos ng ' - '
                 val selectedSectionName = classNameHeader?.split(" - ")?.lastOrNull()
 
@@ -273,9 +281,8 @@ class ClassDetailsActivity : AppCompatActivity() {
                 enrolledStudentIds.forEach { id ->
                     studentMap[id]?.let { finalEnrolledStudents.add(it) }
                 }
-                // --- END Optimized Approach (N+1 reads, but faster N reads in parallel) ---
 
-                // ************ (I-update ang UI Logic ayon sa orihinal mong code) ************
+                finalEnrolledStudents.sortBy { it.id }
 
                 if (finalEnrolledStudents.isEmpty()) {
                     tvLoading.text = "No students officially enrolled in $subjectCode."
@@ -288,6 +295,11 @@ class ClassDetailsActivity : AppCompatActivity() {
                     val studentAdapter = ClassStudentAdapter(finalEnrolledStudents)
                     recyclerView.adapter = studentAdapter
                     tvLoading.text = "✅ ${finalEnrolledStudents.size} students successfully loaded."
+
+                    if (autoStartRoulette) {
+                        navigateToRoulette()
+                        autoStartRoulette = false
+                    }
                 }
 
             } catch (e: Exception) {
@@ -333,8 +345,7 @@ class ClassDetailsActivity : AppCompatActivity() {
             return
         }
 
-        val intent = Intent(this, RouletteActivity::class.java) // ⚠️ Tiyakin na mayroon kayong RouletteActivity.kt
-        // Ipinapasa ang buong listahan ng pangalan sa bagong activity
+        val intent = Intent(this, RouletteActivity::class.java)
         intent.putStringArrayListExtra("STUDENT_NAMES_LIST", studentNamesForRoulette)
         intent.putExtra("CLASS_NAME", className)
         startActivity(intent)

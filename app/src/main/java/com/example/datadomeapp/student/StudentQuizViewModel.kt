@@ -257,6 +257,8 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
         val studentUid = auth.currentUser?.uid ?: return
         val quizId = quiz.quizId
 
+        val totalItems = calculateTotalMaxPoints()
+
         firestore.collection("quizResults").document("${quizId}_$studentUid")
             .get().addOnSuccessListener { snapshot ->
                 val status = snapshot.getString("status")
@@ -270,7 +272,7 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
                     _uiMessage.value = "Quiz deadline has passed. Submission is no longer possible."
 
                     // Siguraduhin na ang app ay lalabas pagkatapos magbigay ng mensahe.
-                    _quizResultData.value = QuizResultData(0, mutableQuestions.size, _cheatCount.value ?: 0)
+                    _quizResultData.value = QuizResultData(0, totalItems, _cheatCount.value ?: 0)
                 }
 
                 // I-update ang status sa database
@@ -282,6 +284,7 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
     fun startQuizTracking() {
         val studentUid = auth.currentUser?.uid ?: return
         val quizId = quiz.quizId
+        val totalItems = calculateTotalMaxPoints()
 
         // Gumawa ng initial record na may "IN_PROGRESS" status para makita ng guro sa real-time.
         firestore.collection("quizResults").document("${quizId}_$studentUid")
@@ -420,11 +423,52 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
         return score
     }
 
+    private fun fetchCurrentTerm(onSuccess: (Map<String, Any>) -> Unit, onFailure: (Exception) -> Unit) {
+        FirebaseFirestore.getInstance()
+            .collection("systemSettings")
+            .document("currentTerm")
+            .get()
+            .addOnSuccessListener { document ->
+                if (document.exists()) {
+                    val termData = mapOf(
+                        "academicTerm" to (document.getString("academicTerm") ?: ""),
+                        "academicYear" to (document.getString("academicYear") ?: ""),
+                        "semester" to (document.getString("semester") ?: "")
+                    )
+                    onSuccess(termData)
+                } else {
+                    onFailure(Exception("currentTerm document not found."))
+                }
+            }
+            .addOnFailureListener(onFailure)
+    }
+
+    private fun calculateTotalMaxPoints(): Int {
+        var totalPoints = 0
+        mutableQuestions.forEach { q ->
+            when (q) {
+                is Question.MultipleChoice, is Question.TrueFalse -> {
+                    // MC at T/F ay 1 point/item
+                    totalPoints += 1
+                }
+                is Question.Matching -> {
+                    // ⭐️ FIX: Matching: Points ay ang bilang ng matches/options.
+                    val matchesCount = q.matches.size
+                    totalPoints += matchesCount
+                }
+                else -> {
+                    // Default to 1 point for other types, to be safe
+                    totalPoints += 1
+                }
+            }
+        }
+        return totalPoints
+    }
 
     fun submitQuiz() {
         val studentUid = auth.currentUser?.uid ?: "unknown"
         val rawScore = calculateScore()
-        val totalQuestions = mutableQuestions.size
+        val totalQuestions = calculateTotalMaxPoints()
         val cheatCount = _cheatCount.value ?: 0
 
         var finalScore = rawScore
@@ -452,9 +496,11 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
 
         val answerMap = studentAnswers.associate { it.first.toString() to it.second }
 
-        firestore.collection("quizResults").document("${quiz.quizId}_$studentUid")
-            .set(
-                mapOf(
+        // ⭐ HAKBANG 1: I-FETCH MUNA ANG CURRENT TERM DATA
+        fetchCurrentTerm(
+            onSuccess = { currentTermData ->
+                // HAKBANG 2: I-COMPOSE ANG BASE RESULT MAP
+                val baseResultData = mutableMapOf(
                     "studentId" to studentUid,
                     "quizId" to quiz.quizId,
                     "assignmentId" to quiz.assignmentId,
@@ -464,15 +510,30 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
                     "cheatCount" to _cheatCount.value,
                     "timestamp" to System.currentTimeMillis(),
                     "cheatLog" to cheatLogList
-                )
-            ).addOnSuccessListener {
-                _uiMessage.value = "Quiz submitted! Score: $finalScore"
-                _quizResultData.value = QuizResultData(finalScore, totalQuestions, cheatCount)
+                ) as MutableMap<String, Any> // Explicit cast para sa putAll
 
-            }.addOnFailureListener {
-                _uiMessage.value = "Failed to submit quiz. Retrying..."
-                submitQuiz()
+                // HAKBANG 3: I-MERGE ANG TERM DATA
+                baseResultData.putAll(currentTermData)
+
+                // HAKBANG 4: I-SAVE ANG FINAL MAP SA FIRESTORE
+                firestore.collection("quizResults").document("${quiz.quizId}_$studentUid")
+                    .set(baseResultData)
+                    .addOnSuccessListener {
+                        _uiMessage.value = "Quiz submitted! Score: $finalScore"
+                        _quizResultData.value = QuizResultData(finalScore, totalQuestions, cheatCount)
+                    }
+                    .addOnFailureListener {
+                        _uiMessage.value = "Failed to submit quiz. Retrying..."
+                        submitQuiz() // Recursive retry
+                    }
+            },
+            onFailure = { e ->
+                // Handle error fetching term data (e.g., alert the user)
+                _uiMessage.value = "Error: Failed to fetch academic term data (${e.message}). Retrying submission..."
+                // Mag-try ulit para hindi mawala ang quiz result
+                submitQuiz() // Recursive retry
             }
+        )
     }
 }
 

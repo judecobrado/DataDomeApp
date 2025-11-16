@@ -22,7 +22,7 @@ class StudentAssignmentsActivity : AppCompatActivity() {
     private lateinit var tvEmpty: TextView
     private lateinit var tvSubjectTitle: TextView
     private lateinit var progressBar: ProgressBar
-
+    private var isTermLoaded = false
     private val assignments = mutableListOf<Assignment>()
     private val submissionStatusMap = mutableMapOf<String, Submission?>()
     private lateinit var adapter: ArrayAdapter<String>
@@ -32,6 +32,9 @@ class StudentAssignmentsActivity : AppCompatActivity() {
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
     private val studentId = auth.currentUser?.uid
+    private var academicTerm: String? = null
+    private var academicYear: String? = null
+    private var semester: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,7 +43,9 @@ class StudentAssignmentsActivity : AppCompatActivity() {
         initializeViews()
         getIntentData()
         setupListView()
-        loadAssignments()
+        loadCurrentTerm {
+            loadAssignments()
+        }
     }
 
     private fun initializeViews() {
@@ -68,6 +73,12 @@ class StudentAssignmentsActivity : AppCompatActivity() {
         lvAssignments.adapter = adapter
 
         lvAssignments.setOnItemClickListener { _, _, position, _ ->
+
+            if (!isTermLoaded) {
+                Toast.makeText(this, "Please wait, loading system data...", Toast.LENGTH_SHORT).show()
+                return@setOnItemClickListener
+            }
+
             if (position < assignments.size) {
                 val assignment = assignments[position]
                 val submission = submissionStatusMap[assignment.id]
@@ -79,6 +90,31 @@ class StudentAssignmentsActivity : AppCompatActivity() {
         }
     }
 
+    private fun loadCurrentTerm(onComplete: (() -> Unit)? = null) {
+        val termDocRef = firestore.collection("systemSettings").document("currentTerm")
+
+        termDocRef.get()
+            .addOnSuccessListener { doc ->
+                if (doc.exists()) {
+                    academicTerm = doc.getString("academicTerm")
+                    academicYear = doc.getString("academicYear")
+                    semester = doc.getString("semester")
+
+                    isTermLoaded = true
+
+                    Log.d("TERM_INFO", "Loaded term: $academicTerm | Year: $academicYear | Semester: $semester")
+                } else {
+                    Log.w("TERM_INFO", "No currentTerm document found.")
+                    isTermLoaded = true
+                }
+                onComplete?.invoke()
+            }
+            .addOnFailureListener { e ->
+                Log.e("TERM_INFO", "Error loading current term: ${e.message}")
+                onComplete?.invoke()
+            }
+    }
+
     private fun openAssignmentDetails(assignment: Assignment, submission: Submission?) {
         val intent = Intent(this, AssignmentDetailsActivity::class.java)
         intent.putExtra("assignmentId", assignment.id)
@@ -87,6 +123,9 @@ class StudentAssignmentsActivity : AppCompatActivity() {
         intent.putExtra("assignmentFileUrl", assignment.fileUrl)
         intent.putExtra("dueDateMillis", assignment.dueDateMillis)
         intent.putExtra("classId", classId)
+        intent.putExtra("academicTerm", academicTerm)
+        intent.putExtra("academicYear", academicYear)
+        intent.putExtra("semester", semester)
 
         // Pass submission data if exists
         submission?.let { sub ->

@@ -1,57 +1,301 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="8dp"
-    app:cardCornerRadius="8dp"
-    app:cardElevation="2dp">
+    android:layout_margin="8dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="4dp"
+    app:strokeColor="#E8E8E8"
+    app:strokeWidth="1dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="12dp"
-        android:background="?android:attr/selectableItemBackground">
+        android:orientation="vertical"
+        android:padding="20dp">
 
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
 
-            <TextView
-                android:id="@+id/tvAttSubject"
-                android:layout_width="match_parent"
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:textColor="@color/black"
-                tools:text="IT101 - Introduction to Programming" />
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/tvAttSummary"
-                android:layout_width="match_parent"
+                <TextView
+                    android:id="@+id/tvSubjectCode"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="IT 101"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#7B1113"
+                    android:letterSpacing="0.02"/>
+
+                <TextView
+                    android:id="@+id/tvSubjectTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Programming Fundamentals"
+                    android:textSize="14sp"
+                    android:textColor="#666666"
+                    android:layout_marginTop="2dp"
+                    android:maxLines="1"
+                    android:ellipsize="end"/>
+
+            </LinearLayout>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:textSize="13sp"
-                android:textColor="#555555"
-                tools:text="Classes: 10 | Present: 8 | Absent: 1 | Late: 1 | Excused: 0" />
+                app:cardCornerRadius="12dp"
+                app:cardBackgroundColor="@android:color/white"
+                app:strokeColor="#7B1113"
+                app:strokeWidth="1dp">
+
+                <TextView
+                    android:id="@+id/tvAttendancePercentage"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="85%"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="#7B1113"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="6dp"/>
+
+            </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/tvAttPercentage"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_marginStart="16dp"
-            android:gravity="center"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            tools:text="90.00%"
-            tools:textColor="#00796B" />
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/progressAttendance"
+            android:layout_width="match_parent"
+            android:layout_height="8dp"
+            android:layout_marginBottom="16dp"
+            app:trackColor="#E8E8E8"
+            app:trackCornerRadius="4dp"
+            app:indicatorColor="#7B1113"/>
+
+        <androidx.gridlayout.widget.GridLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:columnCount="2"
+            app:rowCount="3">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                app:layout_columnWeight="1"
+                app:layout_rowWeight="1"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="4dp">
+
+                <View
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:background="@drawable/circle_present"
+                    android:layout_marginEnd="8dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Present:"
+                    android:textSize="12sp"
+                    android:textColor="#666666"/>
+
+                <TextView
+                    android:id="@+id/tvPresentCount"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="15"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="#333333"
+                    android:gravity="end"/>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                app:layout_columnWeight="1"
+                app:layout_rowWeight="1"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="4dp">
+
+                <View
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:background="@drawable/circle_absent"
+                    android:layout_marginEnd="8dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Absent:"
+                    android:textSize="12sp"
+                    android:textColor="#666666"/>
+
+                <TextView
+                    android:id="@+id/tvAbsentCount"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="3"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="#333333"
+                    android:gravity="end"/>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                app:layout_columnWeight="1"
+                app:layout_rowWeight="1"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="4dp">
+
+                <View
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:background="@drawable/circle_late"
+                    android:layout_marginEnd="8dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Late:"
+                    android:textSize="12sp"
+                    android:textColor="#666666"/>
+
+                <TextView
+                    android:id="@+id/tvLateCount"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="2"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="#333333"
+                    android:gravity="end"/>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                app:layout_columnWeight="1"
+                app:layout_rowWeight="1"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="4dp">
+
+                <View
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:background="@drawable/circle_excused"
+                    android:layout_marginEnd="8dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Excused:"
+                    android:textSize="12sp"
+                    android:textColor="#666666"/>
+
+                <TextView
+                    android:id="@+id/tvExcusedCount"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="1"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="#333333"
+                    android:gravity="end"/>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                app:layout_columnWeight="1"
+                app:layout_rowWeight="1"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="4dp">
+
+                <View
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:background="@drawable/circle_total"
+                    android:layout_marginEnd="8dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Total Classes:"
+                    android:textSize="12sp"
+                    android:textColor="#666666"/>
+
+                <TextView
+                    android:id="@+id/tvTotalClasses"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="21"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="#333333"
+                    android:gravity="end"/>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                app:layout_columnWeight="1"
+                app:layout_rowWeight="1"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="4dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Status:"
+                    android:textSize="12sp"
+                    android:textColor="#666666"/>
+
+                <TextView
+                    android:id="@+id/tvStatus"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Good"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="#4CAF50"
+                    android:gravity="end"/>
+
+            </LinearLayout>
+
+        </androidx.gridlayout.widget.GridLayout>
 
     </LinearLayout>
 
-</androidx.cardview.widget.CardView>
+</com.google.android.material.card.MaterialCardView>

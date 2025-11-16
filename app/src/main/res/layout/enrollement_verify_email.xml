@@ -1,21 +1,107 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:padding="24dp"
+    android:gravity="center_horizontal"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#FFF7F3">
 
-    <EditText
-        android:id="@+id/etEmail"
-        android:hint="Enter your email"
-        android:inputType="textEmailAddress"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+    <ImageView
+        android:id="@+id/vMainIllustration"
+        android:layout_width="160dp"
+        android:layout_height="160dp"
+        android:adjustViewBounds="true"
+        android:contentDescription="App Logo"
+        android:scaleType="fitCenter"
+        android:src="@raw/logo_final" />
 
-    <Button
-        android:id="@+id/btnVerify"
-        android:text="Verify Email"
+    <TextView
+        android:id="@+id/tvBranding"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-medium"
+        android:gravity="center"
+        android:letterSpacing="0.1"
+        android:text="DATADOME"
+        android:textColor="#7B1113"
+        android:textSize="38sp"
+        android:textStyle="bold"
+        android:layout_marginTop="-24dp"
+        android:layout_marginBottom="12dp" />
+
+    <TextView
+        android:id="@+id/tvMainHeader"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="Secure School Data Platform"
+        android:textColor="#9B1C1F"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tvDescription"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="32dp"
+        android:gravity="center"
+        android:text="Trusted infrastructure for administrative control, student performance tracking, and resource management."
+        android:textColor="#5C5C5C"
+        android:textSize="14sp" />
+    <!-- Instruction -->
+    <TextView
+        android:id="@+id/tvInstruction"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Enter your registered email to verify your account."
+        android:textSize="16sp"
+        android:textColor="#4D4D4D"
+        android:textAlignment="center"
+        android:layout_marginBottom="24dp"
+        android:fontFamily="sans-serif-medium"/>
+
+    <!-- Email Input -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilEmail"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"/>
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
+        app:boxStrokeColor="#7B1113"
+        app:hintTextColor="#7B1113"
+        app:boxCornerRadiusTopStart="12dp"
+        app:boxCornerRadiusTopEnd="12dp"
+        app:boxCornerRadiusBottomStart="12dp"
+        app:boxCornerRadiusBottomEnd="12dp"
+        android:layout_marginBottom="24dp">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etEmail"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:hint="Enter your email"
+            android:inputType="textEmailAddress"
+            android:textColor="#333333"
+            android:textColorHint="#999999"
+            android:fontFamily="sans-serif-medium"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"/>
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Verify Button -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnVerify"
+        android:layout_width="300dp"
+        android:layout_height="56dp"
+        android:backgroundTint="#7B1113"
+        android:elevation="8dp"
+        android:fontFamily="sans-serif-medium"
+        android:stateListAnimator="@null"
+        android:text="Verify Email"
+        android:textAllCaps="false"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"
+        app:cornerRadius="28dp" />
 </LinearLayout>

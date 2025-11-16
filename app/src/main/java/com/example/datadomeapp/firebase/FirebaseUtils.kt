@@ -10,4 +10,13 @@ object FirebaseUtils {
     val storage: FirebaseStorage by lazy { FirebaseStorage.getInstance() }
 
     fun currentUid(): String? = auth.currentUser?.uid
+
+    val currentTerm: String
+        get() = "1st" // Or fetch dynamically
+
+    val currentYear: String
+        get() = "2025-2026" // Or fetch dynamically
+
+    val currentSemester: String
+        get() = "Fall" // Or fetch dynamically
 }

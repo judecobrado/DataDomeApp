@@ -335,11 +335,10 @@ class QuizMonitoringActivity : BaseActivity() {
         rgAction.setOnCheckedChangeListener { _, checkedId ->
             selectedAction = when (checkedId) {
                 R.id.rbAllowRetake -> "RETAKE"
-                R.id.rbReopenAccess -> "REOPEN"
                 else -> null
             }
 
-            val showTimePickers = selectedAction == "RETAKE" || selectedAction == "REOPEN"
+            val showTimePickers = selectedAction == "RETAKE"
             timeInputContainer?.visibility = if (showTimePickers) View.VISIBLE else View.GONE
 
             if (!showTimePickers) {

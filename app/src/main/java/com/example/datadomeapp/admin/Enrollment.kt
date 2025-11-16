@@ -14,7 +14,23 @@ data class Enrollment(
     val yearLevel: String = "",
     val guardianName: String = "",
     val guardianPhone: String = "",
-    val status: String = "pending" // Idinagdag para sa tracking
+    val guardianRelationship: String = "",
+    // Father information
+    val fatherFirstName: String = "",
+    val fatherMiddleName: String = "",
+    val fatherLastName: String = "",
+    val fatherDOB: String = "",
+    val fatherPhone: String = "",
+    val fatherOccupation: String = "",
+    // Mother information
+    val motherFirstName: String = "",
+    val motherMiddleName: String = "",
+    val motherLastName: String = "",
+    val motherDOB: String = "",
+    val motherPhone: String = "",
+    val motherOccupation: String = "",
+    val status: String = "pending",
+    val data: Map<String, Any> = emptyMap()
 )
 
 data class StudentSubjectss(

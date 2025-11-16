@@ -78,6 +78,39 @@
             android:layout_marginTop="8dp"
             android:layout_marginBottom="8dp" />
 
+        <!-- Parent Information Section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Parent Information"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/holo_blue_dark"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/tvFatherInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Father: "
+            android:layout_marginBottom="8dp"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/tvMotherInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Mother: "
+            android:layout_marginBottom="8dp"
+            android:textSize="14sp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@android:color/darker_gray"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp" />
+
         <TextView
             android:id="@+id/tvCourse"
             android:layout_width="wrap_content"
@@ -91,7 +124,15 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Guardian Placeholder"
-            android:layout_marginBottom="16dp" />
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:id="@+id/tvGuardianRelationship"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Guardian Relationship: "
+            android:layout_marginBottom="16dp"
+            android:textSize="14sp" />
 
         <View
             android:layout_width="match_parent"
