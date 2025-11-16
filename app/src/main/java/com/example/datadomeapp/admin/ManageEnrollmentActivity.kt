@@ -11,10 +11,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.datadomeapp.R
-import com.example.datadomeapp.models.ClassAssignment
-import com.example.datadomeapp.models.Curriculum
-import com.example.datadomeapp.models.Enrollment
-import com.example.datadomeapp.models.SubjectEntry
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -27,7 +23,6 @@ import com.google.firebase.Timestamp
 import java.util.*
 
 // 🟢 NEW MODEL: Para sa pag-iimbak ng reference key sa record ng estudyante
-// 🟢 REVISED MODEL: Para sa pag-iimbak ng kumpletong Subject/Grade record ng estudyante
 data class StudentAssignmentRecord(
     val subjectCode: String = "",
     val subjectTitle: String = "",
@@ -45,6 +40,38 @@ data class StudentAssignmentRecord(
     val yearLevel: String = ""      // Idinagdag: Year Level
 )
 
+// Local models to avoid conflicts with other files
+data class LocalCurriculum(
+    val requiredSubjects: List<LocalSubjectEntry> = emptyList()
+)
+
+data class LocalSubjectEntry(
+    val subjectCode: String = "",
+    val subjectTitle: String = "",
+    val credits: Int = 3
+)
+
+data class LocalClassAssignment(
+    val assignmentNo: String = "",
+    val subjectCode: String = "",
+    val subjectTitle: String = "",
+    val courseCode: String = "",
+    val yearLevel: String = "",
+    val teacherName: String = "",
+    val teacherId: String = "",
+    val enrolledCount: Int = 0,
+    val maxCapacity: Int = 50,
+    val onlineClassLink: String = "",
+    val scheduleSlots: Map<String, LocalTimeSlot> = emptyMap()
+)
+
+data class LocalTimeSlot(
+    val day: String = "",
+    val startTime: String = "",
+    val endTime: String = "",
+    val roomLocation: String = "",
+    val sectionBlock: String = ""
+)
 
 class ManageEnrollmentsActivity : AppCompatActivity() {
 
@@ -56,12 +83,11 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
     private lateinit var adapter: EnrollmentAdapter
     private val enrollmentList = mutableListOf<Enrollment>()
 
-    private val requiredSubjectsMap = mutableMapOf<String, SubjectEntry>()
-    private val availableSectionsMap = mutableMapOf<String, List<ClassAssignment>>()
+    private val requiredSubjectsMap = mutableMapOf<String, LocalSubjectEntry>()
+    private val availableSectionsMap = mutableMapOf<String, List<LocalClassAssignment>>()
 
     private val finalYearLevels = listOf("Select Year Level", "1st Year", "2nd Year", "3rd Year", "4th Year")
     private val finalEnrollmentTypes = listOf("Select Type", "Regular", "Irregular")
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -82,7 +108,7 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
 
         val btnToggleSignup = findViewById<Button>(R.id.btnToggleSignup)
 
-// Load current state from Firestore
+        // Load current state from Firestore
         firestore.collection("appSettings").document("mainActivity")
             .get()
             .addOnSuccessListener { doc ->
@@ -93,7 +119,7 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                 btnToggleSignup.text = "Toggle Signup Button"
             }
 
-// Toggle button click
+        // Toggle button click
         btnToggleSignup.setOnClickListener {
             firestore.collection("appSettings").document("mainActivity")
                 .get()
@@ -110,27 +136,52 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
         }
     }
 
-
     private fun loadPendingEnrollments() {
+        Log.d("EnrollmentDebug", "🔄 Starting to load pending enrollments...")
+
         firestore.collection("pendingEnrollments")
             .whereEqualTo("status", "submitted")
             .orderBy("timestamp", Query.Direction.ASCENDING)
             .get()
             .addOnSuccessListener { snapshot ->
                 enrollmentList.clear()
-                for (doc in snapshot.documents) {
-                    val enrollmentData = doc.data as Map<String, Any>
-                    val e = doc.toObject(Enrollment::class.java)?.copy(id = doc.id, data = enrollmentData)
-                    if (e != null) enrollmentList.add(e)
+                Log.d("EnrollmentDebug", "📊 Firestore returned ${snapshot.documents.size} documents")
+
+                if (snapshot.isEmpty) {
+                    Log.d("EnrollmentDebug", "ℹ️ No pending enrollments found with status 'submitted'")
+                    Toast.makeText(this, "No pending enrollments found.", Toast.LENGTH_SHORT).show()
+                    adapter.notifyDataSetChanged()
+                    return@addOnSuccessListener
                 }
+
+                for (doc in snapshot.documents) {
+                    try {
+                        Log.d("EnrollmentDebug", "📄 Processing document: ${doc.id}")
+                        val enrollmentData = doc.data ?: emptyMap()
+
+                        // Use the enhanced Enrollment.fromFirestore method
+                        val enrollment = Enrollment.fromFirestore(doc.id, enrollmentData)
+                        enrollmentList.add(enrollment)
+
+                        Log.d("EnrollmentDebug", "✅ Added enrollment: ${enrollment.firstName} ${enrollment.lastName} - ${enrollment.email}")
+                    } catch (e: Exception) {
+                        Log.e("EnrollmentDebug", "❌ Error parsing document ${doc.id}", e)
+                    }
+                }
+
                 adapter.notifyDataSetChanged()
+                Log.d("EnrollmentDebug", "🎉 Successfully loaded ${enrollmentList.size} enrollments")
+
+                if (enrollmentList.isEmpty()) {
+                    Toast.makeText(this, "No valid pending enrollments found.", Toast.LENGTH_SHORT).show()
+                }
             }
-            .addOnFailureListener {
-                Toast.makeText(this, "Failed to load enrollments.", Toast.LENGTH_SHORT).show()
-                Log.e("Enrollment", "Error loading pending enrollments", it)
+            .addOnFailureListener { exception ->
+                val errorMsg = "Failed to load enrollments: ${exception.message}"
+                Toast.makeText(this, errorMsg, Toast.LENGTH_LONG).show()
+                Log.e("EnrollmentDebug", "❌ Error loading pending enrollments", exception)
             }
     }
-
 
     fun showEnrollmentDetailDialog(e: Enrollment) {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.admin_enrollment_detail_dialog, null)
@@ -150,26 +201,26 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
         val spinnerFinalYearLevel = dialogView.findViewById<Spinner>(R.id.spinnerFinalYearLevel)
         val spinnerFinalEnrollmentType = dialogView.findViewById<Spinner>(R.id.spinnerFinalEnrollmentType)
 
+        // Use direct field access from the Enrollment model
+        val courseName = if (e.courseName.isNotEmpty()) e.courseName else e.course
+        val courseCode = e.courseCode
 
-        val courseName = e.data["courseName"] as? String ?: e.course
-        val courseCode = e.data["courseCode"] as? String ?: ""
+        // Parent information from Enrollment fields
+        val fatherFirstName = e.fatherFirstName
+        val fatherMiddleName = e.fatherMiddleName
+        val fatherLastName = e.fatherLastName
+        val fatherDOB = e.fatherDOB
+        val fatherPhone = e.fatherPhone
+        val fatherOccupation = e.fatherOccupation
 
-        // Parent information from data map
-        val fatherFirstName = e.data["fatherFirstName"] as? String ?: ""
-        val fatherMiddleName = e.data["fatherMiddleName"] as? String ?: ""
-        val fatherLastName = e.data["fatherLastName"] as? String ?: ""
-        val fatherDOB = e.data["fatherDOB"] as? String ?: ""
-        val fatherPhone = e.data["fatherPhone"] as? String ?: ""
-        val fatherOccupation = e.data["fatherOccupation"] as? String ?: ""
+        val motherFirstName = e.motherFirstName
+        val motherMiddleName = e.motherMiddleName
+        val motherLastName = e.motherLastName
+        val motherDOB = e.motherDOB
+        val motherPhone = e.motherPhone
+        val motherOccupation = e.motherOccupation
 
-        val motherFirstName = e.data["motherFirstName"] as? String ?: ""
-        val motherMiddleName = e.data["motherMiddleName"] as? String ?: ""
-        val motherLastName = e.data["motherLastName"] as? String ?: ""
-        val motherDOB = e.data["motherDOB"] as? String ?: ""
-        val motherPhone = e.data["motherPhone"] as? String ?: ""
-        val motherOccupation = e.data["motherOccupation"] as? String ?: ""
-
-        val guardianRelationship = e.data["guardianRelationship"] as? String ?: "Unknown"
+        val guardianRelationship = e.guardianRelationship
 
         tvName.text = "Name: ${e.lastName}, ${e.firstName} ${e.middleName.firstOrNull() ?: ""}"
         tvEmail.text = "Email: ${e.email}"
@@ -197,9 +248,8 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
         tvFatherInfo.text = "Father: $fatherFullName\nPhone: $fatherPhone\nOccupation: $fatherOccupation\nDOB: ${if (fatherDOB.isNotEmpty()) fatherDOB else "Not provided"}"
         tvMotherInfo.text = "Mother: $motherFullName\nPhone: $motherPhone\nOccupation: $motherOccupation\nDOB: ${if (motherDOB.isNotEmpty()) motherDOB else "Not provided"}"
 
-        val applicationType = e.data["applicationType"] as? String ?: "N/A"
+        val applicationType = if (e.applicationType.isNotEmpty()) e.applicationType else "N/A"
         tvApplicationType.text = "Application Status: $applicationType"
-
 
         val yearAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, finalYearLevels)
         yearAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
@@ -208,7 +258,6 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
         val typeAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, finalEnrollmentTypes)
         typeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerFinalEnrollmentType.adapter = typeAdapter
-
 
         val dialog = AlertDialog.Builder(this)
             .setView(dialogView)
@@ -229,7 +278,6 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                 Toast.makeText(this, "Course Code is missing. Cannot proceed with subject selection.", Toast.LENGTH_LONG).show()
             } else {
                 dialog.dismiss()
-
                 showSubjectSelectionDialog(
                     course = courseCode,
                     finalYearLevel = finalYearLevel,
@@ -240,7 +288,6 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
             }
         }
     }
-
 
     // ----------------------------------------------------
     // Subject Selection Dialog: Loads curriculum and available sections
@@ -255,12 +302,23 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
         Log.d("EnrollmentDebug", "--- Starting Subject Selection ---")
         Log.d("EnrollmentDebug", "Curriculum Doc ID: $curriculumDocId")
 
-
         CoroutineScope(Dispatchers.Main).launch {
             try {
                 // 1. Fetch Curriculum
                 val curriculumSnapshot = firestore.collection("curriculums").document(curriculumDocId).get().await()
-                val requiredSubjects = curriculumSnapshot.toObject(Curriculum::class.java)?.requiredSubjects ?: emptyList()
+                val curriculumData = curriculumSnapshot.data
+                val requiredSubjects = if (curriculumData != null) {
+                    // Manual parsing to avoid model conflicts
+                    (curriculumData["requiredSubjects"] as? List<Map<String, Any>>)?.map { subjectMap ->
+                        LocalSubjectEntry(
+                            subjectCode = subjectMap["subjectCode"] as? String ?: "",
+                            subjectTitle = subjectMap["subjectTitle"] as? String ?: "",
+                            credits = (subjectMap["credits"] as? Number)?.toInt() ?: 3
+                        )
+                    } ?: emptyList()
+                } else {
+                    emptyList()
+                }
 
                 requiredSubjectsMap.clear()
                 requiredSubjects.forEach { requiredSubjectsMap[it.subjectCode] = it }
@@ -270,7 +328,6 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                     return@launch
                 }
 
-
                 // 2. Fetch Available Sections
                 val assignmentSnapshot = firestore.collection("classAssignments")
                     .whereEqualTo("courseCode", normalizedCourseCode)
@@ -278,7 +335,22 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                     .get().await()
 
                 availableSectionsMap.clear()
-                val allAssignments = assignmentSnapshot.toObjects(ClassAssignment::class.java)
+                val allAssignments = assignmentSnapshot.documents.map { doc ->
+                    val data = doc.data ?: emptyMap()
+                    LocalClassAssignment(
+                        assignmentNo = doc.id,
+                        subjectCode = data["subjectCode"] as? String ?: "",
+                        subjectTitle = data["subjectTitle"] as? String ?: "",
+                        courseCode = data["courseCode"] as? String ?: "",
+                        yearLevel = data["yearLevel"] as? String ?: "",
+                        teacherName = data["teacherName"] as? String ?: "",
+                        teacherId = data["teacherId"] as? String ?: "",
+                        enrolledCount = (data["enrolledCount"] as? Number)?.toInt() ?: 0,
+                        maxCapacity = (data["maxCapacity"] as? Number)?.toInt() ?: 50,
+                        onlineClassLink = data["onlineClassLink"] as? String ?: "",
+                        scheduleSlots = parseScheduleSlots(data["scheduleSlots"] as? Map<String, Map<String, Any>> ?: emptyMap())
+                    )
+                }
 
                 // I-filter sa Client-Side gamit ang dynamic na maxCapacity
                 val availableAssignments = allAssignments.filter { it.enrolledCount < it.maxCapacity }
@@ -290,7 +362,6 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                     Toast.makeText(this@ManageEnrollmentsActivity, "No available sections found for ${normalizedCourseCode} - ${finalYearLevel}. Double Check Data.", Toast.LENGTH_LONG).show()
                     return@launch
                 }
-
 
                 // --- 3. Construct and Show the Interactive Dialog ---
                 showInteractiveAssignmentDialog(
@@ -309,12 +380,25 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
         }
     }
 
+    // Helper function to parse schedule slots
+    private fun parseScheduleSlots(slotsData: Map<String, Map<String, Any>>): Map<String, LocalTimeSlot> {
+        return slotsData.mapValues { (_, slotData) ->
+            LocalTimeSlot(
+                day = slotData["day"] as? String ?: "",
+                startTime = slotData["startTime"] as? String ?: "",
+                endTime = slotData["endTime"] as? String ?: "",
+                roomLocation = slotData["roomLocation"] as? String ?: "",
+                sectionBlock = slotData["sectionBlock"] as? String ?: ""
+            )
+        }
+    }
+
     // ----------------------------------------------------
     // Interactive Subject Assignment Dialog
     // ----------------------------------------------------
     private fun showInteractiveAssignmentDialog(
         studentEmail: String, pendingEnrollmentId: String,
-        requiredSubjects: List<SubjectEntry>, finalYearLevel: String, finalEnrollmentType: String, courseCode: String
+        requiredSubjects: List<LocalSubjectEntry>, finalYearLevel: String, finalEnrollmentType: String, courseCode: String
     ) {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.admin_enrollment_dialog_finalize, null)
         val selectionList = dialogView.findViewById<LinearLayout>(R.id.llSubjectSelections)
@@ -327,8 +411,7 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
             .setCancelable(false)
             .create()
 
-        val finalSelections = mutableMapOf<String, ClassAssignment?>()
-
+        val finalSelections = mutableMapOf<String, LocalClassAssignment?>()
 
         // 🛑 REGULAR STUDENT LOGIC: SINGLE SECTION SELECTION
         if (finalEnrollmentType == "Regular") {
@@ -487,7 +570,7 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                 }
             }
 
-            // ... (Validation code) ...
+            // Validation
             if (finalEnrollmentType == "Regular" && assignmentsToSave.size < requiredSubjects.size) {
                 if (finalSelections.isEmpty()) {
                     Toast.makeText(this, "ERROR: Please select a single Section Block for the Regular Enrollment.", Toast.LENGTH_LONG).show()
@@ -518,11 +601,10 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
         dialog.show()
     }
 
-
     // ----------------------------------------------------
-    // SCHEDULE CONFLICT CHECKER (UPDATED for Map<String, TimeSlot>)
+    // SCHEDULE CONFLICT CHECKER (UPDATED for Map<String, LocalTimeSlot>)
     // ----------------------------------------------------
-    private fun checkForScheduleConflicts(assignments: List<ClassAssignment>): Boolean {
+    private fun checkForScheduleConflicts(assignments: List<LocalClassAssignment>): Boolean {
         val occupiedSlots = mutableListOf<Triple<String, Int, Int>>() // (day, startMin, endMin)
 
         fun parseTimeToMinutes(timeStr: String): Int {
@@ -567,7 +649,7 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
     // ----------------------------------------------------
     private fun finalizeEnrollmentTransaction(
         studentEmail: String, pendingEnrollmentId: String,
-        selectedAssignments: List<ClassAssignment>, finalYearLevel: String, finalEnrollmentType: String, courseCode: String
+        selectedAssignments: List<LocalClassAssignment>, finalYearLevel: String, finalEnrollmentType: String, courseCode: String
     ) {
         // --- Added: Get the current timestamp once for consistency across all records ---
         val enrollmentTimestamp = Timestamp.now()
@@ -576,22 +658,23 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
 
             firestore.collection("pendingEnrollments").document(pendingEnrollmentId).get()
                 .addOnSuccessListener { doc ->
-                    val e = doc.toObject(Enrollment::class.java)
-                    if (e == null) {
-                        Toast.makeText(this, "Error: Original enrollment record not found.", Toast.LENGTH_LONG).show()
+                    val enrollmentData = doc.data ?: emptyMap()
+                    val e = Enrollment.fromFirestore(doc.id, enrollmentData)
+
+                    if (e.firstName.isEmpty()) {
+                        Toast.makeText(this, "Error: Original enrollment record not found or invalid.", Toast.LENGTH_LONG).show()
                         return@addOnSuccessListener
                     }
                     val finalPassword = generatePassword(e.lastName, e.dateOfBirth)
 
-                    // --- Step 3: Firebase Auth User Creation (No change) ---
+                    // --- Step 3: Firebase Auth User Creation ---
                     auth.createUserWithEmailAndPassword(studentEmail.trim(), finalPassword.trim())
                         .addOnSuccessListener { authResult ->
                             val userUid = authResult.user!!.uid
                             Log.d("EnrollmentDebug", "Auth User created successfully inside finalization: $userUid")
 
-                            // --- Step 4: START FIRESTORE TRANSACTION (Capacity Check) (No change) ---
+                            // --- Step 4: START FIRESTORE TRANSACTION (Capacity Check) ---
                             firestore.runTransaction { transaction ->
-                                // ... (READ and VALIDATION phases remain the same) ...
                                 val snapshots = mutableMapOf<String, com.google.firebase.firestore.DocumentSnapshot>()
                                 for (assignment in selectedAssignments) {
                                     val assignmentRef = firestore.collection("classAssignments").document(assignment.assignmentNo)
@@ -631,8 +714,7 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                                     "${courseCode}_IRREG_${finalYearLevel.take(1)}"
                                 }
 
-
-                                // 2. CREATE/UPDATE USER RECORD (No change)
+                                // 2. CREATE/UPDATE USER RECORD
                                 val userRef = firestore.collection("users").document(userUid)
                                 batch.set(userRef, mapOf(
                                     "email" to studentEmail,
@@ -643,14 +725,11 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                                     "enrollmentType" to finalEnrollmentType
                                 ))
 
-                                // 3. SAVE ASSIGNMENTS to Student Record (UPDATED: Added status and dateEnrolled)
+                                // 3. SAVE ASSIGNMENTS to Student Record
                                 for (assignment in selectedAssignments) {
                                     val primarySectionBlock = assignment.scheduleSlots.values.firstOrNull()?.sectionBlock ?: assignedSectionBlock
                                     val subjectEntry = requiredSubjectsMap[assignment.subjectCode]
 
-                                    // 🟢 Update: Use the enhanced data model (StudentAssignmentRecord)
-                                    // Note: The StudentAssignmentRecord model itself doesn't have a 'status' or 'dateEnrolled' field
-                                    // You must add them directly to the map when writing to Firestore if you don't want to change the model definition.
                                     val studentAssignmentRecordMap = mapOf(
                                         "subjectCode" to assignment.subjectCode,
                                         "subjectTitle" to assignment.subjectTitle,
@@ -680,25 +759,8 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                                     batch.set(subjectRef, studentAssignmentRecordMap)
                                 }
 
-                                // 4. CREATE/UPDATE STUDENT MASTER RECORD (UPDATED: Added parent information)
+                                // 4. CREATE/UPDATE STUDENT MASTER RECORD
                                 val masterRef = firestore.collection("students").document(studentId)
-
-                                // Get parent information from enrollment data
-                                val fatherFirstName = e.data["fatherFirstName"] as? String ?: ""
-                                val fatherMiddleName = e.data["fatherMiddleName"] as? String ?: ""
-                                val fatherLastName = e.data["fatherLastName"] as? String ?: ""
-                                val fatherDOB = e.data["fatherDOB"] as? String ?: ""
-                                val fatherPhone = e.data["fatherPhone"] as? String ?: ""
-                                val fatherOccupation = e.data["fatherOccupation"] as? String ?: ""
-
-                                val motherFirstName = e.data["motherFirstName"] as? String ?: ""
-                                val motherMiddleName = e.data["motherMiddleName"] as? String ?: ""
-                                val motherLastName = e.data["motherLastName"] as? String ?: ""
-                                val motherDOB = e.data["motherDOB"] as? String ?: ""
-                                val motherPhone = e.data["motherPhone"] as? String ?: ""
-                                val motherOccupation = e.data["motherOccupation"] as? String ?: ""
-
-                                val guardianRelationship = e.data["guardianRelationship"] as? String ?: "Unknown"
 
                                 batch.set(masterRef, mapOf(
                                     "id" to studentId,
@@ -708,7 +770,7 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                                     "academicYear" to currentAcademicYear,
                                     "semester" to currentSemester,
                                     "courseCode" to courseCode,
-                                    "status" to "Admitted", // Status of the student's admission
+                                    "status" to "Admitted",
                                     "isEnrolled" to true,
                                     "yearLevel" to finalYearLevel,
                                     "enrollmentType" to finalEnrollmentType,
@@ -724,30 +786,30 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                                     "guardianName" to e.guardianName,
                                     "guardianPhone" to e.guardianPhone,
                                     // 🌟 NEW FIELDS: Parent information and guardian relationship
-                                    "guardianRelationship" to guardianRelationship,
+                                    "guardianRelationship" to e.guardianRelationship,
                                     // Father information
-                                    "fatherFirstName" to fatherFirstName,
-                                    "fatherMiddleName" to fatherMiddleName,
-                                    "fatherLastName" to fatherLastName,
-                                    "fatherDOB" to fatherDOB,
-                                    "fatherPhone" to fatherPhone,
-                                    "fatherOccupation" to fatherOccupation,
+                                    "fatherFirstName" to e.fatherFirstName,
+                                    "fatherMiddleName" to e.fatherMiddleName,
+                                    "fatherLastName" to e.fatherLastName,
+                                    "fatherDOB" to e.fatherDOB,
+                                    "fatherPhone" to e.fatherPhone,
+                                    "fatherOccupation" to e.fatherOccupation,
                                     // Mother information
-                                    "motherFirstName" to motherFirstName,
-                                    "motherMiddleName" to motherMiddleName,
-                                    "motherLastName" to motherLastName,
-                                    "motherDOB" to motherDOB,
-                                    "motherPhone" to motherPhone,
-                                    "motherOccupation" to motherOccupation
+                                    "motherFirstName" to e.motherFirstName,
+                                    "motherMiddleName" to e.motherMiddleName,
+                                    "motherLastName" to e.motherLastName,
+                                    "motherDOB" to e.motherDOB,
+                                    "motherPhone" to e.motherPhone,
+                                    "motherOccupation" to e.motherOccupation
                                 ))
 
-                                // 5. Clean up pending enrollment (No change)
+                                // 5. Clean up pending enrollment
                                 batch.delete(firestore.collection("pendingEnrollments").document(pendingEnrollmentId))
 
                                 batch.commit().addOnSuccessListener {
                                     Toast.makeText(this, "Enrollment Finalized! Student ID: $studentId.", Toast.LENGTH_LONG).show()
 
-                                    // 6. Send enrollment email (No change)
+                                    // 6. Send enrollment email
                                     val data = hashMapOf("email" to studentEmail, "studentId" to studentId, "password" to finalPassword)
                                     functions.getHttpsCallable("sendEnrollmentEmail").call(data)
 
@@ -755,34 +817,31 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                                 }
                                     .addOnFailureListener { batchError ->
                                         Toast.makeText(this, "Batch Setup Error: ${batchError.message}. Deleting created Auth user.", Toast.LENGTH_LONG).show()
-                                        Log.e("Enrollment", "Batch commit failed.", batchError)
+                                        Log.e("EnrollmentDebug", "Batch commit failed.", batchError)
                                         auth.currentUser?.delete()
                                     }
 
                             }.addOnFailureListener { transactionError ->
                                 Toast.makeText(this, "ENROLLMENT FAILED (Capacity Check): ${transactionError.message}. Deleting created Auth user.", Toast.LENGTH_LONG).show()
-                                Log.e("Enrollment", "Transaction failed.", transactionError)
+                                Log.e("EnrollmentDebug", "Transaction failed.", transactionError)
                                 auth.currentUser?.delete()
                             }
                         }
                         .addOnFailureListener { authError ->
                             Toast.makeText(this, "Enrollment Failed: Failed to create user account: ${authError.message}", Toast.LENGTH_LONG).show()
-                            Log.e("Enrollment", "Auth Creation failed in finalization.", authError)
+                            Log.e("EnrollmentDebug", "Auth Creation failed in finalization.", authError)
                         }
                 }
                 .addOnFailureListener {
                     Toast.makeText(this, "Fatal Error: Cannot retrieve student details for finalization.", Toast.LENGTH_LONG).show()
                 }
-
         }
     }
-
 
     // -----------------------------
     // Mark as Not Passed (Reject)
     // -----------------------------
     private fun markAsNotPassed(e: Enrollment) {
-        // Include parent information in the rejection record
         val rejectionData = hashMapOf<String, Any>(
             "id" to e.id,
             "firstName" to e.firstName,
@@ -797,21 +856,21 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
             "yearLevel" to e.yearLevel,
             "guardianName" to e.guardianName,
             "guardianPhone" to e.guardianPhone,
-            "guardianRelationship" to (e.data["guardianRelationship"] as? String ?: "Unknown"),
+            "guardianRelationship" to e.guardianRelationship,
             // Father information
-            "fatherFirstName" to (e.data["fatherFirstName"] as? String ?: ""),
-            "fatherMiddleName" to (e.data["fatherMiddleName"] as? String ?: ""),
-            "fatherLastName" to (e.data["fatherLastName"] as? String ?: ""),
-            "fatherDOB" to (e.data["fatherDOB"] as? String ?: ""),
-            "fatherPhone" to (e.data["fatherPhone"] as? String ?: ""),
-            "fatherOccupation" to (e.data["fatherOccupation"] as? String ?: ""),
+            "fatherFirstName" to e.fatherFirstName,
+            "fatherMiddleName" to e.fatherMiddleName,
+            "fatherLastName" to e.fatherLastName,
+            "fatherDOB" to e.fatherDOB,
+            "fatherPhone" to e.fatherPhone,
+            "fatherOccupation" to e.fatherOccupation,
             // Mother information
-            "motherFirstName" to (e.data["motherFirstName"] as? String ?: ""),
-            "motherMiddleName" to (e.data["motherMiddleName"] as? String ?: ""),
-            "motherLastName" to (e.data["motherLastName"] as? String ?: ""),
-            "motherDOB" to (e.data["motherDOB"] as? String ?: ""),
-            "motherPhone" to (e.data["motherPhone"] as? String ?: ""),
-            "motherOccupation" to (e.data["motherOccupation"] as? String ?: ""),
+            "motherFirstName" to e.motherFirstName,
+            "motherMiddleName" to e.motherMiddleName,
+            "motherLastName" to e.motherLastName,
+            "motherDOB" to e.motherDOB,
+            "motherPhone" to e.motherPhone,
+            "motherOccupation" to e.motherOccupation,
             "status" to "rejected",
             "rejectedAt" to Timestamp.now()
         )
@@ -857,7 +916,7 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
 }
 
 // -----------------------------
-// RecyclerView Adapter (No changes needed)
+// RecyclerView Adapter
 // -----------------------------
 class EnrollmentAdapter(
     private val items: List<Enrollment>,

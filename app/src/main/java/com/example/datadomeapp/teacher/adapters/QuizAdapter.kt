@@ -75,21 +75,23 @@ class QuizAdapter(
             val isFinished = isQuizFinished(quiz)
             val isPublished = quiz.isPublished
 
-            // VIEW mode lang kapag Ongoing o Finished (pinapayagan ang Edit kapag Published/Scheduled)
             val isViewMode = isOngoing || isFinished
 
-            // ✅ CHANGE 1: Delete lang kapag DRAFT at HINDI Ongoing/Finished. (GONE kapag Published/Scheduled)
+            // ✅ CHANGE: Delete lang kapag DRAFT at HINDI Ongoing/Finished
             val canDelete = !isPublished && !isViewMode
 
+            // ✅ CHANGE: Can toggle publish kapag hindi Ongoing/Finished
             val canTogglePublish = !isOngoing && !isFinished
 
+            // ✅ CHANGE: Set Time button - VISIBLE ONLY when published AND not ongoing/finished
+            val canSetTime = isPublished && !isOngoing && !isFinished
 
             tvTitle.text = quiz.title
 
             tvType.text = quiz.quizType.uppercase(Locale.getDefault())
             tvType.setTextColor(
                 if (quiz.quizType.equals("Exam", ignoreCase = true)) 0xFFD32F2F.toInt()
-                else 0xFF1976D2.toInt() // blue for quizzes
+                else 0xFF1976D2.toInt()
             )
 
             tvDateTimeStatus.text = formatDateTimeRange(
@@ -99,10 +101,9 @@ class QuizAdapter(
                 isFinished,
                 isPublished
             )
-            val details = classDetailsMap[quiz.assignmentId]
 
+            val details = classDetailsMap[quiz.assignmentId]
             if (details != null) {
-                // ... (Class Details Parsing remains the same) ...
                 val sectionId = details.sectionId.trim().uppercase(Locale.ROOT)
                 val parts = sectionId.split('|', limit = 4).map { it.trim() }
                 val subjectCode = parts.getOrNull(0) ?: "N/A Code"
@@ -111,59 +112,43 @@ class QuizAdapter(
                 val sectionBlock = parts.getOrNull(3) ?: "N/A Section"
 
                 val displayYearSection = when {
-                    yearLevel.filter { it.isDigit() }
-                        .isNotEmpty() && sectionBlock.filter { it.isLetterOrDigit() }.isNotEmpty()
+                    yearLevel.filter { it.isDigit() }.isNotEmpty() && sectionBlock.filter { it.isLetterOrDigit() }.isNotEmpty()
                         -> "${yearLevel.filter { it.isDigit() }}-${sectionBlock.filter { it.isLetterOrDigit() }}"
-
-                    yearLevel.filter { it.isDigit() }
-                        .isNotEmpty() -> yearLevel.filter { it.isDigit() }
-
+                    yearLevel.filter { it.isDigit() }.isNotEmpty() -> yearLevel.filter { it.isDigit() }
                     else -> "N/A Section"
                 }
 
-                tvClassDetails.text =
-                    "$courseCode $displayYearSection - ${details.subjectTitle} ($subjectCode)"
-
+                tvClassDetails.text = "$courseCode $displayYearSection - ${details.subjectTitle} ($subjectCode)"
             } else {
                 tvClassDetails.text = "Class ID: ${quiz.assignmentId}"
             }
 
             // --- EDIT / VIEW Button (Slot 1) ---
             btnEdit.apply {
-                // Nagiging "VIEW" lang kapag Ongoing o Finished.
-                // Mananatiling "Edit" kapag Draft o Scheduled.
                 text = if (isViewMode) "VIEW" else "Edit"
-                // Kapag VIEW mode (Ongoing/Finished), ang action ay View/Results
                 if (isViewMode) {
                     setOnClickListener { viewClickListener(quiz) }
                 } else {
-                    // Kapag Edit mode (Draft/Scheduled), ang action ay Edit
                     setOnClickListener { editClickListener(quiz) }
                 }
             }
 
             // --- DELETE / VIEW Button (Slot 4) ---
             btnDelete.apply {
-                // Logic: VIEW Button (Slot 4)
                 if (isPublished && !isViewMode) {
-                    // Kapag SCHEDULED (Published, hindi Ongoing/Finished): Gawing VIEW button
                     text = "VIEW"
                     visibility = View.VISIBLE
-                    // ✅ CHANGE 2: Gamitin ang bagong viewClickListener
                     setOnClickListener { viewClickListener(quiz) }
                 } else {
-                    // Kapag DRAFT: Gawing DELETE button
                     text = "DELETE"
-                    visibility =
-                        if (canDelete) View.VISIBLE else View.GONE // GONE kung Ongoing/Finished
+                    visibility = if (canDelete) View.VISIBLE else View.GONE
                     setOnClickListener { if (canDelete) deleteClickListener(quiz) }
                 }
             }
 
             // --- SET TIME BUTTON LOGIC (Slot 2) ---
             btnSetTime.apply {
-                // VISIBLE pa rin sa Published/Scheduled
-                val canSetTime = !isOngoing && !isFinished
+                // ✅ CHANGE: Only show when published AND not ongoing/finished
                 text = if (quiz.scheduledDateTime > 0L) "UPDATE TIME" else "SET TIME"
                 visibility = if (canSetTime) View.VISIBLE else View.GONE
                 setOnClickListener { if (canSetTime) setTimeClickListener(quiz) }
@@ -171,7 +156,6 @@ class QuizAdapter(
 
             // --- PUBLISH BUTTON LOGIC (Slot 3) ---
             btnPublish.apply {
-                // VISIBLE pa rin sa Published/Scheduled
                 text = if (isPublished) "Unpublish" else "Publish"
                 visibility = if (canTogglePublish) View.VISIBLE else View.GONE
                 setOnClickListener { if (canTogglePublish) publishClickListener(quiz) }

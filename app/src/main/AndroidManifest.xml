@@ -72,6 +72,7 @@
         <activity android:name=".student.StudentNotesActivity" />
         <activity android:name=".student.CourseEnrollmentActivity" />
         <activity android:name=".student.UserCanteenItemHistoryActivity" />
+        <activity android:name=".student.StudentProfileActivity" />
         <activity android:name=".student.UserCanteenMenuActivity" />
         <activity android:name=".student.StudentFullScheduleActivity" />
         <activity android:name=".student.StudentOnlineClassesActivity" />
@@ -107,6 +108,8 @@
         <activity android:name=".teacher.RecordAttendanceActivity" />
         <activity android:name=".teacher.ManageGradesActivity" />
         <activity android:name=".teacher.TeacherScheduleMatrixActivity" />
+        <activity android:name=".teacher.TeacherNotesActivity" />
+        <activity android:name=".teacher.TeacherToDoListActivity" />
         <activity android:name=".teacher.RouletteActivity" />
         <activity android:name=".teacher.CreateQuizActivity" />
         <activity android:name=".teacher.StudentExtensionsActivity" />

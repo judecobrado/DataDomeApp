@@ -35,12 +35,11 @@ data class DailyAttendanceRecord(
     val assignmentId: String = "",
     val subjectCode: String = "",
     val date: String = "",
-    val timeSlotKey: String = "",
+    val timeSlot: String = "",
     val displayTimeSlot: String = "",
     val statuses: Map<String, String> = emptyMap(), // studentId -> Status
     val recitationPoints: Map<String, Int> = emptyMap() // studentId -> 0 or 1
 )
-
 
 class RecordAttendanceActivity : AppCompatActivity() {
 
@@ -49,14 +48,14 @@ class RecordAttendanceActivity : AppCompatActivity() {
 
     private lateinit var tvAttendanceHeader: TextView
     private lateinit var etAttendanceDate: EditText
-    private lateinit var etAttendanceTimeSlot: EditText
+    private lateinit var etTimeSlot: EditText
 
     private lateinit var rgModeSelection: RadioGroup
     private lateinit var rbAttendanceMode: RadioButton
     private lateinit var rbRecitationMode: RadioButton
 
     private var scheduleSlots: Map<String, TimeSlot>? = null
-    private var selectedTimeSlotKey: String? = null
+    private var selectedTimeSlot: String? = null
     private var selectedDisplayTime: String? = null
 
     private lateinit var recyclerView: RecyclerView
@@ -71,14 +70,51 @@ class RecordAttendanceActivity : AppCompatActivity() {
 
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     private var isPreviousDay: Boolean = false
-
     private var isDataModified: Boolean = false
     private var isExistingRecordLoaded: Boolean = false
+
+    private val timeSlots = listOf(
+
+        "07:00 AM - 08:00 AM",
+        "08:00 AM - 09:00 AM",
+        "09:00 AM - 10:00 AM",
+        "10:00 AM - 11:00 AM",
+        "11:00 AM - 12:00 PM",
+        "12:00 PM - 01:00 PM",
+        "01:00 PM - 02:00 PM",
+        "02:00 PM - 03:00 PM",
+        "03:00 PM - 04:00 PM",
+        "04:00 PM - 05:00 PM",
+        "05:00 PM - 06:00 PM",
+        "06:00 PM - 07:00 PM",
+
+        "07:00 AM - 09:00 AM",
+        "08:00 AM - 10:00 AM",
+        "09:00 AM - 11:00 AM",
+        "10:00 AM - 12:00 PM",
+        "11:00 AM - 01:00 PM",
+        "12:00 PM - 02:00 PM",
+        "01:00 PM - 03:00 PM",
+        "02:00 PM - 04:00 PM",
+        "03:00 PM - 05:00 PM",
+        "04:00 PM - 06:00 PM",
+        "05:00 PM - 07:00 PM",
+
+        "07:00 AM - 10:00 AM",
+        "08:00 AM - 11:00 AM",
+        "09:00 AM - 12:00 PM",
+        "10:00 AM - 01:00 PM",
+        "11:00 AM - 02:00 PM",
+        "12:00 PM - 03:00 PM",
+        "01:00 PM - 04:00 PM",
+        "02:00 PM - 05:00 PM",
+        "03:00 PM - 06:00 PM",
+        "04:00 PM - 07:00 PM"
+    )
 
     // Gamitin ang standard Android colors para maiwasan ang R.color error.
     private val colorUnsaved: Int by lazy { ContextCompat.getColor(this, android.R.color.holo_red_dark) }
     private val colorSaved: Int by lazy { ContextCompat.getColor(this, android.R.color.holo_green_dark) }
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -87,7 +123,7 @@ class RecordAttendanceActivity : AppCompatActivity() {
         // --- View Binding ---
         tvAttendanceHeader = findViewById(R.id.tvAttendanceHeader)
         etAttendanceDate = findViewById(R.id.etAttendanceDate)
-        etAttendanceTimeSlot = findViewById(R.id.etAttendanceTimeSlot)
+        etTimeSlot = findViewById(R.id.etTimeSlot)
         recyclerView = findViewById(R.id.recyclerViewAttendance)
         btnSaveAttendance = findViewById(R.id.btnSaveAttendance)
         tvNoRecords = findViewById(R.id.tvNoRecords)
@@ -113,17 +149,21 @@ class RecordAttendanceActivity : AppCompatActivity() {
         updateUIForDate(today)
 
         etAttendanceDate.setOnClickListener { showOptionsForDateSelection() }
-        etAttendanceTimeSlot.setOnClickListener { showTimeSlotSelection() }
+        etTimeSlot.setOnClickListener { showTimeSlotSelection() }
 
         rgModeSelection.setOnCheckedChangeListener { _, checkedId ->
             if (::attendanceAdapter.isInitialized) {
-                val mode = if (checkedId == R.id.rbAttendanceMode) { AttendanceAdapter.Mode.ATTENDANCE } else { AttendanceAdapter.Mode.RECITATION }
+                val mode = if (checkedId == R.id.rbAttendanceMode) {
+                    AttendanceAdapter.Mode.ATTENDANCE
+                } else {
+                    AttendanceAdapter.Mode.RECITATION
+                }
                 attendanceAdapter.setMode(mode)
             }
         }
         rbAttendanceMode.isChecked = true
 
-        // 1. Load Student List (Ito ang naglo-load ng scheduleSlots at students)
+        // 1. Load Student List
         loadStudentList(assignmentId!!)
 
         // 2. Save Button Logic
@@ -166,6 +206,101 @@ class RecordAttendanceActivity : AppCompatActivity() {
         }
     }
 
+    // --- Time Slot Selection ---
+    private fun showTimeSlotSelection() {
+        val options = arrayOf(
+            "1-Hour Slots",
+            "2-Hour Slots",
+            "3-Hour Slots"
+        )
+
+        AlertDialog.Builder(this)
+            .setTitle("Pumili ng Duration")
+            .setItems(options) { dialog, which ->
+                when (which) {
+                    0 -> showOneHourSlots()
+                    1 -> showTwoHourSlots()
+                    2 -> showThreeHourSlots()
+                }
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
+    }
+
+    private fun showOneHourSlots() {
+        val oneHourSlots = listOf(
+            "07:00 AM - 08:00 AM",
+            "08:00 AM - 09:00 AM",
+            "09:00 AM - 10:00 AM",
+            "10:00 AM - 11:00 AM",
+            "11:00 AM - 12:00 PM",
+            "12:00 PM - 01:00 PM",
+            "01:00 PM - 02:00 PM",
+            "02:00 PM - 03:00 PM",
+            "03:00 PM - 04:00 PM",
+            "04:00 PM - 05:00 PM",
+            "05:00 PM - 06:00 PM",
+            "06:00 PM - 07:00 PM"
+        )
+        showSlotSelectionDialog(oneHourSlots, "1H")
+    }
+
+    private fun showTwoHourSlots() {
+        val twoHourSlots = listOf(
+            "07:00 AM - 09:00 AM",
+            "08:00 AM - 10:00 AM",  // ← ITO YUNG 8-10 AM
+            "09:00 AM - 11:00 AM",
+            "10:00 AM - 12:00 PM",
+            "11:00 AM - 01:00 PM",
+            "12:00 PM - 02:00 PM",
+            "01:00 PM - 03:00 PM",
+            "02:00 PM - 04:00 PM",
+            "03:00 PM - 05:00 PM",
+            "04:00 PM - 06:00 PM",
+            "05:00 PM - 07:00 PM"
+        )
+        showSlotSelectionDialog(twoHourSlots, "2H")
+    }
+
+    private fun showThreeHourSlots() {
+        val threeHourSlots = listOf(
+            "07:00 AM - 10:00 AM",
+            "08:00 AM - 11:00 AM",
+            "09:00 AM - 12:00 PM",
+            "10:00 AM - 01:00 PM",
+            "11:00 AM - 02:00 PM",
+            "12:00 PM - 03:00 PM",
+            "01:00 PM - 04:00 PM",
+            "02:00 PM - 05:00 PM",
+            "03:00 PM - 06:00 PM",
+            "04:00 PM - 07:00 PM"
+        )
+        showSlotSelectionDialog(threeHourSlots, "3H")
+    }
+
+    private fun showSlotSelectionDialog(slots: List<String>, durationPrefix: String) {
+        AlertDialog.Builder(this)
+            .setTitle("Pumili ng Time Slot ($durationPrefix)")
+            .setItems(slots.toTypedArray()) { dialog, which ->
+                selectedTimeSlot = "${durationPrefix}_slot_${which + 1}"
+                selectedDisplayTime = slots[which]
+                etTimeSlot.setText(selectedDisplayTime)
+
+                isDataModified = false
+                isExistingRecordLoaded = false
+                updateSaveButtonState()
+
+                loadExistingAttendance(assignmentId!!, etAttendanceDate.text.toString())
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
+    }
 
     // --- Date Picker ---
     private fun showDatePickerDialog() {
@@ -180,18 +315,16 @@ class RecordAttendanceActivity : AppCompatActivity() {
                 etAttendanceDate.setText(newDate)
                 updateUIForDate(newDate)
 
-                // 🟢 I-reset ang Time Slot para mapilitan ang user na pumili
-                selectedTimeSlotKey = null
+                // Reset time slot when date changes
+                selectedTimeSlot = null
                 selectedDisplayTime = null
-                etAttendanceTimeSlot.setText("")
+                etTimeSlot.setText("")
 
                 isDataModified = false
                 isExistingRecordLoaded = false
                 updateSaveButtonState()
 
-                // Tatawagin ang loadExistingAttendance, pero magre-return dahil null ang selectedTimeSlotKey
                 loadExistingAttendance(assignmentId!!, newDate)
-
             },
             calendar.get(Calendar.YEAR),
             calendar.get(Calendar.MONTH),
@@ -201,21 +334,13 @@ class RecordAttendanceActivity : AppCompatActivity() {
         datePickerDialog.show()
     }
 
-    // 🔴 INALIS ANG DIRECT ADAPTER SET EDITABLE DITO
     private fun updateUIForDate(dateString: String) {
         try {
             val selectedDate = dateFormat.parse(dateString)!!
             val today = dateFormat.parse(dateFormat.format(Date()))!!
 
-            // Tiyakin na ang editability ay batay sa petsa
             isPreviousDay = selectedDate.before(today)
-
-            // Pansamantalang i-hide ang button kung previous day.
-            // Ang visibility ng button ay babaguhin ulit sa loadExistingAttendance para i-check ang Time Slot.
             btnSaveAttendance.visibility = if (isPreviousDay) View.GONE else View.VISIBLE
-
-            if (::attendanceAdapter.isInitialized) {
-            }
 
             updateSaveButtonState()
 
@@ -224,7 +349,6 @@ class RecordAttendanceActivity : AppCompatActivity() {
             isPreviousDay = false
         }
     }
-
 
     private fun loadStudentList(assignmentId: String) {
         firestore.collection("classAssignments").document(assignmentId).get()
@@ -244,7 +368,7 @@ class RecordAttendanceActivity : AppCompatActivity() {
                     )
                 }
 
-                if (fetchedSubjectCode == null || fetchedYearLevel == null || fetchedSemester == null || scheduleSlots.isNullOrEmpty()) {
+                if (fetchedSubjectCode == null || fetchedYearLevel == null || fetchedSemester == null) {
                     Toast.makeText(this, "Error: Class details missing.", Toast.LENGTH_LONG).show()
                     return@addOnSuccessListener
                 }
@@ -275,34 +399,6 @@ class RecordAttendanceActivity : AppCompatActivity() {
             }
     }
 
-
-    private fun showTimeSlotSelection() {
-        val slots = scheduleSlots ?: return
-
-        val slotDisplayItems = slots.map { (key, slot) ->
-            "${key}|${slot.day} ${slot.startTime} - ${slot.endTime}"
-        }.toTypedArray()
-
-        AlertDialog.Builder(this)
-            .setTitle("Pumili ng Time Slot")
-            .setItems(slotDisplayItems.map { it.split("|")[1] }.toTypedArray()) { dialog, which ->
-                val selectedItem = slotDisplayItems[which]
-                val parts = selectedItem.split("|")
-
-                selectedTimeSlotKey = parts[0]
-                selectedDisplayTime = parts[1]
-                etAttendanceTimeSlot.setText(selectedDisplayTime)
-
-                isDataModified = false
-                isExistingRecordLoaded = false
-                updateSaveButtonState()
-
-                loadExistingAttendance(assignmentId!!, etAttendanceDate.text.toString())
-                dialog.dismiss()
-            }
-            .show()
-    }
-
     private fun checkStudentEnrollmentBatch(
         allStudentIds: List<String>,
         subjectCode: String,
@@ -321,7 +417,6 @@ class RecordAttendanceActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                // ... (Student Enrollment Batch Logic - Tiyakin lang na tama ang listahan)
                 val studentProfilesQuery = firestore.collection("students")
                     .whereIn(FieldPath.documentId(), allStudentIds)
                     .get().await()
@@ -362,14 +457,12 @@ class RecordAttendanceActivity : AppCompatActivity() {
                     attendanceAdapter = AttendanceAdapter(
                         studentList = currentStudentList,
                         assignmentId = assignmentId!!,
-                        // 🟢 Initial state ay editable, pero loadExistingAttendance ang magde-decide
                         isEditable = !isPreviousDay,
                         currentMode = AttendanceAdapter.Mode.ATTENDANCE,
                         onDataChanged = { markDataModified() }
                     )
                     recyclerView.adapter = attendanceAdapter
 
-                    // Tatawagin ang loadExistingAttendance para i-check ang Time Slot at Petsa
                     loadExistingAttendance(assignmentId!!, etAttendanceDate.text.toString())
                 }
 
@@ -381,18 +474,19 @@ class RecordAttendanceActivity : AppCompatActivity() {
         }
     }
 
-    // --- 🟢 Load Existing Attendance (With Recitation) ---
+    // --- Load Existing Attendance (With Recitation) ---
     private fun loadExistingAttendance(assignmentId: String, date: String) {
-        val timeSlotKey = selectedTimeSlotKey
+        val timeSlot = selectedTimeSlot
+        val displayTime = selectedDisplayTime
 
-        // 🔴 GUARDRAIL: Pwede lang mag-record kung may Time Slot
-        if (timeSlotKey.isNullOrEmpty()) {
-            Log.w("ATTENDANCE_DEBUG", "Time Slot not selected/available, preventing data load and editing.")
+        // GUARDRAIL: Pwede lang mag-record kung may Time Slot
+        if (timeSlot.isNullOrEmpty() || displayTime.isNullOrEmpty()) {
+            Log.w("ATTENDANCE_DEBUG", "Time Slot not selected, preventing data load and editing.")
 
             tvNoRecords.text = "🚨 Pumili muna ng Time Slot para makapag-record ng attendance."
             tvNoRecords.visibility = View.VISIBLE
             recyclerView.visibility = View.GONE
-            btnSaveAttendance.visibility = View.GONE // ITATAGO
+            btnSaveAttendance.visibility = View.GONE
 
             if (::attendanceAdapter.isInitialized) {
                 attendanceAdapter.updateStatuses(emptyMap(), emptyMap())
@@ -403,16 +497,12 @@ class RecordAttendanceActivity : AppCompatActivity() {
             return
         }
 
-        // 🟢 Kung may Time Slot, i-set ang editability batay sa petsa.
-        updateUIForDate(date) // Dito nag-se-set ng isPreviousDay
-        // I-restore ang visibility ng Save button (tatanggalin lang ulit kung isPreviousDay)
+        updateUIForDate(date)
         btnSaveAttendance.visibility = if (isPreviousDay) View.GONE else View.VISIBLE
 
-
-        // Dito magsisimula ang ID check!
-        val recordId = "${assignmentId}_${date}_$timeSlotKey"
+        // Generate record ID based on assignment, date, and time slot
+        val recordId = "${assignmentId}_${date}_$timeSlot"
         Log.d("ATTENDANCE_DEBUG", "Attempting to load record ID: $recordId")
-
 
         firestore.collection(ATTENDANCE_COLLECTION).document(recordId)
             .get()
@@ -422,17 +512,12 @@ class RecordAttendanceActivity : AppCompatActivity() {
                 Log.d("ATTENDANCE_DEBUG", "Document Exists in Firestore: ${documentSnapshot.exists()}")
 
                 if (documentSnapshot.exists()) {
-                    val existingAttendance =
-                        documentSnapshot.get("statuses") as? Map<String, String> ?: emptyMap()
-
-                    // FIX: Tiyakin na tama ang pagbasa ng recitationPoints (Long to Int conversion)
-                    val existingRecitationLong =
-                        documentSnapshot.get("recitationPoints") as? Map<String, Long> ?: emptyMap()
+                    val existingAttendance = documentSnapshot.get("statuses") as? Map<String, String> ?: emptyMap()
+                    val existingRecitationLong = documentSnapshot.get("recitationPoints") as? Map<String, Long> ?: emptyMap()
                     val existingRecitation = existingRecitationLong.mapValues { it.value.toInt() }
 
                     Log.d("ATTENDANCE_DEBUG", "Fetched Attendance count: ${existingAttendance.size}")
                     Log.d("ATTENDANCE_DEBUG", "Fetched Recitation count: ${existingRecitation.size}")
-
 
                     if (::attendanceAdapter.isInitialized) {
                         attendanceAdapter.updateStatuses(existingAttendance, existingRecitation)
@@ -442,7 +527,6 @@ class RecordAttendanceActivity : AppCompatActivity() {
                     tvNoRecords.visibility = View.GONE
                     recyclerView.visibility = View.VISIBLE
                 } else {
-                    // Kung wala, I-CLEAR ang adapter
                     if (::attendanceAdapter.isInitialized) {
                         attendanceAdapter.updateStatuses(emptyMap(), emptyMap())
                         attendanceAdapter.setEditable(!isPreviousDay)
@@ -467,14 +551,14 @@ class RecordAttendanceActivity : AppCompatActivity() {
             }
     }
 
-    // --- 🟢 Save Attendance (With Recitation) ---
+    // --- Save Attendance (With Recitation) ---
     private fun saveAttendance() {
         val dateToSave = etAttendanceDate.text.toString()
-        val timeSlotKey = selectedTimeSlotKey
+        val timeSlot = selectedTimeSlot
         val displayTimeSlot = selectedDisplayTime
 
-        if (dateToSave.isEmpty() || subjectCode.isNullOrEmpty() || timeSlotKey.isNullOrEmpty() || displayTimeSlot.isNullOrEmpty()) {
-            Toast.makeText(this, "Error: Petsa, Subject Code, o Time Slot ay kulang. Hindi makakapag-save.", Toast.LENGTH_LONG).show()
+        if (dateToSave.isEmpty() || subjectCode.isNullOrEmpty() || timeSlot.isNullOrEmpty() || displayTimeSlot.isNullOrEmpty()) {
+            Toast.makeText(this, "Error: Petsa, Subject Code, o Time Slot ay kulang.", Toast.LENGTH_LONG).show()
             return
         }
 
@@ -486,11 +570,11 @@ class RecordAttendanceActivity : AppCompatActivity() {
 
         if (unmarkedStudents.isNotEmpty()) {
             val count = unmarkedStudents.size
-            Toast.makeText(this, "🚨 REQUIRED: May $count estudyante na walang attendance status. Pakitiyak na lahat ay naka-check.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "🚨 REQUIRED: May $count estudyante na walang attendance status.", Toast.LENGTH_LONG).show()
             return
         }
 
-        val recordId = "${assignmentId}_${dateToSave}_$timeSlotKey"
+        val recordId = "${assignmentId}_${dateToSave}_$timeSlot"
 
         firestore.document("systemSettings/currentTerm")
             .get()
@@ -499,12 +583,11 @@ class RecordAttendanceActivity : AppCompatActivity() {
                 val academicYear = termDoc.getString("academicYear") ?: ""
                 val semester = termDoc.getString("semester") ?: ""
 
-                // 🔹 Step 2: Include them in the saved record
                 val dailyRecord = hashMapOf(
                     "assignmentId" to assignmentId!!,
                     "subjectCode" to subjectCode!!,
                     "date" to dateToSave,
-                    "timeSlotKey" to timeSlotKey,
+                    "timeSlot" to timeSlot,
                     "displayTimeSlot" to displayTimeSlot,
                     "statuses" to attendanceMap,
                     "recitationPoints" to recitationMap,
@@ -542,20 +625,86 @@ class RecordAttendanceActivity : AppCompatActivity() {
             .setItems(
                 arrayOf(
                     "Pumili sa Kalendaryo...",
-                    "Tingnan ang mga Nakaraang Attendance"
+                    "Tingnan/Mag-set ng Attendance"
                 )
             ) { _, which ->
                 if (which == 0) {
                     showDatePickerDialog()
                 } else {
-                    fetchExistingAttendanceDates(assignmentId!!)
+                    showAttendanceManagementDialog()
                 }
             }
             .show()
     }
 
-    // --- 🟢 Fetch Existing Attendance Dates (Aggregated) ---
-    private fun fetchExistingAttendanceDates(assignmentId: String) {
+    // --- NEW: Show Attendance Management Dialog ---
+    private fun showAttendanceManagementDialog() {
+        val date = etAttendanceDate.text.toString()
+        if (date.isEmpty()) {
+            Toast.makeText(this, "Pumili muna ng petsa", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // Get existing records for this date
+        firestore.collection(ATTENDANCE_COLLECTION)
+            .whereEqualTo("assignmentId", assignmentId)
+            .whereEqualTo("date", date)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val existingRecords = snapshot.documents.mapNotNull { doc ->
+                    val displayTime = doc.getString("displayTimeSlot")
+                    val timeSlot = doc.getString("timeSlot")
+                    if (displayTime != null && timeSlot != null) {
+                        Pair(displayTime, timeSlot)
+                    } else {
+                        null
+                    }
+                }
+
+                val options = mutableListOf<String>()
+
+                // Add existing records
+                existingRecords.forEach { (displayTime, _) ->
+                    options.add("Tingnan: $displayTime")
+                }
+
+                // Add option to create new attendance
+                options.add("➕ Mag-set ng Bagong Attendance")
+
+                AlertDialog.Builder(this)
+                    .setTitle("Attendance para sa $date")
+                    .setItems(options.toTypedArray()) { dialog, which ->
+                        if (which < existingRecords.size) {
+                            // View existing record
+                            val (displayTime, timeSlot) = existingRecords[which]
+                            selectedTimeSlot = timeSlot
+                            selectedDisplayTime = displayTime
+                            etTimeSlot.setText(displayTime)
+
+                            isDataModified = false
+                            isExistingRecordLoaded = true
+                            updateSaveButtonState()
+
+                            loadExistingAttendance(assignmentId!!, date)
+                        } else {
+                            // Create new attendance
+                            showTimeSlotSelection()
+                        }
+                        dialog.dismiss()
+                    }
+                    .setNegativeButton("Cancel") { dialog, _ ->
+                        dialog.dismiss()
+                    }
+                    .show()
+            }
+            .addOnFailureListener { e ->
+                Log.e("AttendanceManagement", "Error fetching existing records: $e")
+                Toast.makeText(this, "Failed to load existing attendance records.", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    // --- Fetch Existing Attendance Dates (For History) ---
+    private fun fetchExistingAttendanceDates() {
         if (assignmentId.isNullOrEmpty()) return
 
         firestore.collection(ATTENDANCE_COLLECTION)
@@ -572,17 +721,16 @@ class RecordAttendanceActivity : AppCompatActivity() {
                 val recordedItems = snapshot.documents.mapNotNull { doc ->
                     val date = doc.getString("date")
                     val displayTime = doc.getString("displayTimeSlot")
-                    val timeKey = doc.getString("timeSlotKey")
+                    val timeSlot = doc.getString("timeSlot")
 
-                    if (date != null && displayTime != null && timeKey != null) {
-                        // Format: DATE|DISPLAY_TIME|TIME_KEY
-                        "${date}|${displayTime}|${timeKey}"
+                    if (date != null && displayTime != null && timeSlot != null) {
+                        Triple(date, displayTime, timeSlot)
                     } else {
                         null
                     }
                 }
 
-                showExistingDatesDialog(recordedItems.toSet().toList())
+                showExistingDatesDialog(recordedItems)
             }
             .addOnFailureListener { e ->
                 Log.e("AttendanceDate", "Error fetching existing records: $e")
@@ -590,37 +738,31 @@ class RecordAttendanceActivity : AppCompatActivity() {
             }
     }
 
-    private fun showExistingDatesDialog(recordedItems: List<String>) {
-
+    private fun showExistingDatesDialog(recordedItems: List<Triple<String, String, String>>) {
         val displayArray = recordedItems.map {
-            it.split("|").let { parts ->
-                "${parts[0]} (${parts[1]})" // DATE (DISPLAY_TIME)
-            }
+            "${it.first} (${it.second})" // DATE (DISPLAY_TIME)
         }.toTypedArray()
 
         AlertDialog.Builder(this)
-            .setTitle("Pumili ng Petsa at Oras ng Attendance")
+            .setTitle("Mga Nakaraang Attendance")
             .setItems(displayArray) { dialog, which ->
                 val selectedItem = recordedItems[which]
-                val parts = selectedItem.split("|")
-
-                val selectedDate = parts[0]
-                val selectedTimeDisplay = parts[1]
-                val selectedTimeKey = parts[2]
+                val selectedDate = selectedItem.first
+                val selectedTimeDisplay = selectedItem.second
+                val selectedTimeSlot = selectedItem.third
 
                 etAttendanceDate.setText(selectedDate)
-                updateUIForDate(selectedDate) // 🟢 Ise-set ang isPreviousDay
+                updateUIForDate(selectedDate)
 
-                selectedTimeSlotKey = selectedTimeKey
-                selectedDisplayTime = selectedTimeDisplay
-                etAttendanceTimeSlot.setText(selectedTimeDisplay) // 🟢 Ise-set ang Time Slot display
+                this.selectedTimeSlot = selectedTimeSlot
+                this.selectedDisplayTime = selectedTimeDisplay
+                etTimeSlot.setText(selectedTimeDisplay)
 
                 isDataModified = false
                 isExistingRecordLoaded = true
                 updateSaveButtonState()
 
-                loadExistingAttendance(assignmentId!!, selectedDate) // 🟢 Maglo-load ng data
-
+                loadExistingAttendance(assignmentId!!, selectedDate)
                 dialog.dismiss()
             }
             .setNegativeButton("Cancel") { dialog, _ ->

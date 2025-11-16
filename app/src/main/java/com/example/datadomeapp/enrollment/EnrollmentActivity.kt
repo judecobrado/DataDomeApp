@@ -12,7 +12,6 @@ import com.google.firebase.firestore.FirebaseFirestore
 import android.util.Log
 import com.example.datadomeapp.enrollment.AlreadySubmittedActivity
 import com.example.datadomeapp.R
-import com.example.datadomeapp.models.*
 import java.util.*
 
 class EnrollmentActivity : AppCompatActivity() {
@@ -90,10 +89,10 @@ class EnrollmentActivity : AppCompatActivity() {
         "Legal Guardian"
     )
 
-    private lateinit var courseAdapter: HintAdapter
-    private lateinit var genderAdapter: HintAdapter
-    private lateinit var applicationStatusAdapter: HintAdapter
-    private lateinit var relationshipAdapter: HintAdapter
+    private lateinit var courseAdapter: ArrayAdapter<String>
+    private lateinit var genderAdapter: ArrayAdapter<String>
+    private lateinit var applicationStatusAdapter: ArrayAdapter<String>
+    private lateinit var relationshipAdapter: ArrayAdapter<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -166,26 +165,22 @@ class EnrollmentActivity : AppCompatActivity() {
     }
 
     private fun setupSpinners() {
-        // Gender Spinner
-        genderAdapter = HintAdapter(this, android.R.layout.simple_spinner_item, genderList)
+        genderAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, genderList)
         genderAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerGender.adapter = genderAdapter
         spinnerGender.setSelection(0)
 
-        // Application Status Spinner
-        applicationStatusAdapter = HintAdapter(this, android.R.layout.simple_spinner_item, applicationStatusList)
+        applicationStatusAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, applicationStatusList)
         applicationStatusAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerApplicationStatus.adapter = applicationStatusAdapter
         spinnerApplicationStatus.setSelection(0)
 
-        // Relationship Spinner
-        relationshipAdapter = HintAdapter(this, android.R.layout.simple_spinner_item, relationshipList)
+        relationshipAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, relationshipList)
         relationshipAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerGuardianRelationship.adapter = relationshipAdapter
         spinnerGuardianRelationship.setSelection(0)
 
-        // Course Spinner - initialize with empty list first, will be updated in loadCourses()
-        courseAdapter = HintAdapter(this, android.R.layout.simple_spinner_item, courseNameList)
+        courseAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, courseNameList)
         courseAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerCourse.adapter = courseAdapter
     }
@@ -220,10 +215,6 @@ class EnrollmentActivity : AppCompatActivity() {
                     }
                 }
 
-                // Update the course adapter with new data
-                courseAdapter = HintAdapter(this@EnrollmentActivity, android.R.layout.simple_spinner_item, courseNameList)
-                courseAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-                spinnerCourse.adapter = courseAdapter
                 courseAdapter.notifyDataSetChanged()
             }
             .addOnFailureListener { e ->
@@ -268,23 +259,14 @@ class EnrollmentActivity : AppCompatActivity() {
                     etMotherOccupation.setText(doc.getString("motherOccupation") ?: "")
 
                     val guardianRelFromDb = doc.getString("guardianRelationship") ?: "Choose Relationship"
-                    val guardianRelIndex = relationshipList.indexOf(guardianRelFromDb).coerceAtLeast(0)
-                    spinnerGuardianRelationship.setSelection(guardianRelIndex)
+                    spinnerGuardianRelationship.setSelection(relationshipList.indexOf(guardianRelFromDb).coerceAtLeast(0))
 
                     val applicationTypeFromDb = doc.getString("applicationType") ?: "Choose Application Status"
                     val courseNameFromDb = doc.getString("courseName") ?: doc.getString("course") ?: "Choose a Course"
 
-                    val genderIndex = genderList.indexOf(doc.getString("gender") ?: "Choose Gender").coerceAtLeast(0)
-                    val appStatusIndex = applicationStatusList.indexOf(applicationTypeFromDb).coerceAtLeast(0)
-                    val courseIndex = courseNameList.indexOf(courseNameFromDb).coerceAtLeast(0)
-
-                    spinnerGender.setSelection(genderIndex)
-                    spinnerApplicationStatus.setSelection(appStatusIndex)
-
-                    // Set course selection after a slight delay to ensure course list is loaded
-                    handler.postDelayed({
-                        spinnerCourse.setSelection(courseIndex.coerceAtMost(courseNameList.size - 1))
-                    }, 100)
+                    spinnerGender.setSelection(genderList.indexOf(doc.getString("gender") ?: "Choose Gender").coerceAtLeast(0))
+                    spinnerApplicationStatus.setSelection(applicationStatusList.indexOf(applicationTypeFromDb).coerceAtLeast(0))
+                    spinnerCourse.setSelection(courseNameList.indexOf(courseNameFromDb).coerceAtLeast(0))
                 }
             }
     }
@@ -375,38 +357,24 @@ class EnrollmentActivity : AppCompatActivity() {
         val selectedIndex = spinnerCourse.selectedItemPosition
         val applicationType = spinnerApplicationStatus.selectedItem.toString()
 
-        // Validation - Check if hint items are selected
-        if (spinnerGender.selectedItemPosition == 0) {
-            Toast.makeText(this, "Please select Gender", Toast.LENGTH_LONG).show()
-            spinnerGender.requestFocus()
-            return
-        }
-
-        if (spinnerCourse.selectedItemPosition == 0) {
-            Toast.makeText(this, "Please select a Course", Toast.LENGTH_LONG).show()
-            spinnerCourse.requestFocus()
-            return
-        }
-
-        if (spinnerApplicationStatus.selectedItemPosition == 0) {
-            Toast.makeText(this, "Please select Application Status", Toast.LENGTH_LONG).show()
-            spinnerApplicationStatus.requestFocus()
-            return
-        }
-
-        if (spinnerGuardianRelationship.selectedItemPosition == 0) {
-            Toast.makeText(this, "Please select Guardian Relationship", Toast.LENGTH_LONG).show()
-            spinnerGuardianRelationship.requestFocus()
-            return
-        }
-
-        // Existing field validations
+        // Validation
         if (firstName.isEmpty() || lastName.isEmpty() || email.isEmpty() || phone.isEmpty() || dob.isEmpty() ||
             guardianName.isEmpty() || guardianPhone.isEmpty() || fatherFirstName.isEmpty() || fatherLastName.isEmpty() ||
             motherFirstName.isEmpty() || motherLastName.isEmpty() || fatherPhone.isEmpty() || fatherOccupation.isEmpty() ||
             motherPhone.isEmpty() || motherOccupation.isEmpty() || region.isEmpty() ||
             province.isEmpty() || municipality.isEmpty() || barangay.isEmpty()) {
             Toast.makeText(this, "Please fill all required fields.", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        // Parent validation
+        if (guardianRelationship == "Choose Relationship") {
+            Toast.makeText(this, "Please select guardian relationship to student.", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        if (gender == "Choose Gender" || selectedCourseName == "Choose a Course" || applicationType == "Choose Application Status") {
+            Toast.makeText(this, "Please select valid options for Gender, Course, and Application Status.", Toast.LENGTH_LONG).show()
             return
         }
 
@@ -431,68 +399,79 @@ class EnrollmentActivity : AppCompatActivity() {
             append("$barangay, $municipality, $province, $region")
         }
 
-        val enrollmentData = hashMapOf(
-            "firstName" to firstName,
-            "middleName" to middleName,
-            "lastName" to lastName,
-            "email" to email,
-            "phone" to phone,
-            "region" to region,
-            "province" to province,
-            "municipality" to municipality,
-            "barangay" to barangay,
-            "streetAddress" to streetAddress,
-            "fullAddress" to fullAddress,
-            "dateOfBirth" to dob,
-            "gender" to gender,
-            "courseName" to selectedCourseName,
-            "courseCode" to courseCode,
-            "course" to selectedCourseName,
-            "yearLevel" to yearLevelToSave,
-            "enrollmentType" to enrollmentType,
-            "applicationType" to applicationType,
-            "guardianName" to guardianName,
-            "guardianPhone" to guardianPhone,
-            "guardianRelationship" to guardianRelationship,
+        // Create enrollment object
+        val enrollment = com.example.datadomeapp.admin.Enrollment(
+            id = docId ?: "",
+            firstName = firstName,
+            middleName = middleName,
+            lastName = lastName,
+            email = email,
+            phone = phone,
+            address = fullAddress,
+            dateOfBirth = dob,
+            gender = gender,
+            course = selectedCourseName,
+            yearLevel = yearLevelToSave,
+            guardianName = guardianName,
+            guardianPhone = guardianPhone,
+            guardianRelationship = guardianRelationship,
             // Father information
-            "fatherFirstName" to fatherFirstName,
-            "fatherMiddleName" to fatherMiddleName,
-            "fatherLastName" to fatherLastName,
-            "fatherDOB" to fatherDOB,
-            "fatherPhone" to fatherPhone,
-            "fatherOccupation" to fatherOccupation,
+            fatherFirstName = fatherFirstName,
+            fatherMiddleName = fatherMiddleName,
+            fatherLastName = fatherLastName,
+            fatherDOB = fatherDOB,
+            fatherPhone = fatherPhone,
+            fatherOccupation = fatherOccupation,
             // Mother information
-            "motherFirstName" to motherFirstName,
-            "motherMiddleName" to motherMiddleName,
-            "motherLastName" to motherLastName,
-            "motherDOB" to motherDOB,
-            "motherPhone" to motherPhone,
-            "motherOccupation" to motherOccupation,
-            "status" to "submitted",
-            "timestamp" to Timestamp.now(),
-            "isVerified" to true
+            motherFirstName = motherFirstName,
+            motherMiddleName = motherMiddleName,
+            motherLastName = motherLastName,
+            motherDOB = motherDOB,
+            motherPhone = motherPhone,
+            motherOccupation = motherOccupation,
+            // Address information
+            region = region,
+            province = province,
+            municipality = municipality,
+            barangay = barangay,
+            streetAddress = streetAddress,
+            fullAddress = fullAddress,
+            // Course information
+            courseName = selectedCourseName,
+            courseCode = courseCode,
+            enrollmentType = enrollmentType,
+            applicationType = applicationType,
+            status = "submitted",
+            timestamp = Timestamp.now(),
+            isVerified = true
         )
 
         isSubmitting = true
         setSubmitButtonState("Submitting...", false)
         progressBar.visibility = ProgressBar.VISIBLE
 
+        // Convert to Firestore map
+        val enrollmentData = enrollment.toFirestoreMap()
+
         if (!docId.isNullOrEmpty()) {
             firestore.collection("pendingEnrollments").document(docId!!)
-                .set(enrollmentData as Map<String, Any>)
+                .set(enrollmentData)
                 .addOnSuccessListener {
                     completeSubmission(true)
                 }
                 .addOnFailureListener { e ->
+                    Log.e("Enrollment", "Error updating enrollment", e)
                     completeSubmission(false)
                 }
         } else {
             firestore.collection("pendingEnrollments")
-                .add(enrollmentData as Map<String, Any>)
-                .addOnSuccessListener {
+                .add(enrollmentData)
+                .addOnSuccessListener { documentReference ->
+                    docId = documentReference.id
                     completeSubmission(true)
                 }
                 .addOnFailureListener { e ->
+                    Log.e("Enrollment", "Error adding enrollment", e)
                     completeSubmission(false)
                 }
         }
@@ -514,7 +493,7 @@ class EnrollmentActivity : AppCompatActivity() {
             }, 1000)
         } else {
             setSubmitButtonState("Submit Enrollment", true)
-            Toast.makeText(this, "Submission processing... please check your email for confirmation", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Submission failed. Please try again.", Toast.LENGTH_LONG).show()
         }
     }
 
