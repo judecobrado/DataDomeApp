@@ -28,11 +28,19 @@
         android:drawableEnd="@android:drawable/ic_menu_today"
         android:layout_marginBottom="8dp"/>
 
-    <EditText
-        android:id="@+id/etAttendanceTimeSlot"
+    <!-- Time Slot Selection -->
+    <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Time Slot"
+        android:text="Pumili ng Time Slot:"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp"/>
+
+    <EditText
+        android:id="@+id/etTimeSlot"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Pindutin para pumili ng oras"
         android:focusable="false"
         android:clickable="true"
         android:drawableEnd="@android:drawable/ic_lock_idle_alarm"
@@ -92,5 +100,12 @@
         android:layout_height="wrap_content"
         android:text="I-Save ang Attendance at Recitation"
         android:layout_marginTop="16dp"/>
+
+    <Button
+        android:id="@+id/btnViewOverview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="View Attendance Overview"
+        android:layout_marginTop="8dp"/>
 
 </LinearLayout>

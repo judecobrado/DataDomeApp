@@ -64,6 +64,19 @@ class TeacherDashboardActivity : AppCompatActivity() {
             startActivity(Intent(this, ManageQuizzesActivity::class.java))
         }
 
+        val btnNotes = findViewById<Button>(R.id.btnNotes)
+        btnNotes.setOnClickListener {
+            val intent = Intent(this, TeacherNotesActivity::class.java)
+            startActivity(intent)
+        }
+
+        // 6. To-Do List Button
+        val btnToDoList = findViewById<Button>(R.id.btnToDoList)
+        btnToDoList.setOnClickListener {
+            val intent = Intent(this, TeacherToDoListActivity::class.java)
+            startActivity(intent)
+        }
+
         // Voice Detection
         btnVoiceDetection.setOnClickListener {
             startActivity(Intent(this, VoiceDetectionActivity::class.java))

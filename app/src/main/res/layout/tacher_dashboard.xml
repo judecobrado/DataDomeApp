@@ -12,8 +12,8 @@
         android:id="@+id/tvDashboard"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:layout_marginBottom="40dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp"
         android:text="Welcome Teacher!"
         android:textSize="24sp"
         android:textStyle="bold"
@@ -24,7 +24,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="10dp"
-        android:padding="15dp"
+        android:padding="10dp"
         android:text="View My Classes"
         android:textSize="18sp" />
 
@@ -33,7 +33,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="10dp"
-        android:padding="15dp"
+        android:padding="10dp"
         android:text="My Schedule"
         android:textSize="18sp" />
 
@@ -42,7 +42,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="10dp"
-        android:padding="15dp"
+        android:padding="10dp"
         android:text="Manage Quiz"
         android:textSize="18sp" />
 
@@ -51,8 +51,26 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="10dp"
+        android:padding="10dp"
+        android:text="Canteen Menu"
+        android:textSize="18sp" />
+
+    <Button
+        android:id="@+id/btnToDoList"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
         android:padding="15dp"
-        android:text="Canteen History"
+        android:text="To Do List"
+        android:textSize="18sp" />
+
+    <Button
+        android:id="@+id/btnNotes"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
+        android:padding="10dp"
+        android:text="Notes"
         android:textSize="18sp" />
 
     <Button
@@ -69,7 +87,7 @@
         android:id="@+id/btnRoulette"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="40dp"
+        android:layout_marginBottom="10dp"
         android:padding="15dp"
         android:text="🎡 Roleta"
         android:textSize="18sp"
