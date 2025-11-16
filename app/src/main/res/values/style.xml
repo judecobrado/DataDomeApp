@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Base application theme -->
+    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <item name="colorPrimary">#4361EE</item>
+        <item name="colorPrimaryDark">#3A0CA3</item>
+        <item name="colorAccent">#7209B7</item>
+    </style>
+
+    <!-- Professional Dialog Theme -->
+    <style name="ProfessionalDialog" parent="Theme.AppCompat.Light.Dialog.Alert">
+        <item name="colorPrimary">#4361EE</item>
+        <item name="colorAccent">#4361EE</item>
+        <item name="android:windowBackground">@android:color/white</item>
+    </style>
+
+</resources>

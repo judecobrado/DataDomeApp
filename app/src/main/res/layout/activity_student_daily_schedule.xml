@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/mainLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background_light"
+    android:padding="8dp">
+
+    <!-- Header Section -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp"
+        app:cardBackgroundColor="@color/card_background"
+        android:layout_margin="8dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <!-- App Title -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Weekly Class Schedule"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:textColor="@color/primary_red"
+                android:gravity="center" />
+
+            <!-- Current Date - Will be updated dynamically -->
+            <TextView
+                android:id="@+id/currentDateText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Loading date..."
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary"
+                android:gravity="center"
+                android:layout_marginTop="4dp" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Week Days Selector -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="2dp"
+        app:cardBackgroundColor="@color/white"
+        android:layout_margin="8dp">
+
+        <LinearLayout
+            android:id="@+id/weekDaysContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:padding="4dp" />
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Selected Day Header -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/selectedDayHeader"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="2dp"
+        app:cardBackgroundColor="@color/primary_red"
+        android:layout_margin="8dp">
+
+        <TextView
+            android:id="@+id/selectedDayText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Monday"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="@color/white"
+            android:gravity="center"
+            android:padding="16dp" />
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Loading/Status -->
+    <TextView
+        android:id="@+id/tvScheduleStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Loading your schedule..."
+        android:textSize="16sp"
+        android:gravity="center"
+        android:padding="16dp"
+        android:visibility="visible"
+        android:textColor="@color/text_secondary" />
+
+    <!-- Timeline Container -->
+    <ScrollView
+        android:id="@+id/timelineScrollView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="8dp">
+
+        <LinearLayout
+            android:id="@+id/timelineContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal" />
+
+    </ScrollView>
+
+    <!-- Hidden original table (kept for compatibility) -->
+    <TableLayout
+        android:id="@+id/tlScheduleMatrix"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone" />
+
+</LinearLayout>
