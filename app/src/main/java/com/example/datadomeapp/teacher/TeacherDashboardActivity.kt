@@ -1,23 +1,23 @@
 package com.example.datadomeapp.teacher
 
+import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Button
+import android.util.Log
 import android.widget.TextView
 import android.widget.Toast
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import android.util.Log
-import kotlinx.coroutines.launch
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.example.datadomeapp.LoginActivity
 import com.example.datadomeapp.R
 import com.example.datadomeapp.student.UserCanteenMenuActivity
-import com.example.datadomeapp.models.ClassAssignment
+import com.google.android.material.card.MaterialCardView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 class TeacherDashboardActivity : AppCompatActivity() {
@@ -26,43 +26,60 @@ class TeacherDashboardActivity : AppCompatActivity() {
     private val firestore = FirebaseFirestore.getInstance()
     private var teacherUid: String? = null
 
+    @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.tacher_dashboard)
+        setContentView(R.layout.tacher_dashboard) // Make sure this matches your XML filename
 
         teacherUid = auth.currentUser?.uid
-        val tvDashboard = findViewById<TextView>(R.id.tvDashboard)
-        tvDashboard.text = "Welcome, Teacher!"
 
-        val btnCanteen = findViewById<Button>(R.id.btnCanteenMenu)
-        val btnManageClasses = findViewById<Button>(R.id.btnManageClasses)
-        val btnRecordAttendance = findViewById<Button>(R.id.btnMySchedule)
-        val btnVoiceDetection = findViewById<Button>(R.id.btnVoiceDetection)
-        val btnQuiz = findViewById<Button>(R.id.btnQuiz)
-        val btnAssessment = findViewById<Button>(R.id.btnAssessment)
-        val btnAttendance = findViewById<Button>(R.id.btnAttendance)
-        val btnGrades = findViewById<Button>(R.id.btnGrades)
-        val btnRoulette = findViewById<Button>(R.id.btnRoulette)
-        val btnLogout = findViewById<Button>(R.id.btnLogout)
+        // Initialize header views
+        val tvTeacherName = findViewById<TextView>(R.id.tvTeacherName)
+        val tvTeacherId = findViewById<TextView>(R.id.tvTeacherId)
+        val tvClassCount = findViewById<TextView>(R.id.tvClassCount)
+        val tvStudentCount = findViewById<TextView>(R.id.tvStudentCount)
+        val tvPendingCount = findViewById<TextView>(R.id.tvPendingCount)
 
-        btnQuiz.setOnClickListener {
+        // Set initial values
+        tvTeacherName.text = "Welcome, Teacher!"
+        tvTeacherId.text = "ID: ${teacherUid?.takeLast(6) ?: "TCH-001"}"
+
+        // Load teacher stats
+        loadTeacherStats(tvClassCount, tvStudentCount, tvPendingCount)
+
+        // Initialize card views
+        val cardManageClasses = findViewById<MaterialCardView>(R.id.cardManageClasses)
+        val cardMySchedule = findViewById<MaterialCardView>(R.id.cardMySchedule)
+        val cardQuiz = findViewById<MaterialCardView>(R.id.cardQuiz)
+        val cardAssessment = findViewById<MaterialCardView>(R.id.cardAssessment)
+        val cardAttendance = findViewById<MaterialCardView>(R.id.cardAttendance)
+        val cardGrades = findViewById<MaterialCardView>(R.id.cardGrades)
+        val cardCanteen = findViewById<MaterialCardView>(R.id.cardCanteen)
+        val cardTodo = findViewById<MaterialCardView>(R.id.cardTodo)
+        val cardNotes = findViewById<MaterialCardView>(R.id.cardNotes)
+        val cardVoice = findViewById<MaterialCardView>(R.id.cardVoice)
+        val cardRoulette = findViewById<MaterialCardView>(R.id.cardRoulette)
+        val cardLogout = findViewById<MaterialCardView>(R.id.cardLogout)
+
+        // Set click listeners for cards
+        cardQuiz.setOnClickListener {
             showClassPickerDialogForActivity("Quiz")
         }
 
-        btnAssessment.setOnClickListener {
+        cardAssessment.setOnClickListener {
             showClassPickerDialogForActivity("Assessment")
         }
 
-        btnAttendance.setOnClickListener {
+        cardAttendance.setOnClickListener {
             showClassPickerDialogForActivity("Attendance")
         }
 
-        btnGrades.setOnClickListener {
+        cardGrades.setOnClickListener {
             showClassPickerDialogForActivity("Grades")
         }
 
         // Open Canteen Menu
-        btnCanteen.setOnClickListener {
+        cardCanteen.setOnClickListener {
             val intent = Intent(this, UserCanteenMenuActivity::class.java)
             intent.putExtra("USER_TYPE", "teacher")
             intent.putExtra("USER_ID", teacherUid)
@@ -70,51 +87,99 @@ class TeacherDashboardActivity : AppCompatActivity() {
         }
 
         // Manage Classes
-        btnManageClasses.setOnClickListener {
+        cardManageClasses.setOnClickListener {
             startActivity(Intent(this, ManageClassesActivity::class.java))
         }
 
-        // Attendance
-        btnRecordAttendance.setOnClickListener {
+        // Schedule
+        cardMySchedule.setOnClickListener {
             startActivity(Intent(this, TeacherScheduleMatrixActivity::class.java))
         }
 
-        val btnNotes = findViewById<Button>(R.id.btnNotes)
-        btnNotes.setOnClickListener {
+        // Notes
+        cardNotes.setOnClickListener {
             val intent = Intent(this, TeacherNotesActivity::class.java)
             startActivity(intent)
         }
 
-        // 6. To-Do List Button
-        val btnToDoList = findViewById<Button>(R.id.btnToDoList)
-        btnToDoList.setOnClickListener {
+        // To-Do List
+        cardTodo.setOnClickListener {
             val intent = Intent(this, TeacherToDoListActivity::class.java)
             startActivity(intent)
         }
 
         // Voice Detection
-        btnVoiceDetection.setOnClickListener {
+        cardVoice.setOnClickListener {
             startActivity(Intent(this, VoiceDetectionActivity::class.java))
         }
 
-        // 🎡 Roleta Button with section & subject choices
-        btnRoulette.setOnClickListener {
+        // Roleta
+        cardRoulette.setOnClickListener {
             showClassPickerDialogForRouleta()
         }
 
         // Logout
-        btnLogout.setOnClickListener {
-            auth.signOut()
-            val intent = Intent(this, LoginActivity::class.java)
-            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
-            startActivity(intent)
-            finish()
+        cardLogout.setOnClickListener {
+            showLogoutConfirmation()
         }
     }
 
+    private fun loadTeacherStats(tvClassCount: TextView, tvStudentCount: TextView, tvPendingCount: TextView) {
+        val currentTeacherUid = auth.currentUser?.uid ?: return
+
+        lifecycleScope.launch {
+            try {
+                // Load class assignments
+                val classSnapshot = firestore.collection("classAssignments")
+                    .whereEqualTo("teacherUid", currentTeacherUid)
+                    .get()
+                    .await()
+
+                val classCount = classSnapshot.documents.size
+                tvClassCount.text = classCount.toString()
+
+                // Calculate total students across all classes
+                var totalStudents = 0
+                var pendingCount = 0
+
+                // For demo purposes, set some values - replace with actual logic
+                totalStudents = classCount * 25 // Assuming 25 students per class average
+                pendingCount = classCount * 3   // Assuming 3 pending items per class
+
+                tvStudentCount.text = totalStudents.toString()
+                tvPendingCount.text = pendingCount.toString()
+
+            } catch (e: Exception) {
+                Log.e("TeacherDashboard", "Error loading stats: ${e.message}")
+                // Set default values
+                tvClassCount.text = "0"
+                tvStudentCount.text = "0"
+                tvPendingCount.text = "0"
+            }
+        }
+    }
+
+    private fun showLogoutConfirmation() {
+        AlertDialog.Builder(this)
+            .setTitle("Logout")
+            .setMessage("Are you sure you want to logout?")
+            .setPositiveButton("Yes") { _, _ ->
+                logout()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun logout() {
+        auth.signOut()
+        val intent = Intent(this, LoginActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+        startActivity(intent)
+        finish()
+    }
+
     private fun showClassPickerDialogForActivity(activityType: String) {
-        val firestore = FirebaseFirestore.getInstance()
-        val currentTeacherUid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val currentTeacherUid = auth.currentUser?.uid ?: return
 
         firestore.collection("classAssignments")
             .whereEqualTo("teacherUid", currentTeacherUid)
@@ -170,7 +235,6 @@ class TeacherDashboardActivity : AppCompatActivity() {
             }
     }
 
-    // 🆕 BAGONG METHOD: Navigation based on activity type
     private fun navigateToActivity(activityType: String, classData: ClassRouletteData) {
         val intent = when (activityType) {
             "Quiz" -> Intent(this, ManageQuizzesActivity::class.java)
@@ -198,8 +262,7 @@ class TeacherDashboardActivity : AppCompatActivity() {
     }
 
     private fun showClassPickerDialogForRouleta() {
-        val firestore = FirebaseFirestore.getInstance()
-        val currentTeacherUid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val currentTeacherUid = auth.currentUser?.uid ?: return
 
         firestore.collection("classAssignments")
             .whereEqualTo("teacherUid", currentTeacherUid)
@@ -215,8 +278,6 @@ class TeacherDashboardActivity : AppCompatActivity() {
                     val assignmentId = doc.id
 
                     val yearNumber = yearLevel.replace(Regex("[^0-9]"), "").take(1)
-                    // FORMAT: Include year level like in Manage Classes
-                    // Example: "BSIT 1-A - CS101" or "BSIT - 1st Year - A - CS101"
                     val displayText = "$course - $yearNumber$section - $subjectCode"
 
                     ClassRouletteData(
@@ -239,7 +300,6 @@ class TeacherDashboardActivity : AppCompatActivity() {
                 val builder = AlertDialog.Builder(this)
                 builder.setTitle("Select Class for Roleta")
 
-                // Create formatted display items with year level
                 val displayItems = classList.map { it.displayText }.toTypedArray()
 
                 builder.setItems(displayItems) { _, which ->
@@ -259,9 +319,6 @@ class TeacherDashboardActivity : AppCompatActivity() {
     }
 
     private fun loadStudentsAndOpenRoulette(classData: ClassRouletteData) {
-        val firestore = FirebaseFirestore.getInstance()
-
-        // GAMITIN ANG SIMPLER QUERY (tulad ng lumang code)
         firestore.collection("students")
             .whereEqualTo("courseCode", classData.course)
             .whereEqualTo("sectionId", classData.section)

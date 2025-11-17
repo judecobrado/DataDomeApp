@@ -1,54 +1,211 @@
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:background="@color/background_cream"
+    android:padding="20dp">
 
-    <Button
-        android:id="@+id/btnAddQuiz"
+    <!-- Header Section -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Create New Quiz" />
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="24dp">
 
-    <!-- Filter Tabs -->
-    <com.google.android.material.tabs.TabLayout
-        android:id="@+id/tabFilter"
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Quiz Manager"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="@color/primary_maroon" />
+
+        <!-- Quiz Count Badge -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/primary_maroon">
+
+            <TextView
+                android:id="@+id/tvQuizCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp"
+                android:text="0 Quizzes"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/white" />
+
+        </com.google.android.material.card.MaterialCardView>
+
+    </LinearLayout>
+
+    <!-- Create Quiz Button -->
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:background="@color/white"
-        app:tabMode="fixed"
-        app:tabGravity="fill"
-        app:tabIndicatorFullWidth="false"
-        app:tabPaddingStart="16dp"
-        app:tabPaddingEnd="16dp"
-        app:tabBackground="?attr/selectableItemBackgroundBorderless"/>
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp"
+        android:layout_marginBottom="20dp">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerViewQuizzes"
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAddQuiz"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="Create New Quiz"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            style="@style/Widget.Material3.Button"
+            app:backgroundTint="@color/primary_maroon"
+            app:cornerRadius="12dp"
+            app:icon="@drawable/ic_add"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp" />
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Filter Tabs Card -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="1dp"
+        android:layout_marginBottom="16dp">
+
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/tabFilter"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            app:tabMode="fixed"
+            app:tabGravity="fill"
+            app:tabIndicatorFullWidth="false"
+            app:tabIndicatorColor="@color/primary_maroon"
+            app:tabIndicatorHeight="3dp"
+            app:tabSelectedTextColor="@color/primary_maroon"
+            app:tabTextColor="@color/text_secondary"
+            app:tabRippleColor="@color/primary_maroon"
+            app:tabPaddingStart="16dp"
+            app:tabPaddingEnd="16dp" />
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Quizzes List Card -->
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:paddingTop="8dp" />
+        app:cardCornerRadius="16dp"
+        app:cardElevation="2dp">
 
-    <ProgressBar
-        android:id="@+id/progressBarLoading"
-        style="?android:attr/progressBarStyleLarge"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerViewQuizzes"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:padding="8dp" />
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Loading State -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardLoading"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
         android:layout_gravity="center"
-        android:indeterminate="true"
-        android:visibility="gone" />
-
-    <TextView
-        android:id="@+id/tvNoQuizzes"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="No quizzes created"
-        android:textSize="16sp"
-        android:textColor="@android:color/darker_gray"
-        android:gravity="center"
         android:visibility="gone"
-        android:layout_marginTop="16dp"/>
+        app:cardCornerRadius="20dp"
+        app:cardElevation="8dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="20dp">
+
+            <ProgressBar
+                android:id="@+id/progressBarLoading"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:indeterminateTint="@color/primary_maroon" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Loading..."
+                android:textSize="12sp"
+                android:textColor="@color/text_primary"
+                android:layout_marginTop="12dp" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Empty State -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardEmpty"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="gone"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="2dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="40dp">
+
+            <ImageView
+                android:layout_width="120dp"
+                android:layout_height="120dp"
+                android:src="@drawable/ic_quiz_empty"
+                android:tint="@color/text_secondary"
+                android:layout_marginBottom="24dp" />
+
+            <TextView
+                android:id="@+id/tvNoQuizzes"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="No Quizzes Created"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Create your first quiz to get started"
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary"
+                android:gravity="center"
+                android:lineSpacingExtra="4dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Create Quiz"
+                android:layout_marginTop="24dp"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                app:strokeColor="@color/primary_maroon"
+                app:strokeWidth="1dp"
+                app:icon="@drawable/ic_add"
+                app:iconGravity="textStart"
+                app:iconPadding="4dp" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
 </LinearLayout>
