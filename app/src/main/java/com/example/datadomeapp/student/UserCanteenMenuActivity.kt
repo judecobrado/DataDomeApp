@@ -9,6 +9,7 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.ImageView
 import android.util.Log
+import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -27,7 +28,7 @@ class UserCanteenMenuActivity : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var progressBar: ProgressBar
     private lateinit var adapter: CanteenMenuAdapter
-
+    private lateinit var layoutWallet: LinearLayout
     private var allItems: List<CanteenMenuItem> = emptyList()
 
     private var userType: String = "student"
@@ -42,20 +43,19 @@ class UserCanteenMenuActivity : AppCompatActivity() {
         etSearch = findViewById(R.id.etSearch)
         recyclerView = findViewById(R.id.rvMenu)
         progressBar = findViewById(R.id.progressBar)
+        layoutWallet = findViewById(R.id.layoutWallet)
 
-        // --- Get user info ---
         userType = intent.getStringExtra("USER_TYPE") ?: "student"
         userId = intent.getStringExtra("USER_ID") ?: auth.currentUser?.uid.orEmpty()
 
         // --- Setup adapter ---
         adapter = CanteenMenuAdapter { item ->
-            showItemPreview(item) // Show larger preview dialog when item clicked
+            showItemPreview(item)
         }
 
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
 
-        // --- Load balance & items ---
         loadWalletBalance()
         loadMenuItems()
 
@@ -68,9 +68,9 @@ class UserCanteenMenuActivity : AppCompatActivity() {
             override fun afterTextChanged(s: Editable?) {}
         })
 
-        // --- Wallet click (view transaction history) ---
-        tvWalletBalance.setOnClickListener {
+        layoutWallet.setOnClickListener { // Palitan ang tvWalletBalance ng layoutWallet
             val intent = Intent(this, UserCanteenItemHistoryActivity::class.java)
+            // Siguraduhin na ang userId ay napalitan na ng T-XXXX kung teacher
             intent.putExtra("STUDENT_ID", userId)
             startActivity(intent)
         }

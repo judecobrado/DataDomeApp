@@ -356,6 +356,9 @@ class RecordAttendanceActivity : AppCompatActivity() {
                 val fetchedSubjectCode = doc.getString("subjectCode")
                 val fetchedYearLevel = doc.getString("yearLevel")
                 val fetchedSemester = doc.getString("semester")
+
+                val sectionName = doc.getString("section") ?: ""
+
                 val slotsMap = doc.get("scheduleSlots") as? Map<String, Map<String, String>>
 
                 this.scheduleSlots = slotsMap?.mapValues { (_, value) ->
@@ -377,6 +380,7 @@ class RecordAttendanceActivity : AppCompatActivity() {
 
                 // 1. Kukunin ang listahan ng students base sa Year Level
                 firestore.collection("students")
+                    .whereEqualTo("sectionId", sectionName)
                     .whereEqualTo("yearLevel", fetchedYearLevel)
                     .whereEqualTo("status", "Admitted")
                     .get()

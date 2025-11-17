@@ -1223,6 +1223,8 @@ class ManageSchedulesActivity : AppCompatActivity() {
                         loadAllAssignments()
                         checkConflicts()
                     }.addOnFailureListener { e ->
+
+
                         // ... (Failure Handler)
                         if (e.message?.contains("Duplicate time slot") == true) {
                             Toast.makeText(this, e.message, Toast.LENGTH_LONG).show()

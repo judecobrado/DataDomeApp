@@ -46,7 +46,7 @@ class EditableActivityScoreAdapter(
         if (scoreData.maxPoints <= 0) {
             holder.tvCalculatedPercent.text = "50%-Base: 0.00%"
             holder.etRawScore.isEnabled = false
-            holder.etRawScore.setText("")
+            holder.etRawScore.setText("*")
             return
         }
 
@@ -55,7 +55,7 @@ class EditableActivityScoreAdapter(
         // Format displays - show empty for zero scores
         holder.etRawScore.setText(
             when {
-                scoreData.rawScore == 0.0 -> ""
+                scoreData.rawScore == 0.0 -> "*"
                 scoreData.rawScore.isInteger() -> "%.0f".format(scoreData.rawScore)
                 else -> "%.1f".format(scoreData.rawScore)
             }

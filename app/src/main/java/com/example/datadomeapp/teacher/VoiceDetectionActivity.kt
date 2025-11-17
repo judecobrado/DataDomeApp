@@ -12,11 +12,10 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import android.widget.Button
 import android.widget.ProgressBar
+import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
-import android.widget.ToggleButton
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -32,12 +31,14 @@ private const val CALIBRATION_OFFSET = 50.0
 
 class VoiceDetectionActivity : AppCompatActivity() {
 
-    private lateinit var toggleDetection: com.google.android.material.button.MaterialButton
     private lateinit var tvNoiseStatus: TextView
     private lateinit var tvMusicStatus: TextView
     private lateinit var noiseProgressBar: ProgressBar
-    private lateinit var tvThreshold: TextView
-    private var btnCalibrate: Button? = null
+    private lateinit var tvThresholdLabel: TextView
+    private lateinit var thresholdSeekBar: SeekBar
+    private lateinit var btnCalibrate: com.google.android.material.button.MaterialButton
+    private lateinit var tvStatusInfo: TextView
+
     private val firestore = FirebaseFirestore.getInstance()
     private var noiseMediaPlayer: MediaPlayer? = null
     private val handler = Handler(Looper.getMainLooper())
@@ -57,7 +58,7 @@ class VoiceDetectionActivity : AppCompatActivity() {
     @Volatile private var currentDecibelLevel: Int = 0
 
     // Noise Monitoring Variables
-    private var isDetectionActive = false
+    private var isDetectionActive = true // Auto-start enabled
     private var currentNoiseThreshold: Int = DEFAULT_NOISE_THRESHOLD
 
     private val MONITORING_INTERVAL: Long = 500
@@ -65,7 +66,7 @@ class VoiceDetectionActivity : AppCompatActivity() {
 
     // Range for Progress Bar
     private val MIN_DB = 50
-    private val MAX_DB = 100
+    private val MAX_DB = 120
 
     private var isMusicPlayingOrCooldown = false
     private val MUSIC_COOLDOWN_DELAY: Long = 2000
@@ -120,21 +121,64 @@ class VoiceDetectionActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(com.example.datadomeapp.R.layout.teacher_voice_detection)
 
-        toggleDetection = findViewById(com.example.datadomeapp.R.id.toggleDetection)
+        initializeViews()
+        setupSeekBar()
+        setupAudioRecording()
+        checkAndRequestPermissions()
+
+        // Auto-start detection
+        tvMusicStatus.text = "Voice Detection: ACTIVE"
+        tvStatusInfo.text = "Monitoring classroom noise level automatically"
+    }
+
+    private fun initializeViews() {
         tvNoiseStatus = findViewById(com.example.datadomeapp.R.id.tvNoiseStatus)
         tvMusicStatus = findViewById(com.example.datadomeapp.R.id.tvMusicStatus)
         noiseProgressBar = findViewById(com.example.datadomeapp.R.id.noiseProgressBar)
-        tvThreshold = findViewById(com.example.datadomeapp.R.id.tvThreshold)
+        tvThresholdLabel = findViewById(com.example.datadomeapp.R.id.tvThresholdLabel)
+        thresholdSeekBar = findViewById(com.example.datadomeapp.R.id.thresholdSeekBar)
         btnCalibrate = findViewById(com.example.datadomeapp.R.id.btnCalibrate)
+        tvStatusInfo = findViewById(com.example.datadomeapp.R.id.tvStatusInfo)
 
-        btnCalibrate?.setOnClickListener {
-            calibrateVoiceThreshold()
-        }
-
+        // Load saved threshold
         currentNoiseThreshold = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             .getInt(KEY_THRESHOLD, DEFAULT_NOISE_THRESHOLD)
-        tvThreshold.text = "Target: ${currentNoiseThreshold} dB (Voice Level)"
+    }
 
+    private fun setupSeekBar() {
+        // Set seekbar range (60-100 dB, with 60 as minimum)
+        thresholdSeekBar.min = 0
+        thresholdSeekBar.max = 60  // 60 + 40 = 100 dB max
+        thresholdSeekBar.progress = currentNoiseThreshold - 60
+
+        updateThresholdDisplay()
+
+        thresholdSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    currentNoiseThreshold = progress + 60  // Convert to 60-100 range
+                    updateThresholdDisplay()
+                    saveThreshold()
+                }
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                Toast.makeText(
+                    this@VoiceDetectionActivity,
+                    "Noise threshold set to $currentNoiseThreshold dB",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        })
+
+        btnCalibrate.setOnClickListener {
+            calibrateVoiceThreshold()
+        }
+    }
+
+    private fun setupAudioRecording() {
         bufferSize = AudioRecord.getMinBufferSize(
             RECORDER_SAMPLERATE,
             RECORDER_CHANNELS,
@@ -144,25 +188,16 @@ class VoiceDetectionActivity : AppCompatActivity() {
 
         noiseProgressBar.progressTintList =
             ColorStateList.valueOf(ContextCompat.getColor(this, android.R.color.holo_green_dark))
+    }
 
-        checkAndRequestPermissions()
+    private fun updateThresholdDisplay() {
+        tvThresholdLabel.text = "Noise Threshold: ${currentNoiseThreshold} dB"
+    }
 
-        toggleDetection.setOnClickListener {
-            isDetectionActive = !isDetectionActive
-            toggleDetection.isChecked = isDetectionActive
-            if (isDetectionActive) {
-                tvMusicStatus.text = "Voice Detection: ACTIVE"
-                isMusicPlayingOrCooldown = false
-            } else {
-                tvMusicStatus.text = "Voice Detection: DISABLED"
-                stopNoiseMusicImmediate()
-            }
-        }
-
-
-        btnCalibrate!!.setOnClickListener {
-            calibrateVoiceThreshold()
-        }
+    private fun saveThreshold() {
+        getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
+            .putInt(KEY_THRESHOLD, currentNoiseThreshold)
+            .apply()
     }
 
     // ------------------------------------------------------
@@ -252,22 +287,21 @@ class VoiceDetectionActivity : AppCompatActivity() {
             }
             if (collectedValues.isNotEmpty()) {
                 val avgDb = collectedValues.average().toInt()
-                saveNewThreshold(avgDb + 5) // add safety buffer
+                val newThreshold = (avgDb + 5).coerceIn(60, 120)
+
                 runOnUiThread {
-                    Toast.makeText(this, "Calibrated to ${avgDb + 5} dB", Toast.LENGTH_LONG).show()
+                    currentNoiseThreshold = newThreshold
+                    thresholdSeekBar.progress = currentNoiseThreshold - 60
+                    updateThresholdDisplay()
+                    saveThreshold()
+                    Toast.makeText(
+                        this,
+                        "Calibrated to ${currentNoiseThreshold} dB",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
             }
         }.start()
-    }
-
-    private fun saveNewThreshold(newThreshold: Int) {
-        currentNoiseThreshold = newThreshold.coerceIn(50, 110)
-        getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
-            .putInt(KEY_THRESHOLD, currentNoiseThreshold)
-            .apply()
-        runOnUiThread {
-            tvThreshold.text = "Target: ${currentNoiseThreshold} dB (Voice Level)"
-        }
     }
 
     // ------------------------------------------------------
@@ -323,7 +357,7 @@ class VoiceDetectionActivity : AppCompatActivity() {
             }
         }
         noiseMediaPlayer?.start()
-        tvMusicStatus.text = "🚨 Alert Triggered!"
+        tvMusicStatus.text = "🚨 Noise Alert Triggered!"
     }
 
     private fun stopNoiseMusicImmediate() {
@@ -332,9 +366,6 @@ class VoiceDetectionActivity : AppCompatActivity() {
         noiseMediaPlayer = null
         isMusicPlayingOrCooldown = false
         handler.removeCallbacksAndMessages(null)
-        tvMusicStatus.text = if (isDetectionActive)
-            "Voice Detection: ACTIVE"
-        else
-            "Voice Detection: DISABLED"
+        tvMusicStatus.text = "Voice Detection: ACTIVE"
     }
 }

@@ -16,6 +16,10 @@
     <color name="blue_secondary">#3B82F6</color>
     <color name="blue_light">#E0E7FF</color>
 
+    <color name="button_normal_color">#6200EE</color>
+    <color name="button_highlight_color">#03DAC5</color>
+    <color name="button_disabled_color">#9E9E9E</color>
+
     <!-- Gold Theme -->
     <color name="gold_primary">#CA8A04</color>
     <color name="gold_secondary">#FACC15</color>
