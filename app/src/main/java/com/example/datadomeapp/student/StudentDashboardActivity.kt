@@ -8,26 +8,20 @@ import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.widget.Button
-import com.google.firebase.firestore.SetOptions
-import android.widget.LinearLayout // 🟢 Idinagdag para sa Vertical Layout
+import android.widget.LinearLayout
 import android.widget.TableLayout
 import android.widget.TableRow
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.cardview.widget.CardView
 import com.example.datadomeapp.R
-// Model Imports (Tiyakin na ito ang tamang package ng iyong models)
 import com.example.datadomeapp.models.StudentSubject
 import com.example.datadomeapp.models.ClassAssignment
-import com.example.datadomeapp.models.TimeSlot
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
 import java.text.SimpleDateFormat
 import java.util.*
-
-// Activity Imports
-import com.example.datadomeapp.LibraryActivity
 
 class StudentDashboardActivity : AppCompatActivity() {
 
@@ -40,7 +34,6 @@ class StudentDashboardActivity : AppCompatActivity() {
     private lateinit var tvUserInfo: TextView
     private var studentSectionId: String? = null
     private var studentId: String? = null
-
     private var studentUid: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -61,15 +54,38 @@ class StudentDashboardActivity : AppCompatActivity() {
 
         if (finalUid.isNullOrEmpty()) {
             Toast.makeText(this, "Session expired or User ID missing. Please log in again.", Toast.LENGTH_LONG).show()
-            // Tiyakin na tama ang reference sa LoginActivity
             startActivity(Intent(this, com.example.datadomeapp.LoginActivity::class.java))
             finish()
             return
         }
 
         // Simulan ang pagkuha ng data at i-set up ang mga button
-        loadStudentInfo(finalUid) // <--- Dapat may parameter na 'finalUid'
+        loadStudentInfo(finalUid)
         setupFeatureButtons()
+        setupProfileButton() // 🟢 IDINAGDAG - Profile button functionality
+    }
+
+    /**
+     * 🟢 IDINAGDAG - Profile Button Click Listener
+     */
+    private fun setupProfileButton() {
+        val btnProfile = findViewById<CardView>(R.id.btnProfile)
+
+        btnProfile.setOnClickListener {
+            // I-check kung may student ID na nakuha
+            if (studentId.isNullOrEmpty()) {
+                Toast.makeText(this, "Student information not yet loaded. Please wait.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            // Gumawa ng intent para pumunta sa StudentProfileActivity
+            val intent = Intent(this, StudentProfileActivity::class.java)
+            intent.putExtra("STUDENT_ID", studentId)
+            intent.putExtra("USER_UID", studentUid)
+            startActivity(intent)
+        }
+
+        Log.i("PROFILE_DEBUG", "Profile button setup complete. Student ID: $studentId")
     }
 
     /**
@@ -296,9 +312,6 @@ class StudentDashboardActivity : AppCompatActivity() {
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
 
             startActivity(intent)
-
-            // Dito mo ilalagay ang redirect sa Login Activity
-            // startActivity(Intent(this, LoginActivity::class.java))
             finish()
         }
 
@@ -388,7 +401,6 @@ class StudentDashboardActivity : AppCompatActivity() {
             intent.putExtra("STUDENT_ID", studentId) // <-- PASS THE CORRECT ID
             startActivity(intent)
         }
-
 
         // Full Schedule Button
         findViewById<Button>(R.id.btnSchedule).setOnClickListener {
