@@ -1,114 +1,170 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp"
+    android:background="#FFFFFF"
+    android:paddingHorizontal="24dp"
+    android:paddingVertical="40dp"
     tools:context=".canteen.TopUpActivity">
 
     <TextView
         android:id="@+id/tvHeaderTitle"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Cash-In / Top-Up Service"
+        android:text="ACCOUNT TOP-UP"
         android:textSize="24sp"
         android:textStyle="bold"
         android:gravity="center"
-        android:textColor="@color/black"
-        android:layout_marginBottom="24dp"/>
-
-    <TextView
-        android:id="@+id/tvScanPrompt"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="👋 Scan Student/Teacher RFID Tag to Start"
-        android:textSize="18sp"
-        android:gravity="center"
-        android:padding="24dp"
-        android:background="@drawable/rounded_border"
-        android:backgroundTint="#FFF3E0"
-        android:layout_marginBottom="16dp"/>
+        android:textColor="#212121"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="40dp"/>
 
     <LinearLayout
-        android:layout_width="match_parent"
+        android:id="@+id/cardScanPrompt"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="12dp"
-        android:background="@drawable/rounded_border"
-        android:backgroundTint="#E8F5E9"
-        android:layout_marginBottom="16dp">
+        android:background="#F8F8F8"
+        android:paddingVertical="32dp"
+        android:layout_marginTop="32dp"
+        app:layout_constraintTop_toBottomOf="@id/tvHeaderTitle"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:id="@+id/tvScanPrompt"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="👋 Scan RFID Tag to Start"
+            android:textSize="18sp"
+            android:textColor="#7B1113"
+            android:gravity="center"
+            android:textStyle="bold"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/cardUserDetails"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingTop="32dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintTop_toBottomOf="@id/cardScanPrompt"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Scanned User Details:"
-            android:textStyle="bold"
-            android:textSize="16sp"/>
+            android:text="ACCOUNT HOLDER"
+            android:textStyle="normal"
+            android:textSize="12sp"
+            android:textColor="#757575"
+            android:layout_marginBottom="2dp"/>
 
         <TextView
             android:id="@+id/tvStudentInfo"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="User Info: N/A"
+            android:text="Name and ID: N/A (Awaiting Scan)"
             android:textSize="16sp"
-            android:layout_marginTop="4dp"/>
+            android:textColor="#212121"
+            android:layout_marginBottom="24dp"/>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#E0E0E0"
+            android:layout_marginBottom="24dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="CURRENT BALANCE"
+            android:textStyle="normal"
+            android:textSize="12sp"
+            android:textColor="#757575"
+            android:layout_marginBottom="4dp"/>
 
         <TextView
             android:id="@+id/tvCurrentBalance"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Current Balance: ₱0.00"
-            android:textSize="16sp"
+            android:text="₱0.00"
+            android:textSize="34sp"
             android:textStyle="bold"
-            android:textColor="#388E3C"
-            android:layout_marginTop="4dp"/>
+            android:textColor="#1B5E20"
+            android:fontFamily="sans-serif-black"/>
     </LinearLayout>
 
     <LinearLayout
         android:id="@+id/llTopUpForm"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:visibility="gone"
-        android:paddingTop="8dp">
+        tools:visibility="visible"
+        android:layout_marginTop="40dp"
+        app:layout_constraintTop_toBottomOf="@id/cardUserDetails"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Enter Top-Up Amount (₱)"
-            android:textSize="16sp"
+            android:text="ENTER CASH-IN AMOUNT"
+            android:textSize="14sp"
+            android:textColor="#212121"
             android:textStyle="bold"
-            android:layout_marginBottom="8dp"/>
+            android:layout_marginBottom="12dp"/>
 
-        <EditText
-            android:id="@+id/etAmount"
+        <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="e.g., 50.00"
-            android:inputType="numberDecimal"
-            android:minHeight="48dp"
-            android:layout_marginBottom="16dp"/>
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" app:boxStrokeColor="#7B1113"
+            app:hintTextColor="#7B1113"
+            app:prefixText="₱ " app:prefixTextColor="#7B1113">
 
-        <Button
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etAmount"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="e.g., 50.00"
+                android:inputType="numberDecimal"
+                android:textColor="#212121"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:paddingVertical="18dp"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnConfirmTopUp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="40dp"
             android:text="CONFIRM TOP-UP"
-            android:backgroundTint="#4CAF50"
-            android:textColor="@color/white"
-            android:padding="12dp"
-            android:layout_marginBottom="8dp"/>
+            android:backgroundTint="#7B1113"
+            android:textColor="#FFFFFF"
+            app:cornerRadius="8dp" android:paddingVertical="18dp"
+            android:textStyle="bold"
+            android:textSize="16sp"/>
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCancel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Cancel / New Scan"
-            android:backgroundTint="#F44336"
-            android:textColor="@color/white"
-            android:padding="12dp"/>
+            android:text="CANCEL / NEW SCAN"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:textColor="#757575"
+            android:paddingVertical="12dp"
+            android:textStyle="normal"
+            android:layout_marginTop="8dp"/>
 
     </LinearLayout>
 
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

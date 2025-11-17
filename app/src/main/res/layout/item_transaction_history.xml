@@ -1,18 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="8dp"
-    app:cardCornerRadius="8dp"
-    app:cardElevation="2dp">
+    app:cardCornerRadius="10dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="1.5dp" app:strokeColor="#7B1113" app:cardBackgroundColor="#FFFFFF">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="16dp">
+        android:paddingStart="16dp"
+        android:paddingTop="12dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="12dp"
+        android:gravity="center_vertical">
 
         <LinearLayout
             android:layout_width="0dp"
@@ -24,9 +30,11 @@
                 android:id="@+id/tvTransactionType"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="18sp"
+                android:textSize="17sp"
                 android:textStyle="bold"
-                android:textColor="#4CAF50"
+                android:textColor="#000000"
+                android:maxLines="1"
+                android:ellipsize="end"
                 tools:text="CASH-IN: ₱50.00"/>
 
             <TextView
@@ -34,7 +42,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textSize="12sp"
-                android:textColor="#757575"
+                android:textColor="#7B1113"
+                android:layout_marginTop="2dp"
                 tools:text="October 29, 2025 10:30 AM"/>
         </LinearLayout>
 
@@ -43,24 +52,27 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:gravity="end"
+            android:layout_marginStart="16dp"
             android:layout_gravity="center_vertical">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="12sp"
-                android:textColor="#757575"
-                android:text="New Balance:"/>
+                android:textSize="11sp"
+                android:textColor="#A0A0A0"
+                android:text="Current Balance"/>
 
             <TextView
                 android:id="@+id/tvFinalBalance"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="16sp"
+                android:textSize="17sp"
                 android:textStyle="bold"
-                android:textColor="#333333"
+                android:textColor="#1B5E20"
+                android:fontFamily="sans-serif-medium"
+                android:layout_marginTop="2dp"
                 tools:text="₱175.50"/>
         </LinearLayout>
 
     </LinearLayout>
-</androidx.cardview.widget.CardView>
+</com.google.android.material.card.MaterialCardView>

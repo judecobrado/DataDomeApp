@@ -169,7 +169,7 @@ class TopUpActivity : AppCompatActivity() {
         firestore.collection(collectionName).document(accountId).get()
             .addOnSuccessListener { accountDoc ->
                 if (accountDoc.exists()) {
-                    val firstName = accountDoc.getString("firstName") ?: "N/A"
+                    val firstName = accountDoc.getString("firstName") ?: ""
                     val lastName = accountDoc.getString("lastName") ?: ""
                     val balance = accountDoc.getDouble("balance") ?: 0.0
 

@@ -1,102 +1,193 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F0F0F0"
-    android:padding="16dp"
+    android:background="#FFFFFF"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
     tools:context=".canteen.BalanceInquiryActivity">
 
     <LinearLayout
-        android:id="@+id/headerLayout"
+        android:id="@+id/headerGroup"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingBottom="12dp"
-        android:background="@android:color/white"
+        android:layout_marginTop="20dp"
         app:layout_constraintTop_toTopOf="parent">
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="User Balances Overview"
-            android:textSize="24sp"
+            android:text="FINANCIAL DIRECTORY"
+            android:textSize="10sp"
             android:textStyle="bold"
-            android:textColor="#333333"
-            android:layout_marginBottom="8dp"/>
+            android:textColor="#C0C0C0"
+            android:letterSpacing="0.1"
+            android:layout_marginBottom="2dp"/>
 
         <TextView
-            android:id="@+id/tvTotalBalance"
+            android:id="@+id/tvScreenTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Total Money in Circulation: ₱0.00"
-            android:textSize="18sp"
-            android:textStyle="italic"
-            android:textColor="#00796B"
-            tools:text="Total Money in Circulation: ₱50,000.00"/>
+            android:text="USER BALANCE INQUIRY"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="#212121"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:fontFamily="sans-serif-medium"
+            android:layout_marginBottom="16dp"/>
+
     </LinearLayout>
 
-    <LinearLayout
-        android:id="@+id/searchFilterLayout"
-        android:layout_width="match_parent"
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardSummary"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="12dp"
-        app:layout_constraintTop_toBottomOf="@id/headerLayout">
+        app:cardCornerRadius="8dp"
+        app:cardElevation="2dp"
+        app:strokeWidth="3dp" app:strokeColor="#7B1113" app:cardBackgroundColor="#FFFFFF"
+        app:layout_constraintTop_toBottomOf="@id/headerGroup"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
-        <EditText
-            android:id="@+id/etSearch"
-            android:layout_width="0dp"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="BALANCES OVERVIEW"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="#7B1113"
+                android:letterSpacing="0.08"
+                android:layout_marginBottom="12dp"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:text="Total Money in Circulation"
+                    android:textSize="14sp"
+                    android:textColor="#757575"
+                    android:maxLines="1"
+                    android:ellipsize="end"/>
+
+                <TextView
+                    android:id="@+id/tvTotalBalance"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="₱0.00"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:textColor="#00796B"
+                    android:fontFamily="sans-serif-medium"
+                    tools:text="₱50,000.00"/>
+            </LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <LinearLayout
+        android:id="@+id/llSearchFilter"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        app:layout_constraintTop_toBottomOf="@id/cardSummary"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilSearch"
+            android:layout_width="0dp"
             android:layout_weight="1"
+            android:layout_height="wrap_content"
             android:hint="Search Name or ID"
-            android:inputType="textCapWords"
-            android:minHeight="48dp"
-            android:background="@android:drawable/editbox_background"/>
+            app:startIconDrawable="?android:attr/actionModeWebSearchDrawable"
+            app:startIconTint="#7B1113"
+            app:boxStrokeColor="#7B1113"
+            app:hintTextColor="#7B1113"
+            app:boxCornerRadiusTopStart="8dp"
+            app:boxCornerRadiusTopEnd="8dp"
+            app:boxCornerRadiusBottomStart="8dp"
+            app:boxCornerRadiusBottomEnd="8dp"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etSearch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textCapWords"
+                android:textColor="#333333"
+                android:paddingVertical="12dp"/>
+        </com.google.android.material.textfield.TextInputLayout>
 
         <Spinner
             android:id="@+id/spinnerFilter"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:entries="@array/balance_filter_options"
-            android:gravity="center"
+            android:layout_height="48dp"
             android:layout_marginStart="8dp"
-            android:background="?attr/selectableItemBackground"/>
+            android:entries="@array/balance_filter_options"
+            android:spinnerMode="dropdown"
+            android:background="?attr/selectableItemBackground"
+            android:popupBackground="#FFFFFF"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"/>
     </LinearLayout>
 
-    <ProgressBar
-        android:id="@+id/progressBar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:visibility="gone"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
-
-    <TextView
-        android:id="@+id/tvNoResults"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="No user found."
-        android:textSize="16sp"
-        android:textColor="#888888"
-        android:textStyle="italic"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/searchFilterLayout"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerViewBalances"
-        android:layout_width="match_parent"
+    <FrameLayout
+        android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginTop="12dp"
-        android:paddingTop="8dp"
-        app:layout_constraintTop_toBottomOf="@id/searchFilterLayout"
+        app:layout_constraintTop_toBottomOf="@id/llSearchFilter"
         app:layout_constraintBottom_toBottomOf="parent"
-        tools:listitem="@layout/item_balance_user"/>
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerViewBalances"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingTop="8dp"
+            android:paddingBottom="16dp"
+            android:scrollbars="vertical"
+            tools:listitem="@layout/item_balance_user" />
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="center"
+            android:visibility="gone"
+            android:indeterminateTint="#7B1113"/>
+
+        <TextView
+            android:id="@+id/tvNoResults"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="No records found."
+            android:textSize="15sp"
+            android:textColor="#AAAAAA"
+            android:textStyle="italic"
+            android:visibility="gone"
+            android:padding="20dp"
+            android:gravity="center"/>
+    </FrameLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

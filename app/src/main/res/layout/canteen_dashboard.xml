@@ -1,320 +1,407 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/layoutCanteenStaff"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#FDFBF8">
+    android:background="#FAFBFC">
 
-    <!-- Header Section with Primary Color -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:background="#7B1113"
-        android:padding="24dp"
-        android:gravity="center_horizontal">
+    <RelativeLayout
+        android:id="@+id/header"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@drawable/header_arch"
+        android:paddingTop="30dp"
+        android:paddingBottom="10dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintHeight_percent="0.22"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:layout_marginTop="18dp">
+
+            <TextView
+                android:id="@+id/tvCanteenTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Campus Canteen"
+                android:textSize="26sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                android:layout_marginBottom="2dp"
+                android:shadowColor="#30000000"
+                android:shadowDx="1"
+                android:shadowDy="1"
+                android:shadowRadius="2"/>
+
+            <TextView
+                android:id="@+id/tvWelcome"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="STAFF MANAGEMENT PORTAL"
+                android:textSize="13sp"
+                android:textColor="#E5E7EB"/>
+        </LinearLayout>
+    </RelativeLayout>
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/logoCard"
+        android:layout_width="120dp" android:layout_height="120dp" app:cardCornerRadius="30dp"
+        app:cardElevation="18dp" app:strokeWidth="5dp" app:strokeColor="#FFC107"
+        app:cardBackgroundColor="#FFFFFF"
+        app:layout_constraintTop_toBottomOf="@id/header"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="-60dp" app:layout_constraintHorizontal_bias="0.5">
 
         <ImageView
             android:id="@+id/ivCanteenImage"
-            android:layout_width="120dp"
-            android:layout_height="120dp"
-            android:layout_marginBottom="16dp"
-            android:scaleType="centerCrop"
-            android:contentDescription="Canteen Image"
-            android:src="@raw/logo_final"
-            android:background="@drawable/circle_background_white"
-            android:clipToOutline="true"
-            android:outlineProvider="background" />
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerInside"
+            android:padding="12dp" android:src="@raw/logo_final"/>
+    </com.google.android.material.card.MaterialCardView>
 
-        <TextView
-            android:id="@+id/tvCanteenTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Campus Canteen"
-            android:textSize="32sp"
-            android:textStyle="bold"
-            android:textColor="#FFFFFF"
-            android:gravity="center_horizontal" />
-
-        <TextView
-            android:id="@+id/tvWelcome"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Welcome, Staff Name!"
-            android:textSize="18sp"
-            android:textColor="#E8E8E8"
-            android:gravity="center_horizontal"
-            android:layout_marginTop="8dp"/>
-    </LinearLayout>
-
-    <!-- Quick Actions Grid -->
-    <LinearLayout
-        android:layout_width="match_parent"
+    <TextView
+        android:id="@+id/systemLabel"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="20dp"
-        android:layout_marginTop="-40dp">
+        android:text="SYSTEM OPERATIONS"
+        android:textColor="#1F2937"
+        android:textSize="16sp"
+        android:letterSpacing="0.18"
+        android:fontFamily="sans-serif-black"
+        app:layout_constraintTop_toBottomOf="@id/logoCard"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="28dp"
+        android:layout_marginBottom="12dp"/>
+
+    <LinearLayout
+        android:id="@+id/buttonRow1"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:orientation="horizontal"
+        app:layout_constraintTop_toBottomOf="@id/systemLabel"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/buttonRow2"
+        app:layout_constraintHeight_percent="0.15"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp">
 
         <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginEnd="12dp"
             app:cardCornerRadius="20dp"
-            app:cardElevation="8dp"
-            android:layout_marginBottom="16dp">
+            app:cardElevation="6dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="#D1D5DB"
+            app:cardBackgroundColor="#FFFFFF">
 
             <LinearLayout
+                android:id="@+id/btnMenu"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:gravity="center"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground">
 
-                <!-- First Row -->
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <ImageView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@android:drawable/ic_menu_agenda"
+                    app:tint="#7B1113"
+                    android:layout_marginBottom="4dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="12dp">
+                    android:text="Menu"
+                    android:textColor="#7B1113"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
-                    <!-- Menu Management -->
-                    <com.google.android.material.card.MaterialCardView
-                        android:layout_width="0dp"
-                        android:layout_height="120dp"
-                        android:layout_weight="1"
-                        android:layout_marginEnd="6dp"
-                        app:cardCornerRadius="16dp"
-                        app:cardElevation="4dp"
-                        app:strokeColor="#7B1113"
-                        app:strokeWidth="1dp">
-
-                        <LinearLayout
-                            android:id="@+id/btnMenu"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:orientation="vertical"
-                            android:gravity="center"
-                            android:background="#7B1113"
-                            android:padding="16dp">
-
-                            <ImageView
-                                android:layout_width="48dp"
-                                android:layout_height="48dp"
-                                android:src="@drawable/ic_menu_management"
-                                app:tint="#FFFFFF" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Menu"
-                                android:textColor="#FFFFFF"
-                                android:textSize="14sp"
-                                android:textStyle="bold"
-                                android:layout_marginTop="8dp" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <!-- TOP-UP / CASH-IN -->
-                    <com.google.android.material.card.MaterialCardView
-                        android:layout_width="0dp"
-                        android:layout_height="120dp"
-                        android:layout_weight="1"
-                        android:layout_marginStart="6dp"
-                        app:cardCornerRadius="16dp"
-                        app:cardElevation="4dp"
-                        app:strokeColor="#9B1C1F"
-                        app:strokeWidth="2dp">
-
-                        <LinearLayout
-                            android:id="@+id/btnTopUp"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:orientation="vertical"
-                            android:gravity="center"
-                            android:background="#9B1C1F"
-                            android:padding="16dp">
-
-                            <ImageView
-                                android:layout_width="48dp"
-                                android:layout_height="48dp"
-                                android:src="@drawable/ic_top_up"
-                                app:tint="#FFFFFF" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="TOP-UP"
-                                android:textColor="#FFFFFF"
-                                android:textSize="14sp"
-                                android:textStyle="bold"
-                                android:layout_marginTop="8dp" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-                </LinearLayout>
-
-                <!-- Second Row -->
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <TextView
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="12dp">
+                    android:text="Management"
+                    android:textColor="#6B7280"
+                    android:textSize="11sp"/>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
-                    <!-- Orders (POS) -->
-                    <com.google.android.material.card.MaterialCardView
-                        android:layout_width="0dp"
-                        android:layout_height="120dp"
-                        android:layout_weight="1"
-                        android:layout_marginEnd="6dp"
-                        app:cardCornerRadius="16dp"
-                        app:cardElevation="4dp"
-                        app:strokeColor="#7B1113"
-                        app:strokeWidth="2dp">
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="6dp"
+            app:strokeWidth="0dp"
+            app:cardBackgroundColor="#7B1113">
 
-                        <LinearLayout
-                            android:id="@+id/btnOrders"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:orientation="vertical"
-                            android:gravity="center"
-                            android:background="#7B1113"
-                            android:padding="16dp">
+            <LinearLayout
+                android:id="@+id/btnTopUp"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground">
 
-                            <ImageView
-                                android:layout_width="48dp"
-                                android:layout_height="48dp"
-                                android:src="@drawable/ic_pos"
-                                app:tint="#FFFFFF" />
+                <ImageView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@android:drawable/ic_input_add"
+                    app:tint="#FFFFFF"
+                    android:layout_marginBottom="4dp" />
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="POS"
-                                android:textColor="#FFFFFF"
-                                android:textSize="14sp"
-                                android:textStyle="bold"
-                                android:layout_marginTop="8dp" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <!-- Sales Reports -->
-                    <com.google.android.material.card.MaterialCardView
-                        android:layout_width="0dp"
-                        android:layout_height="120dp"
-                        android:layout_weight="1"
-                        android:layout_marginStart="6dp"
-                        app:cardCornerRadius="16dp"
-                        app:cardElevation="4dp"
-                        app:strokeColor="#9B1C1F"
-                        app:strokeWidth="1dp">
-
-                        <LinearLayout
-                            android:id="@+id/btnReports"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:orientation="vertical"
-                            android:gravity="center"
-                            android:background="#9B1C1F"
-                            android:padding="16dp">
-
-                            <ImageView
-                                android:layout_width="48dp"
-                                android:layout_height="48dp"
-                                android:src="@drawable/ic_reports"
-                                app:tint="#FFFFFF" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Reports"
-                                android:textColor="#FFFFFF"
-                                android:textSize="14sp"
-                                android:textStyle="bold"
-                                android:layout_marginTop="8dp" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-                </LinearLayout>
-
-                <!-- Third Row -->
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <TextView
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+                    android:text="Top-Up"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
-                    <!-- Balance Inquiry -->
-                    <com.google.android.material.card.MaterialCardView
-                        android:layout_width="0dp"
-                        android:layout_height="120dp"
-                        android:layout_weight="1"
-                        android:layout_marginEnd="6dp"
-                        app:cardCornerRadius="16dp"
-                        app:cardElevation="4dp"
-                        app:strokeColor="#7B1113"
-                        app:strokeWidth="1dp">
-
-                        <LinearLayout
-                            android:id="@+id/btnBalance"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:orientation="vertical"
-                            android:gravity="center"
-                            android:background="#7B1113"
-                            android:padding="16dp">
-
-                            <ImageView
-                                android:layout_width="48dp"
-                                android:layout_height="48dp"
-                                android:src="@drawable/ic_balance"
-                                app:tint="#FFFFFF" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Balance"
-                                android:textColor="#FFFFFF"
-                                android:textSize="14sp"
-                                android:textStyle="bold"
-                                android:layout_marginTop="8dp" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <!-- Logout -->
-                    <com.google.android.material.card.MaterialCardView
-                        android:layout_width="0dp"
-                        android:layout_height="120dp"
-                        android:layout_weight="1"
-                        android:layout_marginStart="6dp"
-                        app:cardCornerRadius="16dp"
-                        app:cardElevation="4dp"
-                        app:strokeColor="#9B1C1F"
-                        app:strokeWidth="1dp">
-
-                        <LinearLayout
-                            android:id="@+id/btnLogout"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:orientation="vertical"
-                            android:gravity="center"
-                            android:background="#9B1C1F"
-                            android:padding="16dp">
-
-                            <ImageView
-                                android:layout_width="48dp"
-                                android:layout_height="48dp"
-                                android:src="@drawable/ic_logout"
-                                app:tint="#FFFFFF" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Logout"
-                                android:textColor="#FFFFFF"
-                                android:textSize="14sp"
-                                android:textStyle="bold"
-                                android:layout_marginTop="8dp" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-                </LinearLayout>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Cash In"
+                    android:textColor="#F3F4F6"
+                    android:textSize="11sp"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
-</LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/buttonRow2"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:orientation="horizontal"
+        app:layout_constraintTop_toBottomOf="@id/buttonRow1"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/buttonRow3"
+        app:layout_constraintHeight_percent="0.15"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
+        android:layout_marginTop="12dp">
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginEnd="12dp"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="6dp"
+            app:strokeWidth="0dp"
+            app:cardBackgroundColor="#7B1113">
+
+            <LinearLayout
+                android:id="@+id/btnOrders"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground">
+
+                <ImageView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@android:drawable/ic_menu_sort_by_size"
+                    app:tint="#FFFFFF"
+                    android:layout_marginBottom="4dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="POS"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Point of Sale"
+                    android:textColor="#F3F4F6"
+                    android:textSize="11sp"/>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="6dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="#D1D5DB"
+            app:cardBackgroundColor="#FFFFFF">
+
+            <LinearLayout
+                android:id="@+id/btnReports"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground">
+
+                <ImageView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@android:drawable/ic_menu_view"
+                    app:tint="#7B1113"
+                    android:layout_marginBottom="4dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Reports"
+                    android:textColor="#7B1113"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Analytics"
+                    android:textColor="#6B7280"
+                    android:textSize="11sp"/>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/buttonRow3"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:orientation="horizontal"
+        android:gravity="center_horizontal"
+        app:layout_constraintTop_toBottomOf="@id/buttonRow2"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/logoutContainer"
+        app:layout_constraintHeight_percent="0.15"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
+        android:layout_marginTop="12dp"
+        app:layout_constraintVertical_chainStyle="packed">
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="6dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="#D1D5DB"
+            app:cardBackgroundColor="#FFFFFF"
+            android:layout_marginStart="40dp"
+            android:layout_marginEnd="40dp">
+
+            <LinearLayout
+                android:id="@+id/btnBalance"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginBottom="4dp"
+                    android:src="@android:drawable/ic_menu_info_details"
+                    app:tint="#7B1113" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="Balance"
+                    android:textColor="#7B1113"
+                    android:textSize="16sp"
+                    android:textStyle="bold"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Inquiry"
+                    android:textColor="#6B7280"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/logoutContainer"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="24dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/btnLogoutCard"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            app:cardCornerRadius="30dp"
+            app:cardElevation="10dp"
+            app:strokeWidth="0dp"
+            app:cardBackgroundColor="#7B1113">
+
+            <LinearLayout
+                android:id="@+id/btnLogout"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground">
+
+                <ImageView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginEnd="12dp"
+                    android:src="@android:drawable/ic_lock_power_off"
+                    app:tint="#FFFFFF" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="LOGOUT"
+                    android:textColor="#FFFFFF"
+                    android:textSize="17sp"
+                    android:textStyle="bold"/>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

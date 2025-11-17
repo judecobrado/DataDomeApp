@@ -129,7 +129,7 @@ class BalanceInquiryActivity : AppCompatActivity() {
                 }
 
                 allUsersList = combinedList.sortedByDescending { it.balance } // Default sort
-                tvTotalBalance.text = "Total Money in Circulation: ₱${String.format(Locale.US, "%.2f", totalBalance)}"
+                tvTotalBalance.text = "₱${String.format(Locale.US, "%.2f", totalBalance)}"
                 filterAndSortList() // Apply initial filter/sort/search
                 progressBar.visibility = View.GONE
             }

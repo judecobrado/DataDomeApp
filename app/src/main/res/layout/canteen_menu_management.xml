@@ -1,40 +1,140 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/menu_root"
-    android:orientation="vertical"
-    android:padding="16dp"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#FAFAFA"
+    android:orientation="vertical">
 
-    <Button
-        android:id="@+id/btnAddMenu"
-        android:text="Add Item"
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="24dp" />
+
+    <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"/>
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:text="CANTEEN"
+        android:textColor="#9E9E9E"
+        android:textSize="12sp"
+        android:letterSpacing="0.15"
+        android:textStyle="bold"
+        android:layout_marginBottom="2dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-black"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:text="Menu Management"
+        android:textColor="#1F1F1F"
+        android:textSize="30sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="4dp"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:text="System overview of all stockable items. Focus: Clarity and Efficiency."
+        android:textColor="#757575"
+        android:textSize="10sp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnAddMenu"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:backgroundTint="#7B1113"
+        android:paddingVertical="12dp"
+        android:text="ADD NEW ITEM"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="24dp"
+        app:cornerRadius="10dp"
+        app:elevation="0dp"
+        app:icon="@android:drawable/ic_input_add"
+        app:iconSize="22dp"
+        app:iconGravity="textStart"
+        app:iconTint="#FFFFFF"
+        app:rippleColor="#FBE9E7" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="16dp">
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
 
-        <EditText
-            android:id="@+id/etSearch"
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="0dp"
-            android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:hint="Search menu..."
-            android:padding="8dp"
-            android:inputType="text"/>
+            android:layout_weight="1"
+            android:hint="Search item name or code..."
+            app:boxCornerRadiusBottomEnd="12dp"
+            app:boxCornerRadiusBottomStart="12dp"
+            app:boxCornerRadiusTopEnd="12dp"
+            app:boxCornerRadiusTopStart="12dp"
+            app:boxStrokeColor="#7B1113"
+            app:boxStrokeWidth="1dp"
+            app:hintEnabled="true"
+            app:hintTextColor="#7B1113"
+            app:startIconDrawable="@android:drawable/ic_menu_search"
+            app:startIconTint="#7B1113">
 
-        <Spinner
-            android:id="@+id/spFilter"
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etSearch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text"
+                android:paddingVertical="12dp"
+                android:textSize="15sp"
+                android:textColor="#7B1113"
+                android:singleLine="true"
+                tools:text="" /></com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:entries="@array/menu_filter_options"/>
+            android:layout_marginStart="12dp"
+            app:cardBackgroundColor="#FFFFFF"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="#7B1113">
+
+            <Spinner
+                android:id="@+id/spFilter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:entries="@array/menu_filter_options"
+                android:overlapAnchor="false"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:paddingVertical="13dp"
+                android:spinnerMode="dropdown" />
+        </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#EEEEEE"
+        android:layout_marginBottom="12dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"/>
 
     <FrameLayout
         android:layout_width="match_parent"
@@ -44,25 +144,32 @@
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvMenu"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"/>
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="16dp"
+            tools:listitem="@layout/item_menu_inventory" />
 
         <TextView
             android:id="@+id/tvNoItems"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="Loading menu items..."
-            android:textSize="16sp"
-            android:textStyle="italic"
-            android:padding="32dp"
             android:gravity="center"
-            android:visibility="gone"/>
+            android:padding="32dp"
+            android:text="No active menu items found. Tap 'Add New Item' above to begin inventory."
+            android:textColor="#BDBDBD"
+            android:textSize="14sp"
+            android:textStyle="italic"
+            android:visibility="gone" />
 
         <ProgressBar
             android:id="@+id/progressBar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:visibility="gone"/>
+            android:indeterminateTint="#7B1113"
+            android:visibility="gone" />
     </FrameLayout>
 </LinearLayout>
