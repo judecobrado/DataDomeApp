@@ -123,7 +123,6 @@ class QuizAdapter(
                 tvClassDetails.text = "Class ID: ${quiz.assignmentId}"
             }
 
-            // --- EDIT / VIEW Button (Slot 1) ---
             btnEdit.apply {
                 text = if (isViewMode) "VIEW" else "Edit"
                 if (isViewMode) {

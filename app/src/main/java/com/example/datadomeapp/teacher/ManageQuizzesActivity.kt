@@ -31,7 +31,6 @@ class ManageQuizzesActivity : BaseActivity() {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var btnAddQuiz: Button
-    private lateinit var btnBatchUpload: Button
     private lateinit var tvNoQuizzes: TextView
     private lateinit var progressBarLoading: ProgressBar
     private var currentAssignmentId: String? = null
@@ -73,23 +72,6 @@ class ManageQuizzesActivity : BaseActivity() {
         btnAddQuiz = findViewById(R.id.btnAddQuiz)
         tvNoQuizzes = findViewById(R.id.tvNoQuizzes)
 
-        // ✅ Add Batch Upload Button (dynamically if not in layout)
-        btnBatchUpload = Button(this).apply {
-            text = "Add Batch Upload Quiz"
-            layoutParams = btnAddQuiz.layoutParams
-        }
-
-        val parentLayout = btnAddQuiz.parent as? android.widget.LinearLayout
-        parentLayout?.addView(btnBatchUpload, 1) // insert below Create New Quiz button
-
-        if (currentAssignmentId.isNullOrEmpty()) {
-            btnAddQuiz.visibility = View.GONE
-            btnBatchUpload.visibility = View.GONE
-        } else {
-            btnAddQuiz.visibility = View.VISIBLE
-            btnBatchUpload.visibility = View.VISIBLE
-        }
-
         recyclerView.layoutManager = LinearLayoutManager(this)
         adapter = QuizAdapter(
             quizzes = displayedQuizList,
@@ -103,19 +85,6 @@ class ManageQuizzesActivity : BaseActivity() {
         recyclerView.adapter = adapter
 
         btnAddQuiz.setOnClickListener { openQuizEditor(null) }
-
-        // ✅ OnClick event for Batch Upload button
-        btnBatchUpload.setOnClickListener {
-            if (currentAssignmentId.isNullOrEmpty()) {
-                Toast.makeText(this, "Please select a specific class first.", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            val intent = Intent(this, BatchUploadQuiz::class.java)
-            intent.putExtra("ASSIGNMENT_ID", currentAssignmentId)
-            intent.putExtra("CLASS_NAME", currentClassName)
-            startActivity(intent)
-        }
 
         loadAllClassDetails(auth.currentUser?.uid ?: "")
         loadQuizzes()
@@ -234,6 +203,9 @@ class ManageQuizzesActivity : BaseActivity() {
                     sortQuizzes(quizList)
                     val currentTabText = tabFilter.getTabAt(tabFilter.selectedTabPosition)?.text.toString()
                     filterQuizzes(currentTabText)
+
+                    toggleEmptyMessage(displayedQuizList)
+
                 }
 
                 override fun onCancelled(error: DatabaseError) {
@@ -243,16 +215,20 @@ class ManageQuizzesActivity : BaseActivity() {
                         "Failed to load quizzes",
                         Toast.LENGTH_SHORT
                     ).show()
+                    toggleEmptyMessage(displayedQuizList)
                 }
             })
     }
 
     private fun getQuizStatusValue(quiz: Quiz): Int {
-        if (isQuizOngoing(quiz)) return 5
-        if (quiz.isPublished && quiz.scheduledDateTime > 0L) return 4
-        if (!quiz.isPublished && quiz.scheduledDateTime > 0L) return 3
-        if (isQuizFinished(quiz)) return 2
-        return 1
+        return when {
+            isQuizOngoing(quiz) -> 5        // 🔝 ONGOING → pinakamataas
+            quiz.isPublished && quiz.scheduledDateTime > 0L && !isQuizOngoing(quiz) && !isQuizFinished(quiz) -> 4 // Published upcoming
+            !quiz.isPublished && quiz.scheduledDateTime > 0L -> 3 // Draft / Unpublished with time
+            !quiz.isPublished && quiz.scheduledDateTime == 0L -> 2 // Draft / Unpublished no time
+            isQuizFinished(quiz) -> 1       // 🏁 FINISHED → lowest
+            else -> 0                        // fallback / no status
+        }
     }
 
     private fun sortQuizzes(list: MutableList<Quiz>) {
@@ -339,8 +315,8 @@ class ManageQuizzesActivity : BaseActivity() {
                 scheduleCalendar.set(Calendar.MINUTE, startMinute)
                 val startTime = scheduleCalendar.timeInMillis
                 val currentTime = System.currentTimeMillis()
-                if (startTime < currentTime + 600000L) {
-                    Toast.makeText(this, "Start time must be at least 10 minutes from now.", Toast.LENGTH_LONG).show()
+                if (startTime < currentTime + 300000L) {
+                    Toast.makeText(this, "Start time must be at least 5 minutes from now.", Toast.LENGTH_LONG).show()
                     showStartTimePicker(quiz, scheduleCalendar, isCalledAfterPublish)
                     return@TimePickerDialog
                 }

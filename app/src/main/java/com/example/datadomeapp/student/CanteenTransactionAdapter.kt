@@ -42,12 +42,12 @@ class CanteenTransactionAdapter(
         // Logic para sa Cash In (Positive) at Payments (Negative)
         if (typeUpper == "CASH_IN" || typeUpper == "TOPUP") {
             // Cash In / Topup: Nagdagdag ng pondo
-            transactionLabel = "🟢 ${t.type.replace('_', ' ')}: +₱${String.format("%.2f", t.amount)}"
+            transactionLabel = "${t.type.replace('_', ' ')}: +₱${String.format("%.2f", t.amount)}"
             colorId = R.color.colorPrimary // I-assume na ito ay Green/Positive color
 
         } else if (typeUpper == "PURCHASE" || typeUpper == "RFID_PAYMENT") {
             // Payment / Purchase: Bumili
-            transactionLabel = "🔴 PAYMENT: -₱${String.format("%.2f", t.amount)}"
+            transactionLabel = "PAYMENT: -₱${String.format("%.2f", t.amount)}"
             colorId = R.color.colorAccent // I-assume na ito ay Red/Negative color
 
         } else {

@@ -95,7 +95,7 @@
         android:layout_width="0dp"
         android:layout_height="58dp"
         android:backgroundTint="#7B1113"
-        android:text="ACCESS PORTAL"
+        android:text="LOGIN"
         android:textColor="#FDFBF8"
         android:textSize="16sp"
         android:textStyle="bold"
