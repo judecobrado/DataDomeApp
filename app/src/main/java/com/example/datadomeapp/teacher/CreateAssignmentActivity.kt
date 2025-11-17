@@ -38,7 +38,6 @@ class CreateAssignmentActivity : AppCompatActivity() {
     private var academicYear: String = ""
     private var semester: String = ""
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_create_assignment)
@@ -92,19 +91,29 @@ class CreateAssignmentActivity : AppCompatActivity() {
             }
     }
 
-
     private fun createAssignment() {
         val title = etTitle.text.toString().trim()
         val instructions = etInstructions.text.toString().trim()
 
         // ✅ VALIDATIONS
         if (title.isEmpty()) {
-            Toast.makeText(this, "Title is required", Toast.LENGTH_SHORT).show()
+            etTitle.error = "Title is required"
             return
+        } else {
+            etTitle.error = null
         }
 
         if (dueDateMillis == 0L) {
-            Toast.makeText(this, "Please select a due date", Toast.LENGTH_SHORT).show()
+            tvSelectedDate.text = "Please select a due date"
+            tvSelectedDate.setTextColor(resources.getColor(android.R.color.holo_red_dark))
+            return
+        }
+
+        // ✅ NEW: Validate due date is in the future
+        val currentTime = System.currentTimeMillis()
+        if (dueDateMillis <= currentTime) {
+            tvSelectedDate.text = "Due date must be in the future"
+            tvSelectedDate.setTextColor(resources.getColor(android.R.color.holo_red_dark))
             return
         }
 
@@ -122,7 +131,6 @@ class CreateAssignmentActivity : AppCompatActivity() {
             }
 
         val newAssignmentId = UUID.randomUUID().toString()
-
 
         // ✅ CREATE ASSIGNMENT WITH PROPER assignmentId
         val assignment = Assignment(
@@ -148,34 +156,74 @@ class CreateAssignmentActivity : AppCompatActivity() {
         }
     }
 
-    /** 📅 Show date + time picker */
+    /** 📅 Show date + time picker with 12-hour digital format */
     private fun showDateTimePicker() {
         val calendar = Calendar.getInstance()
+
+        // Set minimum date to current date to prevent past dates
+        val minDateCalendar = Calendar.getInstance()
+        minDateCalendar.add(Calendar.DAY_OF_MONTH, 0) // Today
+
         val datePicker = DatePickerDialog(
             this,
             { _, year, month, day ->
                 calendar.set(year, month, day)
+
+                // ✅ NEW: Digital-style time picker with 12-hour format and AM/PM
                 val timePicker = TimePickerDialog(
                     this,
-                    { _, hour, minute ->
+                    TimePickerDialog.OnTimeSetListener { _, hour, minute ->
                         calendar.set(Calendar.HOUR_OF_DAY, hour)
                         calendar.set(Calendar.MINUTE, minute)
-                        dueDateMillis = calendar.timeInMillis
+                        calendar.set(Calendar.SECOND, 0)
 
-                        val formatted = SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.getDefault())
-                            .format(Date(dueDateMillis))
-                        tvSelectedDate.text = formatted
+                        val selectedTime = calendar.timeInMillis
+                        val currentTime = System.currentTimeMillis()
+
+                        // ✅ Validate if selected datetime is in the future
+                        if (selectedTime <= currentTime) {
+                            // ✅ CHANGED: Show error in the date TextView instead of Toast
+                            val formatted = SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.getDefault())
+                                .format(Date(selectedTime))
+                            tvSelectedDate.text = "$formatted (Must be future date)"
+                            tvSelectedDate.setTextColor(resources.getColor(android.R.color.holo_red_dark))
+                            dueDateMillis = 0L // Reset due date since it's invalid
+                        } else {
+                            dueDateMillis = selectedTime
+
+                            // ✅ NEW: 12-hour format with AM/PM
+                            val formatted = SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.getDefault())
+                                .format(Date(dueDateMillis))
+                            tvSelectedDate.text = formatted
+                            tvSelectedDate.setTextColor(resources.getColor(android.R.color.black))
+                        }
                     },
                     calendar.get(Calendar.HOUR_OF_DAY),
                     calendar.get(Calendar.MINUTE),
-                    false
+                    false // ✅ CHANGED: false for 12-hour format with AM/PM
                 )
+
+                // ✅ Set title for the time picker
+                timePicker.setTitle("Select Due Time")
+
+                // ✅ Ensure digital style (this is the default on most modern Android devices)
+                try {
+                    // This method may vary by device, but setting to 12-hour format usually gives digital style
+                    timePicker.updateTime(calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE))
+                } catch (e: Exception) {
+                    Log.d("TimePicker", "Time picker setup completed")
+                }
+
                 timePicker.show()
             },
             calendar.get(Calendar.YEAR),
             calendar.get(Calendar.MONTH),
             calendar.get(Calendar.DAY_OF_MONTH)
         )
+
+        // ✅ NEW: Prevent selection of past dates
+        datePicker.datePicker.minDate = minDateCalendar.timeInMillis
+        datePicker.setTitle("Select Due Date")
         datePicker.show()
     }
 

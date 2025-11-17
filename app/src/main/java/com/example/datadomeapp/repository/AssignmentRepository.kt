@@ -222,27 +222,45 @@ object AssignmentRepository {
     }
 
     // -------------------------------------------------------------
-    // 🔹 REOPEN SUBMISSION FOR STUDENT
+    // 🔹 REOPEN SUBMISSION FOR STUDENT (DELETE OLD SUBMISSION)
     // -------------------------------------------------------------
     fun reopenSubmissionForStudent(
         submissionId: String,
         callback: (Boolean, String?) -> Unit
     ) {
-        val updates = mapOf(
-            "status" to "pending",
-            "submittedAt" to 0L,
-            "fileUrl" to null,
-            "imageUrl" to null,
-            "grade" to null,
-            "feedback" to null,
-            "isResubmitted" to true
-        )
-
+        // First, get the current submission to get assignmentId
         db.collection("submissions")
             .document(submissionId)
-            .update(updates)
-            .addOnSuccessListener { callback(true, null) }
-            .addOnFailureListener { e -> callback(false, e.message) }
+            .get()
+            .addOnSuccessListener { document ->
+                if (document.exists()) {
+                    val oldSubmission = document.toObject(Submission::class.java)
+                    if (oldSubmission != null) {
+                        val assignmentId = oldSubmission.assignmentId
+
+                        // DELETE the old submission completely
+                        db.collection("submissions")
+                            .document(submissionId)
+                            .delete()
+                            .addOnSuccessListener {
+                                // Update submission count after deletion
+                                updateSubmissionCount(assignmentId) { countSuccess, countError ->
+                                    callback(true, null)
+                                }
+                            }
+                            .addOnFailureListener { e ->
+                                callback(false, "Failed to delete old submission: ${e.message}")
+                            }
+                    } else {
+                        callback(false, "Failed to parse old submission data")
+                    }
+                } else {
+                    callback(false, "Submission not found")
+                }
+            }
+            .addOnFailureListener { e ->
+                callback(false, "Failed to fetch submission: ${e.message}")
+            }
     }
 
     // -------------------------------------------------------------
@@ -262,7 +280,7 @@ object AssignmentRepository {
     }
 
     // -------------------------------------------------------------
-    // 🔹 SUBMIT ASSIGNMENT (Student)
+    // 🔹 SUBMIT ASSIGNMENT (Student) - PROPER SUBMISSION
     // -------------------------------------------------------------
     fun submitAssignment(
         submission: Submission,
@@ -278,33 +296,35 @@ object AssignmentRepository {
             return
         }
 
-        submission.submittedAt = System.currentTimeMillis()
-
+        // Check if file is provided
         if (fileUri == null) {
-            // ✅ Directly save if no file
-            saveSubmissionToFirestore(submission, callback)
-        } else {
-            // ✅ Upload file first
-            val path = "submission_files/${submission.classId}/${submission.assignmentId}/${UUID.randomUUID()}"
-            val ref = storage.reference.child(path)
-
-            ref.putFile(fileUri)
-                .addOnSuccessListener {
-                    ref.downloadUrl.addOnSuccessListener { uri ->
-                        submission.fileUrl = uri.toString()
-                        saveSubmissionToFirestore(submission, callback)
-                    }.addOnFailureListener { e ->
-                        callback(false, "Failed to get file URL: ${e.message}")
-                    }
-                }
-                .addOnFailureListener { e ->
-                    callback(false, "File upload failed: ${e.message}")
-                }
+            callback(false, "Please select a file to submit")
+            return
         }
+
+        submission.submittedAt = System.currentTimeMillis()
+        submission.status = "submitted"
+
+        // ✅ Upload file first
+        val path = "submission_files/${submission.classId}/${submission.assignmentId}/${UUID.randomUUID()}"
+        val ref = storage.reference.child(path)
+
+        ref.putFile(fileUri)
+            .addOnSuccessListener {
+                ref.downloadUrl.addOnSuccessListener { uri ->
+                    submission.fileUrl = uri.toString()
+                    saveSubmissionToFirestore(submission, callback)
+                }.addOnFailureListener { e ->
+                    callback(false, "Failed to get file URL: ${e.message}")
+                }
+            }
+            .addOnFailureListener { e ->
+                callback(false, "File upload failed: ${e.message}")
+            }
     }
 
     // -------------------------------------------------------------
-    // 🔹 SAVE SUBMISSION TO FIRESTORE (Helper) - FIXED PARAMETERS
+    // 🔹 SAVE SUBMISSION TO FIRESTORE (Helper)
     // -------------------------------------------------------------
     private fun saveSubmissionToFirestore(
         submission: Submission,
@@ -384,7 +404,8 @@ object AssignmentRepository {
         val updates = mapOf(
             "grade" to grade,
             "feedback" to feedback,
-            "gradedAt" to System.currentTimeMillis()
+            "gradedAt" to System.currentTimeMillis(),
+            "status" to "graded"
         )
 
         db.collection("submissions")

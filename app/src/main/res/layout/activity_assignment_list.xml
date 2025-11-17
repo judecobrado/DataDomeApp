@@ -3,34 +3,148 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="24dp"
+    android:background="#FDFBF8"
+    android:scrollbars="none">
 
-    <!-- Header -->
-    <TextView
-        android:id="@+id/tvAssignmentHeader"
+    <!-- Professional Header -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Assignments"
-        android:textSize="20sp"
-        android:textStyle="bold"
+        android:orientation="vertical"
         android:gravity="center"
-        android:padding="12dp"
-        android:textColor="@color/black"/>
+        android:background="@drawable/professional_header_bg"
+        android:padding="20dp"
+        android:layout_marginBottom="24dp">
+
+        <TextView
+            android:id="@+id/tvAssignmentHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Assignments"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:textColor="#7B1113"
+            android:paddingBottom="8dp" />
+
+        <View
+            android:layout_width="60dp"
+            android:layout_height="2dp"
+            android:background="#7B1113"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Manage your class assignments"
+            android:textSize="14sp"
+            android:textColor="#9B1C1F"
+            android:gravity="center" />
+
+    </LinearLayout>
 
     <!-- Add Assignment Button -->
     <Button
         android:id="@+id/btnAddAssignment"
         android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:text="➕ Add New Assignment"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        android:backgroundTint="#7B1113"
+        android:layout_marginBottom="20dp"
+        android:textAllCaps="false" />
+
+    <!-- Assignment Count Card -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Add Assignment"
-        android:layout_marginBottom="12dp"
-        android:layout_marginTop="4dp" />
+        android:orientation="horizontal"
+        android:background="@drawable/professional_date_bg"
+        android:padding="16dp"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Total Assignments"
+            android:textColor="#7B1113"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvAssignmentCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0"
+            android:textColor="#9B1C1F"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:background="#F8F2F2"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="4dp"
+            android:minWidth="40dp"
+            android:gravity="center" />
+
+    </LinearLayout>
 
     <!-- List of Assignments -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Your Assignments"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        android:textColor="#7B1113"
+        android:layout_marginBottom="12dp" />
+
     <ListView
         android:id="@+id/lvAssignments"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_weight="1"
+        android:divider="@drawable/list_divider"
+        android:dividerHeight="1dp"
+        android:scrollbars="none" />
+
+    <!-- Empty State -->
+    <LinearLayout
+        android:id="@+id/emptyState"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone"
+        android:padding="40dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="📚"
+            android:textSize="48sp"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="No Assignments Yet"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#7B1113"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Create your first assignment to get started"
+            android:textSize="14sp"
+            android:textColor="#9B1C1F"
+            android:gravity="center" />
+
+    </LinearLayout>
 
 </LinearLayout>
