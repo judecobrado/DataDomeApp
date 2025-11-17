@@ -12,8 +12,8 @@
         android:id="@+id/tvDashboard"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:layout_marginBottom="10dp"
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="2dp"
         android:text="Welcome Teacher!"
         android:textSize="24sp"
         android:textStyle="bold"
@@ -23,8 +23,8 @@
         android:id="@+id/btnManageClasses"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="10dp"
-        android:padding="10dp"
+        android:layout_marginBottom="2dp"
+        android:padding="2dp"
         android:text="View My Classes"
         android:textSize="18sp" />
 
@@ -32,26 +32,57 @@
         android:id="@+id/btnMySchedule"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="10dp"
-        android:padding="10dp"
+        android:layout_marginBottom="2dp"
+        android:padding="2dp"
         android:text="My Schedule"
         android:textSize="18sp" />
 
     <Button
-        android:id="@+id/btnManageAllQuizzes"
+        android:id="@+id/btnQuiz"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="10dp"
-        android:padding="10dp"
-        android:text="Manage Quiz"
-        android:textSize="18sp" />
+        android:layout_margin="2dp"
+        android:text="Quiz"
+        android:textSize="16sp"
+        android:background="@color/design_default_color_primary"
+        android:textColor="@color/white" />
+
+    <Button
+        android:id="@+id/btnAssessment"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="2dp"
+        android:text="Assessment"
+        android:textSize="16sp"
+        android:background="@color/design_default_color_primary"
+        android:textColor="@color/white" />
+
+    <Button
+        android:id="@+id/btnAttendance"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="2dp"
+        android:text="Attendance"
+        android:textSize="16sp"
+        android:background="@color/design_default_color_primary"
+        android:textColor="@color/white" />
+
+    <Button
+        android:id="@+id/btnGrades"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:text="Grades"
+        android:textSize="16sp"
+        android:background="@color/design_default_color_primary"
+        android:textColor="@color/white" />
 
     <Button
         android:id="@+id/btnCanteenMenu"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="10dp"
-        android:padding="10dp"
+        android:layout_marginBottom="2dp"
+        android:padding="2dp"
         android:text="Canteen Menu"
         android:textSize="18sp" />
 
@@ -59,8 +90,8 @@
         android:id="@+id/btnToDoList"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="10dp"
-        android:padding="15dp"
+        android:layout_marginBottom="2dp"
+        android:padding="2dp"
         android:text="To Do List"
         android:textSize="18sp" />
 
@@ -68,8 +99,8 @@
         android:id="@+id/btnNotes"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="10dp"
-        android:padding="10dp"
+        android:layout_marginBottom="2dp"
+        android:padding="2dp"
         android:text="Notes"
         android:textSize="18sp" />
 
@@ -77,31 +108,31 @@
         android:id="@+id/btnVoiceDetection"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="10dp"
-        android:padding="15dp"
+        android:layout_marginBottom="2dp"
+        android:padding="2dp"
         android:text="Voice Detection"
         android:textSize="18sp" />
 
-    <!-- 🎡 New Roleta Button -->
     <Button
         android:id="@+id/btnRoulette"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="10dp"
-        android:padding="15dp"
+        android:layout_marginBottom="2dp"
+        android:padding="2dp"
         android:text="🎡 Roleta"
         android:textSize="18sp"
-        android:textColor="@android:color/white" />
+        android:textColor="@android:color/white"
+        android:backgroundTint="@color/design_default_color_primary" />
 
     <Button
         android:id="@+id/btnLogout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="50dp"
+        android:layout_marginTop="2dp"
         android:text="Logout"
         android:textColor="@android:color/white"
         android:backgroundTint="@android:color/holo_red_dark"
         android:paddingStart="30dp"
-        android:paddingEnd="30dp" />
+        android:paddingEnd="2dp" />
 
 </LinearLayout>

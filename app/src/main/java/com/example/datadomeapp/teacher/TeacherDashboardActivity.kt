@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import android.util.Log
 import kotlinx.coroutines.launch
 import androidx.appcompat.app.AppCompatActivity
 import com.example.datadomeapp.LoginActivity
@@ -36,10 +37,29 @@ class TeacherDashboardActivity : AppCompatActivity() {
         val btnCanteen = findViewById<Button>(R.id.btnCanteenMenu)
         val btnManageClasses = findViewById<Button>(R.id.btnManageClasses)
         val btnRecordAttendance = findViewById<Button>(R.id.btnMySchedule)
-        val btnManageAllQuizzes = findViewById<Button>(R.id.btnManageAllQuizzes)
         val btnVoiceDetection = findViewById<Button>(R.id.btnVoiceDetection)
+        val btnQuiz = findViewById<Button>(R.id.btnQuiz)
+        val btnAssessment = findViewById<Button>(R.id.btnAssessment)
+        val btnAttendance = findViewById<Button>(R.id.btnAttendance)
+        val btnGrades = findViewById<Button>(R.id.btnGrades)
         val btnRoulette = findViewById<Button>(R.id.btnRoulette)
         val btnLogout = findViewById<Button>(R.id.btnLogout)
+
+        btnQuiz.setOnClickListener {
+            showClassPickerDialogForActivity("Quiz")
+        }
+
+        btnAssessment.setOnClickListener {
+            showClassPickerDialogForActivity("Assessment")
+        }
+
+        btnAttendance.setOnClickListener {
+            showClassPickerDialogForActivity("Attendance")
+        }
+
+        btnGrades.setOnClickListener {
+            showClassPickerDialogForActivity("Grades")
+        }
 
         // Open Canteen Menu
         btnCanteen.setOnClickListener {
@@ -57,11 +77,6 @@ class TeacherDashboardActivity : AppCompatActivity() {
         // Attendance
         btnRecordAttendance.setOnClickListener {
             startActivity(Intent(this, TeacherScheduleMatrixActivity::class.java))
-        }
-
-        // Quizzes
-        btnManageAllQuizzes.setOnClickListener {
-            startActivity(Intent(this, ManageQuizzesActivity::class.java))
         }
 
         val btnNotes = findViewById<Button>(R.id.btnNotes)
@@ -97,6 +112,91 @@ class TeacherDashboardActivity : AppCompatActivity() {
         }
     }
 
+    private fun showClassPickerDialogForActivity(activityType: String) {
+        val firestore = FirebaseFirestore.getInstance()
+        val currentTeacherUid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+
+        firestore.collection("classAssignments")
+            .whereEqualTo("teacherUid", currentTeacherUid)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val classList = snapshot.documents.mapNotNull { doc ->
+                    val subjectCode = doc.getString("subjectCode") ?: return@mapNotNull null
+                    val subjectTitle = doc.getString("subjectTitle") ?: "Unnamed Subject"
+                    val semester = doc.getString("semester") ?: return@mapNotNull null
+                    val yearLevel = doc.getString("yearLevel") ?: return@mapNotNull null
+                    val section = doc.getString("section") ?: "No Section"
+                    val course = doc.getString("courseCode") ?: "No Course"
+                    val assignmentId = doc.id
+
+                    val yearNumber = yearLevel.replace(Regex("[^0-9]"), "").take(1)
+                    val displayText = "$course - $yearNumber$section - $subjectCode"
+
+                    ClassRouletteData(
+                        assignmentId = assignmentId,
+                        displayText = displayText,
+                        subjectCode = subjectCode,
+                        subjectTitle = subjectTitle,
+                        semester = semester,
+                        yearLevel = yearLevel,
+                        section = section,
+                        course = course
+                    )
+                }
+
+                if (classList.isEmpty()) {
+                    Toast.makeText(this, "No classes assigned.", Toast.LENGTH_SHORT).show()
+                    return@addOnSuccessListener
+                }
+
+                val builder = AlertDialog.Builder(this)
+                builder.setTitle("Select Class for $activityType")
+
+                val displayItems = classList.map { it.displayText }.toTypedArray()
+
+                builder.setItems(displayItems) { _, which ->
+                    val selectedClass = classList[which]
+                    navigateToActivity(activityType, selectedClass)
+                }
+
+                builder.setNegativeButton("Cancel") { dialog, _ ->
+                    dialog.dismiss()
+                }
+
+                builder.show()
+            }
+            .addOnFailureListener {
+                Toast.makeText(this, "Failed to load classes.", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    // 🆕 BAGONG METHOD: Navigation based on activity type
+    private fun navigateToActivity(activityType: String, classData: ClassRouletteData) {
+        val intent = when (activityType) {
+            "Quiz" -> Intent(this, ManageQuizzesActivity::class.java)
+            "Assessment" -> Intent(this, AssignmentListActivity::class.java)
+            "Attendance" -> Intent(this, RecordAttendanceActivity::class.java)
+            "Grades" -> Intent(this, ManageGradesActivity::class.java)
+            else -> return
+        }
+
+        if (activityType == "Assessment") {
+            intent.putExtra("assignmentId", classData.assignmentId)
+        } else {
+            intent.putExtra("ASSIGNMENT_ID", classData.assignmentId)
+        }
+
+        intent.putExtra("CLASS_NAME", classData.displayText)
+        intent.putExtra("SUBJECT_CODE", classData.subjectCode)
+
+        if (activityType == "Grades") {
+            intent.putExtra("SECTION_NAME", classData.section)
+            intent.putExtra("YEAR_LEVEL", classData.yearLevel)
+        }
+
+        startActivity(intent)
+    }
+
     private fun showClassPickerDialogForRouleta() {
         val firestore = FirebaseFirestore.getInstance()
         val currentTeacherUid = FirebaseAuth.getInstance().currentUser?.uid ?: return
@@ -107,35 +207,48 @@ class TeacherDashboardActivity : AppCompatActivity() {
             .addOnSuccessListener { snapshot ->
                 val classList = snapshot.documents.mapNotNull { doc ->
                     val subjectCode = doc.getString("subjectCode") ?: return@mapNotNull null
-                    val rawClassName = doc.getString("subjectTitle")
-                    val docClassName = if (rawClassName.isNullOrBlank()) "Unnamed Class" else rawClassName
+                    val subjectTitle = doc.getString("subjectTitle") ?: "Unnamed Subject"
                     val semester = doc.getString("semester") ?: return@mapNotNull null
                     val yearLevel = doc.getString("yearLevel") ?: return@mapNotNull null
+                    val section = doc.getString("section") ?: "No Section"
+                    val course = doc.getString("courseCode") ?: "No Course"
                     val assignmentId = doc.id
-                    Triple(
-                        assignmentId,
-                        "$docClassName - $subjectCode", // for dialog display
-                        Triple(subjectCode, semester, yearLevel)
+
+                    val yearNumber = yearLevel.replace(Regex("[^0-9]"), "").take(1)
+                    // FORMAT: Include year level like in Manage Classes
+                    // Example: "BSIT 1-A - CS101" or "BSIT - 1st Year - A - CS101"
+                    val displayText = "$course - $yearNumber$section - $subjectCode"
+
+                    ClassRouletteData(
+                        assignmentId = assignmentId,
+                        displayText = displayText,
+                        subjectCode = subjectCode,
+                        subjectTitle = subjectTitle,
+                        semester = semester,
+                        yearLevel = yearLevel,
+                        section = section,
+                        course = course
                     )
                 }
-
 
                 if (classList.isEmpty()) {
                     Toast.makeText(this, "No classes assigned.", Toast.LENGTH_SHORT).show()
                     return@addOnSuccessListener
                 }
 
-                val builder = android.app.AlertDialog.Builder(this)
+                val builder = AlertDialog.Builder(this)
                 builder.setTitle("Select Class for Roleta")
-                builder.setItems(classList.map { it.second }.toTypedArray()) { _, which ->
-                    val selectedAssignment = classList[which]
-                    val (subjectCode, semester, yearLevel) = selectedAssignment.third
 
-                    // Extract the real class name from "ClassName - SubjectCode"
-                    val realClassName = selectedAssignment.second.split(" - ")[0]
+                // Create formatted display items with year level
+                val displayItems = classList.map { it.displayText }.toTypedArray()
 
-                    // Only call once
-                    loadStudentsAndOpenRoulette(subjectCode, semester, yearLevel, realClassName)
+                builder.setItems(displayItems) { _, which ->
+                    val selectedClass = classList[which]
+                    loadStudentsAndOpenRoulette(selectedClass)
+                }
+
+                builder.setNegativeButton("Cancel") { dialog, _ ->
+                    dialog.dismiss()
                 }
 
                 builder.show()
@@ -145,36 +258,28 @@ class TeacherDashboardActivity : AppCompatActivity() {
             }
     }
 
-    private fun loadStudentsAndOpenRoulette(
-        subjectCode: String,
-        semester: String,
-        yearLevel: String,
-        className: String
-    ) {
+    private fun loadStudentsAndOpenRoulette(classData: ClassRouletteData) {
         val firestore = FirebaseFirestore.getInstance()
-        val studentNames = arrayListOf<String>()
 
-        // 1. Load students by yearLevel & status
+        // GAMITIN ANG SIMPLER QUERY (tulad ng lumang code)
         firestore.collection("students")
-            .whereEqualTo("yearLevel", yearLevel)
-            .whereEqualTo("status", "Admitted")
+            .whereEqualTo("courseCode", classData.course)
+            .whereEqualTo("sectionId", classData.section)
             .get()
             .addOnSuccessListener { snapshot ->
                 if (snapshot.isEmpty) {
-                    Toast.makeText(this, "No students found for $className", Toast.LENGTH_LONG)
-                        .show()
+                    Toast.makeText(this, "No students found for ${classData.displayText}", Toast.LENGTH_LONG).show()
                     return@addOnSuccessListener
                 }
 
                 val studentDocs = snapshot.documents
                 val studentIds = studentDocs.map { it.id }
 
-                // 2. Check enrollment in the subject (batch)
                 lifecycleScope.launch {
                     val enrolledStudentNames = mutableListOf<String>()
-                    val enrollmentDocId = "${yearLevel.replace(" ", "")}_${
-                        semester.replace(" ", "").replace("-", "")
-                    }_$subjectCode"
+                    val enrollmentDocId = "${classData.yearLevel.replace(" ", "")}_${
+                        classData.semester.replace(" ", "").replace("-", "")
+                    }_${classData.subjectCode}"
 
                     val enrollmentChecks = studentIds.map { studentId ->
                         async {
@@ -197,21 +302,16 @@ class TeacherDashboardActivity : AppCompatActivity() {
                     enrolledStudentNames.addAll(enrollmentChecks.awaitAll().filterNotNull())
 
                     if (enrolledStudentNames.isEmpty()) {
-                        Toast.makeText(
-                            this@TeacherDashboardActivity,
-                            "No enrolled students found.",
-                            Toast.LENGTH_LONG
-                        ).show()
+                        Toast.makeText(this@TeacherDashboardActivity,
+                            "No enrolled students found for ${classData.subjectCode}.",
+                            Toast.LENGTH_LONG).show()
                         return@launch
                     }
 
-                    // Open RouletteActivity immediately
+                    // Open RouletteActivity
                     val intent = Intent(this@TeacherDashboardActivity, RouletteActivity::class.java)
-                    intent.putStringArrayListExtra(
-                        "STUDENT_NAMES_LIST",
-                        ArrayList(enrolledStudentNames)
-                    )
-                    intent.putExtra("CLASS_NAME", className)
+                    intent.putStringArrayListExtra("STUDENT_NAMES_LIST", ArrayList(enrolledStudentNames))
+                    intent.putExtra("CLASS_NAME", classData.displayText)
                     startActivity(intent)
                 }
             }
@@ -219,4 +319,16 @@ class TeacherDashboardActivity : AppCompatActivity() {
                 Toast.makeText(this, "Failed to load students.", Toast.LENGTH_SHORT).show()
             }
     }
+
+    // Data class to hold class information for roulette
+    data class ClassRouletteData(
+        val assignmentId: String,
+        val displayText: String,
+        val subjectCode: String,
+        val subjectTitle: String,
+        val semester: String,
+        val yearLevel: String,
+        val section: String,
+        val course: String
+    )
 }

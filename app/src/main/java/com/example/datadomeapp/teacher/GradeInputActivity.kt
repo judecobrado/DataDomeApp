@@ -77,6 +77,9 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
     private var gradingPeriod: String? = null
     private var areGradesPublished: Boolean = false
 
+    private var sectionName: String? = null
+    private var yearLevel: String? = null
+
     // Enhanced caching system
     private val metadataCache = MetadataCache()
     private val studentScoresCache = StudentScoresCache()
@@ -102,6 +105,9 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         subjectCode = intent.getStringExtra("SUBJECT_CODE")
         className = intent.getStringExtra("CLASS_NAME")
         gradingPeriod = intent.getStringExtra("GRADING_PERIOD")
+
+        sectionName = intent.getStringExtra("SECTION_NAME")
+        yearLevel = intent.getStringExtra("YEAR_LEVEL")
 
         Log.d("GradeDebug", "Activity Started. AssignmentID: $assignmentId, Period: $gradingPeriod")
 
@@ -1153,26 +1159,34 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
             try {
                 // 1. Get class info
                 val classDoc = firestore.collection("classAssignments").document(assignmentId!!).get().await()
-                val yearLevel = classDoc.getString("yearLevel") ?: ""
+                val yearLevelFromClass = classDoc.getString("yearLevel") ?: ""
                 val semester = classDoc.getString("semester") ?: ""
                 val subjectId = classDoc.getString("subjectId") ?: ""
-                val sectionId = className?.split(" - ")?.lastOrNull() ?: ""
 
-                if (yearLevel.isEmpty() || semester.isEmpty() || sectionId.isEmpty()) {
+                // 🟢 FIX: Add proper null checking for section and year level
+                val sectionName = intent.getStringExtra("SECTION_NAME") ?: className?.split(" - ")?.lastOrNull() ?: ""
+                val yearLevel = intent.getStringExtra("YEAR_LEVEL") ?: yearLevelFromClass
+
+                if (sectionName.isEmpty() || yearLevel.isEmpty()) {
                     tvLoadingStatus.text = "Error: Missing class details."
+                    Log.e("GradeDebug", "❌ Missing section: $sectionName or year: $yearLevel")
                     return@launch
                 }
 
+                Log.d("GradeDebug", "🔍 Loading students for Section: $sectionName, Year: $yearLevel")
+
                 // 2. Fetch students
                 val studentsSnapshot = firestore.collection("students")
-                    .whereEqualTo("sectionId", sectionId)
+                    .whereEqualTo("sectionId", sectionName)
                     .whereEqualTo("yearLevel", yearLevel)
                     .whereEqualTo("status", "Admitted")
                     .get().await()
 
                 val studentIds = studentsSnapshot.documents.map { it.id }
+                Log.d("GradeDebug", "✅ Found ${studentIds.size} students in section: $sectionName")
+
                 if (studentIds.isEmpty()) {
-                    tvLoadingStatus.text = "No admitted students found."
+                    tvLoadingStatus.text = "No admitted students found in section $sectionName."
                     return@launch
                 }
 
@@ -1184,8 +1198,13 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
                 }.toMap()
                 Log.d("GradeDebug", "Student UID mapping created: ${studentUidToDocIdMap.size} students mapped.")
 
-                // 3. Check enrollment
-                val enrollmentDocId = "${yearLevel.replace(" ", "")}_${semester.replace(" ", "")}_${subjectCode}"
+                // 3. Check enrollment - 🟢 FIX: Add null safety for subjectCode
+                val cleanYearLevel = yearLevel.replace(" ", "")
+                val cleanSemester = semester.replace(" ", "")
+                val cleanSubjectCode = subjectCode?.replace(" ", "") ?: ""
+
+                val enrollmentDocId = "${cleanYearLevel}_${cleanSemester}_${cleanSubjectCode}"
+
                 val studentMap = studentsSnapshot.documents.mapNotNull { it.toObject(Student::class.java)?.copy(id = it.id) }.associateBy { it.id }
                 val enrolledStudents = mutableListOf<Student>()
 
@@ -1208,10 +1227,10 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
                 enrolledStudents.forEach { student ->
                     studentGradesData[student.id] = GradeInputAdapter.GradeData(
                         studentDocId = student.id,
-                        firstName = student.firstName,
-                        lastName = student.lastName,
+                        firstName = student.firstName ?: "",
+                        lastName = student.lastName ?: "",
                         subjectId = subjectId,
-                        gradingPeriod = gradingPeriod!!
+                        gradingPeriod = gradingPeriod ?: ""
                     )
                 }
 

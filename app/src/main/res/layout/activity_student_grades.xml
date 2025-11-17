@@ -1,164 +1,458 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
-    android:background="#f5f5f5">
+    android:padding="20dp"
+    android:background="#FDFBF8">
 
-    <TextView
+    <!-- Header Section -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Grade Summary"
-        android:textSize="24sp"
-        android:textStyle="bold"
+        android:orientation="vertical"
         android:gravity="center"
-        android:layout_marginBottom="16dp"
-        android:textColor="#333333" />
+        android:layout_marginBottom="20dp">
 
-    <TextView
-        android:id="@+id/tvLoadingStatus"
+        <ImageView
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:src="@drawable/ic_grade_header"
+            android:layout_marginBottom="8dp"
+            android:contentDescription="Grade summary" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Grade Summary"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:textColor="#7B1113" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Academic Performance Overview"
+            android:textSize="12sp"
+            android:gravity="center"
+            android:layout_marginTop="2dp"
+            android:textColor="#9B1C1F" />
+
+    </LinearLayout>
+
+    <!-- Status Card -->
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Loading grades..."
-        android:textSize="14sp"
-        android:gravity="center"
         android:layout_marginBottom="16dp"
-        android:textColor="#666666" />
+        app:cardCornerRadius="10dp"
+        app:cardElevation="1dp"
+        app:cardBackgroundColor="#FBEFEF"
+        app:strokeColor="#E8D2D2"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="12dp"
+            android:gravity="center_vertical">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_loading"
+                android:layout_marginEnd="10dp"
+                android:contentDescription="Loading"
+                app:tint="#9B1C1F" />
+
+            <TextView
+                android:id="@+id/tvLoadingStatus"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Loading your academic records..."
+                android:textSize="13sp"
+                android:textColor="#9B1C1F"
+                android:textStyle="normal" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Grades List Section -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="10dp"
+        android:background="#F8F9FA"
+        android:padding="12dp"
+        android:backgroundTint="#F8F9FA">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/ic_subjects"
+            android:layout_marginEnd="8dp"
+            android:contentDescription="Subjects"
+            app:tint="#7B1113" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Your Grades"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#7B1113" />
+
+        <TextView
+            android:id="@+id/tvSubjectCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0 subjects"
+            android:textSize="10sp"
+            android:textColor="#9B1C1F"
+            android:background="#E8D2D2"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="2dp" />
+
+    </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewGrades"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:layout_marginBottom="16dp" />
+        android:layout_marginBottom="20dp"
+        android:clipToPadding="false"
+        android:paddingVertical="2dp" />
 
-    <!-- Grading System Reference - Table Layout -->
-    <LinearLayout
+    <!-- Grading System Card -->
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="12dp"
-        android:elevation="2dp">
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp"
+        app:cardBackgroundColor="@android:color/white"
+        app:strokeColor="#E8D2D2"
+        app:strokeWidth="1dp">
 
-        <TextView
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Grading System"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:gravity="center"
-            android:layout_marginBottom="8dp"
-            android:textColor="#333333" />
+            android:orientation="vertical"
+            android:padding="14dp">
 
-        <TableLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:stretchColumns="*"
-            android:shrinkColumns="*">
+            <!-- Card Header -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="12dp">
 
-            <!-- Row 1 -->
-            <TableRow>
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="1.00 = 99-100%"
-                    android:textSize="10sp"
-                    android:padding="2dp"
-                    android:textColor="#666666" />
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="2.25 = 84-86%"
-                    android:textSize="10sp"
-                    android:padding="2dp"
-                    android:textColor="#666666" />
-            </TableRow>
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_grading_scale"
+                    android:layout_marginEnd="8dp"
+                    android:contentDescription="Grading scale"
+                    app:tint="#7B1113" />
 
-            <!-- Row 2 -->
-            <TableRow>
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="1.25 = 97-98%"
-                    android:textSize="10sp"
-                    android:padding="2dp"
-                    android:textColor="#666666" />
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="2.50 = 81-83%"
-                    android:textSize="10sp"
-                    android:padding="2dp"
-                    android:textColor="#666666" />
-            </TableRow>
+                    android:text="Grading System"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="#7B1113" />
 
-            <!-- Row 3 -->
-            <TableRow>
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="1.50 = 94-96%"
-                    android:textSize="10sp"
-                    android:padding="2dp"
-                    android:textColor="#666666" />
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="2.75 = 78-80%"
-                    android:textSize="10sp"
-                    android:padding="2dp"
-                    android:textColor="#666666" />
-            </TableRow>
+            </LinearLayout>
 
-            <!-- Row 4 -->
-            <TableRow>
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="1.75 = 90-93%"
-                    android:textSize="10sp"
-                    android:padding="2dp"
-                    android:textColor="#666666" />
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="3.00 = 75-77%"
-                    android:textSize="10sp"
-                    android:padding="2dp"
-                    android:textColor="#666666" />
-            </TableRow>
+            <!-- Grading Scale -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
 
-            <!-- Row 5 -->
-            <TableRow>
-                <TextView
+                <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="2.00 = 87-89%"
-                    android:textSize="10sp"
-                    android:padding="2dp"
-                    android:textColor="#666666" />
-                <TextView
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="4px">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="1.00"
+                            android:textSize="11sp"
+                            android:paddingVertical="4px"
+                            android:background="#E8F5E8"
+                            android:textColor="#2E7D32"
+                            android:gravity="center"
+                            android:layout_marginEnd="2px" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="1.25"
+                            android:textSize="11sp"
+                            android:paddingVertical="4px"
+                            android:background="#E8F5E8"
+                            android:textColor="#2E7D32"
+                            android:gravity="center"
+                            android:layout_marginEnd="2px" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="1.50"
+                            android:textSize="11sp"
+                            android:paddingVertical="4px"
+                            android:background="#E8F5E8"
+                            android:textColor="#2E7D32"
+                            android:gravity="center" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="4px">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="1.75"
+                            android:textSize="11sp"
+                            android:paddingVertical="4px"
+                            android:background="#FFF3E0"
+                            android:textColor="#F57C00"
+                            android:gravity="center"
+                            android:layout_marginEnd="2px" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="2.00"
+                            android:textSize="11sp"
+                            android:paddingVertical="4px"
+                            android:background="#FFF3E0"
+                            android:textColor="#F57C00"
+                            android:gravity="center"
+                            android:layout_marginEnd="2px" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="2.25"
+                            android:textSize="11sp"
+                            android:paddingVertical="4px"
+                            android:background="#FFF3E0"
+                            android:textColor="#F57C00"
+                            android:gravity="center" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="2.50"
+                            android:textSize="11sp"
+                            android:paddingVertical="4px"
+                            android:background="#FFECB3"
+                            android:textColor="#EF6C00"
+                            android:gravity="center"
+                            android:layout_marginEnd="2px" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="2.75"
+                            android:textSize="11sp"
+                            android:paddingVertical="4px"
+                            android:background="#FFECB3"
+                            android:textColor="#EF6C00"
+                            android:gravity="center"
+                            android:layout_marginEnd="2px" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="3.00"
+                            android:textSize="11sp"
+                            android:paddingVertical="4px"
+                            android:background="#FFE0B2"
+                            android:textColor="#D84315"
+                            android:gravity="center" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="5.00 = Below 75%"
-                    android:textSize="10sp"
-                    android:padding="2dp"
-                    android:textColor="#666666" />
-            </TableRow>
+                    android:orientation="vertical"
+                    android:layout_marginStart="6px"
+                    android:gravity="center">
 
-        </TableLayout>
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="5.00"
+                        android:textSize="12sp"
+                        android:paddingVertical="8px"
+                        android:background="#FFCDD2"
+                        android:textColor="#C62828"
+                        android:gravity="center"
+                        android:textStyle="bold" />
 
-    </LinearLayout>
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Below 75%"
+                        android:textSize="9sp"
+                        android:textColor="#C62828"
+                        android:gravity="center"
+                        android:layout_marginTop="2px" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!-- Legend -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginTop="8px"
+                android:padding="6px"
+                android:background="#FBEFEF">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="horizontal"
+                    android:gravity="center">
+
+                    <View
+                        android:layout_width="8px"
+                        android:layout_height="8px"
+                        android:background="#2E7D32"
+                        android:layout_marginEnd="2px" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Exc"
+                        android:textSize="8sp"
+                        android:textColor="#666666" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="horizontal"
+                    android:gravity="center">
+
+                    <View
+                        android:layout_width="8px"
+                        android:layout_height="8px"
+                        android:background="#F57C00"
+                        android:layout_marginEnd="2px" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Good"
+                        android:textSize="8sp"
+                        android:textColor="#666666" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="horizontal"
+                    android:gravity="center">
+
+                    <View
+                        android:layout_width="8px"
+                        android:layout_height="8px"
+                        android:background="#EF6C00"
+                        android:layout_marginEnd="2px" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Fair"
+                        android:textSize="8sp"
+                        android:textColor="#666666" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="horizontal"
+                    android:gravity="center">
+
+                    <View
+                        android:layout_width="8px"
+                        android:layout_height="8px"
+                        android:background="#C62828"
+                        android:layout_marginEnd="2px" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Fail"
+                        android:textSize="8sp"
+                        android:textColor="#666666" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
 
 </LinearLayout>

@@ -4,191 +4,476 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#FDFBF8"
     tools:context=".admin.ManageSchedulesActivity">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="20dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Class Schedule Management"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="16dp"/>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Filter Schedule View:"
-            android:textSize="16sp"
-            android:textStyle="bold" />
-
-        <LinearLayout
+        <!-- Header Section -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="8dp">
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp"
+            android:layout_marginBottom="20dp"
+            app:cardBackgroundColor="#FFFFFF"
+            app:strokeColor="#F0E6D6"
+            app:strokeWidth="1dp">
 
-            <Spinner
-                android:id="@+id/spnCourse"
-                android:layout_width="0dp"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:minHeight="48dp" />
+                android:orientation="vertical"
+                android:padding="20dp">
 
-            <Spinner
-                android:id="@+id/spnYear"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:minHeight="48dp" />
-        </LinearLayout>
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Class Schedule Management"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:textColor="#7B1113"
+                    android:gravity="center"
+                    android:drawablePadding="8dp"
+                    android:drawableStart="@drawable/ic_schedule"
+                    android:layout_marginBottom="8dp"/>
 
-        <Spinner
-            android:id="@+id/spnSectionBlock"
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Manage and organize class schedules efficiently"
+                    android:textSize="14sp"
+                    android:textColor="#666666"
+                    android:gravity="center"/>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Filter Section -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="48dp"
-            android:layout_marginBottom="16dp"/>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Current Schedule:"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:layout_marginTop="8dp"/>
-
-        <HorizontalScrollView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="1dp"
             android:layout_marginBottom="16dp"
-            android:background="#F0F0F0">
+            app:cardBackgroundColor="#FFFFFF"
+            app:strokeColor="#F0E6D6"
+            app:strokeWidth="1dp">
 
-            <TableLayout
-                android:id="@+id/tlScheduleMatrix"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:stretchColumns="*">
-            </TableLayout>
-        </HorizontalScrollView>
+                android:orientation="vertical"
+                android:padding="16dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Add New Time Slot to Subject:"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="8dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Filter Schedule View"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="#7B1113"
+                    android:drawablePadding="8dp"
+                    android:drawableStart="@drawable/ic_filter"
+                    android:layout_marginBottom="12dp"/>
 
-        <Spinner
-            android:id="@+id/spnSubject"
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="8dp">
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="8dp"
+                        app:cardCornerRadius="6dp"
+                        app:cardElevation="1dp"
+                        app:cardBackgroundColor="#FFFFFF"
+                        app:strokeColor="#E0E0E0"
+                        app:strokeWidth="1dp">
+
+                        <Spinner
+                            android:id="@+id/spnCourse"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:background="@android:color/transparent"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp"/>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="8dp"
+                        app:cardCornerRadius="6dp"
+                        app:cardElevation="1dp"
+                        app:cardBackgroundColor="#FFFFFF"
+                        app:strokeColor="#E0E0E0"
+                        app:strokeWidth="1dp">
+
+                        <Spinner
+                            android:id="@+id/spnYear"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:background="@android:color/transparent"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp"/>
+                    </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="6dp"
+                    app:cardElevation="1dp"
+                    app:cardBackgroundColor="#FFFFFF"
+                    app:strokeColor="#E0E0E0"
+                    app:strokeWidth="1dp">
+
+                    <Spinner
+                        android:id="@+id/spnSectionBlock"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:background="@android:color/transparent"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"/>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Schedule Matrix Section -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="48dp"
-            android:layout_marginBottom="8dp" />
+            app:cardCornerRadius="8dp"
+            app:cardElevation="1dp"
+            android:layout_marginBottom="16dp"
+            app:cardBackgroundColor="#FFFFFF"
+            app:strokeColor="#F0E6D6"
+            app:strokeWidth="1dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="1. Filter Teacher Department:"
-            android:textSize="14sp"
-            android:layout_marginTop="8dp"/>
-        <Spinner
-            android:id="@+id/spnDepartment"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="48dp"
-            android:layout_marginBottom="8dp"/>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="2. Search and Select Teacher:"
-            android:textSize="14sp"
-            android:layout_marginTop="4dp"/>
-        <AutoCompleteTextView
-            android:id="@+id/actvTeacher"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Type to search teacher name/UID..."
-            android:minHeight="48dp"
-            android:layout_marginBottom="8dp"
-            android:completionThreshold="1" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <Spinner
-                android:id="@+id/spnDay"
-                android:layout_width="0dp"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:minHeight="48dp" />
+                android:orientation="vertical"
+                android:padding="16dp">
 
-            <Spinner
-                android:id="@+id/spnStartTime"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:minHeight="48dp" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Current Schedule"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="#7B1113"
+                    android:drawablePadding="8dp"
+                    android:drawableStart="@drawable/ic_calendar"
+                    android:layout_marginBottom="12dp"/>
 
-            <Spinner
-                android:id="@+id/spnEndTime"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:minHeight="48dp" />
-        </LinearLayout>
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="#FFFFFF"
+                    android:padding="8dp"
+                    android:scrollbars="horizontal">
 
-        <LinearLayout
+                    <TableLayout
+                        android:id="@+id/tlScheduleMatrix"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:stretchColumns="*"
+                        android:background="@drawable/table_border"/>
+                </HorizontalScrollView>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Add New Schedule Section -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="8dp">
+            app:cardCornerRadius="8dp"
+            app:cardElevation="1dp"
+            android:layout_marginBottom="16dp"
+            app:cardBackgroundColor="#FFFFFF"
+            app:strokeColor="#F0E6D6"
+            app:strokeWidth="1dp">
 
-            <Spinner
-                android:id="@+id/spnRoom"
-                android:layout_width="0dp"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="2"
-                android:minHeight="48dp" />
+                android:orientation="vertical"
+                android:padding="16dp">
 
-            <EditText
-                android:id="@+id/etMaxCapacity"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:hint="Capacity"
-                android:inputType="number"
-                android:textAlignment="center"
-                android:minHeight="48dp" />
-        </LinearLayout>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Add New Time Slot"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#7B1113"
+                    android:drawablePadding="8dp"
+                    android:drawableStart="@drawable/ic_add"
+                    android:layout_marginBottom="16dp"/>
 
-        <TextView
-            android:id="@+id/tvConflictWarning"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textColor="@android:color/holo_red_dark"
-            android:padding="8dp"
-            android:textStyle="bold"
-            android:layout_marginTop="8dp"
-            android:background="#FFE0B2"
-            android:text="⚠️ Please select a section to view the schedule."/>
+                <!-- Subject Selection -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="6dp"
+                    app:cardElevation="1dp"
+                    android:layout_marginBottom="12dp"
+                    app:cardBackgroundColor="#FFFFFF"
+                    app:strokeColor="#E0E0E0"
+                    app:strokeWidth="1dp">
 
-        <Button
-            android:id="@+id/btnSaveAssignment"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Add Time Slot to Subject Assignment"
-            android:layout_marginTop="16dp"
-            android:enabled="false"/>
+                    <Spinner
+                        android:id="@+id/spnSubject"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:background="@android:color/transparent"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"/>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Teacher Assignment -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Teacher Assignment"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#7B1113"
+                    android:layout_marginBottom="8dp"/>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="6dp"
+                    app:cardElevation="1dp"
+                    android:layout_marginBottom="8dp"
+                    app:cardBackgroundColor="#FFFFFF"
+                    app:strokeColor="#E0E0E0"
+                    app:strokeWidth="1dp">
+
+                    <Spinner
+                        android:id="@+id/spnDepartment"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:background="@android:color/transparent"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"/>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="6dp"
+                    app:cardElevation="1dp"
+                    android:layout_marginBottom="12dp"
+                    app:cardBackgroundColor="#FFFFFF"
+                    app:strokeColor="#E0E0E0"
+                    app:strokeWidth="1dp">
+
+                    <AutoCompleteTextView
+                        android:id="@+id/actvTeacher"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:hint="Search teacher by name or UID"
+                        android:background="@android:color/transparent"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
+                        android:completionThreshold="1"/>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Schedule Details -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Schedule Details"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#7B1113"
+                    android:layout_marginBottom="8dp"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="8dp">
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="4dp"
+                        app:cardCornerRadius="6dp"
+                        app:cardElevation="1dp"
+                        app:cardBackgroundColor="#FFFFFF"
+                        app:strokeColor="#E0E0E0"
+                        app:strokeWidth="1dp">
+
+                        <Spinner
+                            android:id="@+id/spnDay"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:background="@android:color/transparent"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp"/>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="4dp"
+                        android:layout_marginEnd="4dp"
+                        app:cardCornerRadius="6dp"
+                        app:cardElevation="1dp"
+                        app:cardBackgroundColor="#FFFFFF"
+                        app:strokeColor="#E0E0E0"
+                        app:strokeWidth="1dp">
+
+                        <Spinner
+                            android:id="@+id/spnStartTime"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:background="@android:color/transparent"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp"/>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="4dp"
+                        app:cardCornerRadius="6dp"
+                        app:cardElevation="1dp"
+                        app:cardBackgroundColor="#FFFFFF"
+                        app:strokeColor="#E0E0E0"
+                        app:strokeWidth="1dp">
+
+                        <Spinner
+                            android:id="@+id/spnEndTime"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:background="@android:color/transparent"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp"/>
+                    </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
+
+                <!-- Room and Capacity -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="16dp">
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="2"
+                        android:layout_marginEnd="8dp"
+                        app:cardCornerRadius="6dp"
+                        app:cardElevation="1dp"
+                        app:cardBackgroundColor="#FFFFFF"
+                        app:strokeColor="#E0E0E0"
+                        app:strokeWidth="1dp">
+
+                        <Spinner
+                            android:id="@+id/spnRoom"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:background="@android:color/transparent"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp"/>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="8dp"
+                        app:cardCornerRadius="6dp"
+                        app:cardElevation="1dp"
+                        app:cardBackgroundColor="#FFFFFF"
+                        app:strokeColor="#E0E0E0"
+                        app:strokeWidth="1dp">
+
+                        <EditText
+                            android:id="@+id/etMaxCapacity"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:hint="Capacity"
+                            android:inputType="number"
+                            android:textAlignment="center"
+                            android:background="@android:color/transparent"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp"/>
+                    </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
+
+                <!-- Warning Message -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardWarning"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="6dp"
+                    app:cardBackgroundColor="#FDF2F2"
+                    app:strokeColor="#9B1C1F"
+                    app:strokeWidth="1dp"
+                    android:visibility="visible">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:padding="12dp"
+                        android:gravity="center_vertical">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/ic_warning"
+                            android:tint="#9B1C1F"
+                            android:layout_marginEnd="8dp"/>
+
+                        <TextView
+                            android:id="@+id/tvConflictWarning"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Please select a section to view the schedule"
+                            android:textColor="#9B1C1F"
+                            android:textSize="13sp"
+                            android:textStyle="bold"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Save Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSaveAssignment"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:text="Add Time Slot to Subject"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:cornerRadius="8dp"
+                    app:icon="@drawable/ic_save"
+                    app:iconGravity="textStart"
+                    android:layout_marginTop="16dp"
+                    android:enabled="false"
+                    app:backgroundTint="#7B1113"
+                    android:textColor="#FFFFFF"/>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
     </LinearLayout>
 </ScrollView>

@@ -54,9 +54,6 @@ class ClassDetailsActivity : AppCompatActivity() {
         className = intent.getStringExtra("CLASS_NAME")
         subjectCode = intent.getStringExtra("SUBJECT_CODE")
 
-        autoStartRoulette = intent.getBooleanExtra("AUTO_START_ROULETTE", false)
-
-
         // --- View Binding ---
         tvClassNameHeader = findViewById(R.id.tvClassNameHeader)
         tvLoading = findViewById(R.id.tvLoading)

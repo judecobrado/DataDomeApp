@@ -156,7 +156,6 @@ class UserCanteenItemHistoryActivity : AppCompatActivity() {
 
         var query: Query = firestore.collection("transactions")
             .whereEqualTo("accountId", accountId)
-        // ✅ CHANGE: TANGGALIN ANG PAYMENT-ONLY FILTER PARA MAKUHA ANG CASH IN AT PAYMENTS
 
         startDate?.let { start ->
             endDate?.let { end ->
@@ -175,7 +174,7 @@ class UserCanteenItemHistoryActivity : AppCompatActivity() {
                 val rawTransactions = mutableListOf<CanteenTransaction>()
 
                 for (doc in snapshot.documents) {
-                    val type = doc.getString("type") ?: "UNKNOWN" // ✅ FETCH THE TYPE
+                    val type = doc.getString("type") ?: "UNKNOWN"
                     val finalBalance = doc.getDouble("finalBalance") ?: 0.0
                     val timestamp = doc.getTimestamp("timestamp")?.toDate() ?: Date()
 
@@ -221,7 +220,7 @@ class UserCanteenItemHistoryActivity : AppCompatActivity() {
                         rawTransactions.add(
                             CanteenTransaction(
                                 id = doc.id,
-                                type = type, // Type is 'CASH_IN' or 'TOPUP'
+                                type = type,
                                 itemName = "Load/Deposit Transaction", // Generic description
                                 amount = doc.getDouble("amount") ?: 0.0,
                                 finalBalance = finalBalance,
