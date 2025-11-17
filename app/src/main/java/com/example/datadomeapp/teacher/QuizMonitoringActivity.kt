@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
+import java.util.concurrent.TimeUnit
 import android.widget.Button
 import android.widget.RadioGroup
 import android.widget.TextView
@@ -158,13 +159,7 @@ class QuizMonitoringActivity : BaseActivity() {
         }
     }
 
-
-    // ----------------------------------------------------------------------
-    // NEW IMPLEMENTATION: Manage Access Dialog (Central Control)
-    // ----------------------------------------------------------------------
-
-    fun showManageAccessDialog(currentList: List<StudentMonitoringData>) {
-
+    private fun showManageAccessDialog(currentList: List<StudentMonitoringData>) {
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_manage_access, null)
         val rgAction = view.findViewById<RadioGroup>(R.id.rgAction)
         val rgStudents = view.findViewById<RadioGroup>(R.id.rgStudents)
@@ -172,15 +167,23 @@ class QuizMonitoringActivity : BaseActivity() {
         val tvStartTime = view.findViewById<TextView>(R.id.tvStartTime)
         val tvEndTime = view.findViewById<TextView>(R.id.tvEndTime)
         val tvSummary = view.findViewById<TextView>(R.id.tvSummary)
-
         val timeInputContainer = view.findViewById<View>(R.id.timeInputContainer)
 
-        var selectedAction: String? = null // RETAKE, REOPEN, REVOKE
-        var selectedStudentsType: String? = null // ALL, SPECIFIC, MISSED
-        var specificUids: List<String> = emptyList() // Para sa SPECIFIC selection
+        var selectedAction: String? = null
+        var selectedStudentsType: String? = null
+        var specificUids: List<String> = emptyList()
 
+        // LIVE TIME - Gamitin ang current system time palagi
         var startTime: Long = System.currentTimeMillis()
         var endTime: Long = 0L
+
+        val timeFormat = SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.getDefault())
+
+        // ✅ SIMPLIFIED AUTO-UPDATE - WALANG TIMER
+        fun updateNowTimeDisplay() {
+            val currentNowTime = System.currentTimeMillis()
+            tvStartTime.text = "${timeFormat.format(Date(currentNowTime))} (LIVE NOW)"
+        }
 
         // Helper function for Date/Time picker
         fun showDateTimePicker(tv: TextView, callback: (Long) -> Unit) {
@@ -206,8 +209,7 @@ class QuizMonitoringActivity : BaseActivity() {
                         return@TimePickerDialog
                     }
 
-                    val sdf = SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.getDefault())
-                    tv.text = sdf.format(Date(selectedTime))
+                    tv.text = timeFormat.format(Date(selectedTime))
                     callback(selectedTime)
 
                 }, calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE), false)
@@ -241,8 +243,10 @@ class QuizMonitoringActivity : BaseActivity() {
             val hasValidAction = action != null
             val hasStudents = affected.isNotEmpty()
 
+            // ✅ GAMITIN ANG CURRENT TIME PARA SA VALIDATION
+            val currentTime = System.currentTimeMillis()
             val isTimeRequiredAndValid = if (action == "RETAKE" || action == "REOPEN") {
-                startTime > 0L && endTime > startTime
+                endTime > currentTime // End time must be in the future
             } else {
                 true
             }
@@ -254,17 +258,19 @@ class QuizMonitoringActivity : BaseActivity() {
 
         // Helper function to update summary
         fun updateSummary() {
+            // ✅ GAMITIN ANG CURRENT TIME
+            val currentNowTime = System.currentTimeMillis()
+
             val (affectedStudents, isValid) = getAffectedStudentsAndValidate(
                 selectedAction,
                 selectedStudentsType,
                 specificUids,
                 currentList,
-                startTime,
+                currentNowTime, // ✅ CURRENT TIME ANG GINAGAMIT
                 endTime
             )
 
             val actionText = selectedAction ?: "N/A"
-            val timeFormat = SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.getDefault())
 
             val validUntilText = if (endTime > 0L) {
                 timeFormat.format(Date(endTime))
@@ -272,25 +278,29 @@ class QuizMonitoringActivity : BaseActivity() {
                 "Not set (REQUIRED for RETAKE/REOPEN)"
             }
 
-            val validFromText = if (startTime > 0L) {
-                timeFormat.format(Date(startTime))
+            // ✅ IPAKITA ANG LIVE CURRENT TIME
+            updateNowTimeDisplay() // ✅ TUMATAWAG PARA I-UPDATE ANG DISPLAY
+
+            val timeRemaining = if (endTime > 0L) {
+                val remainingMs = endTime - currentNowTime
+                val hours = TimeUnit.MILLISECONDS.toHours(remainingMs)
+                val minutes = TimeUnit.MILLISECONDS.toMinutes(remainingMs) % 60
+                "\nTime remaining: ${hours}h ${minutes}m"
             } else {
-                "N/A"
+                ""
             }
 
             val summary = "Action: $actionText\n" +
                     "Students affected: ${affectedStudents.size} students\n" +
-                    "Valid from: $validFromText\n" +
-                    "Valid until: $validUntilText\n" +
+                    "Valid from: ${tvStartTime.text}\n" + // ✅ KUNIN NA LANG ANG TEXT MULA SA TV
+                    "Valid until: $validUntilText$timeRemaining\n" +
                     "Status: ${if(isValid) "Ready to CONFIRM" else "Validation FAILED: Check Action, Students, and Time."}"
 
             tvSummary.text = summary
         }
 
-        // ⭐ INITIAL SETUP: Set Start Time to Now (FIXED FORMAT)
-        val timeFormat = SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.getDefault())
-        tvStartTime.text = "${timeFormat.format(Date(startTime))} (NOW)"
-
+        // ✅ INITIAL SETUP: Live current time
+        updateNowTimeDisplay()
 
         // --- Student Selection Logic ---
         btnSelectSpecific.setOnClickListener {
@@ -300,19 +310,12 @@ class QuizMonitoringActivity : BaseActivity() {
 
             AlertDialog.Builder(this)
                 .setTitle("Select Specific Students")
-                .setMultiChoiceItems(allNames.toTypedArray(), selectedItems) { _, _, _ ->
-                    // Selection handled by the boolean array
-                }
+                .setMultiChoiceItems(allNames.toTypedArray(), selectedItems) { _, _, _ -> }
                 .setPositiveButton("OK") { _, _ ->
                     specificUids = allUids.filterIndexed { index, _ -> selectedItems[index] }
-
-                    // ⭐ PAGWAWASTO: Kung may specific UIDs na pinili, tiyakin na naka-check ang SPECIFIC RadioButton.
-                    // Gumamit ng rgStudents.check() sa halip na .isChecked = true para mas malinaw ang intent.
                     if (specificUids.isNotEmpty() && selectedStudentsType != "SPECIFIC") {
                         rgStudents.check(R.id.rbSpecificStudents)
                     }
-                    // Kung inalis lahat, mananatili sa kung ano ang naka-check (e.g., ALL students)
-
                     Toast.makeText(this, "Selected ${specificUids.size} student(s).", Toast.LENGTH_SHORT).show()
                     updateSummary()
                 }
@@ -342,21 +345,27 @@ class QuizMonitoringActivity : BaseActivity() {
             timeInputContainer?.visibility = if (showTimePickers) View.VISIBLE else View.GONE
 
             if (!showTimePickers) {
-                startTime = 0L
                 endTime = 0L
             } else {
-                startTime = System.currentTimeMillis()
-                // FIXED: Gamitin ang format na walang (NOW) at ikabit na lang ito.
-                val nowSdf = SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.getDefault())
-                tvStartTime.text = "${nowSdf.format(Date(startTime))} (NOW)"
+                // ✅ UPDATE ANG DISPLAY AT SUMMARY KAPAG NAG-SELECT NG RETAKE
+                updateNowTimeDisplay()
             }
 
             updateSummary()
         }
 
         // --- Time Window Selection ---
-        tvStartTime.setOnClickListener { showDateTimePicker(tvStartTime) { time -> startTime = time; updateSummary() } }
-        tvEndTime.setOnClickListener { showDateTimePicker(tvEndTime) { time -> endTime = time; updateSummary() } }
+        // ✅ START TIME AY FIXED NA LIVE - HINDI NA PWDENG I-EDIT
+        tvStartTime.setOnClickListener {
+            Toast.makeText(this, "Start time is fixed to current time (Live)", Toast.LENGTH_SHORT).show()
+        }
+
+        tvEndTime.setOnClickListener {
+            showDateTimePicker(tvEndTime) { time ->
+                endTime = time
+                updateSummary()
+            }
+        }
 
         // --- Dialog Setup and Final Confirmation ---
         val dialog = AlertDialog.Builder(this)
@@ -370,12 +379,13 @@ class QuizMonitoringActivity : BaseActivity() {
             updateSummary()
             val positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
             positiveButton.setOnClickListener {
+                val currentTime = System.currentTimeMillis()
                 val (initialAffectedStudents, isValid) = getAffectedStudentsAndValidate(
                     selectedAction,
                     selectedStudentsType,
                     specificUids,
                     currentList,
-                    startTime,
+                    currentTime, // ✅ CURRENT TIME ANG GINAMIT
                     endTime
                 )
 
@@ -388,23 +398,30 @@ class QuizMonitoringActivity : BaseActivity() {
                 val finalAction = selectedAction!!
 
                 if (finalAction == "RETAKE") {
-                    val retakeableStatuses = listOf("COMPLETED", "TIME_EXPIRED", "CHEATED_MAX", "ACCESS_REVOKED")
+                    val retakeableStatuses = listOf(
+                        "COMPLETED", "TIME_EXPIRED", "UNATTEMPTED_TIME_EXPIRED",
+                        "ACCESS_REVOKED", "RETAKE_EXPIRED"
+                    )
 
                     finalUidsToUpdate = initialAffectedStudents
                         .filter { it.status in retakeableStatuses }
                         .map { it.studentUid }
 
                     if (finalUidsToUpdate.isEmpty()) {
-                        Toast.makeText(this, "RETAKE requires students to have COMPLETED/EXPIRED their previous attempts. No eligible students found.", Toast.LENGTH_LONG).show()
+                        val statusCount = initialAffectedStudents.groupBy { it.status }.mapValues { it.value.size }
+                        Toast.makeText(this,
+                            "No eligible students for RETAKE.\nCurrent statuses: $statusCount",
+                            Toast.LENGTH_LONG
+                        ).show()
                         return@setOnClickListener
                     }
                 }
 
-                // ✅ KORPORMEK NA CALL: Ginamit ang finalUidsToUpdate
+                // ✅ GAMITIN ANG CURRENT TIME PARA SA START TIME
                 viewModel.performBulkAction(
-                    finalAction, // Pwedeng selectedAction!! o finalAction, pareho lang
-                    finalUidsToUpdate, // ⭐ ITO ANG CORRECTION
-                    startTime,
+                    finalAction,
+                    finalUidsToUpdate,
+                    currentTime, // ✅ LIVE CURRENT TIME
                     endTime
                 )
 
@@ -412,6 +429,7 @@ class QuizMonitoringActivity : BaseActivity() {
                 dialog.dismiss()
             }
         }
+
         dialog.show()
     }
 
@@ -422,7 +440,8 @@ class QuizMonitoringActivity : BaseActivity() {
         val isExamType = quizType.equals("Exam", ignoreCase = true)
 
         if (isExamType && !isQuizGloballyFinished &&
-            (studentData.status == "EXAM_READY" || studentData.status == "NOT_STARTED" || studentData.status == "UNATTEMPTED_TIME_EXPIRED")) {
+            (studentData.status == "EXAM_READY" || studentData.status == "NOT_STARTED" || studentData.status == "UNATTEMPTED_TIME_EXPIRED" ||
+                    studentData.status == "RETAKE_EXPIRED")) {
             actions.add("START / OPEN ACCESS")
         }
 

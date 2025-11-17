@@ -188,8 +188,13 @@ class QuizMonitoringViewModel(
 
                         var newStatus = doc.getString("status") ?: "N/A"
 
-                        // CRITICAL FIX: Kung ang oras ay tapos na, huwag hayaang maging NOT_STARTED!
-                        if (isQuizPeriodFinished && newStatus == "NOT_STARTED") {
+                        val retakeDeadline = doc.getLong("retakeDeadline") ?: 0L
+
+                        if (newStatus == "RETAKE_GRANTED" && retakeDeadline > 0L && currentTime > retakeDeadline) {
+                            newStatus = "RETAKE_EXPIRED"
+                        }
+
+                        else if (isQuizPeriodFinished && newStatus == "NOT_STARTED") {
                             newStatus = "UNATTEMPTED_TIME_EXPIRED"
                         }
 
@@ -206,16 +211,29 @@ class QuizMonitoringViewModel(
             }
     }
 
-    /**
-     * Ina-update ang LiveData na ginagamit ng Activity/Adapter.
-     */
     private fun updateMonitoringData() {
         val sortedList = studentList.values.toMutableList().sortedWith(
-            compareByDescending<StudentMonitoringData> { getStatusPriority(it.status) }
-                .thenByDescending { it.lastUpdate }
-                .thenBy { it.studentName }
+            compareBy(
+                { it.studentName.normalizeForSorting() }
+            )
         )
         _monitoringData.value = sortedList
+    }
+
+    // ✅ HELPER FUNCTION PARA SA CONSISTENT SORTING
+    private fun String.normalizeForSorting(): String {
+        return if (this.contains(",")) {
+            // Format: "LastName, FirstName MiddleInitial" - perfect for sorting
+            this.lowercase().trim()
+        } else {
+            // Convert to lastname-first format if not already
+            val parts = this.split(" ")
+            if (parts.size >= 2) {
+                "${parts.last()}, ${parts.first()}".lowercase().trim()
+            } else {
+                this.lowercase().trim()
+            }
+        }
     }
 
     // UPDATED STATUS PRIORITY
@@ -224,8 +242,9 @@ class QuizMonitoringViewModel(
             "CHEATING" -> 6 // Highest priority
             "IN_PROGRESS" -> 5
             "COMPLETED" -> 4
-            "TIME_EXPIRED", "UNATTEMPTED_TIME_EXPIRED" -> 3
-            "RETAKE_GRANTED" -> 2
+            "TIME_EXPIRED", "UNATTEMPTED_TIME_EXPIRED", "MISSED" -> 3
+            "RETAKE_EXPIRED" -> 2
+            "RETAKE_GRANTED" -> 1
             "ACCESS_REVOKED" -> 1
             else -> 0 // NOT_STARTED
         }
