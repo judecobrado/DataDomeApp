@@ -194,7 +194,7 @@ class SubmitAssignmentActivity : AppCompatActivity() {
 
         } else {
             tvSubmissionStatus.text = "📝 Not submitted yet"
-            btnSubmit.text = "Submit Assignment"
+            btnSubmit.text = "Submit"
             btnSubmit.isEnabled = true
             btnChoose.isEnabled = true
         }

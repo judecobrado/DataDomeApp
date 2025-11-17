@@ -235,7 +235,7 @@
             android:id="@+id/btnSubmitAssignment"
             android:layout_width="match_parent"
             android:layout_height="55dp"
-            android:text="🚀 Submit Assignment"
+            android:text="Submit Assignment"
             android:textColor="#FFFFFF"
             android:textStyle="bold"
             android:textSize="16sp"
