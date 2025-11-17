@@ -36,7 +36,6 @@
                 android:background="#FAFAFA"
                 android:contentDescription="Menu Item Image"
                 android:src="@android:color/transparent"
-                tools:src="@drawable/ic_menu_gallery"
                 tools:tint="#607D8B"/>
         </com.google.android.material.card.MaterialCardView>
 

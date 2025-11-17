@@ -149,7 +149,7 @@
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
             android:paddingBottom="16dp"
-            tools:listitem="@layout/item_menu_inventory" />
+            tools:listitem="@layout/canteen_item_menu" />
 
         <TextView
             android:id="@+id/tvNoItems"

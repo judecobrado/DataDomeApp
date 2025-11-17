@@ -114,7 +114,7 @@
             android:layout_width="38dp"
             android:layout_height="38dp"
             android:src="@android:drawable/ic_menu_close_clear_cancel"
-            android:tint="#7B1113" android:background="@android:color/transparent"
+            app:tint="#7B1113" android:background="@android:color/transparent"
             android:contentDescription="Remove Item"
             android:padding="4dp"/>
 
