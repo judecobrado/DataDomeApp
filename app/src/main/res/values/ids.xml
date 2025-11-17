@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="tvGuardianName" type="id" />
+    <item name="tvGuardianPhone" type="id" />
+    <item name="tvMotherPhone" type="id" />
+    <item name="tvFatherPhone" type="id" />
+    <item name="tvMotherDOB" type="id" />
+</resources>

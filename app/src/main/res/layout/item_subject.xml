@@ -1,92 +1,208 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView
+<androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:padding="24dp"
+    android:background="@drawable/card_background_maroon_gradient">
 
-    android:layout_marginTop="8dp"
-    android:layout_marginBottom="8dp"
+    <View
+        android:id="@+id/gradientBackground"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@drawable/gradient_maroon_professional"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-    app:cardCornerRadius="12dp"
-    app:cardElevation="6dp"
-    app:cardBackgroundColor="@android:color/white">
+    <View
+        android:id="@+id/accentBorder"
+        android:layout_width="6dp"
+        android:layout_height="0dp"
+        android:background="@drawable/gradient_accent_gold"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginStart="2dp"
+        app:layout_constraintTop_toTopOf="parent" />
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_width="match_parent"
+    <ImageView
+        android:id="@+id/ivSubjectIcon"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/ic_subject"
+        android:contentDescription="Subject Icon"
+        android:tint="#FFFFFF"
+        android:elevation="4dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp" />
+
+    <TextView
+        android:id="@+id/tvSubjectTitleCode"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:padding="16dp">
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF"
+        android:letterSpacing="0.02"
+        android:lineSpacingExtra="4dp"
+        android:shadowColor="#80000000"
+        android:shadowDx="2"
+        android:shadowDy="2"
+        android:shadowRadius="6"
+        app:layout_constraintStart_toEndOf="@id/ivSubjectIcon"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/ivSubjectIcon"
+        tools:text="IT 101 - Introduction to Programming" />
 
-        <ImageView
-            android:id="@+id/ivSubjectIcon"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:contentDescription="Subject Icon"
-            app:tint="#1A237E"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="@id/tvSubjectTitleCode" />
-
-        <TextView
-            android:id="@+id/tvSubjectTitleCode"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:textSize="19sp"
-            android:textStyle="bold"
-            android:textColor="#1A237E"
-            app:layout_constraintStart_toEndOf="@id/ivSubjectIcon"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            tools:text="IT 101 - Introduction to Programming" />
+    <LinearLayout
+        android:id="@+id/sectionRow"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="16dp"
+        app:layout_constraintStart_toStartOf="@id/tvSubjectTitleCode"
+        app:layout_constraintEnd_toEndOf="@id/tvSubjectTitleCode"
+        app:layout_constraintTop_toBottomOf="@id/tvSubjectTitleCode">
 
         <ImageView
             android:id="@+id/ivSectionIcon"
             android:layout_width="20dp"
             android:layout_height="20dp"
+            android:src="@drawable/ic_section"
             android:contentDescription="Section Icon"
-            app:tint="#546E7A"
-            android:layout_marginTop="8dp"
-            app:layout_constraintStart_toStartOf="@id/tvSubjectTitleCode"
-            app:layout_constraintTop_toBottomOf="@id/tvSubjectTitleCode" />
+            android:tint="#FFD700"
+            android:layout_marginEnd="8dp" />
 
         <TextView
             android:id="@+id/tvSectionBlock"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:textSize="14sp"
-            android:textColor="#546E7A"
-            app:layout_constraintStart_toEndOf="@id/ivSectionIcon"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@id/ivSectionIcon"
-            app:layout_constraintBottom_toBottomOf="@id/ivSectionIcon"
+            android:layout_weight="1"
+            android:textSize="15sp"
+            android:textColor="#FFE4E1"
+            android:textStyle="normal"
+            android:fontFamily="sans-serif-medium"
             tools:text="Section: B - Block 3" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/assignmentRow"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="8dp"
+        app:layout_constraintStart_toStartOf="@id/sectionRow"
+        app:layout_constraintEnd_toEndOf="@id/sectionRow"
+        app:layout_constraintTop_toBottomOf="@id/sectionRow">
 
         <ImageView
             android:id="@+id/ivAssignmentIcon"
             android:layout_width="20dp"
             android:layout_height="20dp"
+            android:src="@drawable/ic_assignment"
             android:contentDescription="Assignment Icon"
-            app:tint="#388E3C"
-            android:layout_marginTop="8dp"
-            app:layout_constraintStart_toStartOf="@id/tvSectionBlock"
-            app:layout_constraintTop_toBottomOf="@id/tvSectionBlock" />
+            android:tint="#98FB98"
+            android:layout_marginEnd="8dp" />
 
         <TextView
             android:id="@+id/tvAssignmentCount"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:textSize="14sp"
-            android:textColor="#388E3C"
-            app:layout_constraintStart_toEndOf="@id/ivAssignmentIcon"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@id/ivAssignmentIcon"
-            app:layout_constraintBottom_toBottomOf="@id/ivAssignmentIcon"
+            android:layout_weight="1"
+            android:textSize="15sp"
+            android:textColor="#E6FFE6"
+            android:textStyle="normal"
+            android:fontFamily="sans-serif-medium"
             tools:text="Assignments: 5" />
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+    </LinearLayout>
 
-</androidx.cardview.widget.CardView>
+    <LinearLayout
+        android:id="@+id/scheduleRow"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="8dp"
+        app:layout_constraintStart_toStartOf="@id/assignmentRow"
+        app:layout_constraintEnd_toEndOf="@id/assignmentRow"
+        app:layout_constraintTop_toBottomOf="@id/assignmentRow">
+
+        <ImageView
+            android:id="@+id/ivScheduleIcon"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/ic_schedule"
+            android:contentDescription="Schedule Icon"
+            android:tint="#87CEEB"
+            android:layout_marginEnd="8dp" />
+
+        <TextView
+            android:id="@+id/tvSchedule"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="15sp"
+            android:textColor="#E6F3FF"
+            android:textStyle="normal"
+            android:fontFamily="sans-serif-medium"
+            tools:text="Mon-Wed-Fri • 9:00-10:30 AM" />
+
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="8dp"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="4dp"
+        android:text="ACTIVE"
+        android:textSize="12sp"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"
+        android:background="@drawable/badge_active"
+        android:letterSpacing="0.05"
+        app:layout_constraintEnd_toEndOf="@id/tvSubjectTitleCode"
+        app:layout_constraintTop_toBottomOf="@id/scheduleRow" />
+
+    <View
+        android:id="@+id/divider"
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:background="#FFFFFF"
+        android:alpha="0.2"
+        android:layout_marginTop="16dp"
+        app:layout_constraintStart_toStartOf="@id/tvSubjectTitleCode"
+        app:layout_constraintEnd_toEndOf="@id/tvSubjectTitleCode"
+        app:layout_constraintTop_toBottomOf="@id/tvStatus" />
+
+    <TextView
+        android:id="@+id/tvInstructor"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:textSize="14sp"
+        android:textColor="#FFFFFF"
+        android:alpha="0.8"
+        android:textStyle="italic"
+        android:fontFamily="sans-serif"
+        app:layout_constraintStart_toStartOf="@id/tvSubjectTitleCode"
+        app:layout_constraintEnd_toEndOf="@id/tvSubjectTitleCode"
+        app:layout_constraintTop_toBottomOf="@id/divider"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginBottom="8dp"
+        tools:text="Prof. Dr. Maria Santos" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

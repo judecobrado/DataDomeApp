@@ -1,231 +1,276 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="16dp"
-    android:layout_marginBottom="8dp"
-    android:elevation="2dp">
+    android:layout_marginHorizontal="8dp"
+    android:layout_marginVertical="4dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp"
+    app:cardBackgroundColor="@android:color/white"
+    app:strokeColor="#F0F0F0"
+    app:strokeWidth="1dp">
 
-    <!-- Subject Header -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:layout_marginBottom="12dp">
+        android:padding="16dp">
 
-        <TextView
-            android:id="@+id/tvSubjectCode"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="CS101"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:textColor="#333333" />
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp"
+            android:gravity="center_vertical">
 
-        <TextView
-            android:id="@+id/tvSubjectTitle"
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvSubjectCode"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="CS101"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="#7B1113" />
+
+                <TextView
+                    android:id="@+id/tvSubjectTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Introduction to Computer Science"
+                    android:textSize="12sp"
+                    android:textColor="#666666"
+                    android:maxLines="2"
+                    android:ellipsize="end" />
+
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvCreditUnits"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="3.0"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:background="@drawable/bg_credit_badge"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="4dp"
+                android:textColor="#7B1113" />
+
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Introduction to Computer Science"
-            android:textSize="12sp"
-            android:textColor="#666666"
-            android:maxLines="2"
-            android:ellipsize="end" />
+            android:orientation="horizontal"
+            android:weightSum="3"
+            android:layout_marginBottom="12dp"
+            android:background="@drawable/bg_grading_periods"
+            android:padding="8dp"
+            app:cornerRadius="8dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="4dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Prelim"
+                    android:textSize="10sp"
+                    android:gravity="center"
+                    android:textColor="#9B1C1F" />
+
+                <TextView
+                    android:id="@+id/tvPrelimGrade"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="--"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:textColor="#7B1113" />
+
+            </LinearLayout>
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="20dp"
+                android:background="#E8D2D2"
+                android:layout_gravity="center" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="4dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Midterm"
+                    android:textSize="10sp"
+                    android:gravity="center"
+                    android:textColor="#9B1C1F" />
+
+                <TextView
+                    android:id="@+id/tvMidtermGrade"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="--"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:textColor="#7B1113" />
+
+            </LinearLayout>
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="20dp"
+                android:background="#E8D2D2"
+                android:layout_gravity="center" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="4dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Finals"
+                    android:textSize="10sp"
+                    android:gravity="center"
+                    android:textColor="#9B1C1F" />
+
+                <TextView
+                    android:id="@+id/tvFinalGrade"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="--"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:textColor="#7B1113" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="3"
+            android:background="#FBEFEF"
+            android:padding="12dp"
+            app:cornerRadius="8dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="4dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Average"
+                    android:textSize="10sp"
+                    android:gravity="center"
+                    android:textColor="#9B1C1F" />
+
+                <TextView
+                    android:id="@+id/tvAverageGrade"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="--"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:textColor="#7B1113" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="4dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Grade Point"
+                    android:textSize="10sp"
+                    android:gravity="center"
+                    android:textColor="#9B1C1F" />
+
+                <TextView
+                    android:id="@+id/tvGradePoint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="--"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:textColor="#7B1113" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="4dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Status"
+                    android:textSize="10sp"
+                    android:gravity="center"
+                    android:textColor="#9B1C1F" />
+
+                <TextView
+                    android:id="@+id/tvStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="--"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:background="@drawable/bg_status_pending"
+                    android:paddingHorizontal="6dp"
+                    android:paddingVertical="2dp"
+                    android:textColor="#FFFFFF" />
+
+            </LinearLayout>
+
+        </LinearLayout>
 
     </LinearLayout>
 
-    <!-- Grading Periods -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:weightSum="3"
-        android:layout_marginBottom="12dp">
-
-        <!-- Prelim -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:padding="4dp">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Prelim"
-                android:textSize="10sp"
-                android:gravity="center"
-                android:textColor="#666666" />
-
-            <TextView
-                android:id="@+id/tvPrelimGrade"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="*"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:textColor="#333333" />
-
-        </LinearLayout>
-
-        <!-- Midterm -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:padding="4dp">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Midterm"
-                android:textSize="10sp"
-                android:gravity="center"
-                android:textColor="#666666" />
-
-            <TextView
-                android:id="@+id/tvMidtermGrade"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="*"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:textColor="#333333" />
-
-        </LinearLayout>
-
-        <!-- Finals -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:padding="4dp">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Finals"
-                android:textSize="10sp"
-                android:gravity="center"
-                android:textColor="#666666" />
-
-            <TextView
-                android:id="@+id/tvFinalGrade"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="*"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:textColor="#333333" />
-
-        </LinearLayout>
-
-    </LinearLayout>
-
-    <!-- Final Results -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:weightSum="3"
-        android:padding="8dp">
-
-        <!-- Average Grade -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:padding="4dp">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Average"
-                android:textSize="10sp"
-                android:gravity="center"
-                android:textColor="#666666" />
-
-            <TextView
-                android:id="@+id/tvAverageGrade"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="*"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:textColor="#333333" />
-
-        </LinearLayout>
-
-        <!-- Grade Point -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:padding="4dp">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Grade Point"
-                android:textSize="10sp"
-                android:gravity="center"
-                android:textColor="#666666" />
-
-            <TextView
-                android:id="@+id/tvGradePoint"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="*"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:textColor="#333333" />
-
-        </LinearLayout>
-
-        <!-- Status -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:padding="4dp">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Status"
-                android:textSize="10sp"
-                android:gravity="center"
-                android:textColor="#666666" />
-
-            <TextView
-                android:id="@+id/tvStatus"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="*"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:gravity="center" />
-
-        </LinearLayout>
-
-    </LinearLayout>
-
-</LinearLayout>
+</com.google.android.material.card.MaterialCardView>
