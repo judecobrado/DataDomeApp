@@ -5,6 +5,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
+import androidx.cardview.widget.CardView
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.datadomeapp.R
 import com.example.datadomeapp.models.Quiz
@@ -19,11 +21,9 @@ class QuizAdapter(
     private val deleteClickListener: (Quiz) -> Unit,
     private val publishClickListener: (Quiz) -> Unit,
     private val setTimeClickListener: (Quiz) -> Unit,
-    // ✅ ADDITION 1: Bagong click listener para sa VIEW action
     private val viewClickListener: (Quiz) -> Unit
 ) : RecyclerView.Adapter<QuizAdapter.QuizViewHolder>() {
 
-    // OPTIONAL: Ginawang constants ang SimpleDateFormat para sa efficiency
     private val START_SDF = SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.getDefault())
     private val END_SDF = SimpleDateFormat("hh:mm a", Locale.getDefault())
 
@@ -44,7 +44,6 @@ class QuizAdapter(
         notifyDataSetChanged()
     }
 
-
     inner class QuizViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val tvTitle: TextView = itemView.findViewById(R.id.tvQuizTitle)
         private val tvType: TextView = itemView.findViewById(R.id.tvQuizType)
@@ -55,7 +54,10 @@ class QuizAdapter(
         private val btnPublish: Button = itemView.findViewById(R.id.btnPublishToggle)
         private val btnSetTime: Button = itemView.findViewById(R.id.btnSetTime)
 
-        // Helper functions
+        // ✅ ADDITION: CardView reference - make sure your XML has this ID
+        // Since your XML doesn't have an explicit ID for CardView, we'll use the root CardView
+        private val cardView: CardView = itemView as CardView
+
         private fun isQuizFinished(quiz: Quiz): Boolean {
             val currentTime = System.currentTimeMillis()
             val endTime = quiz.scheduledEndDateTime
@@ -68,7 +70,6 @@ class QuizAdapter(
             val endTime = quiz.scheduledEndDateTime
             return quiz.isPublished && startTime > 0L && endTime > 0L && currentTime >= startTime && currentTime <= endTime
         }
-        // End of Helper functions
 
         fun bind(quiz: Quiz) {
             val isOngoing = isQuizOngoing(quiz)
@@ -77,13 +78,11 @@ class QuizAdapter(
 
             val isViewMode = isOngoing || isFinished
 
-            // ✅ CHANGE: Delete lang kapag DRAFT at HINDI Ongoing/Finished
+            // ✅ ADDITION: Set card color based on status
+            setCardColor(quiz, isOngoing, isFinished, isPublished)
+
             val canDelete = !isPublished && !isViewMode
-
-            // ✅ CHANGE: Can toggle publish kapag hindi Ongoing/Finished
             val canTogglePublish = !isOngoing && !isFinished
-
-            // ✅ CHANGE: Set Time button - VISIBLE ONLY when published AND not ongoing/finished
             val canSetTime = isPublished && !isOngoing && !isFinished
 
             tvTitle.text = quiz.title
@@ -132,7 +131,6 @@ class QuizAdapter(
                 }
             }
 
-            // --- DELETE / VIEW Button (Slot 4) ---
             btnDelete.apply {
                 if (isPublished && !isViewMode) {
                     text = "VIEW"
@@ -145,15 +143,12 @@ class QuizAdapter(
                 }
             }
 
-            // --- SET TIME BUTTON LOGIC (Slot 2) ---
             btnSetTime.apply {
-                // ✅ CHANGE: Only show when published AND not ongoing/finished
                 text = if (quiz.scheduledDateTime > 0L) "UPDATE TIME" else "SET TIME"
                 visibility = if (canSetTime) View.VISIBLE else View.GONE
                 setOnClickListener { if (canSetTime) setTimeClickListener(quiz) }
             }
 
-            // --- PUBLISH BUTTON LOGIC (Slot 3) ---
             btnPublish.apply {
                 text = if (isPublished) "Unpublish" else "Publish"
                 visibility = if (canTogglePublish) View.VISIBLE else View.GONE
@@ -162,8 +157,28 @@ class QuizAdapter(
         }
 
         /**
-         * I-format ang start at end time at isama ang status, checking ang isPublished status.
+         * ✅ ADDITION: Function to set card color based on quiz status
          */
+        private fun setCardColor(quiz: Quiz, isOngoing: Boolean, isFinished: Boolean, isPublished: Boolean) {
+            val colorRes = when {
+                isOngoing -> R.color.quiz_ongoing
+                isFinished -> R.color.quiz_finished
+                isPublished && quiz.scheduledDateTime > 0L -> R.color.quiz_scheduled
+                !isPublished && quiz.scheduledDateTime > 0L -> R.color.quiz_draft_time_set
+                else -> R.color.quiz_draft_no_time
+            }
+
+            // Set the card background color
+            cardView.setCardBackgroundColor(ContextCompat.getColor(itemView.context, colorRes))
+
+            // Optional: Adjust elevation based on status for better visual hierarchy
+            when {
+                isOngoing -> cardView.cardElevation = 8f
+                isFinished -> cardView.cardElevation = 2f
+                else -> cardView.cardElevation = 4f
+            }
+        }
+
         private fun formatDateTimeRange(startTimeMillis: Long, endTimeMillis: Long, isOngoing: Boolean, isFinished: Boolean, isPublished: Boolean): String {
 
             val timeDetails = if (startTimeMillis > 0L) {
@@ -173,13 +188,12 @@ class QuizAdapter(
                 "No Time Set"
             }
 
-            // Status Check Logic (Pinagsama ang isPublished at Time check)
             val statusText = when {
-                isOngoing -> "Status: 🟢 ONGOING"
-                isFinished -> "Status: 🏁 FINISHED"
-                isPublished && startTimeMillis > 0L -> "Status: 🗓️ SCHEDULED"
-                !isPublished && startTimeMillis > 0L -> "Status: 🕒 DRAFT (Time Set)"
-                else -> "Status: 📝 DRAFT (No Time Set)"
+                isOngoing -> "Status: ONGOING"
+                isFinished -> "Status: FINISHED"
+                isPublished && startTimeMillis > 0L -> "Status: SCHEDULED"
+                !isPublished && startTimeMillis > 0L -> "Status: DRAFT (Time Set)"
+                else -> "Status: DRAFT (No Time Set)"
             }
 
             return "$statusText\n$timeDetails"

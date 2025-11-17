@@ -267,13 +267,25 @@ class ManageQuizzesActivity : BaseActivity() {
         val quizId = quiz.quizId
 
         if (newStatus) {
-            if (quiz.scheduledDateTime <= 0L || quiz.scheduledEndDateTime <= 0L) {
+            // REAL-TIME VALIDATION BEFORE PUBLISHING
+            val currentTime = System.currentTimeMillis()
+            val startTime = quiz.scheduledDateTime
+            val minStartTime = currentTime + (5 * 60 * 1000) // 5 minutes from NOW
+
+            if (startTime <= 0L || quiz.scheduledEndDateTime <= 0L) {
                 Toast.makeText(this, "Please set valid start and end time first.", Toast.LENGTH_LONG).show()
                 setScheduledTime(quiz, true)
                 return
             }
+
+            if (startTime < minStartTime) {
+                Toast.makeText(this, "Start time must be at least 5 minutes from current time.", Toast.LENGTH_LONG).show()
+                setScheduledTime(quiz, true)
+                return
+            }
+
+            // Continue with publishing...
             db.child("quizzes").child(quizId).child("isPublished").setValue(true)
-                .addOnSuccessListener { Toast.makeText(this, "Quiz Published", Toast.LENGTH_SHORT).show() }
         } else {
             db.child("quizzes").child(quizId).child("isPublished").setValue(false)
                 .addOnSuccessListener {
@@ -311,11 +323,26 @@ class ManageQuizzesActivity : BaseActivity() {
         val timePicker = TimePickerDialog(
             this,
             { _, startHour, startMinute ->
+                // RESET SECONDS AND MILLISECONDS TO ZERO
                 scheduleCalendar.set(Calendar.HOUR_OF_DAY, startHour)
                 scheduleCalendar.set(Calendar.MINUTE, startMinute)
+                scheduleCalendar.set(Calendar.SECOND, 0)
+                scheduleCalendar.set(Calendar.MILLISECOND, 0)
+
                 val startTime = scheduleCalendar.timeInMillis
                 val currentTime = System.currentTimeMillis()
-                if (startTime < currentTime + 300000L) {
+
+                // CREATE CURRENT TIME CALENDAR WITHOUT SECONDS FOR COMPARISON
+                val currentCalendar = Calendar.getInstance().apply {
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+                val currentTimeWithoutSeconds = currentCalendar.timeInMillis
+
+                // ADD 5 MINUTES TO CURRENT TIME (WITHOUT SECONDS)
+                val minStartTime = currentTimeWithoutSeconds + (5 * 60 * 1000)
+
+                if (startTime < minStartTime) {
                     Toast.makeText(this, "Start time must be at least 5 minutes from now.", Toast.LENGTH_LONG).show()
                     showStartTimePicker(quiz, scheduleCalendar, isCalledAfterPublish)
                     return@TimePickerDialog
@@ -332,22 +359,34 @@ class ManageQuizzesActivity : BaseActivity() {
 
     private fun showEndTimePicker(quiz: Quiz, scheduleCalendar: Calendar, startTime: Long, isCalledAfterPublish: Boolean) {
         val endCalendar = scheduleCalendar.clone() as Calendar
-        val MIN_INTERVAL_MS = 5 * 60 * 1000L
+        val MIN_INTERVAL_MS = 5 * 60 * 1000L // 5 minutes in milliseconds
 
-        endCalendar.timeInMillis = startTime + 60 * 60 * 1000L
+        // SET DEFAULT END TIME TO 1 HOUR AFTER START TIME
+        endCalendar.timeInMillis = startTime
+        endCalendar.add(Calendar.HOUR, 1)
+        endCalendar.set(Calendar.SECOND, 0)
+        endCalendar.set(Calendar.MILLISECOND, 0)
 
         val timePicker = TimePickerDialog(
             this,
             { _, endHour, endMinute ->
+                // RESET SECONDS AND MILLISECONDS TO ZERO FOR END TIME
                 endCalendar.set(Calendar.HOUR_OF_DAY, endHour)
                 endCalendar.set(Calendar.MINUTE, endMinute)
+                endCalendar.set(Calendar.SECOND, 0)
+                endCalendar.set(Calendar.MILLISECOND, 0)
+
                 val endTime = endCalendar.timeInMillis
+
                 if (endTime <= startTime) {
                     Toast.makeText(this, "End time must be after start time.", Toast.LENGTH_LONG).show()
                     showEndTimePicker(quiz, scheduleCalendar, startTime, isCalledAfterPublish)
                     return@TimePickerDialog
                 }
-                if (endTime - startTime < MIN_INTERVAL_MS) {
+
+                // CHECK MINIMUM 5-MINUTE DURATION (MINUTE-BASED ONLY)
+                val durationMinutes = (endTime - startTime) / (60 * 1000)
+                if (durationMinutes < 5) {
                     Toast.makeText(this, "Quiz duration must be at least 5 minutes.", Toast.LENGTH_LONG).show()
                     showEndTimePicker(quiz, scheduleCalendar, startTime, isCalledAfterPublish)
                     return@TimePickerDialog
