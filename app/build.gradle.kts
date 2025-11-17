@@ -69,6 +69,7 @@ dependencies {
 
     implementation("com.github.bumptech.glide:glide:4.15.1")
     implementation(libs.androidx.gridlayout)
+    implementation(libs.androidx.camera.camera2.pipe)
     kapt("com.github.bumptech.glide:compiler:4.15.1")
 
     implementation("com.google.firebase:firebase-appcheck-debug:17.0.0")
