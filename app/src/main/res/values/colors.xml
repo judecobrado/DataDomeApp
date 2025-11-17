@@ -86,4 +86,7 @@
 
     <color name="primary_blue">#2196F3</color>
 
+    <color name="colorBackground">#FFFFFF</color>
+    <color name="colorBorder">#E0E0E0</color>
+
 </resources>
