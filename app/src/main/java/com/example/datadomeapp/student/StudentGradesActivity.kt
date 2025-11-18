@@ -138,7 +138,7 @@ class StudentGradesActivity : AppCompatActivity() {
         if (gradeSummaryList.isEmpty()) {
             tvLoadingStatus.text = "No grade data available"
         } else {
-            tvLoadingStatus.text = "Loaded ${gradeSummaryList.size} subjects"
+            tvLoadingStatus.text = "Loaded subjects"
             gradeSummaryAdapter.updateGrades(gradeSummaryList)
         }
     }

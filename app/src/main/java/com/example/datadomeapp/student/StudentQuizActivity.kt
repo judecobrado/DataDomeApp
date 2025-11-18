@@ -33,9 +33,11 @@ class StudentQuizActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityStudentQuizBinding
     private var cheatOverlay: View? = null
-
+    private var homeButtonPressed = false
+    private var isRequestingDndPermission = false
     private var spinnerActive = false
     private val prefs by lazy { getSharedPreferences("quiz_prefs", Context.MODE_PRIVATE) }
+
     private val quiz: Quiz by lazy {
         requireNotNull(intent.getParcelableExtra<Quiz>("QUIZ")) {
             "FATAL: Missing 'QUIZ' extra in Intent. StudentQuizActivity cannot start."
@@ -47,7 +49,6 @@ class StudentQuizActivity : AppCompatActivity() {
         get() = prefs.getBoolean("termsAccepted_${quiz.quizId}", false)
         set(value) = prefs.edit().putBoolean("termsAccepted_${quiz.quizId}", value).apply()
 
-
     private val viewModel: StudentQuizViewModel by viewModels {
         StudentQuizViewModelFactory(application, quiz)
     }
@@ -55,7 +56,6 @@ class StudentQuizActivity : AppCompatActivity() {
     private var quizFinished = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
-
         super.onCreate(savedInstanceState)
         binding = ActivityStudentQuizBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -73,13 +73,48 @@ class StudentQuizActivity : AppCompatActivity() {
 
         setupLiveDataObservers()
 
-
         if (termsAccepted) {
-            lockQuizScreen()
-            requestDndPermission()
-            startQuizAttempt()
+            if (hasExistingQuizState()) {
+                showRestoreDialog()
+            } else {
+                lockQuizScreen()
+                requestDndPermission()
+            }
         } else {
             showTermsAndConditions()
+        }
+    }
+
+
+    // --- Check for existing quiz state ---
+    private fun hasExistingQuizState(): Boolean {
+        val progressPrefs = getSharedPreferences("quiz_progress", Context.MODE_PRIVATE)
+        return progressPrefs.getLong("start_time_${quiz.quizId}", 0L) > 0L
+    }
+
+    private fun showRestoreDialog() {
+        // Check if quiz time has expired
+        if (viewModel.isQuizTimeExpired()) {
+            AlertDialog.Builder(this)
+                .setTitle("Quiz Time Expired")
+                .setMessage("The quiz time has ended. Your answers will be automatically submitted.")
+                .setPositiveButton("OK") { _, _ ->
+                    // Force auto-submit
+                    viewModel.forceAutoSubmit()
+                }
+                .setCancelable(false)
+                .show()
+        } else {
+            AlertDialog.Builder(this)
+                .setTitle("Restore Quiz Progress")
+                .setMessage("We found an unfinished quiz attempt. Do you want to continue where you left off?")
+                .setPositiveButton("Continue") { _, _ ->
+                    // Continue with restored state
+                    lockQuizScreen()
+                    requestDndPermission()
+                }
+                .setCancelable(false)
+                .show()
         }
     }
 
@@ -91,16 +126,17 @@ class StudentQuizActivity : AppCompatActivity() {
     }
 
     private fun startQuizAttempt() {
-        // Kung ang quiz ay 'Exam' type, dapat mong i-validate muna ang oras bago magsimula.
-        // Sa kasong ito, ipaubaya natin sa ViewModel ang pag-validate, ngunit magbigay tayo
-        // ng mensahe kung tapos na ang oras bago mag-submit.
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        // I-start lang ang tracking at timer.
+        // 🚨 CRITICAL: Check if DND is granted before starting quiz
+        if (!notificationManager.isNotificationPolicyAccessGranted) {
+            Toast.makeText(this, "DND permission not granted. Cannot start quiz.", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        // Only proceed if DND is granted
         viewModel.fetchServerTime()
         viewModel.startQuizTracking()
-
-        // Kung hindi na ito dapat mag-submit, dapat may handler sa ViewModel na
-        // nagre-report ng "Time expired, cannot start."
     }
 
     private fun startScreenPinning() {
@@ -128,10 +164,26 @@ class StudentQuizActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
 
-        if (cheatOverlay != null) {
+        if (isRequestingDndPermission) {
+            isRequestingDndPermission = false
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+            if (notificationManager.isNotificationPolicyAccessGranted) {
+                // DND granted, start quiz
+                startQuizAttempt()
+            } else {
+                // DND not granted, show blocking dialog
+                AlertDialog.Builder(this)
+                    .setTitle("DND Permission Required")
+                    .setMessage("You must grant Do Not Disturb permission to continue with the quiz. Please restart the app.")
+                    .setPositiveButton("Exit") { _, _ ->
+                        finish()
+                    }
+                    .setCancelable(false)
+                    .show()
+            }
         }
     }
-
 
     private fun resetDoNotDisturb() {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -139,7 +191,6 @@ class StudentQuizActivity : AppCompatActivity() {
             notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL)
         }
     }
-
 
     private fun setupMatchingSpinners() {
         for (i in 0 until binding.matchingLayout.childCount) {
@@ -191,40 +242,62 @@ class StudentQuizActivity : AppCompatActivity() {
     }
 
     private fun resetQuiz() {
-        Toast.makeText(this, "Restarted due to cheating.", Toast.LENGTH_LONG).show()
+        Toast.makeText(this, "Quiz reset to Question 1 due to cheating.", Toast.LENGTH_LONG).show()
         removeCheatOverlay()
-        viewModel.resetQuizProgress() // we'll define this in ViewModel
-        viewModel.fetchServerTime()   // restart timer from server
+
+        viewModel.resetQuizProgress(keepCheatCount = true)
+
+        viewModel.currentQuestion.value?.let {
+            showQuestion(it, 0)
+        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
+
+        if (!quizFinished) {
+            // I-save ang current cheat count sa SharedPreferences
+            viewModel.saveCurrentState()
+
+            // Optional: I-log lang pero huwag mag-trigger ng bagong cheat attempt
+
+            // HUWAG tumawag ng handleCheatAttempt() dito kasi magre-reset ng quiz
+            // viewModel.handleCheatAttempt("App closed/destroyed during quiz")
+        }
+
         resetDoNotDisturb()
     }
+
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
 
-        if (!quizFinished) {
+        if (!quizFinished && !isRequestingDndPermission) {
             if (!hasFocus && !isSpinnerOpen()) {
-                viewModel.handleCheatAttempt("Notification shade / overlay detected")
+                // Set flag to indicate home button was pressed
+                homeButtonPressed = true
+                viewModel.handleCheatAttempt("Home button / Recent apps pressed")
             } else if (hasFocus) {
                 viewModel.resetCheat()
+                homeButtonPressed = false
             }
         }
     }
-
 
     override fun onPause() {
         super.onPause()
-
-        if (!quizFinished) {
-            if (!isSpinnerOpen()) {
+        if (!quizFinished && !isRequestingDndPermission && !isSpinnerOpen()) {
+            // Only trigger cheat detection if it wasn't already handled by home button
+            if (!homeButtonPressed) {
                 viewModel.handleCheatAttempt("App backgrounded / Home button pressed")
             }
         }
+        homeButtonPressed = false // Reset the flag
     }
 
+    override fun onStop() {
+        super.onStop()
+    }
 
     override fun onMultiWindowModeChanged(isInMultiWindowMode: Boolean) {
         super.onMultiWindowModeChanged(isInMultiWindowMode)
@@ -239,10 +312,26 @@ class StudentQuizActivity : AppCompatActivity() {
 
     private fun setupLiveDataObservers() {
         viewModel.timerText.observe(this) { binding.tvTimer.text = it }
-        viewModel.currentQuestion.observe(this) { showQuestion(it, viewModel.currentQuestionIndex.value ?: 0) }
+        viewModel.currentQuestion.observe(this) { question ->
+            // 🚨 ADD DND CHECK HERE - BEFORE SHOWING ANY QUESTION
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            if (!notificationManager.isNotificationPolicyAccessGranted) {
+                Toast.makeText(this, "Quiz paused: DND permission required", Toast.LENGTH_SHORT).show()
+                return@observe // STOP HERE if no DND permission
+            }
+            showQuestion(question, viewModel.currentQuestionIndex.value ?: 0)
+        }
+
+        viewModel.questionCounter.observe(this) { counterText ->
+            binding.tvQuestionCounter.text = counterText
+        }
+
         viewModel.uiMessage.observe(this) { Toast.makeText(this, it, Toast.LENGTH_SHORT).show() }
 
-        // NEW: Observe for QuizResultData to launch the result screen
+        viewModel.cheatCount.observe(this) { count ->
+            updateCheatCounter(count)
+        }
+
         viewModel.quizResultData.observe(this) { resultData ->
             if (resultData != null) {
                 quizFinished = true
@@ -252,31 +341,40 @@ class StudentQuizActivity : AppCompatActivity() {
                 }
                 resetDoNotDisturb()
 
-                // 2. Launch QuizResultActivity
+                // 2. Clear any persisted state
+                clearPersistedState()
+
+                // 3. Launch QuizResultActivity
                 val intent = Intent(this, QuizResultActivity::class.java).apply {
                     putExtra("SCORE", resultData.score)
                     putExtra("TOTAL_QUESTIONS", resultData.totalQuestions)
                     putExtra("CHEAT_COUNT", resultData.cheatCount)
-                    // ⭐ KRITIKAL: Ipasa ang RESULT_TYPE = "ATTEMPTED"
                     putExtra("RESULT_TYPE", "ATTEMPTED")
-                    // Add FLAG_ACTIVITY_CLEAR_TOP to prevent going back to the quiz
                     addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
 
                 startActivity(intent)
-                finish() // Remove this activity from the back stack
+                finish()
             }
         }
-
-        // Removed the old quizFinished observer logic, as it is now handled by quizResultData.
 
         viewModel.isCheating.observe(this) { cheating ->
             if (cheating) {
                 if (cheatOverlay == null) showCheatOverlay("Cheating detected!")
+
+                Handler(Looper.getMainLooper()).postDelayed({
+                    removeCheatOverlay()
+                    viewModel.resetCheat()
+
+                    viewModel.currentQuestion.value?.let {
+                        showQuestion(it, 0)
+                    }
+                }, 2000)
             } else {
                 removeCheatOverlay()
             }
         }
+
 
         binding.btnSubmit.setOnClickListener {
             val currentQuestion = viewModel.currentQuestion.value
@@ -297,6 +395,33 @@ class StudentQuizActivity : AppCompatActivity() {
         }
     }
 
+    private fun clearPersistedState() {
+        val progressPrefs = getSharedPreferences("quiz_progress", Context.MODE_PRIVATE)
+        val editor = progressPrefs.edit()
+        editor.remove("cheat_count_${quiz.quizId}")
+        editor.remove("current_question_${quiz.quizId}")
+        editor.remove("answers_${quiz.quizId}")
+        editor.remove("start_time_${quiz.quizId}")
+        editor.apply()
+    }
+
+    private fun updateCheatCounter(count: Int) {
+        if (count > 0) {
+            binding.tvCheatCounter.visibility = View.VISIBLE
+            binding.tvCheatCounter.text = "Cheats: $count/5"
+
+
+            when (count) {
+                0 -> binding.tvCheatCounter.setBackgroundColor(Color.parseColor("#757575")) // Gray for 0
+                1, 2 -> binding.tvCheatCounter.setBackgroundColor(Color.parseColor("#FF9800")) // Orange
+                3, 4 -> binding.tvCheatCounter.setBackgroundColor(Color.parseColor("#FF5722")) // Dark Orange
+                5 -> binding.tvCheatCounter.setBackgroundColor(Color.parseColor("#D32F2F")) // Red
+            }
+        } else {
+            binding.tvCheatCounter.visibility = View.GONE
+        }
+    }
+
     private fun showTermsAndConditions() {
         if (termsAccepted) return
 
@@ -307,14 +432,14 @@ class StudentQuizActivity : AppCompatActivity() {
                         "2. Screenshots, recording, or multi-window count as cheat attempts.\n" +
                         "3. Max 5 cheat attempts; exceeding = 0 score.\n" +
                         "4. Will auto-submit when time is up.\n" +
-                        "5. All answers are logged in real-time."
+                        "5. All answers are logged in real-time.\n" +
+                        "6. Closing the app counts as 1 cheat attempt and resets the quiz."
             )
             .setCancelable(false)
             .setPositiveButton("I Agree") { _, _ ->
-                termsAccepted = true   // mark agreed
+                termsAccepted = true
                 lockQuizScreen()
                 requestDndPermission()
-                startQuizAttempt()
             }
             .setNegativeButton("Cancel") { _, _ -> finish() }
             .show()
@@ -357,14 +482,12 @@ class StudentQuizActivity : AppCompatActivity() {
                         btn.visibility = View.VISIBLE
                         btn.text = optionText
 
-                        // Logic: Light Blue kung napili, Orange kung hindi
                         if (recordedAnswer == optionText) {
                             btn.setBackgroundColor(selectedColor)
                         } else {
                             btn.setBackgroundColor(defaultColor)
                         }
 
-                        // OnClick: I-record ang sagot at i-reload ang tanong para sa UI update
                         btn.setOnClickListener {
                             viewModel.recordAnswer(index, optionText)
                             showQuestion(q, index)
@@ -380,7 +503,6 @@ class StudentQuizActivity : AppCompatActivity() {
                     text = "TRUE"
                     val answer = "true"
 
-                    // Logic: Dark Green (selected) o Light Green (default)
                     if (recordedAnswer == answer) {
                         setBackgroundColor(tfSelectedColor)
                     } else {
@@ -399,7 +521,6 @@ class StudentQuizActivity : AppCompatActivity() {
                     text = "FALSE"
                     val answer = "false"
 
-                    // Logic: Dark Green (selected) o Red (default)
                     if (recordedAnswer == answer) {
                         setBackgroundColor(tfSelectedColor)
                     } else {
@@ -440,20 +561,21 @@ class StudentQuizActivity : AppCompatActivity() {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
 
-        // Check if the detected configuration is different from the portrait mode we locked it to.
-        // Since the orientation is locked in onCreate, any change event is suspicious.
-        // We specifically check for landscape (or undefined) if it attempts to change.
         if (newConfig.orientation != ActivityInfo.SCREEN_ORIENTATION_PORTRAIT) {
-            // Log the cheat attempt
             viewModel.handleCheatAttempt("Screen orientation was changed.")
         }
     }
 
     private fun requestDndPermission() {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
         if (!notificationManager.isNotificationPolicyAccessGranted) {
+            isRequestingDndPermission = true
             startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
             Toast.makeText(this, "Grant 'Do Not Disturb' access to start.", Toast.LENGTH_LONG).show()
+        } else {
+            // DND already granted, start quiz immediately
+            startQuizAttempt()
         }
     }
 }

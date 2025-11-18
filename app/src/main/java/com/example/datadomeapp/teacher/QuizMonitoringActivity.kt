@@ -445,7 +445,7 @@ class QuizMonitoringActivity : BaseActivity() {
             actions.add("START / OPEN ACCESS")
         }
 
-        val restartableStatuses = listOf("IN_PROGRESS", "COMPLETED")
+        val restartableStatuses = listOf("COMPLETED")
 
         if (!isQuizGloballyFinished && studentData.status in restartableStatuses) {
             actions.add("RESTART QUIZ")

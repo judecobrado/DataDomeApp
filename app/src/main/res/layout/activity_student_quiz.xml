@@ -1,99 +1,225 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/scrollViewQuiz"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
-    android:background="#FFFFFF">
+    android:background="#FDFBF8">
 
     <LinearLayout
         android:id="@+id/quizRootLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="20dp">
 
-
-        <!-- Timer -->
-        <TextView
-            android:id="@+id/tvTimer"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="05:00"
-            android:textSize="20sp"
-            android:textColor="@android:color/holo_red_dark"
-            android:gravity="center"
-            android:layout_gravity="center_horizontal"
-            android:paddingBottom="12dp"/>
-
-        <TextView
-            android:id="@+id/tvQuestionType"
+        <!-- Header Info Card -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:paddingBottom="8dp"
-            android:text="Question Type: (Loading...)"
-            android:textColor="?attr/colorPrimary" />
+            android:layout_marginBottom="20dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="#7B1113">
 
-        <!-- Question Text -->
-        <TextView
-            android:id="@+id/tvQuestionText"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <!-- Question Counter & Timer Row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:id="@+id/tvQuestionCounter"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Question 1 of 10"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="@android:color/white"
+                        tools:text="Question 1 of 10" />
+
+                    <TextView
+                        android:id="@+id/tvTimer"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="05:00"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="@android:color/white"
+                        android:drawableStart="@drawable/ic_timer"
+                        android:drawablePadding="8dp"
+                        android:drawableTint="@android:color/white"
+                        tools:text="05:00" />
+
+                </LinearLayout>
+
+                <!-- Cheat Counter -->
+                <TextView
+                    android:id="@+id/tvCheatCounter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Cheat attempts: 0/5"
+                    android:textSize="14sp"
+                    android:textColor="#FFBABA"
+                    tools:text="Cheat attempts: 0/5" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Question Card -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Question will appear here"
-            android:textSize="16sp"
-            android:textColor="#000000"
-            android:paddingBottom="16dp"
-            android:lineSpacingExtra="4dp"/>
+            android:layout_marginBottom="20dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp">
 
-        <!-- Multiple Choice Buttons -->
-        <Button
-            android:id="@+id/btnOption1"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp">
+
+                <!-- Question Type -->
+                <TextView
+                    android:id="@+id/tvQuestionType"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Multiple Choice"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#7B1113"
+                    android:background="#FBEFEF"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="4dp"
+                    android:layout_marginBottom="12dp"
+                    tools:text="Multiple Choice" />
+
+                <!-- Question Text -->
+                <TextView
+                    android:id="@+id/tvQuestionText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="What is the question text that will appear here for the student to read and answer?"
+                    android:textSize="18sp"
+                    android:textColor="@android:color/black"
+                    android:lineSpacingExtra="6dp"
+                    tools:text="What is the question text that will appear here for the student to read and answer?" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Options Card -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:text="Option 1"/>
+            android:layout_marginBottom="20dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp">
 
-        <Button
-            android:id="@+id/btnOption2"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <!-- Multiple Choice Options -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnOption1"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="Option 1 will appear here"
+                    android:textSize="16sp"
+                    android:textColor="@android:color/black"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    app:strokeColor="#DDDDDD"
+                    app:cornerRadius="8dp"
+                    tools:text="Option 1 will appear here" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnOption2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="Option 2 will appear here"
+                    android:textSize="16sp"
+                    android:textColor="@android:color/black"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    app:strokeColor="#DDDDDD"
+                    app:cornerRadius="8dp"
+                    tools:text="Option 2 will appear here" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnOption3"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="Option 3 will appear here"
+                    android:textSize="16sp"
+                    android:textColor="@android:color/black"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    app:strokeColor="#DDDDDD"
+                    app:cornerRadius="8dp"
+                    tools:text="Option 3 will appear here" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnOption4"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Option 4 will appear here"
+                    android:textSize="16sp"
+                    android:textColor="@android:color/black"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    app:strokeColor="#DDDDDD"
+                    app:cornerRadius="8dp"
+                    tools:text="Option 4 will appear here" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Matching Layout Container -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/matchingCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:text="Option 2"/>
+            android:layout_marginBottom="20dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            android:visibility="gone">
 
-        <Button
-            android:id="@+id/btnOption3"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:text="Option 3"/>
+            <LinearLayout
+                android:id="@+id/matchingLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp" />
 
-        <Button
-            android:id="@+id/btnOption4"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:text="Option 4"/>
+        </com.google.android.material.card.MaterialCardView>
 
-        <!-- Matching Question Layout -->
-        <LinearLayout
-            android:id="@+id/matchingLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingTop="8dp"
-            android:paddingBottom="16dp"/>
-
-        <!-- Submit / Next Button -->
-        <Button
+        <!-- Submit Button -->
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSubmit"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Next / Submit"
-            android:backgroundTint="#1F3A93"
-            android:textColor="#FFFFFF"
-            android:layout_marginTop="8dp"
-            android:padding="12dp"/>
+            android:text="Next Question"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:paddingVertical="14dp"
+            app:backgroundTint="#7B1113"
+            app:cornerRadius="12dp"
+            tools:text="Next Question" />
+
     </LinearLayout>
 </ScrollView>

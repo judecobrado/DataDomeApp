@@ -1,12 +1,15 @@
 package com.example.datadomeapp.teacher
 
+import android.animation.ObjectAnimator
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.animation.AlphaAnimation
 import android.view.animation.Animation
+import android.view.animation.DecelerateInterpolator
 import android.view.View
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -20,17 +23,14 @@ class RouletteActivity : AppCompatActivity() {
     private lateinit var btnSpinRoulette: Button
     private lateinit var tvRemainingCount: TextView
     private lateinit var tvStudentListDisplay: TextView
-    private lateinit var tvRemovedListDisplay: TextView // ✅ NEW: Para sa removed names list
-    private lateinit var layoutDecisionButtons: LinearLayout // ✅ NEW: Container ng decision buttons
-    private lateinit var btnRemoveWinner: Button // ✅ NEW: Remove button
-    private lateinit var btnKeepWinner: Button // ✅ NEW: Keep button
+    private lateinit var tvRemovedListDisplay: TextView
+    private lateinit var layoutDecisionButtons: LinearLayout
+    private lateinit var btnRemoveWinner: Button
+    private lateinit var btnKeepWinner: Button
+    private lateinit var rouletteWheel: ImageView
 
-    // Gagamitin natin ito para i-hold ang current winner habang naghihintay ng desisyon
     private var currentWinner: String? = null
-
-    // ✅ CRITICAL: Active list (Mutable)
     private var activeStudentNames: MutableList<String> = mutableListOf()
-    // ✅ CRITICAL: Removed list (Mutable)
     private var removedStudentNames: MutableList<String> = mutableListOf()
 
     private val handler = Handler(Looper.getMainLooper())
@@ -40,17 +40,18 @@ class RouletteActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.teacher_roulette)
 
+        // Initialize lahat ng views
         tvWinnerName = findViewById(R.id.tvWinnerName)
         btnSpinRoulette = findViewById(R.id.btnSpinRoulette)
         tvRemainingCount = findViewById(R.id.tvRemainingCount)
         tvStudentListDisplay = findViewById(R.id.tvStudentListDisplay)
-        tvRemovedListDisplay = findViewById(R.id.tvRemovedListDisplay) // I-bind
-        layoutDecisionButtons = findViewById(R.id.layoutDecisionButtons) // I-bind
-        btnRemoveWinner = findViewById(R.id.btnRemoveWinner) // I-bind
-        btnKeepWinner = findViewById(R.id.btnKeepWinner) // I-bind
+        tvRemovedListDisplay = findViewById(R.id.tvRemovedListDisplay)
+        layoutDecisionButtons = findViewById(R.id.layoutDecisionButtons)
+        btnRemoveWinner = findViewById(R.id.btnRemoveWinner)
+        btnKeepWinner = findViewById(R.id.btnKeepWinner)
+        rouletteWheel = findViewById(R.id.ivRouletteWheel)
 
-
-        // 1. Kunin ang data at i-set sa active list
+        // Kunin ang data
         val initialNames = intent.getStringArrayListExtra("STUDENT_NAMES_LIST") ?: emptyList()
         activeStudentNames.addAll(initialNames)
         val className = intent.getStringExtra("CLASS_NAME")
@@ -72,7 +73,6 @@ class RouletteActivity : AppCompatActivity() {
             spinRoulette()
         }
 
-        // 2. Set up Decision Button Listeners
         btnRemoveWinner.setOnClickListener {
             handleDecision(remove = true)
         }
@@ -82,73 +82,16 @@ class RouletteActivity : AppCompatActivity() {
         }
     }
 
-    private fun prepareSpinNames() {
-        spinNames.clear()
-        // Punan ang spinNames mula sa active list
-        if (activeStudentNames.isNotEmpty()) {
-            for (i in 0 until 50) {
-                spinNames.add(activeStudentNames.random())
-            }
-        }
-    }
-
-    private fun updateStudentDisplay() {
-        // Ipakita ang ACTIVE na pangalan
-        val activeListText = if (activeStudentNames.isEmpty()) "Wala na sa listahan." else activeStudentNames.joinToString(separator = "\n") { name ->
-            "• $name"
-        }
-        tvStudentListDisplay.text = activeListText
-
-        // Ipakita ang REMOVED na pangalan
-        val removedListText = if (removedStudentNames.isEmpty()) "Wala pang tinanggal." else removedStudentNames.joinToString(separator = "\n") { name ->
-            "• $name"
-        }
-        tvRemovedListDisplay.text = removedListText
-
-        val count = activeStudentNames.size
-        tvRemainingCount.text = "Aktibong Estudyante: $count"
-
-        if (count == 0) {
-            tvWinnerName.text = "Tapos na ang Roleta!"
-            btnSpinRoulette.isEnabled = false
-        } else if (count == 1) {
-            tvWinnerName.text = "Auto-Winner: ${activeStudentNames.first()}"
-            btnSpinRoulette.isEnabled = false
-        } else {
-            // I-reset ang display para sa susunod na ikot, kung hindi pa umiikot
-            if (layoutDecisionButtons.visibility != View.VISIBLE) {
-                tvWinnerName.text = "Handa na ba kayo? ($count)"
-                btnSpinRoulette.isEnabled = true
-            }
-        }
-    }
-
-    private fun handleDecision(remove: Boolean) {
-        val winner = currentWinner ?: return
-
-        if (remove) {
-            // Tanggalin sa active list at ilagay sa removed list
-            activeStudentNames.remove(winner)
-            removedStudentNames.add(winner)
-            Toast.makeText(this, "$winner ay tinanggal sa listahan.", Toast.LENGTH_SHORT).show()
-        } else {
-            // Panatilihin sa active list
-            Toast.makeText(this, "$winner ay nanatili sa listahan.", Toast.LENGTH_SHORT).show()
-        }
-
-        // Itago ang decision buttons at ibalik ang spin button
-        layoutDecisionButtons.visibility = View.GONE
-        updateStudentDisplay() // I-update ang listahan at count
-    }
-
-
     private fun spinRoulette() {
         if (activeStudentNames.isEmpty()) return
 
         // 1. I-disable ang button at ihanda ang display
         btnSpinRoulette.isEnabled = false
-        layoutDecisionButtons.visibility = View.GONE // Siguraduhin na nakatago
+        layoutDecisionButtons.visibility = View.GONE
         tvWinnerName.text = "UMI-IKOT..."
+
+        // ✅ Simulan ang rotation animation
+        startRouletteAnimation()
 
         // I-regenerate ang spin names
         prepareSpinNames()
@@ -159,7 +102,7 @@ class RouletteActivity : AppCompatActivity() {
         val totalSpinDuration = 3000L
         var currentSpinTime = 0L
         val updateInterval = 50L
-        currentWinner = null // I-clear ang previous winner
+        currentWinner = null
 
         // 2. Runnable para sa Spinning Visual Effect
         val spinRunnable = object : Runnable {
@@ -178,14 +121,76 @@ class RouletteActivity : AppCompatActivity() {
                     // 4. I-store ang nanalo at ipakita ang decision buttons
                     currentWinner = finalWinner
                     layoutDecisionButtons.visibility = View.VISIBLE
-
-                    // HUWAG I-ENABLE ANG SPIN BUTTON DITO. AABUTIN SA DECISION HANDLER.
                 }
             }
         }
 
         // Simulan ang simulation
         handler.post(spinRunnable)
+    }
+
+    private fun startRouletteAnimation() {
+        // Gawing 3 full rotations (1080 degrees) para mas dramatic
+        val rotation = ObjectAnimator.ofFloat(rouletteWheel, "rotation", 0f, 1080f)
+        rotation.duration = 3000 // 3 seconds para sabay sa spin duration
+        rotation.interpolator = DecelerateInterpolator() // Pabagal ng pabagal
+        rotation.start()
+    }
+
+    private fun prepareSpinNames() {
+        spinNames.clear()
+        if (activeStudentNames.isNotEmpty()) {
+            for (i in 0 until 50) {
+                spinNames.add(activeStudentNames.random())
+            }
+        }
+    }
+
+    private fun updateStudentDisplay() {
+        // I-update ang text lists
+        val activeListText = if (activeStudentNames.isEmpty()) "Wala na sa listahan." else activeStudentNames.joinToString(separator = "\n") { name ->
+            "• $name"
+        }
+        tvStudentListDisplay.text = activeListText
+
+        val removedListText = if (removedStudentNames.isEmpty()) "Wala pang tinanggal." else removedStudentNames.joinToString(separator = "\n") { name ->
+            "• $name"
+        }
+        tvRemovedListDisplay.text = removedListText
+
+
+        val count = activeStudentNames.size
+        tvRemainingCount.text = "Aktibong Estudyante: $count"
+
+        if (count == 0) {
+            tvWinnerName.text = "Tapos na ang Roleta!"
+            btnSpinRoulette.isEnabled = false
+        } else if (count == 1) {
+            tvWinnerName.text = "Auto-Winner: ${activeStudentNames.first()}"
+            btnSpinRoulette.isEnabled = false
+        } else {
+            if (layoutDecisionButtons.visibility != View.VISIBLE) {
+                tvWinnerName.text = "Handa na ba kayo? ($count)"
+                btnSpinRoulette.isEnabled = true
+            }
+        }
+    }
+
+
+
+    private fun handleDecision(remove: Boolean) {
+        val winner = currentWinner ?: return
+
+        if (remove) {
+            activeStudentNames.remove(winner)
+            removedStudentNames.add(winner)
+            Toast.makeText(this, "$winner ay tinanggal sa listahan.", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this, "$winner ay nanatili sa listahan.", Toast.LENGTH_SHORT).show()
+        }
+
+        layoutDecisionButtons.visibility = View.GONE
+        updateStudentDisplay() // Automatic na ma-u-update ang circular names dito
     }
 
     private fun showFinalAnimation(winnerName: String) {

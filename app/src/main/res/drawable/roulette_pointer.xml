@@ -1,0 +1,13 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="30dp"
+    android:height="50dp"
+    android:viewportWidth="30"
+    android:viewportHeight="50">
+
+    <!-- Pointer Triangle - MAROON -->
+    <path
+        android:fillColor="#800000"
+        android:strokeColor="#600000"
+        android:strokeWidth="1"
+        android:pathData="M15,0 L30,50 L0,50 Z" />
+</vector>

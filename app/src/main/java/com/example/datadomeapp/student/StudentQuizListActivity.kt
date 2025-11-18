@@ -29,7 +29,9 @@ data class StudentQuizItem(
     var retakeDeadline: Long = 0L,
     var rawScore: Int = 0,
     var totalQuestions: Int = 0,
-    var cheatCount: Int = 0
+    var cheatCount: Int = 0,
+    var courseCode: String = "",
+    var subjectTitle: String = ""
 )
 
 class StudentQuizListActivity : AppCompatActivity() {
@@ -239,6 +241,7 @@ class StudentQuizListActivity : AppCompatActivity() {
 
         quizItems.forEachIndexed { index, item ->
             val quizId = item.quiz.quizId
+            val assignmentId = item.quiz.assignmentId // KUNIN ANG ASSIGNMENT ID
             val isExamType = item.quiz.quizType.equals("Exam", true)
             FirebaseFirestore.getInstance().collection("quizResults")
                 .document("${quizId}_$studentUid")
@@ -279,6 +282,24 @@ class StudentQuizListActivity : AppCompatActivity() {
                 .addOnFailureListener {
                     Log.e("QuizList", "Failed to fetch status for ${quizId}: ${it.message}")
                     item.studentStatus = "FETCH_ERROR"
+                }
+                .continueWithTask { task ->
+                    // STEP 2: FETCH ASSIGNMENT DETAILS PARA SA COURSE CODE AT SUBJECT TITLE
+                    if (!assignmentId.isNullOrEmpty()) {
+                        FirebaseFirestore.getInstance().collection("classAssignments")
+                            .document(assignmentId)
+                            .get()
+                            .addOnSuccessListener { assignmentDoc ->
+                                if (assignmentDoc.exists()) {
+                                    item.courseCode = assignmentDoc.getString("subjectCode") ?: ""
+                                    item.subjectTitle = assignmentDoc.getString("subjectTitle") ?: ""
+                                }
+                            }
+                            .addOnFailureListener { e ->
+                                Log.e("QuizList", "Failed to fetch assignment details: ${e.message}")
+                            }
+                    }
+                    task
                 }
                 .addOnCompleteListener {
                     countdown--

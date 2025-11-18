@@ -1,0 +1,75 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+
+    <!-- Outer Circle - MAROON -->
+    <path
+        android:fillColor="#800000"
+        android:strokeColor="#600000"
+        android:strokeWidth="5"
+        android:pathData="M100,10 a90,90 0 1,0 0,180 a90,90 0 1,0 0,-180z" />
+
+    <!-- Inner Circle - LIGHT PINK/BEIGE (for name visibility) -->
+    <path
+        android:fillColor="#FFE4E1"
+        android:strokeColor="#800000"
+        android:strokeWidth="2"
+        android:pathData="M100,35 a65,65 0 1,0 0,130 a65,65 0 1,0 0,-130z" />
+
+    <!-- Center Dot - GOLD ACCENT -->
+    <path
+        android:fillColor="#FFD700"
+        android:pathData="M100,95 a5,5 0 1,0 0,10 a5,5 0 1,0 0,-10z" />
+
+    <!-- Spoke Lines - MAROON -->
+    <group>
+        <path
+            android:strokeColor="#800000"
+            android:strokeWidth="3"
+            android:pathData="M100,35 L100,65" />
+    </group>
+    <group android:rotation="45">
+        <path
+            android:strokeColor="#800000"
+            android:strokeWidth="3"
+            android:pathData="M100,35 L100,65" />
+    </group>
+    <group android:rotation="90">
+        <path
+            android:strokeColor="#800000"
+            android:strokeWidth="3"
+            android:pathData="M100,35 L100,65" />
+    </group>
+    <group android:rotation="135">
+        <path
+            android:strokeColor="#800000"
+            android:strokeWidth="3"
+            android:pathData="M100,35 L100,65" />
+    </group>
+    <group android:rotation="180">
+        <path
+            android:strokeColor="#800000"
+            android:strokeWidth="3"
+            android:pathData="M100,35 L100,65" />
+    </group>
+    <group android:rotation="225">
+        <path
+            android:strokeColor="#800000"
+            android:strokeWidth="3"
+            android:pathData="M100,35 L100,65" />
+    </group>
+    <group android:rotation="270">
+        <path
+            android:strokeColor="#800000"
+            android:strokeWidth="3"
+            android:pathData="M100,35 L100,65" />
+    </group>
+    <group android:rotation="315">
+        <path
+            android:strokeColor="#800000"
+            android:strokeWidth="3"
+            android:pathData="M100,35 L100,65" />
+    </group>
+</vector>
