@@ -1,98 +1,255 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
+    android:background="#FFFBF5"
+    android:padding="20dp"
     tools:context=".teacher.ClassDetailsActivity">
 
-    <TextView
-        android:id="@+id/tvClassNameHeader"
+    <!-- Header Card -->
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Class Name: Loading..."
-        android:textSize="22sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="10dp"/>
+        app:cardCornerRadius="16dp"
+        app:cardElevation="4dp"
+        android:layout_marginBottom="20dp">
 
-    <TextView
-        android:id="@+id/tvLoading"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <!-- Class Name -->
+            <TextView
+                android:id="@+id/tvClassNameHeader"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Advanced Mobile Development - BSIT-4A"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="#800000"
+                android:maxLines="2"
+                android:ellipsize="end"
+                android:layout_marginBottom="8dp"/>
+
+            <!-- Subject Code -->
+            <TextView
+                android:id="@+id/tvSubjectCode"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="CS-ELECTIVE • 35 Students"
+                android:textSize="14sp"
+                android:textColor="#666666"
+                android:layout_marginBottom="16dp"/>
+
+            <!-- Loading/Status -->
+            <TextView
+                android:id="@+id/tvLoading"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="📊 Loading student roster..."
+                android:textSize="14sp"
+                android:textColor="#666666"
+                android:visibility="visible"/>
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Quick Actions Card -->
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Loading class list..."
-        android:layout_marginBottom="16dp"/>
+        app:cardCornerRadius="16dp"
+        app:cardElevation="2dp"
+        android:layout_marginBottom="20dp">
 
-    <LinearLayout
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <!-- Section Title -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Class Management"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#212121"
+                android:layout_marginBottom="16px"/>
+
+            <!-- First Row of Buttons -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="12dp">
+
+                <!-- Manage Quiz Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCreateQuiz"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    android:text="Quizzes"
+                    android:textSize="14sp"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    app:strokeColor="#800000"
+                    app:strokeWidth="1dp"
+                    app:icon="@drawable/ic_quiz"
+                    app:iconGravity="textStart"
+                    app:iconPadding="4dp"
+                    app:cornerRadius="12dp"
+                    android:textColor="#800000"/>
+
+                <!-- Manage Assessment Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCreateAssignment"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:text="Assessments"
+                    android:textSize="14sp"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    app:strokeColor="#800000"
+                    app:strokeWidth="1dp"
+                    app:icon="@drawable/ic_assignment"
+                    app:iconGravity="textStart"
+                    app:iconPadding="4dp"
+                    app:cornerRadius="12dp"
+                    android:textColor="#800000"/>
+
+            </LinearLayout>
+
+            <!-- Second Row of Buttons -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
+
+                <!-- Attendance Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnTakeAttendance"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    android:text="Attendance"
+                    android:textSize="14sp"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    app:strokeColor="#800000"
+                    app:strokeWidth="1dp"
+                    app:icon="@drawable/ic_attendance"
+                    app:iconGravity="textStart"
+                    app:iconPadding="4dp"
+                    app:cornerRadius="12dp"
+                    android:textColor="#800000"/>
+
+                <!-- Manage Grades Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnManageGrades"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    android:text="Grades"
+                    android:textSize="14sp"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    app:strokeColor="#800000"
+                    app:strokeWidth="1dp"
+                    app:icon="@drawable/ic_grades"
+                    app:iconGravity="textStart"
+                    app:iconPadding="4dp"
+                    app:cornerRadius="12dp"
+                    android:textColor="#800000"/>
+
+                <!-- Roulette Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnStartRoulette"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:text="Roulette"
+                    android:textSize="14sp"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    app:strokeColor="#800000"
+                    app:strokeWidth="1dp"
+                    app:icon="@drawable/ic_roulette"
+                    app:iconGravity="textStart"
+                    app:iconPadding="4dp"
+                    app:cornerRadius="12dp"
+                    android:textColor="#800000"/>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Students List Card -->
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:layout_marginBottom="16dp">
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="2dp">
 
-        <Button
-            android:id="@+id/btnCreateQuiz"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Manage Quiz"
-            android:layout_marginEnd="8dp"/>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
 
-        <Button
-            android:id="@+id/btnCreateAssignment"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Manage Assessment"/>
-    </LinearLayout>
+            <!-- Students Header -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="20dp">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="16dp"
-        android:gravity="center">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Enrolled Students"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#212121"/>
 
-        <Button
-            android:id="@+id/btnTakeAttendance"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginEnd="8dp"
-            android:text="Attendance"
-            android:textSize="14sp"/>
+                <!-- Student Count Badge -->
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipStudentCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="35 students"
+                    app:chipBackgroundColor="#E8F5E9"
+                    app:chipStrokeColor="#2E7D32"
+                    app:chipStrokeWidth="1dp"
+                    android:textColor="#2E7D32"
+                    android:textSize="12sp"/>
 
-        <Button
-            android:id="@+id/btnManageGrades"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginEnd="8dp" android:text="Manage Grades"
-            android:textSize="14sp"/>
+            </LinearLayout>
 
-        <Button
-            android:id="@+id/btnStartRoulette"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Roleta"
-            android:textSize="14sp"/>
+            <!-- Students List -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerViewStudents"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:clipToPadding="false"
+                android:padding="8px"/>
 
+        </LinearLayout>
 
-    </LinearLayout>
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Enrolled Students:"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="8dp"/>
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerViewStudents"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-
+    </com.google.android.material.card.MaterialCardView>
 
 </LinearLayout>

@@ -6,44 +6,132 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
+    android:background="#FFFBF5"
+    android:padding="24dp"
     tools:context=".teacher.ManageGradesActivity">
 
-    <TextView
-        android:id="@+id/tvGradesHeader"
+    <!-- Header Card -->
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Manage Grades"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:layout_marginBottom="32dp"/>
+        app:cardCornerRadius="16dp"
+        app:cardElevation="4dp"
+        android:layout_marginBottom="32dp">
 
-    <Button
-        android:id="@+id/btnPrelim"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="📝 Prelim Grades"
-        android:layout_marginBottom="16dp"
-        android:padding="12dp"
-        android:textSize="18sp"/>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp"
+            android:gravity="center">
 
-    <Button
-        android:id="@+id/btnMidterm"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="📚 Midterm Grades"
-        android:layout_marginBottom="16dp"
-        android:padding="12dp"
-        android:textSize="18sp"/>
+            <TextView
+                android:id="@+id/tvGradesHeader"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Manage Grades"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:textColor="#800000"
+                android:layout_marginBottom="8dp"/>
 
-    <Button
-        android:id="@+id/btnFinals"
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Select grading period to manage"
+                android:textSize="14sp"
+                android:gravity="center"
+                android:textColor="#666666"/>
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Prelim Grades Card -->
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="🎓 Finals Grades"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="2dp"
         android:layout_marginBottom="16dp"
-        android:padding="12dp"
-        android:textSize="18sp"/>
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPrelim"
+            android:layout_width="match_parent"
+            android:layout_height="72dp"
+            android:text="Prelim Grades"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            style="@style/Widget.Material3.Button"
+            app:backgroundTint="#800000"
+            app:cornerRadius="16dp"
+            app:icon="@drawable/ic_prelim"
+            app:iconGravity="textStart"
+            app:iconPadding="12dp"
+            android:gravity="center_vertical|start"
+            android:paddingStart="24dp"/>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Midterm Grades Card -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="2dp"
+        android:layout_marginBottom="16dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnMidterm"
+            android:layout_width="match_parent"
+            android:layout_height="72dp"
+            android:text="Midterm Grades"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            style="@style/Widget.Material3.Button"
+            app:backgroundTint="#800000"
+            app:cornerRadius="16dp"
+            app:icon="@drawable/ic_midterm"
+            app:iconGravity="textStart"
+            app:iconPadding="12dp"
+            android:gravity="center_vertical|start"
+            android:paddingStart="24dp"/>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Finals Grades Card -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="2dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnFinals"
+            android:layout_width="match_parent"
+            android:layout_height="72dp"
+            android:text="Finals Grades"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            style="@style/Widget.Material3.Button"
+            app:backgroundTint="#800000"
+            app:cornerRadius="16dp"
+            app:icon="@drawable/ic_finals"
+            app:iconGravity="textStart"
+            app:iconPadding="12dp"
+            android:gravity="center_vertical|start"
+            android:paddingStart="24dp"/>
+
+    </com.google.android.material.card.MaterialCardView>
 
 </LinearLayout>
