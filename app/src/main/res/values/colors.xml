@@ -24,7 +24,12 @@
     <color name="gold_primary">#CA8A04</color>
     <color name="gold_secondary">#FACC15</color>
     <color name="gold_light">#FEF9C3</color>
+    <color name="green">#4CAF50</color>
+    <color name="blue">#2196F3</color>
+    <color name="red">#F44336</color>
+    <color name="gray">#9E9E9E</color>
 
+    <color name="gray_very_light">#FAFAFA</color>
     <!-- Extra Accents -->
     <color name="gray_text">#374151</color>
     <color name="divider_blue">#1E40AF</color>
