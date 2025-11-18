@@ -1,6 +1,7 @@
 package com.example.datadomeapp.student
 
 import android.app.Application
+import android.content.Context
 import android.os.CountDownTimer
 import android.os.Handler
 import android.os.Looper
@@ -39,9 +40,54 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
     private val cheatCooldown = 500L
     private val _cheatCount = MutableLiveData(0)
     val cheatCount: LiveData<Int> = _cheatCount
+    private val _questionCounter = MutableLiveData<String>()
+    val questionCounter: LiveData<String> = _questionCounter
 
+    private val totalQuestions = initialQuiz.questions.size
     private val _uiMessage = MutableLiveData<String>()
     val uiMessage: LiveData<String> = _uiMessage
+
+    // --- Quiz Finished Flag ---
+    private var quizFinished = false
+
+    // --- Persistence ---
+    private val prefs = application.getSharedPreferences("quiz_progress", Context.MODE_PRIVATE)
+
+    private var persistedCheatCount: Int
+        get() = prefs.getInt("cheat_count_${initialQuiz.quizId}", 0)
+        set(value) = prefs.edit().putInt("cheat_count_${initialQuiz.quizId}", value).apply()
+
+    private fun updateQuestionCounter() {
+        val currentIndex = _currentQuestionIndex.value ?: 0
+        _questionCounter.value = "Q: ${currentIndex + 1}/$totalQuestions"
+    }
+
+    private var persistedCurrentQuestion: Int
+        get() = prefs.getInt("current_question_${initialQuiz.quizId}", 0)
+        set(value) = prefs.edit().putInt("current_question_${initialQuiz.quizId}", value).apply()
+
+    private var persistedAnswers: Map<Int, String>
+        get() {
+            val answersString = prefs.getString("answers_${initialQuiz.quizId}", "") ?: ""
+            return if (answersString.isNotEmpty()) {
+                answersString.split(";").associate {
+                    val parts = it.split("=")
+                    parts[0].toInt() to parts[1]
+                }
+            } else {
+                emptyMap()
+            }
+        }
+        set(value) {
+            val answersString = value.entries.joinToString(";") { "${it.key}=${it.value}" }
+            prefs.edit().putString("answers_${initialQuiz.quizId}", answersString).apply()
+        }
+
+    private var persistedStartTime: Long
+        get() = prefs.getLong("start_time_${initialQuiz.quizId}", 0L)
+        set(value) = prefs.edit().putLong("start_time_${initialQuiz.quizId}", value).apply()
+
+    private var isQuizRestored = false
 
     // --- Internal State ---
     private var mutableQuestions = initialQuiz.questions.toMutableList()
@@ -55,17 +101,78 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
     private val cheatLogList = mutableListOf<String>()
     private var submitAttempts = 0
 
-    // CRITICAL FIX 1: I-set ang default value ng serverEndTime sa orihinal na deadline
+    // Auto-save handler
+    private val autoSaveHandler = Handler(Looper.getMainLooper())
+    private val autoSaveRunnable = object : Runnable {
+        override fun run() {
+            if (!quizFinished) {
+                // Auto-save current progress
+                persistedCurrentQuestion = _currentQuestionIndex.value ?: 0
+                persistedCheatCount = _cheatCount.value ?: 0
+                persistedAnswers = studentAnswers.associate { it.first to it.second }
+            }
+            autoSaveHandler.postDelayed(this, 30000) // Save every 30 seconds
+        }
+    }
+
     private var serverEndTime: Long = initialQuiz.scheduledEndDateTime
 
     private val _serverTime = MutableLiveData<Long>()
     val serverTime: LiveData<Long> = _serverTime
 
     init {
-        // Shuffling done once when the ViewModel is created
+        // Restore previous state first
+        restoreQuizState()
+        // Then shuffle questions
         shuffleQuestionsAndAnswers()
         setupRetakeStatusListener()
+        // Start auto-save
+        autoSaveHandler.postDelayed(autoSaveRunnable, 30000)
+        updateQuestionCounter()
     }
+
+    fun saveCurrentState() {
+        // I-save ang current state sa SharedPreferences
+        persistedCheatCount = _cheatCount.value ?: 0
+        persistedCurrentQuestion = _currentQuestionIndex.value ?: 0
+        persistedAnswers = studentAnswers.associate { it.first to it.second }
+
+        // Kung may start time na, i-save rin
+        if (persistedStartTime == 0L) {
+            persistedStartTime = System.currentTimeMillis()
+        }
+
+    }
+
+    private fun restoreQuizState() {
+        val savedCheatCount = persistedCheatCount
+        val savedCurrentQuestion = persistedCurrentQuestion
+        val savedAnswers = persistedAnswers
+        val savedStartTime = persistedStartTime
+
+
+        if (savedStartTime > 0L) {
+            _cheatCount.value = savedCheatCount
+            _currentQuestionIndex.value = savedCurrentQuestion
+            studentAnswers.clear()
+            studentAnswers.addAll(savedAnswers.map { it.key to it.value })
+
+            if (savedCurrentQuestion < mutableQuestions.size) {
+                _currentQuestion.value = mutableQuestions[savedCurrentQuestion]
+            }
+
+            isQuizRestored = true
+            _uiMessage.value = "Quiz progress restored from previous session"
+        }
+        if (savedCurrentQuestion < mutableQuestions.size) {
+            _currentQuestion.value = mutableQuestions[savedCurrentQuestion]
+        }
+
+        updateQuestionCounter() // 🆕 Update counter after restoration
+        isQuizRestored = true
+        _uiMessage.value = "Quiz progress restored from previous session"
+    }
+
 
     private fun setupRetakeStatusListener() {
         val studentId = auth.currentUser?.uid ?: return
@@ -211,10 +318,7 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
             if (snapshot != null && snapshot.exists()) {
                 val serverTs = snapshot.getTimestamp("ts")?.toDate()?.time
                 if (serverTs != null) {
-                    // CRITICAL FIX 3: Inalis ang 'serverEndTime = initialQuiz.scheduledEndDateTime' dito.
-                    _serverTime.value = serverTs
 
-                    // Tawagin ang updateTimer mula dito, tuwing may pagbabago sa server time
                     updateTimer(serverTs)
 
                     if (!isTicking) {
@@ -230,12 +334,12 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
         }
     }
 
-
     override fun onCleared() {
         super.onCleared()
         serverTimeListenerRegistration?.remove()
         quizResultListenerRegistration?.remove()
         handler.removeCallbacks(tickRunnable)
+        autoSaveHandler.removeCallbacks(autoSaveRunnable)
     }
 
     fun updateTimer(currentServerTime: Long) {
@@ -286,6 +390,11 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
         val quizId = quiz.quizId
         val totalItems = calculateTotalMaxPoints()
 
+        // Only set start time if this is a new attempt, not a restoration
+        if (!isQuizRestored) {
+            persistedStartTime = System.currentTimeMillis()
+        }
+
         // Gumawa ng initial record na may "IN_PROGRESS" status para makita ng guro sa real-time.
         firestore.collection("quizResults").document("${quizId}_$studentUid")
             .set(
@@ -294,22 +403,26 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
                     "quizId" to quizId,
                     "assignmentId" to quiz.assignmentId,
                     "status" to "IN_PROGRESS",
-                    "cheatCount" to 0,
+                    "cheatCount" to persistedCheatCount, // Use persisted value
                     "attemptCount" to 1,
-                    "startTime" to System.currentTimeMillis()
+                    "startTime" to persistedStartTime, // Use persisted value
+                    "isRestored" to isQuizRestored
                 ),
                 SetOptions.merge()
             ).addOnFailureListener {
                 _uiMessage.value = "Error starting quiz tracking: ${it.message}"
             }
-    }
 
-    // --- User Interaction and Navigation ---
+        isQuizRestored = false
+    }
 
     fun recordAnswer(questionIndex: Int, answer: String) {
         val existingIndex = studentAnswers.indexOfFirst { it.first == questionIndex }
         if (existingIndex >= 0) studentAnswers[existingIndex] = questionIndex to answer
         else studentAnswers.add(questionIndex to answer)
+
+        // Persist answers immediately
+        persistedAnswers = studentAnswers.associate { it.first to it.second }
         _uiMessage.value = "Answer recorded."
     }
 
@@ -324,7 +437,9 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
         val nextIndex = currentIndex + 1
         if (nextIndex < mutableQuestions.size) {
             _currentQuestionIndex.value = nextIndex
+            persistedCurrentQuestion = nextIndex // Persist current question
             _currentQuestion.value = mutableQuestions[nextIndex]
+            updateQuestionCounter()
         } else {
             submitQuiz()
         }
@@ -332,15 +447,24 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
 
     fun resetQuizProgress(keepCheatCount: Boolean = false) {
         _currentQuestionIndex.value = 0
+        persistedCurrentQuestion = 0
         _currentQuestion.value = mutableQuestions.firstOrNull()
         studentAnswers.clear()
-        if (!keepCheatCount) _cheatCount.value = 0
+        persistedAnswers = emptyMap()
+
+        updateQuestionCounter()
+
+            if (!keepCheatCount) {
+            _cheatCount.value = 0
+            persistedCheatCount = 0
+            cheatLogList.clear()
+        }
 
         submitAttempts = 0
-
         _quizResultData.value = null
+        persistedStartTime = 0L
+        quizFinished = false
 
-        // ⭐ BAGONG PAGBABAGO: I-stop ang timer at i-reset ang display
         _timerText.value = "00:00"
         handler.removeCallbacks(tickRunnable)
         isTicking = false
@@ -367,26 +491,45 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
         val currentCount = _cheatCount.value ?: 0
         val newCount = currentCount + 1
         _cheatCount.value = newCount
+        persistedCheatCount = newCount // Persist cheat count
+
         val timestamp = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date(currentTime))
         val logEntry = "[$timestamp] ${reason} (Q:${_currentQuestionIndex.value})"
-
         cheatLogList.add(logEntry)
 
         _uiMessage.value = "Cheating detected: $reason (Attempt $newCount/$maxCheatAttempts)"
-
         _isCheating.value = true
 
         if (newCount >= maxCheatAttempts) {
             _uiMessage.value = "Maximum cheat attempts reached. Auto-submit = 0"
             submitQuiz()
         } else {
-            // Reset quiz progress (questions back to 1) WITHOUT resetting cheat count
-            resetQuizProgress(keepCheatCount = true)
+            resetToQuestionOne()
         }
+    }
+
+    private fun resetToQuestionOne() {
+        _currentQuestionIndex.value = 0
+        persistedCurrentQuestion = 0
+        _currentQuestion.value = mutableQuestions.firstOrNull()
+        studentAnswers.clear()
+        persistedAnswers = emptyMap()
+        updateQuestionCounter()
+        _uiMessage.value = "Quiz reset to Question 1 due to cheating"
     }
 
     fun getRecordedAnswer(questionIndex: Int): String? {
         return studentAnswers.find { it.first == questionIndex }?.second
+    }
+
+    // 🆕 NEW FUNCTION: Check if quiz time has expired
+    fun isQuizTimeExpired(): Boolean {
+        return System.currentTimeMillis() >= serverEndTime
+    }
+
+    // 🆕 NEW FUNCTION: Force auto-submit
+    fun forceAutoSubmit() {
+        handleTimeExpired()
     }
 
     private fun calculateScore(): Int {
@@ -452,9 +595,7 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
                     totalPoints += 1
                 }
                 is Question.Matching -> {
-                    // ⭐️ FIX: Matching: Points ay ang bilang ng matches/options.
-                    val matchesCount = q.matches.size
-                    totalPoints += matchesCount
+                    totalPoints += q.matches.size
                 }
                 else -> {
                     // Default to 1 point for other types, to be safe
@@ -465,7 +606,18 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
         return totalPoints
     }
 
+    private fun clearPersistedState() {
+        val editor = prefs.edit()
+        editor.remove("cheat_count_${initialQuiz.quizId}")
+        editor.remove("current_question_${initialQuiz.quizId}")
+        editor.remove("answers_${initialQuiz.quizId}")
+        editor.remove("start_time_${initialQuiz.quizId}")
+        editor.apply()
+    }
+
     fun submitQuiz() {
+        quizFinished = true // Mark quiz as finished
+
         val studentUid = auth.currentUser?.uid ?: "unknown"
         val rawScore = calculateScore()
         val totalQuestions = calculateTotalMaxPoints()
@@ -484,12 +636,13 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
         serverTimeListenerRegistration?.remove()
         quizResultListenerRegistration?.remove()
         handler.removeCallbacks(tickRunnable)
+        autoSaveHandler.removeCallbacks(autoSaveRunnable)
         isTicking = false
-
 
         if (submitAttempts >= 3) {
             _uiMessage.value = "Failed to submit quiz after multiple attempts."
             _quizResultData.value = QuizResultData(finalScore, totalQuestions, cheatCount)
+            clearPersistedState() // Clear state even on failure
             return
         }
         submitAttempts++
@@ -521,6 +674,7 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
                     .addOnSuccessListener {
                         _uiMessage.value = "Quiz submitted! Score: $finalScore"
                         _quizResultData.value = QuizResultData(finalScore, totalQuestions, cheatCount)
+                        clearPersistedState() // Clear persisted state after successful submission
                     }
                     .addOnFailureListener {
                         _uiMessage.value = "Failed to submit quiz. Retrying..."

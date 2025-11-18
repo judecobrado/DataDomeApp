@@ -318,7 +318,7 @@ class StudentDashboardActivity : AppCompatActivity() {
         // Subjects Button
         findViewById<Button>(R.id.btnSubjects).setOnClickListener {
             if (studentId.isNullOrEmpty()) {
-                Toast.makeText(this, "Student ID is missing. Cannot load subjects.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Check your internet connection.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             val intent = Intent(this, StudentSubjectsActivity::class.java)
@@ -328,7 +328,7 @@ class StudentDashboardActivity : AppCompatActivity() {
 
         findViewById<Button>(R.id.btnGrades).setOnClickListener {
             if (studentId.isNullOrEmpty()) {
-                Toast.makeText(this, "Student ID is missing. Cannot load grades.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Check your internet connection.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
@@ -340,7 +340,7 @@ class StudentDashboardActivity : AppCompatActivity() {
         // I-set up ang mga button na may "Coming Soon" Toast
         findViewById<Button>(R.id.btnQuizzes).setOnClickListener {
             if (studentId.isNullOrEmpty()) {
-                Toast.makeText(this, "Student ID is missing. Cannot load quizzes.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Check your internet connection.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
@@ -367,7 +367,7 @@ class StudentDashboardActivity : AppCompatActivity() {
             if (studentId.isNullOrEmpty()) {
                 Toast.makeText(
                     this,
-                    "Student ID is missing. Cannot load exams.",
+                    "Check your internet connection.",
                     Toast.LENGTH_SHORT
                 ).show()
                 return@setOnClickListener
@@ -380,7 +380,7 @@ class StudentDashboardActivity : AppCompatActivity() {
 
         findViewById<Button>(R.id.btnAttendance).setOnClickListener {
             if (studentId.isNullOrEmpty()) {
-                Toast.makeText(this, "Student ID is missing. Cannot load attendance.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Check your internet connection.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
@@ -392,7 +392,7 @@ class StudentDashboardActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnOnlineClasses).setOnClickListener {
             // 1. Check for the Student ID
             if (studentId.isNullOrEmpty()) {
-                Toast.makeText(this, "Student ID is missing. Cannot load online classes.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Check your internet connection.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
@@ -405,7 +405,7 @@ class StudentDashboardActivity : AppCompatActivity() {
         // Full Schedule Button
         findViewById<Button>(R.id.btnSchedule).setOnClickListener {
             if (studentId.isNullOrEmpty()) {
-                Toast.makeText(this, "Student ID is missing. Cannot load full schedule.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Check your internet connection.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 

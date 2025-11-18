@@ -62,7 +62,6 @@ class StudentSubjectsActivity : AppCompatActivity() {
         rvSubjects.adapter = subjectAdapter
 
         // I-set ang initial loading state
-        tvEmpty.text = "Loading subjects..."
     }
 
     private fun loadStudentSubjects() {

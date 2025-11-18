@@ -65,20 +65,20 @@ class QuizResultActivity : AppCompatActivity() {
 
         // --- Display Results ---
 
-        binding.tvFinalScore.text = "Raw Score: $rawScore / $totalQuestions"
-        binding.tvPercentage.text = String.format("Transmuted Grade: %.2f", percentage)
+        binding.tvFinalScore.text = "$rawScore / $totalQuestions"
+        binding.tvPercentage.text = String.format("%.2f", percentage) + "%"
         binding.tvCheatCount.text = "Cheat Attempts: $cheatCount"
 
         // Display the Pass/Fail Status
         if (isPassed) {
-            binding.tvStatus.text = "Status: PASSED ✅ (Grade $\\ge$ ${requiredPassingScore}%)"
+            binding.tvStatus.text = "Status: PASSED"
             binding.tvStatus.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_dark))
         } else {
             // Determine reason for failure for display
             val failureReasonText = when (failureCategory) {
-                "CHEATING_FAIL" -> "FAILED ❌ (Max cheats reached, Grade set to 50)"
-                "SCORE_FAIL" -> "FAILED ❌ (Grade $<$ ${requiredPassingScore}%)"
-                else -> "FAILED ❌"
+                "CHEATING_FAIL" -> "FAILED (Max cheats reached)"
+                "SCORE_FAIL" -> "FAILED (Grade $<$ ${requiredPassingScore}%)"
+                else -> "FAILED "
             }
 
             binding.tvStatus.text = "Status: $failureReasonText"
@@ -96,23 +96,19 @@ class QuizResultActivity : AppCompatActivity() {
         // --- DYNAMIC BUTTON LOGIC (Added) ---
         when {
             isPassed -> {
-                binding.btnFinish.text = "Go to Dashboard 🏠"
-                binding.btnFinish.setBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary))
+                binding.btnFinish.text = "Go to Dashboard"
                 binding.btnFinish.setOnClickListener { navigateToDashboard() }
             }
             failureCategory == "SCORE_FAIL" -> {
-                binding.btnFinish.text = "View Reviewer 📖"
-                binding.btnFinish.setBackgroundColor(ContextCompat.getColor(this, R.color.colorAccent))
-                binding.btnFinish.setOnClickListener { navigateToReviewer(quizId) }
+                binding.btnFinish.text = "Go to Dashboard"
+                binding.btnFinish.setOnClickListener { navigateToDashboard() }
             }
             failureCategory == "CHEATING_FAIL" -> {
-                binding.btnFinish.text = "Contact Teacher 📧"
-                binding.btnFinish.setBackgroundColor(ContextCompat.getColor(this, android.R.color.holo_red_dark))
-                binding.btnFinish.setOnClickListener { contactTeacher() }
+                binding.btnFinish.text = "Go to Dashboard"
+                binding.btnFinish.setOnClickListener { navigateToDashboard() }
             }
             else -> {
-                binding.btnFinish.text = "Go to Dashboard 🏠"
-                binding.btnFinish.setBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary))
+                binding.btnFinish.text = "Go to Dashboard"
                 binding.btnFinish.setOnClickListener { navigateToDashboard() }
             }
         }
