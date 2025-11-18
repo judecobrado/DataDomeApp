@@ -16,9 +16,9 @@ data class Submission(
     var gradedAt: Long? = null,
     var classId: String = "",
     // 🆕 Submission status
-    var status: String = "pending", // pending, submitted, late, excused
+    var status: String = "pending", // pending, submitted, graded
     var isResubmitted: Boolean = false,
-    var academicTerm: String? = null,  // new
-    var academicYear: String? = null,  // new
+    var academicTerm: String? = null,
+    var academicYear: String? = null,
     var semester: String? = null
 ) : Parcelable

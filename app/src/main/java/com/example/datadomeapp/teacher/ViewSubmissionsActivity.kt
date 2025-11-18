@@ -22,7 +22,7 @@ class ViewSubmissionsActivity : AppCompatActivity() {
     private lateinit var lv: ListView
     private val submissions = mutableListOf<Submission>()
     private lateinit var adapter: ArrayAdapter<String>
-    private var classId: String? = null  // Changed from assignmentId to classId
+    private var classId: String? = null
     private var className: String? = null
     private var assignmentId: String? = null
     private var assignmentTitle: String? = null
@@ -43,10 +43,8 @@ class ViewSubmissionsActivity : AppCompatActivity() {
         tvSubmissionCount = findViewById(R.id.tvSubmissionCount)
         progressBar = findViewById(R.id.progressBar)
 
-        // FIX: This is actually a CLASS ID, not assignment ID
         classId = intent.getStringExtra("assignmentId")
         className = intent.getStringExtra("assignmentTitle")
-
         assignmentId = intent.getStringExtra("ASSIGNMENT_ID")
         assignmentTitle = intent.getStringExtra("ASSIGNMENT_TITLE")
 
@@ -83,9 +81,8 @@ class ViewSubmissionsActivity : AppCompatActivity() {
 
         Log.d("SUBMISSIONS_DEBUG", "🔍 Finding submissions for single assignment: $id")
 
-        // Direct query: No need to find all assignments first.
         firestore.collection("submissions")
-            .whereEqualTo("assignmentId", id) // Query submissions by the single assignment ID
+            .whereEqualTo("assignmentId", id)
             .get()
             .addOnSuccessListener { submissionsSnapshot ->
                 runOnUiThread {
@@ -96,46 +93,6 @@ class ViewSubmissionsActivity : AppCompatActivity() {
                     if (submissionsSnapshot.documents.isEmpty()) {
                         tvEmpty.text = "No submissions found for this assignment."
                         tvSubmissionCount.text = "0 submissions"
-                        return@runOnUiThread
-                    }
-
-                    processSubmissions(submissionsSnapshot.documents)
-                }
-            }
-            .addOnFailureListener { e ->
-                runOnUiThread {
-                    progressBar.visibility = View.GONE
-                    Log.e("SUBMISSIONS_DEBUG", "❌ Failed to load submissions: ${e.message}")
-                    tvEmpty.text = "Error loading submissions: ${e.message}"
-                }
-            }
-    }
-
-    private fun loadSubmissionsForAssignments(assignmentIds: List<String>) {
-        if (assignmentIds.isEmpty()) {
-            runOnUiThread {
-                progressBar.visibility = View.GONE
-                tvEmpty.text = "No assignments found."
-                return@runOnUiThread
-            }
-        }
-
-        Log.d("SUBMISSIONS_DEBUG", "🔍 Step 2: Finding submissions for ${assignmentIds.size} assignments")
-
-        // Query submissions for ANY of these assignment IDs
-        firestore.collection("submissions")
-            .whereIn("assignmentId", assignmentIds)
-            .get()
-            .addOnSuccessListener { submissionsSnapshot ->
-                runOnUiThread {
-                    progressBar.visibility = View.GONE
-
-                    Log.d("SUBMISSIONS_DEBUG", "✅ Found ${submissionsSnapshot.documents.size} submissions total")
-
-                    if (submissionsSnapshot.documents.isEmpty()) {
-                        tvEmpty.text = "No submissions found for any assignments in this class."
-                        tvSubmissionCount.text = "0 submissions"
-                        Toast.makeText(this, "No submissions found for this class", Toast.LENGTH_LONG).show()
                         return@runOnUiThread
                     }
 
@@ -173,7 +130,6 @@ class ViewSubmissionsActivity : AppCompatActivity() {
                     displayList.add("Student: Loading...\nAssignment: ${submission.assignmentId}\nStatus: ${getStatusText(submission)}")
                 } else {
                     Log.e("SUBMISSIONS_DEBUG", "   ❌ Failed to convert to Submission object")
-                    // Manual fallback
                     val assignmentId = doc.getString("assignmentId") ?: "Unknown"
                     val studentId = doc.getString("studentId") ?: "Unknown"
                     displayList.add("Student: $studentId\nAssignment: $assignmentId\n❌ Data conversion failed")
@@ -198,19 +154,23 @@ class ViewSubmissionsActivity : AppCompatActivity() {
             Log.d("SUBMISSIONS_DEBUG", "❌ FINAL: No submissions processed")
         } else {
             tvEmpty.text = ""
-            tvSubmissionCount.text = "${submissions.size} submission(s)"
-            Log.d("SUBMISSIONS_DEBUG", "✅ FINAL: Successfully loaded ${submissions.size} submissions")
 
-            // Load student names and assignment details for better display
+            // Count only actual submissions (with files and submittedAt > 0)
+            val actualSubmissionsCount = submissions.count {
+                it.submittedAt > 0 && !it.fileUrl.isNullOrEmpty()
+            }
+            tvSubmissionCount.text = "$actualSubmissionsCount submission(s)"
+
+            Log.d("SUBMISSIONS_DEBUG", "✅ FINAL: Successfully loaded ${submissions.size} submissions ($actualSubmissionsCount actual)")
+
             loadStudentAndAssignmentDetails()
         }
     }
 
     private fun loadStudentAndAssignmentDetails() {
         val studentIds = submissions.map { it.studentId }.distinct()
-        val assignmentIds = submissions.map { it.assignmentId }.distinct()
 
-        Log.d("SUBMISSIONS_DEBUG", "👤 Loading details for ${studentIds.size} students and ${assignmentIds.size} assignments")
+        Log.d("SUBMISSIONS_DEBUG", "👤 Loading details for ${studentIds.size} students")
 
         // Load student names
         studentIds.forEach { studentId ->
@@ -225,8 +185,6 @@ class ViewSubmissionsActivity : AppCompatActivity() {
                     updateSubmissionDisplayWithDetails()
                 }
         }
-
-        // You could also load assignment titles here if needed
     }
 
     private fun updateSubmissionDisplayWithDetails() {
@@ -238,17 +196,21 @@ class ViewSubmissionsActivity : AppCompatActivity() {
             val submittedDate = if (submission.submittedAt > 0) {
                 sdf.format(Date(submission.submittedAt))
             } else {
-                "Not submitted"
+                "Not submitted yet"
             }
 
             val displayText = buildString {
                 append("👤 $studentName\n")
-                append("📝 Assignment: ${submission.assignmentId}\n")
+                append("📝 Assignment: ${assignmentTitle ?: submission.assignmentId}\n")
                 append("📅 Submitted: $submittedDate\n")
                 append("${getStatusText(submission)}")
 
                 if (!submission.fileUrl.isNullOrEmpty()) {
                     append("\n📎 File submitted")
+                }
+
+                if (submission.isResubmitted) {
+                    append("\n🔄 Resubmission")
                 }
             }
 
@@ -265,8 +227,9 @@ class ViewSubmissionsActivity : AppCompatActivity() {
     private fun getStatusText(submission: Submission): String {
         return when {
             submission.grade != null -> "📊 Graded: ${submission.grade}/100"
-            submission.submittedAt > 0 -> "✅ Submitted - Awaiting Grade"
-            else -> "❌ Not submitted"
+            submission.submittedAt > 0 && !submission.fileUrl.isNullOrEmpty() -> "✅ Submitted - Awaiting Grade"
+            submission.submittedAt > 0 && submission.fileUrl.isNullOrEmpty() -> "⚠️ Submitted (No file)"
+            else -> "⏳ Waiting for student to submit"
         }
     }
 
@@ -287,7 +250,7 @@ class ViewSubmissionsActivity : AppCompatActivity() {
         val submittedDate = if (sub.submittedAt > 0) {
             sdf.format(Date(sub.submittedAt))
         } else {
-            "Not submitted"
+            "Not submitted yet"
         }
         tvSubmittedDate.text = "Submitted: $submittedDate"
 
@@ -300,29 +263,35 @@ class ViewSubmissionsActivity : AppCompatActivity() {
         etGrade.setText(sub.grade?.toString() ?: "")
         etFeedback.setText(sub.feedback ?: "")
 
-        btnOpenFile.setOnClickListener {
-            val url = sub.fileUrl
-            if (!url.isNullOrEmpty()) {
-                try {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                    startActivity(intent)
-                } catch (e: Exception) {
-                    Toast.makeText(this, "Cannot open file. No app available.", Toast.LENGTH_LONG).show()
+        // Show/hide open file button based on whether file exists
+        if (sub.fileUrl.isNullOrEmpty()) {
+            btnOpenFile.visibility = View.GONE
+        } else {
+            btnOpenFile.visibility = View.VISIBLE
+            btnOpenFile.setOnClickListener {
+                val url = sub.fileUrl
+                if (!url.isNullOrEmpty()) {
+                    try {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                        startActivity(intent)
+                    } catch (e: Exception) {
+                        Toast.makeText(this, "Cannot open file. No app available.", Toast.LENGTH_LONG).show()
+                    }
                 }
-            } else {
-                Toast.makeText(this, "No file to open.", Toast.LENGTH_SHORT).show()
             }
         }
 
         btnReopenSubmission.setOnClickListener {
             AlertDialog.Builder(this)
                 .setTitle("Reopen Submission")
-                .setMessage("This will allow the student to resubmit. Are you sure?")
-                .setPositiveButton("Yes, Reopen") { dialog, which ->
+                .setMessage("This will DELETE the current submission and allow the student to submit a new one. Are you sure?")
+                .setPositiveButton("Yes, Delete and Reopen") { dialog, which ->
+                    progressBar.visibility = View.VISIBLE
                     AssignmentRepository.reopenSubmissionForStudent(sub.id) { success, error ->
                         runOnUiThread {
+                            progressBar.visibility = View.GONE
                             if (success) {
-                                Toast.makeText(this, "Submission reopened successfully!", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(this, "Submission reopened! Student can now submit again.", Toast.LENGTH_SHORT).show()
                                 loadSubmissionsForSingleAssignment()
                             } else {
                                 Toast.makeText(this, "Error: $error", Toast.LENGTH_LONG).show()
@@ -344,6 +313,11 @@ class ViewSubmissionsActivity : AppCompatActivity() {
 
                 if (grade == null && gradeStr.isNotEmpty()) {
                     Toast.makeText(this, "Please enter a valid grade or leave empty.", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+
+                if (grade != null && (grade < 0 || grade > 100)) {
+                    Toast.makeText(this, "Please enter a grade between 0 and 100.", Toast.LENGTH_SHORT).show()
                     return@setPositiveButton
                 }
 

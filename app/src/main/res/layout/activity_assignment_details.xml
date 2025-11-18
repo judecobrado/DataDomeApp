@@ -1,82 +1,117 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp"
-    android:background="#f5f5f5">
+    android:padding="24dp"
+    android:background="#FDFBF8"
+    android:scrollbars="none">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Assignment Title -->
-        <TextView
-            android:id="@+id/tvAssignmentTitle"
+        <!-- Professional Header -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Assignment Title"
-            android:textSize="24sp"
-            android:textStyle="bold"
+            android:orientation="vertical"
             android:gravity="center"
-            android:layout_marginBottom="8dp"
-            android:textColor="#333333" />
+            android:background="@drawable/professional_header_bg"
+            android:padding="20dp"
+            android:layout_marginBottom="24dp">
 
-        <!-- Due Date -->
-        <TextView
-            android:id="@+id/tvDueDate"
+            <TextView
+                android:id="@+id/tvAssignmentTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Assignment Title"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:textColor="#7B1113"
+                android:paddingBottom="8dp" />
+
+            <View
+                android:layout_width="80dp"
+                android:layout_height="2dp"
+                android:background="#7B1113"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:id="@+id/tvDueDate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Due Date"
+                android:textSize="14sp"
+                android:gravity="center"
+                android:textColor="#9B1C1F" />
+
+        </LinearLayout>
+
+        <!-- Status Card -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Due Date"
-            android:textSize="16sp"
-            android:gravity="center"
-            android:layout_marginBottom="16dp"
-            android:textStyle="italic" />
+            android:orientation="vertical"
+            android:background="@drawable/professional_input_bg"
+            android:padding="16dp"
+            android:layout_marginBottom="20dp">
 
-        <!-- Submission Status -->
-        <TextView
-            android:id="@+id/tvSubmissionStatus"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Status: Loading..."
-            android:textSize="16sp"
-            android:padding="12dp"
-            android:background="#e8f5e8"
-            android:layout_marginBottom="8dp"
-            android:textColor="#2e7d32" />
+            <TextView
+                android:id="@+id/tvSubmissionStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="📊 Status: Loading..."
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="#7B1113"
+                android:gravity="center" />
 
-        <!-- Overdue Message -->
+        </LinearLayout>
+
+        <!-- Overdue Warning - CHANGED FROM LinearLayout TO TextView -->
         <TextView
             android:id="@+id/tvOverdueMessage"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="❌ This assignment is overdue and cannot be submitted. Please contact your teacher if you have questions."
+            android:text="⚠️ This assignment is overdue and cannot be submitted. Please contact your teacher if you have questions."
             android:textSize="14sp"
-            android:padding="12dp"
-            android:background="#ffebee"
-            android:layout_marginBottom="16dp"
-            android:textColor="#d32f2f"
+            android:background="#FFE4E1"
+            android:padding="16dp"
+            android:layout_marginBottom="20dp"
+            android:textColor="#9B1C1F"
             android:visibility="gone" />
 
         <!-- Instructions Section -->
-        <TextView
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="📋 Instructions"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="8dp" />
+            android:orientation="vertical"
+            android:background="@drawable/professional_input_bg"
+            android:padding="20dp"
+            android:layout_marginBottom="24dp">
 
-        <TextView
-            android:id="@+id/tvInstructions"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Loading instructions..."
-            android:textSize="14sp"
-            android:padding="12dp"
-            android:background="@android:color/white"
-            android:layout_marginBottom="16dp"
-            android:textColor="#666666" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📋 Instructions"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#7B1113"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:id="@+id/tvInstructions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Loading instructions..."
+                android:textSize="14sp"
+                android:textColor="#333333"
+                android:lineSpacingExtra="4dp" />
+
+        </LinearLayout>
 
         <!-- Teacher's File Section -->
         <LinearLayout
@@ -84,24 +119,31 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:visibility="gone"
-            android:layout_marginBottom="16dp">
+            android:background="@drawable/professional_input_bg"
+            android:padding="20dp"
+            android:layout_marginBottom="24dp"
+            android:visibility="gone">
 
             <TextView
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="📎 Attached Files from Teacher"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:layout_marginBottom="8dp" />
+                android:textColor="#7B1113"
+                android:layout_marginBottom="16dp" />
 
             <Button
                 android:id="@+id/btnViewAssignmentFile"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="View Assignment File"
-                android:backgroundTint="#2196F3"
-                android:textColor="@android:color/white" />
+                android:layout_height="45dp"
+                android:text="📂 View Assignment File"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:backgroundTint="#7B1113"
+                android:paddingHorizontal="20dp"
+                android:textAllCaps="false" />
 
         </LinearLayout>
 
@@ -111,42 +153,80 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:visibility="gone"
-            android:layout_marginBottom="16dp">
+            android:background="@drawable/professional_input_bg"
+            android:padding="20dp"
+            android:layout_marginBottom="24dp"
+            android:visibility="gone">
 
             <TextView
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="📤 Your Submission"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:layout_marginBottom="8dp" />
+                android:textColor="#7B1113"
+                android:layout_marginBottom="16dp" />
 
             <Button
                 android:id="@+id/btnViewSubmission"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="View Your Submission"
-                android:backgroundTint="#4CAF50"
-                android:textColor="@android:color/white"
-                android:layout_marginBottom="8dp" />
+                android:layout_height="45dp"
+                android:text="👁️ View Your Submission"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:backgroundTint="#7B1113"
+                android:paddingHorizontal="20dp"
+                android:layout_marginBottom="16dp"
+                android:textAllCaps="false" />
 
-            <TextView
-                android:id="@+id/tvGrade"
+            <LinearLayout
+                android:id="@+id/layoutGrade"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Grade: "
-                android:textSize="14sp"
+                android:orientation="vertical"
                 android:visibility="gone"
-                android:textStyle="bold" />
+                android:layout_marginBottom="12dp">
 
-            <TextView
-                android:id="@+id/tvFeedback"
+                <TextView
+                    android:id="@+id/tvGrade"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="🎯 Grade: "
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:textColor="#7B1113" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layoutFeedback"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Feedback: "
-                android:textSize="14sp"
-                android:visibility="gone" />
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="💬 Teacher Feedback"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#7B1113"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:id="@+id/tvFeedback"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Feedback will appear here once graded"
+                    android:textSize="14sp"
+                    android:textColor="#333333"
+                    android:background="#F8F2F2"
+                    android:padding="12dp"
+                    android:lineSpacingExtra="4dp" />
+
+            </LinearLayout>
 
         </LinearLayout>
 
@@ -154,15 +234,27 @@
         <Button
             android:id="@+id/btnSubmitAssignment"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="55dp"
             android:text="Submit Assignment"
-            android:textSize="16sp"
+            android:textColor="#FFFFFF"
             android:textStyle="bold"
+            android:textSize="16sp"
+            android:backgroundTint="#7B1113"
+            android:layout_marginBottom="8dp"
+            android:visibility="gone"
+            android:textAllCaps="false" />
+
+        <!-- Status Footer -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📚 Assignment details and submission status"
+            android:textSize="13sp"
+            android:textColor="#9B1C1F"
+            android:gravity="center"
+            android:layout_marginTop="16dp"
             android:padding="16dp"
-            android:backgroundTint="#4CAF50"
-            android:textColor="@android:color/white"
-            android:layout_marginBottom="16dp"
-            android:visibility="gone" />
+            android:background="#F8F2F2" />
 
     </LinearLayout>
 </ScrollView>

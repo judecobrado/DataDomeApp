@@ -1,45 +1,161 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="24dp"
+    android:background="#FDFBF8">
 
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:background="@drawable/professional_header_bg"
+        android:padding="16dp"
+        android:layout_marginBottom="20dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📅 Extend Due Date"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:textColor="#7B1113"
+            android:paddingBottom="6dp" />
+
+        <View
+            android:layout_width="60dp"
+            android:layout_height="2dp"
+            android:background="#7B1113"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Grant extension for student"
+            android:textSize="12sp"
+            android:textColor="#9B1C1F"
+            android:gravity="center" />
+
+    </LinearLayout>
+
+    <!-- Student Info - FIXED: This will show actual data -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/professional_input_bg"
+        android:padding="16dp"
+        android:layout_marginBottom="20dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="👤 Student Information"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="#7B1113"
+            android:layout_marginBottom="12dp" />
+
+        <!-- ACTUAL STUDENT NAME WILL APPEAR HERE -->
+        <TextView
+            android:id="@+id/tvStudentName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Student: Loading..."
+            android:textSize="14sp"
+            android:textColor="#333333"
+            android:layout_marginBottom="8dp" />
+
+        <!-- ACTUAL CURRENT DUE DATE WILL APPEAR HERE -->
+        <TextView
+            android:id="@+id/tvCurrentDueDate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Current Due Date: Loading..."
+            android:textSize="14sp"
+            android:textColor="#333333"
+            android:layout_marginBottom="4dp" />
+
+    </LinearLayout>
+
+    <!-- Extension Date Selection -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/professional_input_bg"
+        android:padding="16dp"
+        android:layout_marginBottom="20dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="New Due Date"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#7B1113"
+            android:layout_marginBottom="4dp" />
+
+        <Button
+            android:id="@+id/btnSelectDate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Select New Due Date"
+            android:layout_marginBottom="8dp"
+            android:textColor="#7B1113"
+            android:backgroundTint="#E8DCDC"
+            android:textAllCaps="false" />
+
+        <!-- Selected date will appear here -->
+        <TextView
+            android:id="@+id/tvNewDueDate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="No date selected"
+            android:textStyle="italic"
+            android:textColor="#666666"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Reason for Extension"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#7B1113"
+            android:layout_marginBottom="4dp" />
+
+        <EditText
+            android:id="@+id/etReason"
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:hint="Enter reason for extension..."
+            android:gravity="top"
+            android:inputType="textMultiLine"
+            android:textColor="#333333"
+            android:textSize="14sp"
+            android:padding="12dp"
+            android:background="@android:color/transparent" />
+
+    </LinearLayout>
+
+   
+
+    <!-- Footer Note -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="New Due Date"
-        android:textSize="16sp"
-        android:layout_marginBottom="4dp" />
-
-    <Button
-        android:id="@+id/btnSelectDate"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Select New Due Date"
-        android:layout_marginBottom="8dp" />
-
-    <TextView
-        android:id="@+id/tvNewDueDate"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="No date selected"
-        android:textStyle="italic"
-        android:layout_marginBottom="16dp" />
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Reason for Extension"
-        android:textSize="16sp"
-        android:layout_marginBottom="4dp" />
-
-    <EditText
-        android:id="@+id/etReason"
-        android:layout_width="match_parent"
-        android:layout_height="100dp"
-        android:hint="Enter reason for extension..."
-        android:gravity="top"
-        android:inputType="textMultiLine" />
+        android:text="Extension will be recorded and applied to this student only"
+        android:textSize="11sp"
+        android:textColor="#9B1C1F"
+        android:gravity="center"
+        android:layout_marginTop="16dp"
+        android:padding="12dp"
+        android:background="#F8F2F2" />
 
 </LinearLayout>

@@ -22,6 +22,8 @@ class AssignmentListActivity : AppCompatActivity() {
     private lateinit var lvAssignments: ListView
     private lateinit var tvAssignmentHeader: TextView
     private lateinit var btnAddAssignment: Button
+    private lateinit var tvAssignmentCount: TextView // ADDED: Assignment count text view
+    private lateinit var emptyState: LinearLayout // ADDED: Empty state view
 
     private var assignmentId: String? = null
     private var className: String? = null
@@ -39,6 +41,8 @@ class AssignmentListActivity : AppCompatActivity() {
             lvAssignments = findViewById(R.id.lvAssignments)
             tvAssignmentHeader = findViewById(R.id.tvAssignmentHeader)
             btnAddAssignment = findViewById(R.id.btnAddAssignment)
+            tvAssignmentCount = findViewById(R.id.tvAssignmentCount) // ADDED
+            emptyState = findViewById(R.id.emptyState) // ADDED
         } catch (e: Exception) {
             Log.e("AssignmentList", "Error initializing views: ${e.message}")
             Toast.makeText(this, "Error initializing screen", Toast.LENGTH_LONG).show()
@@ -161,6 +165,9 @@ class AssignmentListActivity : AppCompatActivity() {
                 }
             }
 
+            // ADDED: Update assignment count and empty state
+            updateAssignmentCount()
+
             if (assignmentList.isEmpty()) {
                 Log.w("AssignmentList", "⚠️ No assignments found for this class")
                 Toast.makeText(this, "No assignments found for this class", Toast.LENGTH_SHORT).show()
@@ -182,6 +189,29 @@ class AssignmentListActivity : AppCompatActivity() {
         } catch (e: Exception) {
             Log.e("AssignmentList", "Error in displayAssignments: ${e.message}")
             Toast.makeText(this, "Error loading assignment list", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    // ADDED: Function to update assignment count and empty state visibility
+    private fun updateAssignmentCount() {
+        runOnUiThread {
+            try {
+                val assignmentCount = assignmentList.size
+                tvAssignmentCount.text = assignmentCount.toString()
+
+                // Show/hide empty state based on assignment count
+                if (assignmentCount == 0) {
+                    emptyState.visibility = View.VISIBLE
+                    lvAssignments.visibility = View.GONE
+                } else {
+                    emptyState.visibility = View.GONE
+                    lvAssignments.visibility = View.VISIBLE
+                }
+
+                Log.d("AssignmentList", "📊 Assignment count updated: $assignmentCount")
+            } catch (e: Exception) {
+                Log.e("AssignmentList", "Error updating assignment count: ${e.message}")
+            }
         }
     }
 
@@ -264,6 +294,7 @@ class AssignmentListActivity : AppCompatActivity() {
                             // Remove from list and update UI
                             assignmentList.remove(assignment)
                             assignmentAdapter.notifyDataSetChanged()
+                            updateAssignmentCount() // ADDED: Update count after deletion
                         } else {
                             val errorMessage = error ?: "Unknown error"
                             Log.e("AssignmentList", "❌ Failed to delete assignment: $errorMessage")
@@ -355,7 +386,6 @@ class AssignmentListActivity : AppCompatActivity() {
                 val btnEdit = view.findViewById<ImageButton>(R.id.btnEditAssignment)
                 val btnDelete = view.findViewById<ImageButton>(R.id.btnDeleteAssignment)
                 val btnManageStudentSubmissions = view.findViewById<Button>(R.id.btnManageExtensions)
-                //val btnViewSubmissions = view.findViewById<Button>(R.id.btnViewSubmissions)
 
                 // ✅ SAFE: Set assignment data
                 tvTitle.text = assignment.title ?: "Untitled Assignment"
@@ -414,16 +444,6 @@ class AssignmentListActivity : AppCompatActivity() {
                         Log.e("AssignmentList", "Error in student submissions button: ${e.message}")
                     }
                 }
-
-                // Keep the original View Submissions button for traditional view
-                //btnViewSubmissions.setOnClickListener {
-                    //try {
-                       // Log.d("AssignmentList", "📋 View Submissions clicked for: ${assignment.title} (${assignment.id})")
-                        //viewSubmissions(assignment)
-                   // } catch (e: Exception) {
-                        //Log.e("AssignmentList", "Error in view submissions button: ${e.message}")
-                   // }
-               // }
 
                 // Optional: Click on entire item to view submissions
                 view.setOnClickListener {

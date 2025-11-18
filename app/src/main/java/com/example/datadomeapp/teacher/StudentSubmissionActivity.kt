@@ -512,7 +512,18 @@ class StudentSubmissionsActivity : AppCompatActivity() {
             val tvNewDueDate = dialogView.findViewById<TextView>(R.id.tvNewDueDate)
             val btnSelectDate = dialogView.findViewById<Button>(R.id.btnSelectDate)
 
+            // ✅ ADDED: Get the TextViews for student info
+            val tvStudentName = dialogView.findViewById<TextView>(R.id.tvStudentName)
+            val tvCurrentDueDate = dialogView.findViewById<TextView>(R.id.tvCurrentDueDate)
+
             var selectedDueDate: Long = assignment.dueDateMillis
+
+            // ✅ ADDED: Set the actual student data
+            tvStudentName.text = "Student: ${student.firstName} ${student.lastName}"
+
+            val currentDueDateFormatted = SimpleDateFormat("MMM dd, yyyy 'at' hh:mm a", Locale.getDefault())
+                .format(Date(assignment.dueDateMillis))
+            tvCurrentDueDate.text = "Current Due Date: $currentDueDateFormatted"
 
             btnSelectDate.setOnClickListener {
                 showDateTimePicker { dueDateMillis ->

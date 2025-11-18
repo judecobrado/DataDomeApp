@@ -1,32 +1,64 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp"
-    tools:context=".teacher.RouletteActivity">
+    android:background="#FFFFFF"
+    android:gravity="center">
 
+    <!-- Header Section - MAROON -->
     <TextView
         android:id="@+id/tvWinnerName"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Handa na ba kayo?"
-        android:textSize="32sp"
+        android:text="Are you ready?"
+        android:textSize="24sp"
         android:textStyle="bold"
         android:gravity="center"
-        android:padding="16dp"
-        android:background="#FFC107"
+        android:padding="20dp"
+        android:background="#800000"
+        android:textColor="#FFFFFF"
         android:layout_marginBottom="16dp"/>
 
+    <!-- Remaining Count -->
     <TextView
         android:id="@+id/tvRemainingCount"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:text="Students: 30"
         android:textSize="16sp"
         android:gravity="center"
+        android:textColor="#666666"
         android:layout_marginBottom="16dp"/>
 
+    <!-- Roulette Wheel Container -->
+    <FrameLayout
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        android:layout_gravity="center"
+        android:layout_marginBottom="16dp">
+
+        <!-- Roulette Wheel -->
+        <ImageView
+            android:id="@+id/ivRouletteWheel"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@drawable/roulette_wheel"
+            android:contentDescription="Roulette Wheel" />
+
+        <!-- Roulette Pointer -->
+        <ImageView
+            android:id="@+id/ivRoulettePointer"
+            android:layout_width="30dp"
+            android:layout_height="50dp"
+            android:layout_gravity="top|center_horizontal"
+            android:src="@drawable/roulette_pointer"
+            android:contentDescription="Roulette Pointer" />
+
+    </FrameLayout>
+
+    <!-- Two Column Layout -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -34,6 +66,7 @@
         android:orientation="horizontal"
         android:layout_marginBottom="16dp">
 
+        <!-- Current List Column -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
@@ -44,22 +77,30 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Kasalukuyang Listahan"
+                android:text="Current List"
                 android:textStyle="bold"
-                android:gravity="center"/>
+                android:gravity="center"
+                android:textSize="16sp"
+                android:textColor="#800000"
+                android:layout_marginBottom="8dp"/>
 
             <ScrollView
                 android:layout_width="match_parent"
-                android:layout_height="match_parent">
+                android:layout_height="match_parent"
+                android:background="#F5F5F5"
+                android:padding="8dp">
 
                 <TextView
                     android:id="@+id/tvStudentListDisplay"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textSize="14sp"/>
+                    android:textSize="14sp"
+                    android:lineSpacingExtra="4dp"/>
+
             </ScrollView>
         </LinearLayout>
 
+        <!-- Removed List Column -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
@@ -70,55 +111,73 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Tinanggal (Removed)"
+                android:text="Removed Students"
                 android:textStyle="bold"
-                android:gravity="center"/>
+                android:gravity="center"
+                android:textSize="16sp"
+                android:textColor="#800000"
+                android:layout_marginBottom="8dp"/>
 
             <ScrollView
                 android:layout_width="match_parent"
-                android:layout_height="match_parent">
+                android:layout_height="match_parent"
+                android:background="#F5F5F5"
+                android:padding="8dp">
 
                 <TextView
                     android:id="@+id/tvRemovedListDisplay"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:textSize="14sp"
-                    android:textColor="#FF0000"/>
+                    android:textColor="#D32F2F"
+                    android:lineSpacingExtra="4dp"/>
+
             </ScrollView>
         </LinearLayout>
     </LinearLayout>
 
+    <!-- Decision Buttons -->
     <LinearLayout
         android:id="@+id/layoutDecisionButtons"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:visibility="gone"
-        android:layout_marginBottom="8dp">
+        android:layout_marginBottom="16dp">
 
         <Button
             android:id="@+id/btnRemoveWinner"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="REMOVE Winner"
-            android:backgroundTint="#D32F2F"
-            android:layout_marginEnd="4dp"/>
+            android:text="REMOVE WINNER"
+            android:backgroundTint="#800000"
+            android:textColor="#FFFFFF"
+            android:layout_marginEnd="8dp"
+            android:textStyle="bold"/>
 
         <Button
             android:id="@+id/btnKeepWinner"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="KEEP in List"
-            android:backgroundTint="#4CAF50"
-            android:layout_marginStart="4dp"/>
+            android:text="KEEP IN LIST"
+            android:backgroundTint="#800000"
+            android:textColor="#FFFFFF"
+            android:layout_marginStart="8dp"
+            android:textStyle="bold"/>
     </LinearLayout>
 
+    <!-- Spin Button - MAROON -->
     <Button
         android:id="@+id/btnSpinRoulette"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="I-ikot ang Roleta!"/>
+        android:text="SPIN ROULETTE"
+        android:backgroundTint="#800000"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:padding="16dp"/>
 
 </LinearLayout>

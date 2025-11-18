@@ -2,13 +2,16 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:background="#FDFBF8"
+    android:scrollbars="none">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
+        <!-- Header with maroon red background and light text -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -16,28 +19,41 @@
             android:textSize="24sp"
             android:textStyle="bold"
             android:gravity="center"
-            android:layout_marginBottom="24dp" />
+            android:layout_marginBottom="24dp"
+            android:padding="16dp"
+            android:background="#7B1113"
+            android:textColor="#FDFBF8" />
 
+        <!-- Title Section -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Title *"
             android:textSize="16sp"
-            android:layout_marginBottom="4dp" />
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"
+            android:textColor="#7B1113" />
 
         <EditText
             android:id="@+id/etTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Enter assignment title"
-            android:layout_marginBottom="16dp" />
+            android:layout_marginBottom="20dp"
+            android:background="@drawable/professional_input_bg"
+            android:padding="16dp"
+            android:textColor="#7B1113"
+            android:textColorHint="#9B1C1F" />
 
+        <!-- Instructions Section -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Instructions"
             android:textSize="16sp"
-            android:layout_marginBottom="4dp" />
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"
+            android:textColor="#7B1113" />
 
         <EditText
             android:id="@+id/etInstructions"
@@ -46,21 +62,32 @@
             android:hint="Enter assignment instructions"
             android:gravity="top"
             android:inputType="textMultiLine"
-            android:layout_marginBottom="16dp" />
+            android:layout_marginBottom="20dp"
+            android:background="@drawable/professional_input_bg"
+            android:padding="16dp"
+            android:textColor="#7B1113"
+            android:textColorHint="#9B1C1F" />
 
+        <!-- Due Date Section -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Due Date *"
             android:textSize="16sp"
-            android:layout_marginBottom="4dp" />
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"
+            android:textColor="#7B1113" />
 
         <Button
             android:id="@+id/btnSelectDueDate"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Select Due Date and Time"
-            android:layout_marginBottom="8dp" />
+            android:layout_marginBottom="8dp"
+            android:backgroundTint="#7B1113"
+            android:textColor="#FDFBF8"
+            android:textSize="14sp"
+            android:padding="16dp" />
 
         <TextView
             android:id="@+id/tvSelectedDate"
@@ -68,14 +95,20 @@
             android:layout_height="wrap_content"
             android:text="No date selected"
             android:textStyle="italic"
-            android:layout_marginBottom="16dp" />
+            android:layout_marginBottom="20dp"
+            android:gravity="center"
+            android:textColor="#7B1113"
+            android:padding="8dp" />
 
+        <!-- Attachment Section -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Attachment"
             android:textSize="16sp"
-            android:layout_marginBottom="4dp" />
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"
+            android:textColor="#7B1113" />
 
         <TextView
             android:id="@+id/tvCurrentFile"
@@ -83,19 +116,29 @@
             android:layout_height="wrap_content"
             android:text="No file attached"
             android:textStyle="italic"
-            android:layout_marginBottom="8dp" />
+            android:layout_marginBottom="12dp"
+            android:gravity="center"
+            android:textColor="#7B1113"
+            android:padding="12dp"
+            android:background="@drawable/professional_input_bg" />
 
         <Button
             android:id="@+id/btnUploadFile"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Upload New File"
-            android:layout_marginBottom="24dp" />
+            android:layout_marginBottom="24dp"
+            android:backgroundTint="#7B1113"
+            android:textColor="#FDFBF8"
+            android:textSize="14sp"
+            android:padding="16dp" />
 
+        <!-- Action Buttons -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
 
             <Button
                 android:id="@+id/btnCancel"
@@ -103,7 +146,11 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Cancel"
-                android:layout_marginEnd="8dp" />
+                android:layout_marginEnd="8dp"
+                android:backgroundTint="#7B1113"
+                android:textColor="#FDFBF8"
+                android:textSize="14sp"
+                android:padding="16dp" />
 
             <Button
                 android:id="@+id/btnUpdate"
@@ -111,10 +158,13 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Update Assignment"
-                android:layout_marginStart="8dp" />
+                android:layout_marginStart="8dp"
+                android:backgroundTint="#7B1113"
+                android:textColor="#FDFBF8"
+                android:textSize="14sp"
+                android:padding="16dp" />
 
         </LinearLayout>
 
     </LinearLayout>
-
 </ScrollView>
