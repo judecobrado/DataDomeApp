@@ -132,6 +132,8 @@
         <activity android:name=".canteen.BalanceInquiryActivity" />
         <activity android:name=".canteen.POSActivity" />
         <activity android:name=".canteen.CanteenReportsActivity" />
+        <activity android:name=".student.StudentIdTappingActivity"
+            android:exported="false" />
 
 
     </application>

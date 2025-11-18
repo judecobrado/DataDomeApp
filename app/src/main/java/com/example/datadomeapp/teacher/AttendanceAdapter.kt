@@ -9,53 +9,37 @@ import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.TextView
-import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.datadomeapp.R
 import com.example.datadomeapp.models.Student
 
-/**
- * RecyclerView Adapter para sa pag-manage ng attendance at recitation status ng mga estudyante.
- * Ngayon ay sumusuporta sa Multiple Recitation Points.
- */
 class AttendanceAdapter(
     private val studentList: List<Student>,
     private val assignmentId: String,
     private var isEditable: Boolean = true,
-    private var currentMode: Mode = Mode.ATTENDANCE,
     private val onDataChanged: () -> Unit
 ) : RecyclerView.Adapter<AttendanceAdapter.AttendanceViewHolder>() {
 
     companion object {
         private const val TAG = "AttendanceAdapter"
-        private const val MAX_RECITATION_POINTS = 10 // Limitahan ang recitation points
-    }
-
-    enum class Mode {
-        ATTENDANCE,
-        RECITATION
+        private const val MAX_RECITATION_POINTS = 10
     }
 
     private val attendanceStatus = mutableMapOf<String, String>()
-    // Pinalitan ang Int status (0/1) ng Int points (0, 1, 2, 3, ...)
-    private val recitationStatus = mutableMapOf<String, Int>()
-
-    init {
-        Log.d(TAG, "Adapter initialized. Assignment: $assignmentId")
-    }
+    private val recitationPoints = mutableMapOf<String, Int>()
 
     class AttendanceViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvStudentName: TextView = view.findViewById(R.id.tvAttStudentName)
         val tvStudentId: TextView = view.findViewById(R.id.tvAttStudentId)
 
-        // Attendance Controls
+        // Attendance Controls (RadioButtons)
         val rgAttendanceStatus: RadioGroup = view.findViewById(R.id.rgAttendanceStatus)
         val rbPresent: RadioButton = view.findViewById(R.id.rbPresent)
         val rbLate: RadioButton = view.findViewById(R.id.rbLate)
         val rbExcused: RadioButton = view.findViewById(R.id.rbExcused)
         val rbAbsent: RadioButton = view.findViewById(R.id.rbAbsent)
 
-        // 🟢 NEW: Recitation Controls
+        // Recitation Controls
         val llRecitationControls: LinearLayout = view.findViewById(R.id.llRecitationControls)
         val btnReciteMinus: Button = view.findViewById(R.id.btnReciteMinus)
         val tvReciteScore: TextView = view.findViewById(R.id.tvReciteScore)
@@ -72,140 +56,234 @@ class AttendanceAdapter(
         val currentItem = studentList[position]
         val studentId = currentItem.id ?: return
 
-        val isAttendanceMode = currentMode == Mode.ATTENDANCE
-        val attStatus = attendanceStatus[studentId] ?: ""
-        val recitationPoints = recitationStatus[studentId] ?: 0
+        val currentStatus = attendanceStatus[studentId] ?: ""
+        val currentPoints = recitationPoints[studentId] ?: 0
 
-        // I-toggle ang visibility base sa mode
-        holder.rgAttendanceStatus.visibility = if (isAttendanceMode) View.VISIBLE else View.GONE
-        holder.llRecitationControls.visibility = if (isAttendanceMode) View.GONE else View.VISIBLE // NEW LINE
+        // FIXED: Show BOTH attendance status AND recitation points
+        val cleanName = "${currentItem.lastName}, ${currentItem.firstName}"
 
+        // Build display text with both status and points
+        val displayText = buildString {
+            append(cleanName)
+            if (currentStatus.isNotEmpty()) {
+                append(" ($currentStatus")
+                if (currentPoints > 0) {
+                    append(" • $currentPoints pts")
+                }
+                append(")")
+            } else if (currentPoints > 0) {
+                append(" ($currentPoints pts)")
+            }
+        }
+
+        holder.tvStudentName.text = displayText
         holder.tvStudentId.text = "ID: $studentId"
-        holder.tvStudentName.text = "${currentItem.lastName}, ${currentItem.firstName}"
+        holder.tvReciteScore.text = currentPoints.toString()
 
-        // I-display ang points sa recitation mode
-        if (!isAttendanceMode) {
-            holder.tvStudentName.text = "${holder.tvStudentName.text} (Recite: $recitationPoints)"
+        // FIXED: Show BOTH attendance radio buttons AND recitation controls
+        holder.rgAttendanceStatus.visibility = View.VISIBLE
+        holder.llRecitationControls.visibility = View.VISIBLE
+
+        // --- Attendance Radio Buttons ---
+        // Remove listener temporarily to avoid infinite loops
+        holder.rgAttendanceStatus.setOnCheckedChangeListener(null)
+
+        // Set the correct radio button based on status
+        when (currentStatus.uppercase()) {
+            "PRESENT" -> holder.rbPresent.isChecked = true
+            "LATE" -> holder.rbLate.isChecked = true
+            "EXCUSED" -> holder.rbExcused.isChecked = true
+            "ABSENT" -> holder.rbAbsent.isChecked = true
+            else -> holder.rgAttendanceStatus.clearCheck()
         }
 
-
-        // --- Attendance Mode Logic ---
-        if (isAttendanceMode) {
-            holder.rgAttendanceStatus.setOnCheckedChangeListener(null)
-            holder.rgAttendanceStatus.clearCheck()
-
-            when (attStatus) {
-                "Present" -> holder.rbPresent.isChecked = true
-                "Late" -> holder.rbLate.isChecked = true
-                "Excused" -> holder.rbExcused.isChecked = true
-                "Absent" -> holder.rbAbsent.isChecked = true
-            }
-
-            listOf(holder.rbPresent, holder.rbLate, holder.rbExcused, holder.rbAbsent).forEach {
-                it.isEnabled = isEditable
-            }
-
-            if (isEditable) {
-                holder.rgAttendanceStatus.setOnCheckedChangeListener { _, checkedId ->
-                    val selectedStatus = when (checkedId) {
-                        holder.rbPresent.id -> "Present"
-                        holder.rbLate.id -> "Late"
-                        holder.rbExcused.id -> "Excused"
-                        holder.rbAbsent.id -> "Absent"
-                        else -> "Absent"
-                    }
-
-                    if (selectedStatus == "Absent" || selectedStatus == "Excused") {
-                        val currentPoints = recitationStatus[studentId] ?: 0
-                        if (currentPoints > 0) {
-                            recitationStatus[studentId] = 0 // I-set sa zero!
-                            Log.i(TAG, "Student $studentId attendance is $selectedStatus. Recitation reset to 0.")
-                        }
-                    }
-
-                    attendanceStatus[studentId] = selectedStatus
-                    Log.i(TAG, "Student $studentId attendance updated to $selectedStatus")
-                    onDataChanged()
-                }
-            }
+        // Enable/disable radio buttons
+        listOf(holder.rbPresent, holder.rbLate, holder.rbExcused, holder.rbAbsent).forEach {
+            it.isEnabled = isEditable
         }
 
-        // --- Recitation Mode Logic (Multiple Points) ---
-        else {
-            val isAttended = attStatus == "Present" || attStatus == "Late"
-
-            holder.tvReciteScore.text = recitationPoints.toString()
-
-            // I-disable ang buong control group kung hindi present/late
-            holder.llRecitationControls.alpha = if (isAttended) 1.0f else 0.5f
-            val controlsEnabled = isEditable && isAttended
-
-            holder.btnRecitePlus.isEnabled = controlsEnabled && recitationPoints < MAX_RECITATION_POINTS
-            holder.btnReciteMinus.isEnabled = controlsEnabled && recitationPoints > 0
-
-            if (controlsEnabled) {
-                // I-increment ang points
-                holder.btnRecitePlus.setOnClickListener {
-                    if (recitationPoints < MAX_RECITATION_POINTS) {
-                        recitationStatus[studentId] = recitationPoints + 1
-                        notifyItemChanged(position)
-                        Log.i(TAG, "Student $studentId recitation points: ${recitationPoints + 1}")
-                        onDataChanged()
-                    }
-                }
-
-                // I-decrement ang points
-                holder.btnReciteMinus.setOnClickListener {
-                    if (recitationPoints > 0) {
-                        recitationStatus[studentId] = recitationPoints - 1
-                        notifyItemChanged(position)
-                        Log.i(TAG, "Student $studentId recitation points: ${recitationPoints - 1}")
-                        onDataChanged()
-                    }
-                }
-            } else {
-                // Clear listeners kung hindi enabled
-                holder.btnRecitePlus.setOnClickListener(null)
-                holder.btnReciteMinus.setOnClickListener(null)
-            }
-        }
+        // Set up radio group listener
         if (isEditable) {
-            // Full opacity kung editable
-            holder.itemView.alpha = 1.0f
-        } else {
-            // I-dim ang buong item kung read-only (e.g., nakaraang araw)
-            holder.itemView.alpha = 0.8f
+            holder.rgAttendanceStatus.setOnCheckedChangeListener { _, checkedId ->
+                val selectedStatus = when (checkedId) {
+                    holder.rbPresent.id -> "PRESENT"
+                    holder.rbLate.id -> "LATE"
+                    holder.rbExcused.id -> "EXCUSED"
+                    holder.rbAbsent.id -> "ABSENT"
+                    else -> "ABSENT"
+                }
+
+                attendanceStatus[studentId] = selectedStatus
+
+                // Update display with new status
+                val newDisplayText = buildString {
+                    append(cleanName)
+                    append(" ($selectedStatus")
+                    val points = recitationPoints[studentId] ?: 0
+                    if (points > 0) {
+                        append(" • $points pts")
+                    }
+                    append(")")
+                }
+                holder.tvStudentName.text = newDisplayText
+
+                Log.i(TAG, "Student $studentId attendance updated to $selectedStatus")
+                onDataChanged()
+            }
         }
+
+        // --- Recitation Controls ---
+        // Enable recitation controls only if student is PRESENT or LATE
+        val isAttended = currentStatus == "PRESENT" || currentStatus == "LATE"
+        val controlsEnabled = isEditable && isAttended
+
+        // Update recitation controls
+        holder.btnRecitePlus.isEnabled = controlsEnabled && currentPoints < MAX_RECITATION_POINTS
+        holder.btnReciteMinus.isEnabled = controlsEnabled && currentPoints > 0
+
+        // Visual feedback
+        holder.llRecitationControls.alpha = if (controlsEnabled) 1.0f else 0.5f
+
+        // Set recitation button listeners
+        holder.btnRecitePlus.setOnClickListener {
+            if (controlsEnabled && currentPoints < MAX_RECITATION_POINTS) {
+                val newPoints = currentPoints + 1
+                recitationPoints[studentId] = newPoints
+
+                // Update UI immediately
+                holder.tvReciteScore.text = newPoints.toString()
+                val updatedDisplayText = buildString {
+                    append(cleanName)
+                    if (currentStatus.isNotEmpty()) {
+                        append(" ($currentStatus • $newPoints pts)")
+                    } else {
+                        append(" ($newPoints pts)")
+                    }
+                }
+                holder.tvStudentName.text = updatedDisplayText
+
+                Log.i(TAG, "Student $studentId recitation points: $newPoints")
+                onDataChanged()
+            }
+        }
+
+        holder.btnReciteMinus.setOnClickListener {
+            if (controlsEnabled && currentPoints > 0) {
+                val newPoints = currentPoints - 1
+                recitationPoints[studentId] = newPoints
+
+                // Update UI immediately
+                holder.tvReciteScore.text = newPoints.toString()
+                val updatedDisplayText = buildString {
+                    append(cleanName)
+                    if (currentStatus.isNotEmpty()) {
+                        if (newPoints > 0) {
+                            append(" ($currentStatus • $newPoints pts)")
+                        } else {
+                            append(" ($currentStatus)")
+                        }
+                    } else if (newPoints > 0) {
+                        append(" ($newPoints pts)")
+                    } else {
+                        append(cleanName)
+                    }
+                }
+                holder.tvStudentName.text = updatedDisplayText
+
+                Log.i(TAG, "Student $studentId recitation points: $newPoints")
+                onDataChanged()
+            }
+        }
+
+        // Set overall item opacity
+        holder.itemView.alpha = if (isEditable) 1.0f else 0.8f
     }
 
     override fun getItemCount() = studentList.size
 
     fun getAttendanceAndRecitationMaps(): Pair<Map<String, String>, Map<String, Int>> {
-        return Pair(attendanceStatus, recitationStatus)
+        return Pair(attendanceStatus.toMap(), recitationPoints.toMap())
     }
 
     fun updateStatuses(existingAttendance: Map<String, String>, existingRecitation: Map<String, Int>) {
         attendanceStatus.clear()
-        recitationStatus.clear()
+        recitationPoints.clear()
 
-        // 🟢 CRITICAL FIX: Populate the internal maps
-        attendanceStatus.putAll(existingAttendance)
-        recitationStatus.putAll(existingRecitation)
+        existingAttendance.forEach { (studentId, status) ->
+            attendanceStatus[studentId] = status.uppercase()
+        }
+
+        existingRecitation.forEach { (studentId, points) ->
+            recitationPoints[studentId] = points
+        }
 
         notifyDataSetChanged()
-    }
-
-    fun setMode(mode: Mode) {
-        if (currentMode != mode) {
-            this.currentMode = mode
-            notifyDataSetChanged()
-        }
     }
 
     fun setEditable(editable: Boolean) {
         if (isEditable != editable) {
             isEditable = editable
             notifyDataSetChanged()
+        }
+    }
+
+    // Clear all data for fresh start
+    fun clearAllData() {
+        attendanceStatus.clear()
+        recitationPoints.clear()
+        notifyDataSetChanged()
+        Log.d(TAG, "All attendance and recitation data cleared")
+    }
+
+    // Methods for ID tapping to update specific students
+    fun updateStudentStatus(studentId: String, status: String) {
+        attendanceStatus[studentId] = status
+        val position = studentList.indexOfFirst { it.id == studentId }
+        if (position != -1) {
+            notifyItemChanged(position)
+        }
+        onDataChanged()
+    }
+
+    fun updateStudentRecitation(studentId: String, points: Int) {
+        recitationPoints[studentId] = points
+        val position = studentList.indexOfFirst { it.id == studentId }
+        if (position != -1) {
+            notifyItemChanged(position)
+        }
+        onDataChanged()
+    }
+
+    // Get current points for a student
+    fun getStudentRecitationPoints(studentId: String): Int {
+        return recitationPoints[studentId] ?: 0
+    }
+
+    // Get current status for a student
+    fun getStudentAttendanceStatus(studentId: String): String {
+        return attendanceStatus[studentId] ?: ""
+    }
+
+    // NEW: Process student tap - handles both attendance and recitation
+    fun processStudentTap(studentId: String, isWithinLateThreshold: Boolean): Boolean {
+        val currentStatus = getStudentAttendanceStatus(studentId)
+        val currentPoints = getStudentRecitationPoints(studentId)
+
+        return if (currentStatus.isEmpty()) {
+            // First tap - set attendance status
+            val status = if (isWithinLateThreshold) "PRESENT" else "LATE"
+            updateStudentStatus(studentId, status)
+            true
+        } else if (currentStatus == "PRESENT" || currentStatus == "LATE") {
+            // Subsequent taps - add recitation points
+            if (currentPoints < MAX_RECITATION_POINTS) {
+                updateStudentRecitation(studentId, currentPoints + 1)
+                true
+            } else {
+                false // Max points reached
+            }
+        } else {
+            false // Student is ABSENT or EXCUSED
         }
     }
 }

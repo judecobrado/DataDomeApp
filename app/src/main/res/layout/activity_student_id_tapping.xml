@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:gravity="center_horizontal"
+    tools:context=".student.StudentIdTappingActivity">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Student ID Tapping System"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="24dp" />
+
+    <!-- Session Information -->
+    <TextView
+        android:id="@+id/tvSessionInfo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="No active session"
+        android:textSize="16sp"
+        android:gravity="center"
+        android:padding="16dp"
+        android:background="@drawable/rounded_border"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Student Information -->
+    <TextView
+        android:id="@+id/tvStudentInfo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="No student data"
+        android:textSize="14sp"
+        android:gravity="center"
+        android:padding="12dp"
+        android:background="@color/gray_light"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Tap Status -->
+    <TextView
+        android:id="@+id/tvTapStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Ready for ID tapping"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:padding="16dp"
+        android:background="@drawable/rounded_border_green"
+        android:layout_marginBottom="24dp" />
+
+    <!-- Progress Bar -->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Mode Selection -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Select Mode:"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp" />
+
+    <RadioGroup
+        android:id="@+id/rgModeSelection"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="24dp"
+        android:enabled="false">
+
+        <RadioButton
+            android:id="@+id/rbAttendanceMode"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Attendance"
+            android:checked="true" />
+
+        <RadioButton
+            android:id="@+id/rbRecitationMode"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Recitation" />
+
+    </RadioGroup>
+
+    <!-- Start Buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="16dp">
+
+        <Button
+            android:id="@+id/btnStartAttendance"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Start Attendance"
+            android:layout_marginEnd="8dp"
+            android:backgroundTint="@color/green"
+            style="@style/Widget.AppCompat.Button.Colored" />
+
+        <Button
+            android:id="@+id/btnStartRecitation"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Start Recitation"
+            android:layout_marginStart="8dp"
+            android:backgroundTint="@color/blue"
+            style="@style/Widget.AppCompat.Button.Colored" />
+
+    </LinearLayout>
+
+    <!-- Stop Button -->
+    <Button
+        android:id="@+id/btnStopSession"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Stop Session"
+        android:backgroundTint="@color/red"
+        style="@style/Widget.AppCompat.Button.Colored" />
+
+    <!-- Instructions -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Instructions:\n1. Select mode and start session\n2. Students tap their ID cards\n3. Switch modes as needed\n4. Stop when session ends"
+        android:textSize="12sp"
+        android:gravity="center"
+        android:padding="16dp"
+        android:layout_marginTop="24dp"
+        android:background="@color/gray_very_light" />
+
+</LinearLayout>
