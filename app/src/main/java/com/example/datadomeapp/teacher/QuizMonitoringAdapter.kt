@@ -134,11 +134,7 @@ class QuizMonitoringAdapter(
                 val iconColor: Int
 
                 when (data.status) {
-                    "IN_PROGRESS", "CHEATING" -> {
-                        // Action: RESTART QUIZ (Taking/Cheating)
-                        iconRes = R.drawable.ic_security_info // Assuming you have an icon for refresh/restart
-                        iconColor = R.color.status_retake // Warning color
-                    }
+
                     "COMPLETED", "TIME_EXPIRED", "CHEATED_MAX" -> {
                         // Action: GRANT RETAKE (Finished)
                         iconRes = R.drawable.ic_security_info
@@ -174,11 +170,11 @@ class QuizMonitoringAdapter(
             // ⭐ UPDATE 5: STATUS FORMATTING (Idinagdag ang ACCESS_REVOKED)
             return when (status) {
                 "IN_PROGRESS" -> if (cheatCount > 0) "CHEATING ALERT ⚠️" else "TAKING ⏱️"
-                "COMPLETED" -> "FINISHED ✅"
-                "NOT_STARTED" -> "PENDING ⚪"
-                "RETAKE_GRANTED" -> "RETAKE ALLOWED 🔄"
-                "TIME_EXPIRED" -> "TIME UP 🚨"
-                "UNATTEMPTED_TIME_EXPIRED" -> "MISSED ❌"
+                "COMPLETED" -> "FINISHED"
+                "NOT_STARTED" -> "PENDING"
+                "RETAKE_GRANTED" -> "RETAKE ALLOWED"
+                "TIME_EXPIRED" -> "TIME UP!"
+                "UNATTEMPTED_TIME_EXPIRED" -> "MISSED!"
                 "ACCESS_REVOKED" -> "BLOCKED 🔒" // CRITICAL NEW STATUS DISPLAY
                 else -> status
             }
