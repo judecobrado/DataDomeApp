@@ -1,56 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="24dp"
-    android:background="#F9FAFB">
+    android:orientation="vertical"
+    android:padding="32dp"
+    android:background="@android:color/white"
+    android:gravity="center">
 
-    <LinearLayout
-        android:orientation="vertical"
+    <!-- Email Icon -->
+    <ImageView
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:src="@drawable/ic_email"
+        android:contentDescription="Email Verification"
+        android:layout_marginBottom="24dp"
+        app:tint="#1D4ED8" />
+
+    <!-- Header -->
+    <TextView
+        android:id="@+id/tvHeader"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:text="Check Your Email"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="#111827"
+        android:gravity="center"
+        android:layout_marginBottom="16dp"/>
 
-        <TextView
-            android:id="@+id/tvHeader"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Email Verification"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:textColor="#111827"
-            android:layout_gravity="center_horizontal"
-            android:paddingBottom="24dp"/>
+    <!-- Information -->
+    <TextView
+        android:id="@+id/tvInfo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="We sent a verification link to your email address. Click the link to verify your account and continue with enrollment."
+        android:textSize="16sp"
+        android:textColor="#6B7280"
+        android:gravity="center"
+        android:lineSpacingExtra="4dp"
+        android:layout_marginBottom="40dp"/>
 
-        <TextView
-            android:id="@+id/tvInfo"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="A verification link has been sent to your email. Please check your inbox and click the link to proceed."
-            android:textSize="16sp"
-            android:textColor="#374151"
-            android:lineSpacingExtra="4dp"
-            android:layout_marginBottom="24dp"/>
+    <!-- Resend Button -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnResend"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:text="Resend Email"
+        android:textSize="16sp"
+        app:cornerRadius="8dp"
+        app:backgroundTint="#F3F4F6"
+        android:textColor="#374151"
+        android:layout_marginBottom="12dp"/>
 
-        <Button
-            android:id="@+id/btnResend"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:text="Resend Verification Email"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:backgroundTint="#1D4ED8"
-            android:textColor="#FFFFFF"
-            android:layout_marginBottom="16dp"/>
+    <!-- Continue Button -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnContinue"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:text="Continue"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:cornerRadius="8dp"
+        app:backgroundTint="#1D4ED8"
+        android:textColor="@android:color/white"/>
 
-        <Button
-            android:id="@+id/btnContinue"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:text="Continue to Enrollment"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:backgroundTint="#10B981"
-            android:textColor="#FFFFFF"/>
-
-    </LinearLayout>
-</ScrollView>
+</LinearLayout>

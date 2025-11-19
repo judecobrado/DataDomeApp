@@ -430,6 +430,21 @@
 
                 </com.google.android.material.card.MaterialCardView>
 
+                <!-- ADDED: Supported Formats Instruction -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="📋 Supported Formats:\n• True/False: Question|True|False|Answer\n• Multiple Choice: Q|A|B|C|D|Correct\n• Matching: Left|Right"
+                    android:textSize="12sp"
+                    android:textColor="#6B7280"
+                    android:gravity="center"
+                    android:padding="12dp"
+                    android:background="#F9FAFB"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="8dp"
+                    android:layout_marginBottom="8dp" />
+
             </LinearLayout>
 
         </com.google.android.material.card.MaterialCardView>
