@@ -11,6 +11,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.datadomeapp.R
+import com.example.datadomeapp.enrollment.EmailSendCallback
+import com.example.datadomeapp.enrollment.GmailSender
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -809,9 +811,8 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                                 batch.commit().addOnSuccessListener {
                                     Toast.makeText(this, "Enrollment Finalized! Student ID: $studentId.", Toast.LENGTH_LONG).show()
 
-                                    // 6. Send enrollment email
-                                    val data = hashMapOf("email" to studentEmail, "studentId" to studentId, "password" to finalPassword)
-                                    functions.getHttpsCallable("sendEnrollmentEmail").call(data)
+                                    // 6. Send enrollment email using GmailSender
+                                    sendEnrollmentEmail(studentEmail, studentId, finalPassword)
 
                                     loadPendingEnrollments()
                                 }
@@ -836,6 +837,35 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                     Toast.makeText(this, "Fatal Error: Cannot retrieve student details for finalization.", Toast.LENGTH_LONG).show()
                 }
         }
+    }
+
+    // -----------------------------
+    // NEW: Send Enrollment Email using GmailSender
+    // -----------------------------
+    private fun sendEnrollmentEmail(studentEmail: String, studentId: String, password: String) {
+        val gmailSender = GmailSender()
+
+        gmailSender.sendEnrollmentEmail(studentEmail, studentId, password, object : EmailSendCallback {
+            override fun onSending() {
+                Log.d("EnrollmentDebug", "📧 Preparing to send enrollment email to: $studentEmail")
+            }
+
+            override fun onSuccess() {
+                Log.d("EnrollmentDebug", "✅ Enrollment email sent successfully to: $studentEmail")
+            }
+
+            override fun onComplete(success: Boolean) {
+                if (!success) {
+                    Log.e("EnrollmentDebug", "❌ Failed to send enrollment email to: $studentEmail")
+                    // You can show a toast or log the error, but don't block the enrollment process
+                    runOnUiThread {
+                        Toast.makeText(this@ManageEnrollmentsActivity,
+                            "Enrollment completed but email failed to send",
+                            Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        })
     }
 
     // -----------------------------
@@ -878,15 +908,34 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
         firestore.collection("notPassedEnrollments").document(e.id).set(rejectionData)
         firestore.collection("pendingEnrollments").document(e.id).delete()
 
-        val rejectData = hashMapOf("email" to e.email)
-        functions.getHttpsCallable("sendRejectionEmail").call(rejectData)
-            .addOnSuccessListener {
-                Toast.makeText(this, "Rejection email sent!", Toast.LENGTH_SHORT).show()
-            }
-            .addOnFailureListener { Toast.makeText(this, "Failed to send rejection email.", Toast.LENGTH_SHORT).show() }
+        // NEW: Send rejection email using GmailSender
+        sendRejectionEmail(e.email)
 
         Toast.makeText(this, "Marked as Rejected", Toast.LENGTH_SHORT).show()
         loadPendingEnrollments()
+    }
+
+    // -----------------------------
+    // NEW: Send Rejection Email using GmailSender
+    // -----------------------------
+    private fun sendRejectionEmail(studentEmail: String) {
+        val gmailSender = GmailSender()
+
+        gmailSender.sendRejectionEmail(studentEmail, object : EmailSendCallback {
+            override fun onSending() {
+                Log.d("EnrollmentDebug", "📧 Preparing to send rejection email to: $studentEmail")
+            }
+
+            override fun onSuccess() {
+                Log.d("EnrollmentDebug", "✅ Rejection email sent successfully to: $studentEmail")
+            }
+
+            override fun onComplete(success: Boolean) {
+                if (!success) {
+                    Log.e("EnrollmentDebug", "❌ Failed to send rejection email to: $studentEmail")
+                }
+            }
+        })
     }
 
     // -----------------------------

@@ -82,6 +82,113 @@ class GmailSender {
         }
     }
 
+    // NEW: Send enrollment email
+    fun sendEnrollmentEmail(toEmail: String, studentId: String, password: String, callback: EmailSendCallback): Boolean {
+        return try {
+            Log.d(TAG, "Attempting to send enrollment email to: $toEmail")
+            callback.onSending()
+
+            val props = Properties().apply {
+                put("mail.smtp.auth", "true")
+                put("mail.smtp.starttls.enable", "true")
+                put("mail.smtp.host", SMTP_HOST)
+                put("mail.smtp.port", SMTP_PORT)
+                put("mail.smtp.ssl.trust", SMTP_HOST)
+                put("mail.smtp.ssl.protocols", "TLSv1.2")
+                put("mail.smtp.timeout", "20000")
+                put("mail.smtp.connectiontimeout", "20000")
+            }
+
+            val session = Session.getInstance(props, object : Authenticator() {
+                override fun getPasswordAuthentication(): PasswordAuthentication {
+                    return PasswordAuthentication(SENDER_EMAIL, SENDER_PASSWORD)
+                }
+            })
+
+            val message = MimeMessage(session).apply {
+                setFrom(InternetAddress(SENDER_EMAIL, "Data Dome University"))
+                addRecipient(Message.RecipientType.TO, InternetAddress(toEmail))
+                subject = "🎉 Congratulations! You Have Been Accepted to Data Dome University"
+
+                // Create multipart message with both text and HTML versions
+                setContent(createEnrollmentEmailContent(studentId, password))
+            }
+
+            Thread {
+                try {
+                    Transport.send(message)
+                    Log.d(TAG, "✅ Enrollment email sent successfully to $toEmail")
+                    callback.onSuccess()
+                    callback.onComplete(true)
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ Failed to send enrollment email: ${e.message}")
+                    e.printStackTrace()
+                    callback.onComplete(false)
+                }
+            }.start()
+
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Enrollment email preparation failed: ${e.message}")
+            e.printStackTrace()
+            callback.onComplete(false)
+            false
+        }
+    }
+
+    // NEW: Send rejection email
+    fun sendRejectionEmail(toEmail: String, callback: EmailSendCallback): Boolean {
+        return try {
+            Log.d(TAG, "Attempting to send rejection email to: $toEmail")
+            callback.onSending()
+
+            val props = Properties().apply {
+                put("mail.smtp.auth", "true")
+                put("mail.smtp.starttls.enable", "true")
+                put("mail.smtp.host", SMTP_HOST)
+                put("mail.smtp.port", SMTP_PORT)
+                put("mail.smtp.ssl.trust", SMTP_HOST)
+                put("mail.smtp.ssl.protocols", "TLSv1.2")
+                put("mail.smtp.timeout", "20000")
+                put("mail.smtp.connectiontimeout", "20000")
+            }
+
+            val session = Session.getInstance(props, object : Authenticator() {
+                override fun getPasswordAuthentication(): PasswordAuthentication {
+                    return PasswordAuthentication(SENDER_EMAIL, SENDER_PASSWORD)
+                }
+            })
+
+            val message = MimeMessage(session).apply {
+                setFrom(InternetAddress(SENDER_EMAIL, "Data Dome University"))
+                addRecipient(Message.RecipientType.TO, InternetAddress(toEmail))
+                subject = "Application Status Update - Data Dome University"
+
+                setContent(createRejectionEmailContent())
+            }
+
+            Thread {
+                try {
+                    Transport.send(message)
+                    Log.d(TAG, "✅ Rejection email sent successfully to $toEmail")
+                    callback.onSuccess()
+                    callback.onComplete(true)
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ Failed to send rejection email: ${e.message}")
+                    e.printStackTrace()
+                    callback.onComplete(false)
+                }
+            }.start()
+
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Rejection email preparation failed: ${e.message}")
+            e.printStackTrace()
+            callback.onComplete(false)
+            false
+        }
+    }
+
     private fun createEmailContent(verificationCode: String): Multipart {
         val multipart = MimeMultipart("alternative")
 
@@ -93,6 +200,38 @@ class GmailSender {
         // Add HTML version (for modern email clients)
         val htmlPart = MimeBodyPart()
         htmlPart.setContent(createHtmlContent(verificationCode), "text/html; charset=utf-8")
+        multipart.addBodyPart(htmlPart)
+
+        return multipart
+    }
+
+    private fun createEnrollmentEmailContent(studentId: String, password: String): Multipart {
+        val multipart = MimeMultipart("alternative")
+
+        // Add plain text version
+        val textPart = MimeBodyPart()
+        textPart.setText(createEnrollmentPlainTextContent(studentId, password))
+        multipart.addBodyPart(textPart)
+
+        // Add HTML version
+        val htmlPart = MimeBodyPart()
+        htmlPart.setContent(createEnrollmentHtmlContent(studentId, password), "text/html; charset=utf-8")
+        multipart.addBodyPart(htmlPart)
+
+        return multipart
+    }
+
+    private fun createRejectionEmailContent(): Multipart {
+        val multipart = MimeMultipart("alternative")
+
+        // Add plain text version
+        val textPart = MimeBodyPart()
+        textPart.setText(createRejectionPlainTextContent())
+        multipart.addBodyPart(textPart)
+
+        // Add HTML version
+        val htmlPart = MimeBodyPart()
+        htmlPart.setContent(createRejectionHtmlContent(), "text/html; charset=utf-8")
         multipart.addBodyPart(htmlPart)
 
         return multipart
@@ -116,6 +255,58 @@ class GmailSender {
             Data Dome App Team
             
             Need help? Contact us at dtdmspprt@gmail.com
+        """.trimIndent()
+    }
+
+    private fun createEnrollmentPlainTextContent(studentId: String, password: String): String {
+        return """
+            CONGRATULATIONS ON YOUR ACCEPTANCE TO DATA DOME UNIVERSITY!
+            
+            Dear Student,
+            
+            We are thrilled to inform you that you have been accepted to Data Dome University!
+            
+            Your Student Credentials:
+            Student ID: $studentId
+            Temporary Password: $password
+            
+            Please log in to the student portal using these credentials to begin your academic journey.
+            
+            How to Get Started:
+            1. Visit the Student Portal
+            2. Log in using your Student ID and Temporary Password
+            3. Change your password for security
+            4. Complete your student profile
+            5. Access your class schedule and materials
+            
+            We are excited to welcome you to our campus community and look forward to supporting you 
+            throughout your academic journey.
+            
+            Best regards,
+            The Admissions Team
+            Data Dome University
+            
+            Need assistance? Contact us at dtdmspprt@gmail.com
+        """.trimIndent()
+    }
+
+    private fun createRejectionPlainTextContent(): String {
+        return """
+            APPLICATION STATUS UPDATE - DATA DOME UNIVERSITY
+            
+            Dear Applicant,
+            
+            Thank you for your interest in Data Dome University and for taking the time to submit your application.
+            
+            After careful consideration of all applications received, we regret to inform you that we are unable to offer you admission at this time.
+            
+            This decision was made after a thorough review process and does not reflect on your abilities or potential.
+            
+            We appreciate your interest in our institution and wish you every success in your future academic pursuits.
+            
+            Best regards,
+            The Admissions Team
+            Data Dome University
         """.trimIndent()
     }
 
@@ -471,4 +662,319 @@ class GmailSender {
             </html>
         """.trimIndent()
     }
+
+    private fun createEnrollmentHtmlContent(studentId: String, password: String): String {
+        return """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Congratulations! You're Accepted</title>
+                <style>
+                    * {
+                        margin: 0;
+                        padding: 0;
+                        box-sizing: border-box;
+                    }
+                    
+                    body {
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                        background-color: #FDFBF8;
+                        margin: 0;
+                        padding: 20px;
+                        line-height: 1.6;
+                    }
+                    
+                    .email-container {
+                        max-width: 600px;
+                        margin: 0 auto;
+                        background: #ffffff;
+                        border-radius: 12px;
+                        overflow: hidden;
+                        box-shadow: 0 4px 20px rgba(123, 17, 19, 0.1);
+                        border: 1px solid #e8e0d8;
+                    }
+                    
+                    .header {
+                        background: linear-gradient(135deg, #7B1113, #9B1C1F);
+                        color: white;
+                        padding: 40px 30px;
+                        text-align: center;
+                    }
+                    
+                    .header h1 {
+                        font-size: 32px;
+                        font-weight: 600;
+                        margin-bottom: 10px;
+                    }
+                    
+                    .header p {
+                        font-size: 18px;
+                        opacity: 0.95;
+                    }
+                    
+                    .content {
+                        padding: 40px 30px;
+                        color: #5a4c3d;
+                    }
+                    
+                    .welcome-section {
+                        margin-bottom: 30px;
+                    }
+                    
+                    .welcome-section p {
+                        margin-bottom: 15px;
+                        font-size: 16px;
+                    }
+                    
+                    .credentials-box {
+                        background: #f8f5f2;
+                        border: 2px solid #e8e0d8;
+                        border-radius: 8px;
+                        padding: 25px;
+                        margin: 25px 0;
+                    }
+                    
+                    .credentials-box h3 {
+                        color: #7B1113;
+                        margin-bottom: 15px;
+                        font-size: 20px;
+                    }
+                    
+                    .credential-item {
+                        margin: 12px 0;
+                        font-size: 16px;
+                    }
+                    
+                    .credential-item strong {
+                        color: #7B1113;
+                        display: inline-block;
+                        width: 150px;
+                    }
+                    
+                    .instructions {
+                        background: #f9f2f2;
+                        border-left: 4px solid #9B1C1F;
+                        padding: 20px;
+                        margin: 25px 0;
+                        border-radius: 0 8px 8px 0;
+                    }
+                    
+                    .instructions h3 {
+                        color: #7B1113;
+                        margin-bottom: 12px;
+                        font-size: 18px;
+                    }
+                    
+                    .instructions ol {
+                        margin-left: 20px;
+                    }
+                    
+                    .instructions li {
+                        margin-bottom: 8px;
+                    }
+                    
+                    .next-steps {
+                        margin: 25px 0;
+                    }
+                    
+                    .next-steps h3 {
+                        color: #7B1113;
+                        margin-bottom: 15px;
+                        font-size: 18px;
+                    }
+                    
+                    .footer {
+                        background: #f8f5f2;
+                        padding: 30px;
+                        text-align: center;
+                        border-top: 1px solid #e8e0d8;
+                    }
+                    
+                    .contact-info {
+                        color: #7B1113;
+                        margin-bottom: 15px;
+                        font-weight: 500;
+                    }
+                    
+                    .copyright {
+                        color: #8a7b6a;
+                        font-size: 14px;
+                        margin-top: 20px;
+                    }
+                    
+                    @media (max-width: 480px) {
+                        .content {
+                            padding: 30px 20px;
+                        }
+                        
+                        .header {
+                            padding: 30px 20px;
+                        }
+                        
+                        .header h1 {
+                            font-size: 26px;
+                        }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="email-container">
+                    <!-- Header -->
+                    <div class="header">
+                        <h1>🎉 Congratulations! 🎉</h1>
+                        <p>You Have Been Accepted to Data Dome University</p>
+                    </div>
+                    
+                    <!-- Content -->
+                    <div class="content">
+                        <div class="welcome-section">
+                            <p>Dear Student,</p>
+                            
+                            <p>We are thrilled to inform you that you have been accepted to <strong style="color: #7B1113;">Data Dome University</strong>!</p>
+                            
+                            <p>Welcome to our academic community where we are committed to helping you achieve your educational goals and unlock your full potential.</p>
+                        </div>
+                        
+                        <!-- Credentials -->
+                        <div class="credentials-box">
+                            <h3>Your Student Portal Credentials</h3>
+                            <div class="credential-item">
+                                <strong>Student ID:</strong> $studentId
+                            </div>
+                            <div class="credential-item">
+                                <strong>Temporary Password:</strong> $password
+                            </div>
+                        </div>
+                        
+                        <!-- Instructions -->
+                        <div class="instructions">
+                            <h3>How to Get Started:</h3>
+                            <ol>
+                                <li>Visit the Student Portal</li>
+                                <li>Log in using your Student ID and Temporary Password</li>
+                                <li>Change your password for security</li>
+                                <li>Complete your student profile</li>
+                                <li>Access your class schedule and materials</li>
+                            </ol>
+                        </div>
+                        
+                        <!-- Next Steps -->
+                        <div class="next-steps">
+                            <h3>Important Next Steps:</h3>
+                            <p>• Review your class schedule in the portal</p>
+                            <p>• Check important academic dates and deadlines</p>
+                            <p>• Familiarize yourself with university policies</p>
+                            <p>• Connect with your academic advisor</p>
+                        </div>
+                        
+                        <p>We are excited to welcome you to our campus community and look forward to supporting you throughout your academic journey.</p>
+                        
+                        <p style="margin-top: 20px;">
+                            Best regards,<br>
+                            <strong>The Admissions Team</strong><br>
+                            Data Dome University
+                        </p>
+                    </div>
+                    
+                    <!-- Footer -->
+                    <div class="footer">
+                        <div class="contact-info">
+                            Need assistance? Contact our support team at dtdmspprt@gmail.com
+                        </div>
+                        <div class="copyright">
+                            © ${java.time.Year.now().value} Data Dome University. All rights reserved.<br>
+                            Empowering students for a brighter future.
+                        </div>
+                    </div>
+                </div>
+            </body>
+            </html>
+        """.trimIndent()
+    }
+
+    private fun createRejectionHtmlContent(): String {
+        return """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Application Status Update</title>
+                <style>
+                    body {
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                        background-color: #FDFBF8;
+                        margin: 0;
+                        padding: 20px;
+                        line-height: 1.6;
+                    }
+                    
+                    .email-container {
+                        max-width: 600px;
+                        margin: 0 auto;
+                        background: #ffffff;
+                        border-radius: 12px;
+                        overflow: hidden;
+                        box-shadow: 0 4px 20px rgba(123, 17, 19, 0.1);
+                        border: 1px solid #e8e0d8;
+                    }
+                    
+                    .header {
+                        background: #5a4c3d;
+                        color: white;
+                        padding: 30px;
+                        text-align: center;
+                    }
+                    
+                    .content {
+                        padding: 40px 30px;
+                        color: #5a4c3d;
+                    }
+                    
+                    .footer {
+                        background: #f8f5f2;
+                        padding: 20px;
+                        text-align: center;
+                        border-top: 1px solid #e8e0d8;
+                        color: #8a7b6a;
+                        font-size: 14px;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="email-container">
+                    <div class="header">
+                        <h1>Application Status Update</h1>
+                    </div>
+                    
+                    <div class="content">
+                        <p>Dear Applicant,</p>
+                        
+                        <p>Thank you for your interest in Data Dome University and for taking the time to submit your application.</p>
+                        
+                        <p>After careful consideration of all applications received, we regret to inform you that we are unable to offer you admission at this time.</p>
+                        
+                        <p>This decision was made after a thorough review process and does not reflect on your abilities or potential. The selection process is highly competitive, and we receive many qualified applications each year.</p>
+                        
+                        <p>We appreciate your interest in our institution and wish you every success in your future academic pursuits and career endeavors.</p>
+                        
+                        <p style="margin-top: 20px;">
+                            Best regards,<br>
+                            <strong>The Admissions Team</strong><br>
+                            Data Dome University
+                        </p>
+                    </div>
+                    
+                    <div class="footer">
+                        <p>© ${java.time.Year.now().value} Data Dome University. All rights reserved.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        """.trimIndent()
+    }
 }
+
+
