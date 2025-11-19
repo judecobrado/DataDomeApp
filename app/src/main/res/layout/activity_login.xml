@@ -168,44 +168,12 @@
                 app:layout_constraintStart_toStartOf="parent"  app:layout_constraintTop_toBottomOf="@id/tvForgotPassword"
                 app:rippleColor="#FDFBF8" />
 
-            <TextView
-                android:id="@+id/tvSeparator"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:text="— OR QUICK SCAN —"
-                android:textColor="#9B1C1F"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:layout_marginTop="24dp"
-                app:layout_constraintTop_toBottomOf="@id/btnLogin"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"/>
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnRfidLogin"
-                android:layout_width="280dp"
-                android:layout_height="45dp"
-                android:layout_marginTop="8dp"
-                android:backgroundTint="#FDFBF8"
-                android:text="SCAN ID CARD (RFID)"
-                android:textColor="#7B1113"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                app:cornerRadius="15dp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintHorizontal_bias="0.492"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tvSeparator"
-                app:rippleColor="#9B1C1F"
-                app:strokeColor="#7B1113"
-                app:strokeWidth="2dp" />
-
             <ProgressBar
                 android:id="@+id/progressBar"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:visibility="gone"
-                app:layout_constraintTop_toBottomOf="@id/btnRfidLogin"
+                app:layout_constraintTop_toBottomOf="@id/btnLogin"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 android:layout_marginTop="24dp"

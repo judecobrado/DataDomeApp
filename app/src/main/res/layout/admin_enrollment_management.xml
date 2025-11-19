@@ -13,7 +13,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:cardCornerRadius="0dp"
-        app:cardElevation="4dp"
         app:cardBackgroundColor="#7B1113"
         android:layout_marginBottom="16dp">
 
@@ -51,6 +50,7 @@
                 android:orientation="horizontal"
                 android:gravity="center">
 
+                <!-- Your existing stats cards - they're already in your XML, just need to update the IDs -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -325,6 +325,7 @@
                 android:layout_height="wrap_content"
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
                 tools:listitem="@layout/admin_enrollment_item" />
+
 
         </LinearLayout>
 

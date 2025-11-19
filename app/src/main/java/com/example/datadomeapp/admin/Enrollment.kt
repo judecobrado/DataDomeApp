@@ -48,6 +48,9 @@ data class Enrollment(
     val status: String = "pending",
     val timestamp: Timestamp? = null,
     val isVerified: Boolean = false,
+    var studentLastNameExtension: String = "",
+    var fatherLastNameExtension: String = "",
+    var motherLastNameExtension: String = "",
     // Additional field for raw data
     val data: Map<String, Any> = emptyMap()
 ) {
@@ -82,6 +85,7 @@ data class Enrollment(
             "motherDOB" to motherDOB,
             "motherPhone" to motherPhone,
             "motherOccupation" to motherOccupation,
+
             // Address information
             "country" to country,
             "region" to region,

@@ -81,6 +81,11 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
     private val auth = FirebaseAuth.getInstance()
     private lateinit var functions: FirebaseFunctions
 
+    private lateinit var tvPendingCount: TextView
+    private lateinit var tvApprovedCount: TextView
+    private lateinit var tvRejectedCount: TextView
+    private lateinit var tvRequestCount: TextView
+
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: EnrollmentAdapter
     private val enrollmentList = mutableListOf<Enrollment>()
@@ -95,6 +100,11 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.admin_enrollment_management)
 
+        tvPendingCount = findViewById(R.id.tvPendingCount)
+        tvApprovedCount = findViewById(R.id.tvApprovedCount)
+        tvRejectedCount = findViewById(R.id.tvRejectedCount)
+        tvRequestCount = findViewById(R.id.tvRequestCount)
+
         // Tiyakin na tama ang region
         functions = FirebaseFunctions.getInstance("asia-southeast1")
 
@@ -107,6 +117,7 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
         recyclerView.adapter = adapter
 
         loadPendingEnrollments()
+        loadEnrollmentCounts()
 
         val btnToggleSignup = findViewById<Button>(R.id.btnToggleSignup)
 
@@ -138,6 +149,52 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
         }
     }
 
+    private fun loadEnrollmentCounts() {
+        Log.d("EnrollmentDebug", "🔄 Loading enrollment counts...")
+
+        // Count Pending Enrollments
+        firestore.collection("pendingEnrollments")
+            .whereEqualTo("status", "submitted")
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val pendingCount = snapshot.documents.size
+                tvPendingCount.text = pendingCount.toString()
+                tvRequestCount.text = "($pendingCount)"
+                Log.d("EnrollmentDebug", "📊 Pending count: $pendingCount")
+            }
+            .addOnFailureListener { exception ->
+                Log.e("EnrollmentDebug", "❌ Error counting pending enrollments", exception)
+                tvPendingCount.text = "0"
+            }
+
+        // Count Approved Enrollments (students collection)
+        firestore.collection("students")
+            .whereEqualTo("status", "Admitted")
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val approvedCount = snapshot.documents.size
+                tvApprovedCount.text = approvedCount.toString()
+                Log.d("EnrollmentDebug", "📊 Approved count: $approvedCount")
+            }
+            .addOnFailureListener { exception ->
+                Log.e("EnrollmentDebug", "❌ Error counting approved enrollments", exception)
+                tvApprovedCount.text = "0"
+            }
+
+        // Count Rejected Enrollments
+        firestore.collection("notPassedEnrollments")
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val rejectedCount = snapshot.documents.size
+                tvRejectedCount.text = rejectedCount.toString()
+                Log.d("EnrollmentDebug", "📊 Rejected count: $rejectedCount")
+            }
+            .addOnFailureListener { exception ->
+                Log.e("EnrollmentDebug", "❌ Error counting rejected enrollments", exception)
+                tvRejectedCount.text = "0"
+            }
+    }
+
     private fun loadPendingEnrollments() {
         Log.d("EnrollmentDebug", "🔄 Starting to load pending enrollments...")
 
@@ -153,6 +210,9 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                     Log.d("EnrollmentDebug", "ℹ️ No pending enrollments found with status 'submitted'")
                     Toast.makeText(this, "No pending enrollments found.", Toast.LENGTH_SHORT).show()
                     adapter.notifyDataSetChanged()
+                    // ✅ DAGDAG: Update pending count to 0 when empty
+                    tvPendingCount.text = "0"
+                    tvRequestCount.text = "(0)"
                     return@addOnSuccessListener
                 }
 
@@ -174,6 +234,10 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                 adapter.notifyDataSetChanged()
                 Log.d("EnrollmentDebug", "🎉 Successfully loaded ${enrollmentList.size} enrollments")
 
+                // ✅ DAGDAG: Update the pending count with the actual loaded count
+                tvPendingCount.text = enrollmentList.size.toString()
+                tvRequestCount.text = "(${enrollmentList.size})"
+
                 if (enrollmentList.isEmpty()) {
                     Toast.makeText(this, "No valid pending enrollments found.", Toast.LENGTH_SHORT).show()
                 }
@@ -182,6 +246,9 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                 val errorMsg = "Failed to load enrollments: ${exception.message}"
                 Toast.makeText(this, errorMsg, Toast.LENGTH_LONG).show()
                 Log.e("EnrollmentDebug", "❌ Error loading pending enrollments", exception)
+                // ✅ DAGDAG: Reset counts on error
+                tvPendingCount.text = "0"
+                tvRequestCount.text = "(0)"
             }
     }
 
@@ -202,6 +269,11 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
         val tvGuardianRelationship = dialogView.findViewById<TextView>(R.id.tvGuardianRelationship)
         val spinnerFinalYearLevel = dialogView.findViewById<Spinner>(R.id.spinnerFinalYearLevel)
         val spinnerFinalEnrollmentType = dialogView.findViewById<Spinner>(R.id.spinnerFinalEnrollmentType)
+
+        val yearAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, listOf("1st Year"))
+        yearAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerFinalYearLevel.adapter = yearAdapter
+        spinnerFinalYearLevel.isEnabled = false
 
         // Use direct field access from the Enrollment model
         val courseName = if (e.courseName.isNotEmpty()) e.courseName else e.course
@@ -224,7 +296,6 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
 
         val guardianRelationship = e.guardianRelationship
 
-        tvName.text = "Name: ${e.lastName}, ${e.firstName} ${e.middleName.firstOrNull() ?: ""}"
         tvEmail.text = "Email: ${e.email}"
         tvPhone.text = "Phone: ${e.phone}"
         tvAddress.text = "Address: ${e.address}"
@@ -234,28 +305,50 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
         tvGuardian.text = "Guardian: ${e.guardianName} (${e.guardianPhone})"
         tvGuardianRelationship.text = "Guardian Relationship: $guardianRelationship"
 
-        // Parent information
-        val fatherFullName = buildString {
-            append(fatherFirstName)
-            if (fatherMiddleName.isNotEmpty()) append(" $fatherMiddleName")
-            append(" $fatherLastName")
+        val studentDisplayName = buildString {
+            append(e.lastName)
+            if (e.studentLastNameExtension.isNotEmpty()) {
+                append(" ${e.studentLastNameExtension}")
+            }
+            append(", ${e.firstName}")
+            if (e.middleName.isNotEmpty()) {
+                append(" ${e.middleName.first()}.")
+            }
         }
 
-        val motherFullName = buildString {
-            append(motherFirstName)
-            if (motherMiddleName.isNotEmpty()) append(" $motherMiddleName")
-            append(" $motherLastName")
+        val fatherDisplayName = buildString {
+            append(e.fatherFirstName)
+            if (e.fatherMiddleName.isNotEmpty()) {
+                append(" ${e.fatherMiddleName}")
+            }
+            append(" ${e.fatherLastName}")
+            if (e.fatherLastNameExtension.isNotEmpty()) {
+                append(" ${e.fatherLastNameExtension}")
+            }
         }
 
-        tvFatherInfo.text = "Father: $fatherFullName\nPhone: $fatherPhone\nOccupation: $fatherOccupation\nDOB: ${if (fatherDOB.isNotEmpty()) fatherDOB else "Not provided"}"
-        tvMotherInfo.text = "Mother: $motherFullName\nPhone: $motherPhone\nOccupation: $motherOccupation\nDOB: ${if (motherDOB.isNotEmpty()) motherDOB else "Not provided"}"
+        val motherDisplayName = buildString {
+            append(e.motherFirstName)
+            if (e.motherMiddleName.isNotEmpty()) {
+                append(" ${e.motherMiddleName}")
+            }
+            append(" ${e.motherLastName}")
+            if (e.motherLastNameExtension.isNotEmpty()) {
+                append(" ${e.motherLastNameExtension}")
+            }
+        }
+
+        // ✅ SET DISPLAY NAMES ONLY (separate pa rin sa database)
+        tvName.text = "Name: $studentDisplayName"
+        tvFatherInfo.text = "Father: $fatherDisplayName\nPhone: ${e.fatherPhone}\nOccupation: ${e.fatherOccupation}\nDOB: ${if (e.fatherDOB.isNotEmpty()) e.fatherDOB else "Not provided"}"
+        tvMotherInfo.text = "Mother: $motherDisplayName\nPhone: ${e.motherPhone}\nOccupation: ${e.motherOccupation}\nDOB: ${if (e.motherDOB.isNotEmpty()) e.motherDOB else "Not provided"}"
 
         val applicationType = if (e.applicationType.isNotEmpty()) e.applicationType else "N/A"
         tvApplicationType.text = "Application Status: $applicationType"
 
-        val yearAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, finalYearLevels)
-        yearAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spinnerFinalYearLevel.adapter = yearAdapter
+        //val yearAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, finalYearLevels)
+        //yearAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        //spinnerFinalYearLevel.adapter = yearAdapter
 
         val typeAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, finalEnrollmentTypes)
         typeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
@@ -297,6 +390,7 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
     private fun showSubjectSelectionDialog(
         course: String, finalYearLevel: String, finalEnrollmentType: String, studentEmail: String, pendingEnrollmentId: String
     ) {
+
         val normalizedCourseCode = course
         val yearLevelClean = finalYearLevel.replace(" ", "")
         val curriculumDocId = "${normalizedCourseCode}_$yearLevelClean"
@@ -405,6 +499,7 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.admin_enrollment_dialog_finalize, null)
         val selectionList = dialogView.findViewById<LinearLayout>(R.id.llSubjectSelections)
         val btnFinalize = dialogView.findViewById<Button>(R.id.btnFinalizeEnrollment)
+        val btnCancel = dialogView.findViewById<Button>(R.id.btnCancelEnrollment)
 
         val dialogTitle = "Enrollment: $finalEnrollmentType ($finalYearLevel)"
         val dialog = AlertDialog.Builder(this)
@@ -414,6 +509,11 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
             .create()
 
         val finalSelections = mutableMapOf<String, LocalClassAssignment?>()
+
+        btnCancel.setOnClickListener {
+            dialog.dismiss()
+            Toast.makeText(this, "Enrollment selection cancelled.", Toast.LENGTH_SHORT).show()
+        }
 
         // 🛑 REGULAR STUDENT LOGIC: SINGLE SECTION SELECTION
         if (finalEnrollmentType == "Regular") {
@@ -772,6 +872,7 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                                     "academicYear" to currentAcademicYear,
                                     "semester" to currentSemester,
                                     "courseCode" to courseCode,
+                                    "courseName" to e.courseName,
                                     "status" to "Admitted",
                                     "isEnrolled" to true,
                                     "yearLevel" to finalYearLevel,
@@ -802,7 +903,18 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                                     "motherLastName" to e.motherLastName,
                                     "motherDOB" to e.motherDOB,
                                     "motherPhone" to e.motherPhone,
-                                    "motherOccupation" to e.motherOccupation
+                                    "motherOccupation" to e.motherOccupation,
+                                    "studentLastNameExtension" to e.studentLastNameExtension,
+                                    "fatherLastNameExtension" to e.fatherLastNameExtension,
+                                    "motherLastNameExtension" to e.motherLastNameExtension,
+                                    "country" to e.country,
+                                    "region" to e.region,
+                                    "province" to e.province,
+                                    "municipality" to e.municipality,
+                                    "barangay" to e.barangay,
+                                    "street" to e.street,
+                                    "postalCode" to e.postalCode,
+                                    "fullAddress" to e.fullAddress
                                 ))
 
                                 // 5. Clean up pending enrollment
@@ -814,6 +926,7 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                                     // 6. Send enrollment email using GmailSender
                                     sendEnrollmentEmail(studentEmail, studentId, finalPassword)
 
+                                    loadPendingEnrollments()
                                     loadPendingEnrollments()
                                 }
                                     .addOnFailureListener { batchError ->
@@ -872,6 +985,21 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
     // Mark as Not Passed (Reject)
     // -----------------------------
     private fun markAsNotPassed(e: Enrollment) {
+        // Confirmation dialog bago i-reject
+        AlertDialog.Builder(this)
+            .setTitle("Confirm Rejection")
+            .setMessage("Are you sure you want to reject ${e.firstName} ${e.lastName}'s enrollment application? This action cannot be undone.")
+            .setPositiveButton("Yes, Reject") { dialog, which ->
+                // Ito ang original na reject logic
+                performRejection(e)
+            }
+            .setNegativeButton("Cancel", null)
+            .setIcon(android.R.drawable.ic_dialog_alert)
+            .show()
+    }
+
+    // Hiwalay na function para sa actual na rejection process
+    private fun performRejection(e: Enrollment) {
         val rejectionData = hashMapOf<String, Any>(
             "id" to e.id,
             "firstName" to e.firstName,
@@ -901,6 +1029,9 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
             "motherDOB" to e.motherDOB,
             "motherPhone" to e.motherPhone,
             "motherOccupation" to e.motherOccupation,
+            "studentLastNameExtension" to e.studentLastNameExtension,
+            "fatherLastNameExtension" to e.fatherLastNameExtension,
+            "motherLastNameExtension" to e.motherLastNameExtension,
             "status" to "rejected",
             "rejectedAt" to Timestamp.now()
         )
@@ -908,11 +1039,12 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
         firestore.collection("notPassedEnrollments").document(e.id).set(rejectionData)
         firestore.collection("pendingEnrollments").document(e.id).delete()
 
-        // NEW: Send rejection email using GmailSender
+        // Send rejection email using GmailSender
         sendRejectionEmail(e.email)
 
-        Toast.makeText(this, "Marked as Rejected", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Enrollment application rejected", Toast.LENGTH_SHORT).show()
         loadPendingEnrollments()
+        loadEnrollmentCounts()
     }
 
     // -----------------------------
@@ -984,7 +1116,15 @@ class EnrollmentAdapter(
 
     override fun onBindViewHolder(holder: EnrollmentViewHolder, position: Int) {
         val enrollment = items[position]
-        holder.tvName.text = "${enrollment.firstName} ${enrollment.lastName}"
+
+        // ✅ DISPLAY ONLY: Combine suffix for list display
+        val displayName = if (enrollment.studentLastNameExtension.isNotEmpty()) {
+            "${enrollment.firstName} ${enrollment.lastName} ${enrollment.studentLastNameExtension}"
+        } else {
+            "${enrollment.firstName} ${enrollment.lastName}"
+        }
+
+        holder.tvName.text = displayName
         holder.tvEmail.text = enrollment.email
         holder.itemView.setOnClickListener { clickListener(enrollment) }
     }
