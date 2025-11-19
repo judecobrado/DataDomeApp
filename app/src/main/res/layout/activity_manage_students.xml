@@ -1,59 +1,335 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/student_root"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:background="@drawable/gradient_background"
+    android:fillViewport="true"
+    android:padding="20dp">
 
-    <EditText
-        android:id="@+id/etFirstName"
-        android:hint="First Name"
+    <LinearLayout
+        android:id="@+id/student_root"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
-    <EditText
-        android:id="@+id/etLastName"
-        android:hint="Last Name"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        <!-- Header Section - SMALLER VERSION -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="#7B1113"
+            android:layout_marginBottom="20dp">
 
-    <EditText
-        android:id="@+id/etBirthday"
-        android:hint="Birthday (YYYY-MM-DD)"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="16dp">
 
-    <EditText
-        android:id="@+id/etEmail"
-        android:hint="Email"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+                <ImageView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:src="@drawable/ic_student_management"
+                    android:layout_marginEnd="12dp"
+                    app:tint="@android:color/white" />
 
-    <Button
-        android:id="@+id/btnAddStudent"
-        android:text="Add Student"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
 
-    <Button
-        android:id="@+id/btnDeleteStudent"
-        android:text="Delete Student"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Student Management"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="@android:color/white"
+                        android:letterSpacing="0.01" />
 
-    <ListView
-        android:id="@+id/lvStudents"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:choiceMode="singleChoice"
-        android:listSelector="@android:color/darker_gray"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Add and manage student records"
+                        android:textSize="12sp"
+                        android:textColor="#FFCCCB"
+                        android:layout_marginTop="2dp" />
 
-    <Button
-        android:id="@+id/btnBackStudents"
-        android:text="Back"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+                </LinearLayout>
 
-</LinearLayout>
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Student Form Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="@android:color/white"
+            app:strokeColor="#E8E8E8"
+            app:strokeWidth="1dp"
+            android:layout_marginBottom="24dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Student Information"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#7B1113"
+                    android:layout_marginBottom="20dp"
+                    android:drawablePadding="8dp"
+                    android:drawableStart="@drawable/ic_person"
+                    android:drawableTint="#7B1113" />
+
+                <!-- First Name -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:boxStrokeColor="#7B1113"
+                    app:hintTextColor="#7B1113"
+                    app:startIconDrawable="@drawable/ic_badge"
+                    app:startIconTint="#7B1113">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etFirstName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="First Name"
+                        android:textSize="16sp"
+                        android:padding="16dp"
+                        android:background="@android:color/transparent"
+                        android:textColor="#212121"
+                        android:textColorHint="#9E9E9E" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Last Name -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:boxStrokeColor="#7B1113"
+                    app:hintTextColor="#7B1113"
+                    app:startIconDrawable="@drawable/ic_badge"
+                    app:startIconTint="#7B1113">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etLastName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Last Name"
+                        android:textSize="16sp"
+                        android:padding="16dp"
+                        android:background="@android:color/transparent"
+                        android:textColor="#212121"
+                        android:textColorHint="#9E9E9E" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Birthday -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:boxStrokeColor="#7B1113"
+                    app:hintTextColor="#7B1113"
+                    app:startIconDrawable="@drawable/ic_cake"
+                    app:startIconTint="#7B1113">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etBirthday"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Birthday (YYYY-MM-DD)"
+                        android:textSize="16sp"
+                        android:padding="16dp"
+                        android:background="@android:color/transparent"
+                        android:textColor="#212121"
+                        android:textColorHint="#9E9E9E" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Email -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="24dp"
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:boxStrokeColor="#7B1113"
+                    app:hintTextColor="#7B1113"
+                    app:startIconDrawable="@drawable/ic_email"
+                    app:startIconTint="#7B1113">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etEmail"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Email Address"
+                        android:textSize="16sp"
+                        android:padding="16dp"
+                        android:background="@android:color/transparent"
+                        android:inputType="textEmailAddress"
+                        android:textColor="#212121"
+                        android:textColorHint="#9E9E9E" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Action Buttons -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnAddStudent"
+                        android:layout_width="0dp"
+                        android:layout_height="56dp"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="8dp"
+                        android:text="Add Student"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        app:cornerRadius="12dp"
+                        app:icon="@drawable/ic_add"
+                        app:iconGravity="textStart"
+                        app:iconPadding="8dp"
+                        app:backgroundTint="#7B1113"
+                        app:elevation="4dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnDeleteStudent"
+                        android:layout_width="0dp"
+                        android:layout_height="56dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="8dp"
+                        android:text="Delete"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        app:cornerRadius="12dp"
+                        app:icon="@drawable/ic_delete"
+                        app:iconGravity="textStart"
+                        app:iconPadding="8dp"
+                        app:backgroundTint="#D32F2F"
+                        app:elevation="4dp" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Students List Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="@android:color/white"
+            app:strokeColor="#E8E8E8"
+            app:strokeWidth="1dp"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+
+                <!-- List Header -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="20dp"
+                    android:background="#F8F9FA">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_list"
+                        android:layout_marginEnd="12dp"
+                        app:tint="#7B1113" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Student List"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="#7B1113" />
+
+                    <TextView
+                        android:id="@+id/tvStudentCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0 students"
+                        android:textSize="12sp"
+                        android:textColor="#666666"
+                        android:background="@drawable/bg_count_pill"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="4dp" />
+
+                </LinearLayout>
+
+                <!-- Students List -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/lvStudents"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:padding="8dp" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Back Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnBackStudents"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="Back to Dashboard"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:cornerRadius="12dp"
+            app:icon="@drawable/ic_arrow_back"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp"
+            app:backgroundTint="#666666"
+            app:elevation="2dp" />
+
+    </LinearLayout>
+</ScrollView>

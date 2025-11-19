@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp"
+    android:background="@color/background_color"
     tools:context=".teacher.GradeInputActivity">
 
+    <!-- Header Section -->
     <TextView
         android:id="@+id/tvGradeTitle"
         android:layout_width="match_parent"
@@ -16,28 +19,104 @@
         android:textSize="22sp"
         android:textStyle="bold"
         android:gravity="center"
-        android:layout_marginBottom="8dp"/>
+        android:padding="20dp"
+        android:background="@drawable/header_background"
+        android:textColor="@color/white"
+        android:layout_marginBottom="20dp"
+        android:elevation="4dp"/>
 
-    <TextView
-        android:id="@+id/tvLoadingStatus"
+    <!-- Status Indicator -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Loading data..."
-        android:gravity="center"
-        android:layout_marginBottom="16dp"
-        android:textColor="@android:color/holo_blue_dark"/>
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="24dp"
+        android:padding="16dp"
+        android:background="@drawable/status_background"
+        android:elevation="2dp">
 
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginEnd="12dp"
+            android:indeterminateTint="@color/maroon_primary"
+            android:indeterminate="true" />
+
+        <TextView
+            android:id="@+id/tvLoadingStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Loading student data..."
+            android:textSize="15sp"
+            android:textColor="@color/maroon_dark"
+            android:textStyle="normal"
+            android:letterSpacing="0.02"/>
+    </LinearLayout>
+
+    <!-- Section Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="12dp">
+
+        <View
+            android:layout_width="4dp"
+            android:layout_height="24dp"
+            android:background="@color/maroon_primary"
+            android:layout_marginEnd="12dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="STUDENT GRADES"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@color/maroon_primary"
+            android:letterSpacing="0.03"/>
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1"
+            android:background="@color/maroon_light"
+            android:layout_marginStart="12dp"/>
+    </LinearLayout>
+
+    <!-- Grades List -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewGrades"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"/> <Button
-    android:id="@+id/btnSaveGrades"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:text="💾 Save All Grades"
-    android:layout_marginTop="16dp"
-    android:padding="12dp"
-    android:textSize="18sp"/>
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingVertical="8dp"
+        android:layout_marginBottom="20dp"
+        android:background="@drawable/recycler_background"
+        android:elevation="1dp"/>
+
+    <!-- Action Button -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnSaveGrades"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="💾 SAVE ALL GRADES"
+        android:textSize="17sp"
+        android:textStyle="bold"
+        android:paddingVertical="16dp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        app:icon="@drawable/ic_save"
+        app:iconGravity="textStart"
+        app:iconTint="@color/white"
+        app:cornerRadius="12dp"
+        app:backgroundTint="@color/maroon_primary"
+        app:rippleColor="@color/maroon_dark"
+        android:textColor="@color/white"
+        android:elevation="6dp"
+        android:layout_marginTop="8dp"/>
 
 </LinearLayout>
