@@ -22,9 +22,6 @@ class CanteenStaffDashboardActivity : AppCompatActivity() {
 
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
-
-    private lateinit var tvCanteenTitle: TextView
-    private lateinit var tvWelcome: TextView
     private lateinit var btnLogout: LinearLayout
     private lateinit var btnMenu: LinearLayout
     private lateinit var btnOrders: LinearLayout
@@ -41,8 +38,6 @@ class CanteenStaffDashboardActivity : AppCompatActivity() {
         setContentView(R.layout.canteen_dashboard)
 
         // Initialize Views
-        tvCanteenTitle = findViewById(R.id.tvCanteenTitle)
-        tvWelcome = findViewById(R.id.tvWelcome)
         btnLogout = findViewById(R.id.btnLogout)
         btnMenu = findViewById(R.id.btnMenu)
         btnOrders = findViewById(R.id.btnOrders)
@@ -75,8 +70,6 @@ class CanteenStaffDashboardActivity : AppCompatActivity() {
                 val canteenStaffId = doc.getString("canteenStaffId")
 
                 if (canteenStaffId.isNullOrEmpty()) {
-                    tvCanteenTitle.text = "Canteen Dashboard"
-                    tvWelcome.text = "Staff data link not found."
                     Toast.makeText(this, "Error: Staff ID missing from user record.", Toast.LENGTH_LONG).show()
                     return@addOnSuccessListener
                 }
@@ -93,25 +86,6 @@ class CanteenStaffDashboardActivity : AppCompatActivity() {
         firestore.collection("canteen_staff").document(canteenStaffId)
             .get()
             .addOnSuccessListener { staffDoc ->
-                if (staffDoc.exists()) {
-                    val firstName = staffDoc.getString("firstName") ?: ""
-                    val lastName = staffDoc.getString("lastName") ?: ""
-                    staffCanteenName = staffDoc.getString("canteenName")
-
-                    // Set Canteen Name (first line)
-                    tvCanteenTitle.text = staffCanteenName ?: "Canteen Dashboard"
-                    tvCanteenTitle.textSize = 28f
-
-                    // Set Staff Welcome Name (second line)
-                    tvWelcome.text = "Welcome, $firstName $lastName!"
-                    tvWelcome.textSize = 18f
-
-                    // Retrieve image path (storeImageUrl) and display
-
-                } else {
-                    tvCanteenTitle.text = "Error"
-                    tvWelcome.text = "Staff data not found."
-                }
             }
             .addOnFailureListener { e ->
                 Toast.makeText(this, "Error fetching staff details: ${e.message}", Toast.LENGTH_SHORT).show()

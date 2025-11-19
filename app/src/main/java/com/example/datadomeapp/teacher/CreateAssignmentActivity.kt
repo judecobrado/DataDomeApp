@@ -7,12 +7,13 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.widget.*
-import com.google.firebase.firestore.FirebaseFirestore
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.example.datadomeapp.R
 import com.example.datadomeapp.models.Assignment
 import com.example.datadomeapp.repository.AssignmentRepository
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import java.text.SimpleDateFormat
 import java.util.*
@@ -28,11 +29,12 @@ class CreateAssignmentActivity : AppCompatActivity() {
 
     private var fileUri: Uri? = null
     private var dueDateMillis: Long = 0L
-    private var assignmentId: String = "" // ✅ CHANGED: Use assignmentId instead of classId
+    private var assignmentId: String = ""
     private var className: String? = null
     private val PICK_FILE_REQUEST = 1001
 
     private val db = FirebaseFirestore.getInstance()
+    private var loadingDialog: AlertDialog? = null
 
     private var academicTerm: String = ""
     private var academicYear: String = ""
@@ -50,7 +52,7 @@ class CreateAssignmentActivity : AppCompatActivity() {
         btnUploadFile = findViewById(R.id.btnUploadFile)
         btnCreate = findViewById(R.id.btnCreate)
 
-        // ✅ GET assignmentId FROM INTENT (Updated)
+        // ✅ GET assignmentId FROM INTENT
         assignmentId = intent.getStringExtra("assignmentId") ?: ""
         className = intent.getStringExtra("CLASS_NAME")
 
@@ -89,6 +91,38 @@ class CreateAssignmentActivity : AppCompatActivity() {
             .addOnFailureListener { e ->
                 Log.e("SystemSettings", "Failed to load system settings: ${e.message}")
             }
+    }
+
+    /** 🔄 Show professional loading dialog */
+    private fun showLoadingDialog(message: String = "Creating Assignment...") {
+        hideLoadingDialog() // Ensure any existing dialog is closed
+
+        val builder = AlertDialog.Builder(this)
+        builder.setView(R.layout.dialog_loading_professional)
+        builder.setCancelable(false)
+
+        loadingDialog = builder.create()
+        loadingDialog?.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        loadingDialog?.show()
+
+        // Set custom message
+        loadingDialog?.findViewById<TextView>(R.id.tvLoadingMessage)?.text = message
+
+        // Show sub-message for file uploads or slow connections
+        val subMessage = loadingDialog?.findViewById<TextView>(R.id.tvSubMessage)
+        if (message.contains("upload", ignoreCase = true)) {
+            subMessage?.text = "Uploading file, please wait..."
+        } else if (message.contains("saving", ignoreCase = true)) {
+            subMessage?.text = "Saving to database..."
+        } else {
+            subMessage?.text = "This may take a moment..."
+        }
+    }
+
+    /** 🔄 Hide loading dialog */
+    private fun hideLoadingDialog() {
+        loadingDialog?.dismiss()
+        loadingDialog = null
     }
 
     private fun createAssignment() {
@@ -130,6 +164,10 @@ class CreateAssignmentActivity : AppCompatActivity() {
                 return
             }
 
+        // Disable create button to prevent multiple clicks
+        btnCreate.isEnabled = false
+        btnCreate.text = "Creating..."
+
         val newAssignmentId = UUID.randomUUID().toString()
 
         // ✅ CREATE ASSIGNMENT WITH PROPER assignmentId
@@ -138,7 +176,7 @@ class CreateAssignmentActivity : AppCompatActivity() {
             teacherId = teacherId,
             title = title,
             instructions = instructions,
-            classId = assignmentId, // ✅ This is now the assignmentId from the class we selected
+            classId = assignmentId,
             dueDateMillis = dueDateMillis,
             createdAt = System.currentTimeMillis()
         )
@@ -148,6 +186,9 @@ class CreateAssignmentActivity : AppCompatActivity() {
         assignment.semester = semester
 
         Log.d("CreateAssignment", "Creating assignment: ${assignment.title} for assignmentId: ${assignment.classId}")
+
+        // Show loading dialog
+        showLoadingDialog("Creating assignment...")
 
         if (fileUri != null) {
             uploadFileAndCreateAssignment(assignment, fileUri!!)
@@ -246,17 +287,33 @@ class CreateAssignmentActivity : AppCompatActivity() {
 
     /** ☁️ Upload file to Firebase Storage, then create assignment */
     private fun uploadFileAndCreateAssignment(assignment: Assignment, fileUri: Uri) {
+        // Update loading message for file upload
+        showLoadingDialog("Uploading file...")
+
         val storageRef = FirebaseStorage.getInstance()
             .reference.child("assignment_files/${assignment.classId}/${assignment.id}/${UUID.randomUUID()}")
 
         storageRef.putFile(fileUri)
             .addOnSuccessListener {
+                // Update loading message for getting download URL
+                showLoadingDialog("Finalizing assignment...")
+
                 storageRef.downloadUrl.addOnSuccessListener { uri ->
                     assignment.fileUrl = uri.toString()
                     createAssignmentInFirestore(assignment)
                 }
+                    .addOnFailureListener { e ->
+                        hideLoadingDialog()
+                        btnCreate.isEnabled = true
+                        btnCreate.text = "Create Assignment"
+                        Toast.makeText(this, "Failed to get file URL: ${e.message}", Toast.LENGTH_LONG).show()
+                        Log.e("CreateAssignment", "Download URL failed", e)
+                    }
             }
             .addOnFailureListener { e ->
+                hideLoadingDialog()
+                btnCreate.isEnabled = true
+                btnCreate.text = "Create Assignment"
                 Toast.makeText(this, "Upload failed: ${e.message}", Toast.LENGTH_LONG).show()
                 Log.e("CreateAssignment", "File upload failed", e)
             }
@@ -264,7 +321,13 @@ class CreateAssignmentActivity : AppCompatActivity() {
 
     /** 🔥 Create Firestore document */
     private fun createAssignmentInFirestore(assignment: Assignment) {
+        showLoadingDialog("Saving to database...")
+
         AssignmentRepository.createAssignment(assignment) { success, error ->
+            hideLoadingDialog()
+            btnCreate.isEnabled = true
+            btnCreate.text = "Create Assignment"
+
             if (success) {
                 Toast.makeText(this, "✅ Assignment created successfully for this class!", Toast.LENGTH_SHORT).show()
                 Log.d("CreateAssignment", "Assignment saved with assignmentId: ${assignment.classId}")
@@ -274,5 +337,10 @@ class CreateAssignmentActivity : AppCompatActivity() {
                 Log.e("CreateAssignment", "Firestore save failed: $error")
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        hideLoadingDialog() // Prevent memory leaks
     }
 }

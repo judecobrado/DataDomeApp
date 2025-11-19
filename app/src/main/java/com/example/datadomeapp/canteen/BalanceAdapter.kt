@@ -10,7 +10,7 @@ import java.util.Locale
 
 // Data Model (Inilipat dito para mas madaling gamitin)
 data class BalanceItem(
-    val accountId: String,
+    // ❌ Tinanggal ang accountId dahil hindi na kailangan para sa display
     val uid: String, // Para sa history lookup
     val name: String,
     val role: String,
@@ -41,13 +41,19 @@ class BalanceAdapter(
     override fun getItemCount(): Int = users.size
 
     class BalanceViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val tvUserName: TextView = itemView.findViewById(R.id.tvUserName)
-        private val tvAccountId: TextView = itemView.findViewById(R.id.tvAccountId)
+        // Tiyaking ito ay ang tamang ID na ginamit sa XML (e.g., tvUserInfo)
+        private val tvUserName: TextView = itemView.findViewById(R.id.tvUserInfo)
+        // ❌ Tinanggal ang tvAccountId dahil hindi na ito ipapakita
+        // private val tvAccountId: TextView = itemView.findViewById(R.id.tvAccountId)
         private val tvBalanceAmount: TextView = itemView.findViewById(R.id.tvBalanceAmount)
 
         fun bind(user: BalanceItem, clickListener: (BalanceItem) -> Unit) {
-            tvUserName.text = "${user.name} (${user.role})"
-            tvAccountId.text = "ID: ${user.accountId}"
+
+            // 🆕 PAGBABAGO: Hindi na kasama ang accountId sa display
+            tvUserName.text = "${user.name}\n(${user.role})"
+
+            // ❌ Tinanggal ang linya para sa Account ID display
+            // tvAccountId.text = "ID: ${user.accountId}"
 
             // Format Balanse
             tvBalanceAmount.text = "₱${String.format(Locale.US, "%.2f", user.balance)}"

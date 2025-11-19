@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.widget.*
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.example.datadomeapp.R
 import com.example.datadomeapp.models.Assignment
@@ -168,6 +169,12 @@ class EditAssignmentActivity : AppCompatActivity() {
             return
         }
 
+        // Check if anything has changed
+        if (!hasChanges(title, instructions)) {
+            showNoChangesDialog()
+            return
+        }
+
         // Create updated assignment
         val updatedAssignment = originalAssignment.copy(
             title = title,
@@ -182,6 +189,33 @@ class EditAssignmentActivity : AppCompatActivity() {
         } else {
             updateAssignmentInFirestore(updatedAssignment)
         }
+    }
+
+    private fun hasChanges(title: String, instructions: String): Boolean {
+        // Check if title changed
+        if (title != originalAssignment.title) return true
+
+        // Check if instructions changed
+        if (instructions != originalAssignment.instructions) return true
+
+        // Check if due date changed
+        if (dueDateMillis != originalAssignment.dueDateMillis) return true
+
+        // Check if new file was selected
+        if (fileUri != null) return true
+
+        return false
+    }
+
+    private fun showNoChangesDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("No Changes")
+            .setMessage("You haven't made any changes to the assignment.")
+            .setPositiveButton("OK") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .create()
+            .show()
     }
 
     private fun uploadFileAndUpdateAssignment(assignment: Assignment, fileUri: Uri) {

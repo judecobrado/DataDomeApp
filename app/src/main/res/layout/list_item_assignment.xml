@@ -2,116 +2,116 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
-    android:padding="16dp"
-    android:background="#FDFBF8"
-    android:layout_margin="8dp"
+    android:padding="8dp"
     android:scrollbars="none">
 
-
-
+    <!-- Main card container with maroon border -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:background="@drawable/assignment_card_background"
+        android:layout_margin="4dp">
 
-        <TextView
-            android:id="@+id/tvAssignmentTitle"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Assignment Title"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:textColor="#7B1113" />
-
+        <!-- Header row with title and action buttons -->
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
-            <ImageButton
-                android:id="@+id/btnEditAssignment"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@android:drawable/ic_menu_edit"
-                android:contentDescription="Edit assignment" />
+            <TextView
+                android:id="@+id/tvAssignmentTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Assignment Title"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#7B1113" />
 
-            <ImageButton
-                android:id="@+id/btnDeleteAssignment"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@android:drawable/ic_menu_delete"
-                android:layout_marginStart="8dp"
-                android:contentDescription="Delete assignment" />
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <ImageButton
+                    android:id="@+id/btnEditAssignment"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@android:drawable/ic_menu_edit"
+                    android:contentDescription="Edit assignment"
+                    app:tint="#7B1113" />
+
+                <ImageButton
+                    android:id="@+id/btnDeleteAssignment"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@android:drawable/ic_menu_delete"
+                    android:layout_marginStart="8dp"
+                    android:contentDescription="Delete assignment"
+                    app:tint="#7B1113" />
+
+            </LinearLayout>
 
         </LinearLayout>
 
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/tvAssignmentDueDate"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Due: Not set"
-        android:textSize="14sp"
-        android:layout_marginTop="4dp"
-        android:textColor="#000000" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
-
+        <!-- Due date -->
         <TextView
-            android:id="@+id/tvSubmissionCount"
-            android:layout_width="0dp"
+            android:id="@+id/tvAssignmentDueDate"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Submissions: 0"
-            android:textSize="12sp"
-            android:textColor="#000000"/>
+            android:text="Due: Not set"
+            android:textSize="14sp"
+            android:layout_marginTop="4dp"
+            android:textColor="#000000" />
 
-        <TextView
-            android:id="@+id/tvExtensionsCount"
-            android:layout_width="0dp"
+        <!-- Stats row -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Extensions: 0"
-            android:textSize="12sp"
-            android:textColor="#7B1113"
-            android:visibility="gone" />
+            android:orientation="horizontal"
+            android:layout_marginTop="4dp">
+
+            <TextView
+                android:id="@+id/tvSubmissionCount"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Submissions: 0"
+                android:textSize="12sp"
+                android:textColor="#7B1113"
+                android:textStyle="bold"/>
+
+            <TextView
+                android:id="@+id/tvExtensionsCount"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Extensions: 0"
+                android:textSize="12sp"
+                android:textColor="#7B1113"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+        <!-- Combined Student Submissions & Extensions Button -->
+        <Button
+            android:id="@+id/btnManageExtensions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Manage Student Submissions &amp; Extensions"
+            android:layout_marginTop="12dp"
+            android:backgroundTint="#7B1113"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold" />
 
     </LinearLayout>
-
-    <!-- Combined Student Submissions & Extensions Button -->
-    <Button
-        android:id="@+id/btnManageExtensions"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Manage Student Submissions &amp; Extensions"
-        android:layout_marginTop="8dp"
-        android:backgroundTint="#7B1113"
-        android:textColor="#FFFFFF" />
-
-    <!-- Traditional View Submissions Button
-    <Button
-        android:id="@+id/btnViewSubmissions"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="View Submissions (Traditional)"
-        android:layout_marginTop="4dp"
-        android:backgroundTint="#9B1C1F"
-        android:textColor="#FFFFFF" /> -->
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="#9B1C1F"
-        android:layout_marginTop="8dp"
-        android:alpha="0.3" />
 
 </LinearLayout>

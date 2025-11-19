@@ -6,11 +6,11 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
 import android.widget.*
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.datadomeapp.R
-import com.example.datadomeapp.canteen.MenuItem
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
@@ -18,6 +18,8 @@ import com.google.firebase.firestore.Query
 import java.util.*
 
 // Data class (assuming this exists elsewhere)
+// class MenuItem(var id: String = "", val name: String = "", val price: Double = 0.0, ...)
+
 class MenuManagementActivity : AppCompatActivity() {
 
     private lateinit var recyclerView: RecyclerView
@@ -57,7 +59,7 @@ class MenuManagementActivity : AppCompatActivity() {
         staffUid = auth.currentUser?.uid
 
         setupRecyclerView()
-        setupSearchFilter() // Set up listeners for search and filter
+        setupSearchFilter()
         loadStaffCanteen()
 
         // Show loading indicator initially
@@ -71,7 +73,7 @@ class MenuManagementActivity : AppCompatActivity() {
             .addOnSuccessListener { doc ->
                 staffCanteenName = doc.getString("canteenName")
 
-                // ✅ FIX: Set the click listener and enable the button ONLY after loading
+                // ✅ Set the click listener and enable the button ONLY after loading
                 btnAddMenu.isEnabled = true
                 btnAddMenu.setOnClickListener {
                     if (staffCanteenName.isNullOrEmpty()) {
@@ -110,20 +112,47 @@ class MenuManagementActivity : AppCompatActivity() {
                 startActivity(intent)
             },
             onDeleteClick = { menu ->
-                firestore.collection("canteenMenu").document(menu.id)
-                    .delete()
-                    .addOnSuccessListener {
-                        Toast.makeText(this, "${menu.name} deleted successfully.", Toast.LENGTH_SHORT).show()
-                    }
-                    .addOnFailureListener { e ->
-                        Toast.makeText(this, "Failed to delete: ${e.message}", Toast.LENGTH_SHORT).show()
-                    }
+                // ⚠️ Dito na idinagdag ang Confirmation Dialog
+                showDeleteConfirmationDialog(menu)
             }
         )
 
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
     }
+
+    /**
+     * Ipinapakita ang confirmation dialog bago burahin ang item.
+     * @param menu Ang MenuItem na buburahin.
+     */
+    private fun showDeleteConfirmationDialog(menu: MenuItem) {
+        AlertDialog.Builder(this)
+            .setTitle("Confirm Deletion")
+            .setMessage("Are you sure you want to delete '${menu.name}'? This action cannot be undone.")
+            .setPositiveButton("Delete") { dialog, which ->
+                // Kung nag-confirm, tawagin ang delete logic
+                deleteMenuItem(menu)
+            }
+            .setNegativeButton("Cancel", null) // Wala lang, isasara lang ang dialog
+            .show()
+    }
+
+    /**
+     * Ang aktwal na logic para mag-delete sa Firestore.
+     * @param menu Ang MenuItem na buburahin.
+     */
+    private fun deleteMenuItem(menu: MenuItem) {
+        firestore.collection("canteenMenu").document(menu.id)
+            .delete()
+            .addOnSuccessListener {
+                Toast.makeText(this, "${menu.name} deleted successfully.", Toast.LENGTH_SHORT).show()
+                // Ang startMenuListener ay awtomatikong magre-refresh dahil ito ay snapshot listener
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Failed to delete: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
+
 
     private fun setupSearchFilter() {
         // Search input listener
@@ -136,9 +165,7 @@ class MenuManagementActivity : AppCompatActivity() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
 
-        btnAddMenu.isEnabled = false
-
-        loadStaffCanteen()
+        // NOTE: btnAddMenu.isEnabled = false at loadStaffCanteen() is already handling this
 
         // Filter spinner listener
         spFilter.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
@@ -156,8 +183,9 @@ class MenuManagementActivity : AppCompatActivity() {
 
         menuListener = firestore.collection("canteenMenu")
             .whereEqualTo("staffUid", uid)
-            // Sorting: Available (TRUE) first, then by name
+            // Sorting: Available (TRUE) first, then by updated timestamp
             .orderBy("available", Query.Direction.DESCENDING)
+            .orderBy("updatedAt", Query.Direction.DESCENDING)
             .orderBy("name", Query.Direction.ASCENDING)
             .addSnapshotListener { snapshot, error ->
 
@@ -192,7 +220,7 @@ class MenuManagementActivity : AppCompatActivity() {
             // Check if item matches the spinner filter (All, Available, Out of Stock)
             val matchesFilter = when (currentFilter) {
                 "Available" -> item.available == true
-                "Out of Stock" -> item.available == false
+                "Not Available" -> item.available == false
                 else -> true // "All"
             }
 
