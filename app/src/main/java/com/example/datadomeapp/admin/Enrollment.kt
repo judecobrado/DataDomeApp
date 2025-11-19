@@ -37,7 +37,8 @@ data class Enrollment(
     val province: String = "",
     val municipality: String = "",
     val barangay: String = "",
-    val streetAddress: String = "",
+    val street: String = "",
+    val postalCode: String,
     val fullAddress: String = "",
     // Course information
     val courseName: String = "",
@@ -87,7 +88,8 @@ data class Enrollment(
             "province" to province,
             "municipality" to municipality,
             "barangay" to barangay,
-            "streetAddress" to streetAddress,
+            "street" to street,
+            "postalCode" to postalCode,
             "fullAddress" to fullAddress,
             // Course information
             "courseName" to courseName,
@@ -138,7 +140,8 @@ data class Enrollment(
                 province = data["province"] as? String ?: "",
                 municipality = data["municipality"] as? String ?: "",
                 barangay = data["barangay"] as? String ?: "",
-                streetAddress = data["streetAddress"] as? String ?: "",
+                street = data["street"] as? String ?: "",
+                postalCode = data["postalCode"] as? String ?: "",
                 fullAddress = data["fullAddress"] as? String ?: "",
                 // Course information
                 courseName = data["courseName"] as? String ?: "",
