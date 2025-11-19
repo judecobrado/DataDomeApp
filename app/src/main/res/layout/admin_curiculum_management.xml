@@ -397,6 +397,7 @@
                 android:layout_width="0dp"
                 android:layout_height="52dp"
                 android:layout_weight="1"
+                android:visibility="gone"
                 android:text="Back to Dashboard"
                 android:layout_marginStart="12dp"
                 app:backgroundTint="#666666"

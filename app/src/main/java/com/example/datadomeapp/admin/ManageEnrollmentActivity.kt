@@ -985,6 +985,21 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
     // Mark as Not Passed (Reject)
     // -----------------------------
     private fun markAsNotPassed(e: Enrollment) {
+        // Confirmation dialog bago i-reject
+        AlertDialog.Builder(this)
+            .setTitle("Confirm Rejection")
+            .setMessage("Are you sure you want to reject ${e.firstName} ${e.lastName}'s enrollment application? This action cannot be undone.")
+            .setPositiveButton("Yes, Reject") { dialog, which ->
+                // Ito ang original na reject logic
+                performRejection(e)
+            }
+            .setNegativeButton("Cancel", null)
+            .setIcon(android.R.drawable.ic_dialog_alert)
+            .show()
+    }
+
+    // Hiwalay na function para sa actual na rejection process
+    private fun performRejection(e: Enrollment) {
         val rejectionData = hashMapOf<String, Any>(
             "id" to e.id,
             "firstName" to e.firstName,
@@ -1024,10 +1039,10 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
         firestore.collection("notPassedEnrollments").document(e.id).set(rejectionData)
         firestore.collection("pendingEnrollments").document(e.id).delete()
 
-        // NEW: Send rejection email using GmailSender
+        // Send rejection email using GmailSender
         sendRejectionEmail(e.email)
 
-        Toast.makeText(this, "Marked as Rejected", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Enrollment application rejected", Toast.LENGTH_SHORT).show()
         loadPendingEnrollments()
         loadEnrollmentCounts()
     }

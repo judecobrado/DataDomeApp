@@ -75,7 +75,7 @@ class InternetAlertHelper(private val activity: Activity) {
                 activity.runOnUiThread {
                     hideAlert()
                     listener?.onInternetConnected()
-                    showConnectedSnackbar()
+
                 }
             }
 
@@ -102,16 +102,6 @@ class InternetAlertHelper(private val activity: Activity) {
             alertView?.visibility = View.GONE
             isAlertShowing = false
         }
-    }
-
-    private fun showConnectedSnackbar() {
-        val snackbar = Snackbar.make(
-            activity.findViewById(android.R.id.content),
-            "Internet connection restored",
-            Snackbar.LENGTH_SHORT
-        )
-        snackbar.setBackgroundTint(activity.getColor(R.color.green_success)) // Add this color to your colors.xml
-        snackbar.show()
     }
 
     fun checkInternetAndHide(): Boolean {

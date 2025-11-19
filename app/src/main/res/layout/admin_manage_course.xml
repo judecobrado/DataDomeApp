@@ -179,7 +179,7 @@
                         android:layout_height="52dp"
                         android:layout_weight="1"
                         android:layout_marginEnd="8dp"
-                        android:text="Add Course"
+                        android:text="Add"
                         android:textColor="#FFFFFF"
                         android:textSize="16sp"
                         android:textStyle="bold"
