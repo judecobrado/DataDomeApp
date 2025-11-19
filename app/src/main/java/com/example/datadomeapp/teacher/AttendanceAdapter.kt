@@ -59,34 +59,30 @@ class AttendanceAdapter(
         val currentStatus = attendanceStatus[studentId] ?: ""
         val currentPoints = recitationPoints[studentId] ?: 0
 
-        // FIXED: Show BOTH attendance status AND recitation points
         val cleanName = "${currentItem.lastName}, ${currentItem.firstName}"
 
-        // Build display text with both status and points
+        // Build display text with name and status only
         val displayText = buildString {
             append(cleanName)
             if (currentStatus.isNotEmpty()) {
-                append(" ($currentStatus")
-                if (currentPoints > 0) {
-                    append(" • $currentPoints pts")
-                }
-                append(")")
-            } else if (currentPoints > 0) {
-                append(" ($currentPoints pts)")
+                append(" ($currentStatus)")
             }
         }
 
         holder.tvStudentName.text = displayText
         holder.tvStudentId.text = "ID: $studentId"
-        holder.tvReciteScore.text = currentPoints.toString()
 
-        // FIXED: Show BOTH attendance radio buttons AND recitation controls
+        // Show points on the right side - update the recitation score text
+        holder.tvReciteScore.text = if (currentPoints > 0) "$currentPoints pts" else "0 pts"
+
+        // Show attendance radio buttons but HIDE recitation controls
         holder.rgAttendanceStatus.visibility = View.VISIBLE
-        holder.llRecitationControls.visibility = View.VISIBLE
+        holder.llRecitationControls.visibility = View.GONE // HIDE recitation controls
 
         // --- Attendance Radio Buttons ---
-        // Remove listener temporarily to avoid infinite loops
+        // Remove all listeners first
         holder.rgAttendanceStatus.setOnCheckedChangeListener(null)
+        holder.rbExcused.setOnClickListener(null)
 
         // Set the correct radio button based on status
         when (currentStatus.uppercase()) {
@@ -97,103 +93,87 @@ class AttendanceAdapter(
             else -> holder.rgAttendanceStatus.clearCheck()
         }
 
-        // Enable/disable radio buttons
-        listOf(holder.rbPresent, holder.rbLate, holder.rbExcused, holder.rbAbsent).forEach {
-            it.isEnabled = isEditable
-        }
+        // ONLY enable the EXCUSE button, disable all others
+        holder.rbPresent.isEnabled = false
+        holder.rbLate.isEnabled = false
+        holder.rbAbsent.isEnabled = false
+        holder.rbExcused.isEnabled = isEditable // Only excuse can be manually set
 
-        // Set up radio group listener
+        // Make Present, Late, and Absent buttons non-clickable and change appearance
+        holder.rbPresent.isClickable = false
+        holder.rbLate.isClickable = false
+        holder.rbAbsent.isClickable = false
+
+        // Visual feedback - make disabled buttons look more disabled
+        holder.rbPresent.alpha = 0.5f
+        holder.rbLate.alpha = 0.5f
+        holder.rbAbsent.alpha = 0.5f
+        holder.rbExcused.alpha = if (isEditable) 1.0f else 0.5f
+
+        // --- Excuse Button Toggle Logic ---
         if (isEditable) {
-            holder.rgAttendanceStatus.setOnCheckedChangeListener { _, checkedId ->
-                val selectedStatus = when (checkedId) {
-                    holder.rbPresent.id -> "PRESENT"
-                    holder.rbLate.id -> "LATE"
-                    holder.rbExcused.id -> "EXCUSED"
-                    holder.rbAbsent.id -> "ABSENT"
-                    else -> "ABSENT"
-                }
+            holder.rbExcused.setOnClickListener {
+                val currentExcuseStatus = attendanceStatus[studentId] ?: ""
 
-                attendanceStatus[studentId] = selectedStatus
+                if (currentExcuseStatus == "EXCUSED") {
+                    // If already excused, remove the status (undo)
+                    attendanceStatus.remove(studentId)
 
-                // Update display with new status
-                val newDisplayText = buildString {
-                    append(cleanName)
-                    append(" ($selectedStatus")
-                    val points = recitationPoints[studentId] ?: 0
-                    if (points > 0) {
-                        append(" • $points pts")
+                    // Update display to show no status
+                    holder.tvStudentName.text = cleanName
+
+                    // Uncheck the radio button
+                    holder.rbExcused.isChecked = false
+
+                    Log.i(TAG, "Student $studentId excuse removed")
+                } else {
+                    // Set to excused
+                    attendanceStatus[studentId] = "EXCUSED"
+
+                    // Update display
+                    val newDisplayText = buildString {
+                        append(cleanName)
+                        append(" (EXCUSED)")
                     }
-                    append(")")
-                }
-                holder.tvStudentName.text = newDisplayText
+                    holder.tvStudentName.text = newDisplayText
 
-                Log.i(TAG, "Student $studentId attendance updated to $selectedStatus")
+                    // Check the radio button
+                    holder.rbExcused.isChecked = true
+
+                    Log.i(TAG, "Student $studentId manually excused")
+                }
                 onDataChanged()
             }
+
+            // Still set up radio group listener to handle any other interactions
+            holder.rgAttendanceStatus.setOnCheckedChangeListener { _, checkedId ->
+                // Only process if it's NOT the excuse button (since we handle that separately)
+                if (checkedId != holder.rbExcused.id && checkedId != -1) {
+                    // If any other button is somehow checked, uncheck it
+                    holder.rgAttendanceStatus.setOnCheckedChangeListener(null)
+                    when (currentStatus.uppercase()) {
+                        "PRESENT" -> holder.rbPresent.isChecked = true
+                        "LATE" -> holder.rbLate.isChecked = true
+                        "EXCUSED" -> holder.rbExcused.isChecked = true
+                        "ABSENT" -> holder.rbAbsent.isChecked = true
+                        else -> holder.rgAttendanceStatus.clearCheck()
+                    }
+                    holder.rgAttendanceStatus.setOnCheckedChangeListener { _, _ ->
+                        // Re-set the listener
+                    }
+                }
+            }
+        } else {
+            // If not editable, disable the entire radio group
+            holder.rgAttendanceStatus.isEnabled = false
         }
 
         // --- Recitation Controls ---
-        // Enable recitation controls only if student is PRESENT or LATE
-        val isAttended = currentStatus == "PRESENT" || currentStatus == "LATE"
-        val controlsEnabled = isEditable && isAttended
-
-        // Update recitation controls
-        holder.btnRecitePlus.isEnabled = controlsEnabled && currentPoints < MAX_RECITATION_POINTS
-        holder.btnReciteMinus.isEnabled = controlsEnabled && currentPoints > 0
-
-        // Visual feedback
-        holder.llRecitationControls.alpha = if (controlsEnabled) 1.0f else 0.5f
-
-        // Set recitation button listeners
-        holder.btnRecitePlus.setOnClickListener {
-            if (controlsEnabled && currentPoints < MAX_RECITATION_POINTS) {
-                val newPoints = currentPoints + 1
-                recitationPoints[studentId] = newPoints
-
-                // Update UI immediately
-                holder.tvReciteScore.text = newPoints.toString()
-                val updatedDisplayText = buildString {
-                    append(cleanName)
-                    if (currentStatus.isNotEmpty()) {
-                        append(" ($currentStatus • $newPoints pts)")
-                    } else {
-                        append(" ($newPoints pts)")
-                    }
-                }
-                holder.tvStudentName.text = updatedDisplayText
-
-                Log.i(TAG, "Student $studentId recitation points: $newPoints")
-                onDataChanged()
-            }
-        }
-
-        holder.btnReciteMinus.setOnClickListener {
-            if (controlsEnabled && currentPoints > 0) {
-                val newPoints = currentPoints - 1
-                recitationPoints[studentId] = newPoints
-
-                // Update UI immediately
-                holder.tvReciteScore.text = newPoints.toString()
-                val updatedDisplayText = buildString {
-                    append(cleanName)
-                    if (currentStatus.isNotEmpty()) {
-                        if (newPoints > 0) {
-                            append(" ($currentStatus • $newPoints pts)")
-                        } else {
-                            append(" ($currentStatus)")
-                        }
-                    } else if (newPoints > 0) {
-                        append(" ($newPoints pts)")
-                    } else {
-                        append(cleanName)
-                    }
-                }
-                holder.tvStudentName.text = updatedDisplayText
-
-                Log.i(TAG, "Student $studentId recitation points: $newPoints")
-                onDataChanged()
-            }
-        }
+        // Completely disable recitation button listeners since controls are hidden
+        holder.btnRecitePlus.setOnClickListener(null)
+        holder.btnReciteMinus.setOnClickListener(null)
+        holder.btnRecitePlus.isEnabled = false
+        holder.btnReciteMinus.isEnabled = false
 
         // Set overall item opacity
         holder.itemView.alpha = if (isEditable) 1.0f else 0.8f
@@ -237,12 +217,15 @@ class AttendanceAdapter(
 
     // Methods for ID tapping to update specific students
     fun updateStudentStatus(studentId: String, status: String) {
-        attendanceStatus[studentId] = status
-        val position = studentList.indexOfFirst { it.id == studentId }
-        if (position != -1) {
-            notifyItemChanged(position)
+        // Only allow RFID to set PRESENT or LATE, manual can only set EXCUSED
+        if (status == "PRESENT" || status == "LATE" || status == "ABSENT") {
+            attendanceStatus[studentId] = status
+            val position = studentList.indexOfFirst { it.id == studentId }
+            if (position != -1) {
+                notifyItemChanged(position)
+            }
+            onDataChanged()
         }
-        onDataChanged()
     }
 
     fun updateStudentRecitation(studentId: String, points: Int) {
@@ -264,10 +247,15 @@ class AttendanceAdapter(
         return attendanceStatus[studentId] ?: ""
     }
 
-    // NEW: Process student tap - handles both attendance and recitation
+    // Process student tap - handles both attendance and recitation via RFID only
     fun processStudentTap(studentId: String, isWithinLateThreshold: Boolean): Boolean {
         val currentStatus = getStudentAttendanceStatus(studentId)
         val currentPoints = getStudentRecitationPoints(studentId)
+
+        // If student is already excused, don't allow RFID tapping
+        if (currentStatus == "EXCUSED") {
+            return false
+        }
 
         return if (currentStatus.isEmpty()) {
             // First tap - set attendance status
@@ -283,7 +271,7 @@ class AttendanceAdapter(
                 false // Max points reached
             }
         } else {
-            false // Student is ABSENT or EXCUSED
+            false // Student is ABSENT
         }
     }
 }
