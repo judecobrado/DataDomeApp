@@ -84,6 +84,22 @@
             android:tag="Absent"/>
     </RadioGroup>
 
+    <!-- Points Display Only (Right Side) -->
+    <TextView
+        android:id="@+id/tvReciteScore"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:minWidth="50dp"
+        android:textAlignment="center"
+        android:text="0 pts"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="#2196F3"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:visibility="visible"/>
+
+    <!-- Keep the controls layout but hide it -->
     <LinearLayout
         android:id="@+id/llRecitationControls"
         android:layout_width="wrap_content"
@@ -101,19 +117,6 @@
             android:textStyle="bold"
             android:backgroundTint="@color/color_absent"
             android:padding="0dp"/>
-
-        <TextView
-            android:id="@+id/tvReciteScore"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:minWidth="30dp"
-            android:textAlignment="center"
-            android:text="0"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:textColor="#000000"
-            android:layout_marginStart="8dp"
-            android:layout_marginEnd="8dp"/>
 
         <Button
             android:id="@+id/btnRecitePlus"

@@ -1,7 +1,10 @@
 package com.example.datadomeapp.teacher
 
-import android.app.*
-import android.content.*
+import android.app.AlertDialog
+import android.app.DatePickerDialog
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
 import android.nfc.NfcAdapter
 import android.nfc.Tag
 import android.os.*
@@ -69,18 +72,8 @@ class RecordAttendanceActivity : AppCompatActivity() {
     private var currentSessionNumber = 1
     private var wakeLock: PowerManager.WakeLock? = null
 
-    // Broadcast Receiver for timer finished
-    private val timerFinishedReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            when (intent?.action) {
-                "TIMER_FINISHED" -> {
-                    stopIdTappingSession()
-                    markRemainingStudentsAsAbsent()
-                    Toast.makeText(this@RecordAttendanceActivity, "Class session timer finished!", Toast.LENGTH_LONG).show()
-                }
-            }
-        }
-    }
+    // Add minimum session duration (30 minutes in milliseconds)
+    private val MIN_SESSION_DURATION = 30 * 60 * 1000L // 30 minutes
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -92,7 +85,6 @@ class RecordAttendanceActivity : AppCompatActivity() {
         setupNfc()
         loadAssignmentData()
         setupClickListeners()
-        registerReceivers()
     }
 
     private fun initializeViews() {
@@ -108,6 +100,7 @@ class RecordAttendanceActivity : AppCompatActivity() {
 
         tvTimer.visibility = View.GONE
         tvSessionInfo.visibility = View.GONE
+        btnSaveAttendance.visibility = View.GONE // Hide save button initially
     }
 
     private fun setupNfc() {
@@ -122,34 +115,6 @@ class RecordAttendanceActivity : AppCompatActivity() {
         val intent = Intent(this, javaClass).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
         pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
     }
-
-    private fun registerReceivers() {
-        val intentFilter = IntentFilter().apply {
-            // Add your specific broadcast actions here
-            // Example: addAction(ConnectivityManager.CONNECTIVITY_ACTION)
-            // Example: addAction("YOUR_CUSTOM_ACTION")
-        }
-
-        val receiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) {
-                // Handle broadcast messages here
-                when (intent?.action) {
-                    // Handle different actions
-                    // Example:
-                    // ConnectivityManager.CONNECTIVITY_ACTION -> {
-                    //     handleNetworkChange()
-                    // }
-                    // "YOUR_CUSTOM_ACTION" -> {
-                    //     handleCustomAction()
-                    // }
-                }
-            }
-        }
-
-        // Fixed broadcast receiver registration
-        registerReceiver(receiver, intentFilter, Context.RECEIVER_NOT_EXPORTED)
-    }
-
 
     private fun setupClickListeners() {
         etAttendanceDate.setOnClickListener { showDatePickerDialog() }
@@ -186,6 +151,9 @@ class RecordAttendanceActivity : AppCompatActivity() {
         val etHours = dialogView.findViewById<EditText>(R.id.etHours)
         val etMinutes = dialogView.findViewById<EditText>(R.id.etMinutes)
 
+        // Set default values to meet minimum requirement
+        etMinutes.setText("30")
+
         AlertDialog.Builder(this)
             .setTitle("Set Class Session Duration")
             .setView(dialogView)
@@ -193,13 +161,16 @@ class RecordAttendanceActivity : AppCompatActivity() {
                 val hours = etHours.text.toString().toIntOrNull() ?: 0
                 val minutes = etMinutes.text.toString().toIntOrNull() ?: 0
 
-                if (hours == 0 && minutes == 0) {
-                    Toast.makeText(this, "Please set a valid duration", Toast.LENGTH_SHORT).show()
+                val totalMinutes = (hours * 60) + minutes
+                val totalDuration = totalMinutes * 60 * 1000L
+
+                // Check if duration meets minimum requirement
+                if (totalDuration < MIN_SESSION_DURATION) {
+                    Toast.makeText(this, "Session must be at least 30 minutes", Toast.LENGTH_SHORT).show()
                     return@setPositiveButton
                 }
 
-                val totalMinutes = (hours * 60) + minutes
-                sessionDuration = totalMinutes * 60 * 1000L
+                sessionDuration = totalDuration
                 startIdTappingSession()
                 dialog.dismiss()
             }
@@ -237,8 +208,15 @@ class RecordAttendanceActivity : AppCompatActivity() {
         tvSessionInfo.visibility = View.VISIBLE
         tvSessionInfo.text = "Class Session - ${getDurationText(sessionDuration)}"
 
+        // Show save button when session starts
+        btnSaveAttendance.visibility = View.VISIBLE
+
         startTimer()
         Toast.makeText(this, "Class Session Started! Students can tap for attendance AND recitation.", Toast.LENGTH_LONG).show()
+
+        // Hide the "no session" message when session starts
+        tvNoRecords.visibility = View.GONE
+        recyclerView.visibility = View.VISIBLE
     }
 
     private fun setupBackgroundNfc() {
@@ -263,11 +241,8 @@ class RecordAttendanceActivity : AppCompatActivity() {
 
             override fun onFinish() {
                 tvTimer.text = "00:00:00"
-
-                // FIX: Instead of using broadcast, call the method directly
                 stopIdTappingSession()
                 markRemainingStudentsAsAbsent()
-
                 Toast.makeText(this@RecordAttendanceActivity, "Class session timer finished!", Toast.LENGTH_LONG).show()
             }
         }.start()
@@ -291,7 +266,6 @@ class RecordAttendanceActivity : AppCompatActivity() {
         currentSessionNumber++
 
         Toast.makeText(this, "Session Stopped - ${tappedStudents.size} student interactions", Toast.LENGTH_SHORT).show()
-        loadExistingAttendance()
     }
 
     private fun markRemainingStudentsAsAbsent() {
@@ -335,8 +309,6 @@ class RecordAttendanceActivity : AppCompatActivity() {
         if (isNfcSupported()) {
             nfcAdapter?.disableForegroundDispatch(this)
         }
-
-        // Auto-save logic removed - wait for manual save only
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -447,7 +419,11 @@ class RecordAttendanceActivity : AppCompatActivity() {
     private fun loadAssignmentData() {
         assignmentId = intent.getStringExtra("ASSIGNMENT_ID")
         className = intent.getStringExtra("CLASS_NAME")
-        tvAttendanceHeader.text = "Record Class Session for $className"
+        subjectCode = intent.getStringExtra("SUBJECT_CODE")
+
+        // Handle case where CLASS_NAME might be null
+        val displayName = className ?: (subjectCode ?: "Class")
+        tvAttendanceHeader.text = "Record Class Session for $displayName"
         recyclerView.layoutManager = LinearLayoutManager(this)
 
         if (assignmentId.isNullOrEmpty()) {
@@ -523,7 +499,7 @@ class RecordAttendanceActivity : AppCompatActivity() {
                     .get().await()
 
                 val studentMap = studentProfilesQuery.documents
-                    .mapNotNull { doc -> doc.toObject(Student::class.java)?.copy(id = doc.id) }
+                    .mapNotNull { doc -> doc.toObject<Student>()?.copy(id = doc.id) }
                     .associateBy { it.id }
 
                 val enrollmentChecks = allStudentIds.chunked(10).flatMap { idChunk ->
@@ -557,12 +533,13 @@ class RecordAttendanceActivity : AppCompatActivity() {
                     attendanceAdapter = AttendanceAdapter(
                         studentList = currentStudentList,
                         assignmentId = assignmentId!!,
-                        isEditable = !isPreviousDay,
+                        isEditable = !isPreviousDay, // Allow manual excuse only for current dates
                         onDataChanged = { markDataModified() }
                     )
                     recyclerView.adapter = attendanceAdapter
 
-                    loadExistingAttendance()
+                    // DON'T load existing attendance automatically - start fresh
+                    initializeFreshSession()
                 }
 
             } catch (e: Exception) {
@@ -573,77 +550,34 @@ class RecordAttendanceActivity : AppCompatActivity() {
         }
     }
 
-    private fun loadExistingAttendance() {
-        val date = etAttendanceDate.text.toString()
-
-        if (date.isEmpty()) {
-            tvNoRecords.text = "Please select a date first."
-            tvNoRecords.visibility = View.VISIBLE
-            recyclerView.visibility = View.GONE
-            return
+    private fun initializeFreshSession() {
+        // Always start with empty data
+        if (::attendanceAdapter.isInitialized) {
+            attendanceAdapter.updateStatuses(emptyMap(), emptyMap())
+            attendanceAdapter.setEditable(!isPreviousDay)
         }
 
-        updateUIForDate(date)
-        btnSaveAttendance.visibility = if (isPreviousDay) View.GONE else View.VISIBLE
+        tappedStudents.clear()
+        isExistingRecordLoaded = false
+        isDataModified = false
 
-        // Load existing record for current session number
-        firestore.collection(ATTENDANCE_COLLECTION)
-            .whereEqualTo("assignmentId", assignmentId)
-            .whereEqualTo("date", date)
-            .whereEqualTo("sessionNumber", currentSessionNumber)
-            .get()
-            .addOnSuccessListener { snapshot ->
-                if (snapshot.isEmpty) {
-                    // No existing record - start fresh
-                    if (::attendanceAdapter.isInitialized) {
-                        attendanceAdapter.updateStatuses(emptyMap(), emptyMap())
-                        attendanceAdapter.setEditable(!isPreviousDay)
-                    }
+        // Hide save button initially
+        btnSaveAttendance.visibility = View.GONE
+        updateSaveButtonState()
 
-                    tappedStudents.clear()
-
-                    if (isPreviousDay) {
-                        tvNoRecords.text = "No session records found for this date."
-                        tvNoRecords.visibility = View.VISIBLE
-                        recyclerView.visibility = View.GONE
-                    } else {
-                        tvNoRecords.visibility = View.GONE
-                        recyclerView.visibility = View.VISIBLE
-                    }
-                    isExistingRecordLoaded = false
-                } else {
-                    // Load existing record
-                    val document = snapshot.documents.first()
-                    val existingAttendance = document.get("statuses") as? Map<String, String> ?: emptyMap()
-                    val existingRecitationLong = document.get("recitationPoints") as? Map<String, Long> ?: emptyMap()
-                    val existingRecitation = existingRecitationLong.mapValues { it.value.toInt() }
-
-                    if (::attendanceAdapter.isInitialized) {
-                        attendanceAdapter.updateStatuses(existingAttendance, existingRecitation)
-                        attendanceAdapter.setEditable(!isPreviousDay)
-                    }
-
-                    // Update tapped students from loaded data
-                    tappedStudents.clear()
-                    tappedStudents.addAll(existingAttendance.keys)
-                    tappedStudents.addAll(existingRecitation.keys)
-
-                    tvNoRecords.visibility = View.GONE
-                    recyclerView.visibility = View.VISIBLE
-                    isExistingRecordLoaded = true
-                }
-                isDataModified = false
-                updateSaveButtonState()
-            }
-            .addOnFailureListener { e ->
-                Log.e("ATTENDANCE_DEBUG", "Failed to get existing session record.", e)
-                tvNoRecords.text = "Error loading records. Please check connection."
-                tvNoRecords.visibility = View.VISIBLE
-                recyclerView.visibility = View.GONE
-            }
+        // Show the student list but with empty data
+        tvNoRecords.text = "No session started. Click 'Start Session' to begin recording attendance."
+        tvNoRecords.visibility = View.VISIBLE
+        recyclerView.visibility = View.VISIBLE // Make sure this is VISIBLE
     }
 
     private fun saveAttendance() {
+        // Check if session was started and has data
+        if (!isIdTappingActive && tappedStudents.isEmpty()) {
+            Toast.makeText(this, "Please start a class session first and record some student interactions before saving", Toast.LENGTH_LONG).show()
+            return
+        }
+
         val dateToSave = etAttendanceDate.text.toString()
 
         if (dateToSave.isEmpty() || subjectCode.isNullOrEmpty()) {
@@ -651,32 +585,65 @@ class RecordAttendanceActivity : AppCompatActivity() {
             return
         }
 
+        // Automatically mark all unmarked students as ABSENT before saving
+        markAllUnmarkedAsAbsent()
+
         val (attendanceMap, recitationMap) = attendanceAdapter.getAttendanceAndRecitationMaps()
 
-        // Optional: Check for unmarked students
-        val unmarkedStudents = currentStudentList.filter { student ->
-            student.id?.let { studentId ->
-                attendanceMap[studentId].isNullOrEmpty()
-            } ?: true
+        showSaveConfirmationDialog(dateToSave, attendanceMap, recitationMap)
+    }
+
+    private fun markAllUnmarkedAsAbsent() {
+        if (::attendanceAdapter.isInitialized) {
+            currentStudentList.forEach { student ->
+                student.id?.let { studentId ->
+                    val currentStatus = attendanceAdapter.getStudentAttendanceStatus(studentId)
+                    if (currentStatus.isEmpty()) {
+                        // Only mark as ABSENT if no status is set (not tapped and not manually excused)
+                        attendanceAdapter.updateStudentStatus(studentId, "ABSENT")
+                    }
+                }
+            }
+            markDataModified()
+        }
+    }
+
+    private fun showSaveConfirmationDialog(dateToSave: String, attendanceMap: Map<String, String>, recitationMap: Map<String, Int>) {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_confirm_save, null)
+        val tvDialogMessage = dialogView.findViewById<TextView>(R.id.tvDialogMessage)
+
+        // Count students by status
+        val presentCount = attendanceMap.values.count { it == "PRESENT" }
+        val lateCount = attendanceMap.values.count { it == "LATE" }
+        val absentCount = attendanceMap.values.count { it == "ABSENT" }
+        val excusedCount = attendanceMap.values.count { it == "EXCUSED" }
+
+        tvDialogMessage.text = "Are you sure you want to save this class session?\n\n" +
+                "Summary:\n" +
+                "✅ Present: $presentCount\n" +
+                "⏰ Late: $lateCount\n" +
+                "❌ Absent: $absentCount\n" +
+                "📝 Excused: $excusedCount\n\n" +
+                "This action cannot be undone."
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+
+        val btnCancel = dialogView.findViewById<Button>(R.id.btnDialogCancel)
+        val btnConfirm = dialogView.findViewById<Button>(R.id.btnDialogConfirm)
+
+        btnCancel.setOnClickListener {
+            dialog.dismiss()
         }
 
-        if (unmarkedStudents.isNotEmpty()) {
-            val count = unmarkedStudents.size
-            val dialog = AlertDialog.Builder(this)
-                .setTitle("May Hindi Pa Na-markahang Estudyante")
-                .setMessage("May $count estudyante na walang attendance status. Gusto mo pa ring i-save?")
-                .setPositiveButton("Oo, I-save Pa Rin") { dialog, _ ->
-                    performSaveToDatabase(dateToSave, attendanceMap, recitationMap)
-                    dialog.dismiss()
-                }
-                .setNegativeButton("Hindi, Ayusin Muna") { dialog, _ ->
-                    dialog.dismiss()
-                }
-                .show()
-            return
+        btnConfirm.setOnClickListener {
+            performSaveToDatabase(dateToSave, attendanceMap, recitationMap)
+            dialog.dismiss()
         }
 
-        performSaveToDatabase(dateToSave, attendanceMap, recitationMap)
+        dialog.show()
     }
 
     private fun performSaveToDatabase(dateToSave: String, attendanceMap: Map<String, String>, recitationMap: Map<String, Int>) {
@@ -713,12 +680,10 @@ class RecordAttendanceActivity : AppCompatActivity() {
                     .addOnSuccessListener {
                         Log.i("AttendanceSaver", "Class session saved successfully. Document ID: $recordId")
 
-                        isDataModified = false
-                        isExistingRecordLoaded = true
-                        updateSaveButtonState()
+                        // Clear ALL data after successful save
+                        clearDataAfterSave()
 
-                        Toast.makeText(this, "✅ Class Session $sessionNum successfully saved!", Toast.LENGTH_LONG).show()
-                        updateUIForDate(dateToSave)
+                        Toast.makeText(this, "✅ Class Session $sessionNum successfully saved! Start a new session to record more data.", Toast.LENGTH_LONG).show()
                     }
                     .addOnFailureListener { e ->
                         Log.e("AttendanceSaver", "Save FAILED: ${e.message}", e)
@@ -729,6 +694,49 @@ class RecordAttendanceActivity : AppCompatActivity() {
                 Log.e("AttendanceSaver", "Failed to fetch current term: ${e.message}", e)
                 Toast.makeText(this, "Failed to fetch current term info.", Toast.LENGTH_LONG).show()
             }
+    }
+
+    private fun clearDataAfterSave() {
+        // Clear current session data
+        if (::attendanceAdapter.isInitialized) {
+            attendanceAdapter.clearAllData()
+        }
+
+        tappedStudents.clear()
+        tapTimestamps.clear()
+
+        // Reset session state completely
+        isIdTappingActive = false
+        isSessionActive = false
+        isDataModified = false
+        isExistingRecordLoaded = false
+
+        // Update UI to reflect fresh state
+        btnStartIdTapping.text = "Start Session 🟢"
+        btnStartIdTapping.setBackgroundColor(ContextCompat.getColor(this, android.R.color.holo_green_dark))
+
+        // Hide save button after saving
+        btnSaveAttendance.visibility = View.GONE
+
+        tvTimer.visibility = View.GONE
+        tvSessionInfo.visibility = View.GONE
+
+        // Stop timer if running
+        countDownTimer?.cancel()
+
+        // Release wake lock
+        wakeLock?.release()
+        wakeLock = null
+
+        // Update save button state
+        updateSaveButtonState()
+
+        // Show message that you need to start a new session - but keep the layout visible
+        tvNoRecords.text = "Session saved! Click 'Start Session' to begin a new class session."
+        tvNoRecords.visibility = View.VISIBLE
+        recyclerView.visibility = View.VISIBLE // Keep this VISIBLE
+
+        Log.d(TAG, "Data cleared after successful save - ready for new session")
     }
 
     private fun showAttendanceManagementDialog() {
@@ -765,15 +773,10 @@ class RecordAttendanceActivity : AppCompatActivity() {
                         if (which < existingRecords.size) {
                             val (displaySession, sessionNumber) = existingRecords[which]
                             currentSessionNumber = sessionNumber
-
-                            isDataModified = false
-                            isExistingRecordLoaded = true
-                            updateSaveButtonState()
-
-                            loadExistingAttendance()
+                            loadExistingAttendanceForViewing(displaySession)
                         } else {
                             currentSessionNumber = 1
-                            loadExistingAttendance()
+                            initializeFreshSession()
                         }
                         dialog.dismiss()
                     }
@@ -788,10 +791,50 @@ class RecordAttendanceActivity : AppCompatActivity() {
             }
     }
 
+    private fun loadExistingAttendanceForViewing(displaySession: String) {
+        val date = etAttendanceDate.text.toString()
+
+        firestore.collection(ATTENDANCE_COLLECTION)
+            .whereEqualTo("assignmentId", assignmentId)
+            .whereEqualTo("date", date)
+            .whereEqualTo("sessionNumber", currentSessionNumber)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                if (snapshot.isEmpty) {
+                    Toast.makeText(this, "Session not found", Toast.LENGTH_SHORT).show()
+                    return@addOnSuccessListener
+                }
+
+                val document = snapshot.documents.first()
+                val existingAttendance = document.get("statuses") as? Map<String, String> ?: emptyMap()
+                val existingRecitationLong = document.get("recitationPoints") as? Map<String, Long> ?: emptyMap()
+                val existingRecitation = existingRecitationLong.mapValues { it.value.toInt() }
+
+                if (::attendanceAdapter.isInitialized) {
+                    attendanceAdapter.updateStatuses(existingAttendance, existingRecitation)
+                    attendanceAdapter.setEditable(false) // View only
+                }
+
+                tvNoRecords.visibility = View.GONE
+                recyclerView.visibility = View.VISIBLE
+                isExistingRecordLoaded = true
+                isDataModified = false
+                updateSaveButtonState()
+
+                Toast.makeText(this, "Viewing: $displaySession", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener { e ->
+                Log.e("ATTENDANCE_DEBUG", "Failed to get existing session record.", e)
+                Toast.makeText(this, "Error loading session record", Toast.LENGTH_SHORT).show()
+            }
+    }
+
     private fun showDatePickerDialog() {
         val calendar = Calendar.getInstance()
+
         val datePickerDialog = DatePickerDialog(
             this,
+            android.R.style.Theme_Holo_Light_Dialog_MinWidth,
             { _, year, month, day ->
                 val selectedDate = Calendar.getInstance()
                 selectedDate.set(year, month, day)
@@ -800,16 +843,14 @@ class RecordAttendanceActivity : AppCompatActivity() {
                 etAttendanceDate.setText(newDate)
                 updateUIForDate(newDate)
 
-                isDataModified = false
-                isExistingRecordLoaded = false
-                updateSaveButtonState()
-
-                loadExistingAttendance()
+                // Always start fresh when date changes
+                initializeFreshSession()
             },
             calendar.get(Calendar.YEAR),
             calendar.get(Calendar.MONTH),
             calendar.get(Calendar.DAY_OF_MONTH)
         )
+
         datePickerDialog.datePicker.maxDate = System.currentTimeMillis()
         datePickerDialog.show()
     }
@@ -868,10 +909,5 @@ class RecordAttendanceActivity : AppCompatActivity() {
         super.onDestroy()
         countDownTimer?.cancel()
         wakeLock?.release()
-        try {
-            unregisterReceiver(timerFinishedReceiver)
-        } catch (e: IllegalArgumentException) {
-            // Receiver was not registered, ignore
-        }
     }
 }
