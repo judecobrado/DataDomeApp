@@ -1,83 +1,218 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:background="@drawable/dialog_background"
+    android:padding="24dp">
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Set Session Duration (Minimum: 30 minutes)"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:layout_marginBottom="16dp" />
-
+    <!-- Header Section -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:gravity="center"
-        android:weightSum="2">
+        android:gravity="center_vertical"
+        android:layout_marginBottom="20dp">
 
-        <LinearLayout
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_timer"
+            android:layout_marginEnd="12dp"
+            app:tint="#7B1113" />
+
+        <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Hours"
-                android:textSize="14sp"
-                android:layout_marginBottom="8dp" />
-
-            <EditText
-                android:id="@+id/etHours"
-                android:layout_width="80dp"
-                android:layout_height="wrap_content"
-                android:inputType="number"
-                android:text="0"
-                android:gravity="center" />
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Minutes"
-                android:textSize="14sp"
-                android:layout_marginBottom="8dp" />
-
-            <EditText
-                android:id="@+id/etMinutes"
-                android:layout_width="80dp"
-                android:layout_height="wrap_content"
-                android:inputType="number"
-                android:text="30"
-                android:gravity="center" />
-
-        </LinearLayout>
+            android:text="Set Session Duration"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="#212121" />
 
     </LinearLayout>
 
+    <!-- Subtitle -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Note: Session must be at least 30 minutes"
-        android:textSize="12sp"
-        android:textColor="@color/gray"
-        android:gravity="center"
-        android:layout_marginTop="16dp" />
+        android:text="Minimum: 30 minutes required"
+        android:textSize="14sp"
+        android:textColor="#666666"
+        android:layout_marginBottom="24dp" />
+
+    <!-- Time Input Card - SIMPLIFIED -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp"
+        app:cardBackgroundColor="@android:color/white"
+        app:strokeColor="#E8E8E8"
+        app:strokeWidth="1dp"
+        android:layout_marginBottom="20dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <!-- Simple Number Inputs -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:weightSum="2">
+
+                <!-- Hours Input -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:padding="8dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Hours"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="#212121"
+                        android:layout_marginBottom="8dp" />
+
+                    <EditText
+                        android:id="@+id/etHours"
+                        android:layout_width="80dp"
+                        android:layout_height="50dp"
+                        android:inputType="number"
+                        android:text="0"
+                        android:gravity="center"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#212121"
+                        android:background="@drawable/edittext_background_with_bottom_line"
+                        android:padding="8dp" />
+
+                </LinearLayout>
+
+                <!-- Minutes Input -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:padding="8dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Minutes"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="#212121"
+                        android:layout_marginBottom="8dp" />
+
+                    <EditText
+                        android:id="@+id/etMinutes"
+                        android:layout_width="80dp"
+                        android:layout_height="50dp"
+                        android:inputType="number"
+                        android:text="30"
+                        android:gravity="center"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#212121"
+                        android:background="@drawable/edittext_background_with_bottom_line"
+                        android:padding="8dp" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Duration Preview -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="1dp"
+        app:cardBackgroundColor="#E8F5E8"
+        app:strokeColor="#4CAF50"
+        app:strokeWidth="1dp"
+        android:layout_marginBottom="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="16dp">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_info"
+                android:layout_marginEnd="12dp"
+                app:tint="#2E7D32" />
+
+            <TextView
+                android:id="@+id/tvDurationPreview"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Total: 0 hours 30 minutes"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="#2E7D32" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Note Section -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="0dp"
+        app:cardBackgroundColor="#FFF3E0"
+        app:strokeColor="#FF9800"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="12dp">
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/ic_warning"
+                android:layout_marginEnd="8dp"
+                app:tint="#FF9800" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Session must be at least 30 minutes to ensure proper attendance tracking"
+                android:textSize="12sp"
+                android:textColor="#E65100" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
 
 </LinearLayout>
