@@ -1,6 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@drawable/gradient_background"
+    android:fillViewport="true"
     android:padding="20dp">
 
     <LinearLayout
@@ -8,43 +13,246 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <EditText
-            android:id="@+id/etEmail"
-            android:hint="Email"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-        <EditText
-            android:id="@+id/etPassword"
-            android:hint="Password"
-            android:inputType="textPassword"
+        <!-- Header Section -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp" />
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_marginBottom="32dp"
+            android:paddingVertical="16dp">
 
-        <Spinner
-            android:id="@+id/spnSubject"
+            <ImageView
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:src="@drawable/ic_enrollment"
+                android:layout_marginBottom="16dp"
+                app:tint="#7B1113" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Student Enrollment"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:textColor="#7B1113"
+                android:letterSpacing="0.02" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Complete your enrollment details"
+                android:textSize="14sp"
+                android:textColor="#666666"
+                android:layout_marginTop="8dp" />
+        </LinearLayout>
+
+        <!-- Enrollment Form Card -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp" />
+            app:cardCornerRadius="20dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="@android:color/white"
+            app:strokeColor="#E8E8E8"
+            app:strokeWidth="1dp"
+            android:layout_marginBottom="24dp">
 
-        <Spinner
-            android:id="@+id/spnSemester"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="28dp">
 
-        <Spinner
-            android:id="@+id/spnYear"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp" />
+                <!-- Email Input -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="20dp"
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:boxStrokeColor="#7B1113"
+                    app:hintTextColor="#7B1113"
+                    app:startIconDrawable="@drawable/ic_email"
+                    app:startIconTint="#7B1113">
 
-        <Button
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etEmail"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Email Address"
+                        android:textSize="16sp"
+                        android:padding="16dp"
+                        android:background="@android:color/transparent"
+                        android:inputType="textEmailAddress"
+                        android:textColor="#212121"
+                        android:textColorHint="#9E9E9E" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Password Input -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="24dp"
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:boxStrokeColor="#7B1113"
+                    app:hintTextColor="#7B1113"
+                    app:startIconDrawable="@drawable/ic_password"
+                    app:startIconTint="#7B1113"
+                    app:passwordToggleEnabled="true"
+                    app:passwordToggleTint="#7B1113">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etPassword"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Password"
+                        android:textSize="16sp"
+                        android:padding="16dp"
+                        android:background="@android:color/transparent"
+                        android:inputType="textPassword"
+                        android:textColor="#212121"
+                        android:textColorHint="#9E9E9E" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Subject Spinner -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Select Subject"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#7B1113"
+                    android:layout_marginBottom="8dp"
+                    android:drawablePadding="8dp"
+                    android:drawableStart="@drawable/ic_subject"
+                    android:drawableTint="#7B1113" />
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="1dp"
+                    app:cardBackgroundColor="#F8F9FA"
+                    app:strokeColor="#7B1113"
+                    app:strokeWidth="1dp"
+                    android:layout_marginBottom="16dp">
+
+                    <Spinner
+                        android:id="@+id/spnSubject"
+                        android:layout_width="match_parent"
+                        android:layout_height="55dp"
+                        android:background="@android:color/transparent"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:spinnerMode="dropdown" />
+
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Semester Spinner -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Select Semester"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#7B1113"
+                    android:layout_marginBottom="8dp"
+                    android:drawablePadding="8dp"
+                    android:drawableStart="@drawable/ic_semester"
+                    android:drawableTint="#7B1113" />
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="1dp"
+                    app:cardBackgroundColor="#F8F9FA"
+                    app:strokeColor="#7B1113"
+                    app:strokeWidth="1dp"
+                    android:layout_marginBottom="16dp">
+
+                    <Spinner
+                        android:id="@+id/spnSemester"
+                        android:layout_width="match_parent"
+                        android:layout_height="55dp"
+                        android:background="@android:color/transparent"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:spinnerMode="dropdown" />
+
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Year Level Spinner -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Select Year Level"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#7B1113"
+                    android:layout_marginBottom="8dp"
+                    android:drawablePadding="8dp"
+                    android:drawableStart="@drawable/ic_year"
+                    android:drawableTint="#7B1113" />
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="1dp"
+                    app:cardBackgroundColor="#F8F9FA"
+                    app:strokeColor="#7B1113"
+                    app:strokeWidth="1dp"
+                    android:layout_marginBottom="8dp">
+
+                    <Spinner
+                        android:id="@+id/spnYear"
+                        android:layout_width="match_parent"
+                        android:layout_height="55dp"
+                        android:background="@android:color/transparent"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:spinnerMode="dropdown" />
+
+                </com.google.android.material.card.MaterialCardView>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Enroll Button -->
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnEnroll"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
             android:text="Enroll Now"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            app:cornerRadius="14dp"
+            app:icon="@drawable/ic_enroll"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp"
+            app:backgroundTint="#7B1113"
+            app:elevation="6dp"
+            android:letterSpacing="0.02" />
+
+        <!-- Footer Note -->
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp" />
+            android:text="By enrolling, you agree to our terms and conditions"
+            android:textSize="12sp"
+            android:textColor="#666666"
+            android:gravity="center"
+            android:layout_marginTop="16dp" />
+
     </LinearLayout>
 </ScrollView>

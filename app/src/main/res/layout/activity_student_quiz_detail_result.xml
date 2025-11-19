@@ -6,17 +6,24 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
+    android:background="@drawable/gradient_background"
     tools:context=".teacher.QuizMonitoringActivity">
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:background="@android:color/transparent"
+        app:elevation="0dp">
 
-        <androidx.appcompat.widget.Toolbar
+        <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            app:title="Student Result Details" />
+            app:title="Student Result Details"
+            app:titleTextColor="@android:color/white"
+            app:navigationIcon="@drawable/ic_arrow_back"
+            app:backgroundTint="#7B1113"
+            app:elevation="4dp" />
 
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -29,14 +36,18 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="12dp">
 
-            <androidx.cardview.widget.CardView
+            <!-- Student Summary Card - COMPACT -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="8dp"
-                app:cardElevation="4dp"
-                android:layout_marginBottom="16dp">
+                app:cardCornerRadius="12dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="@android:color/white"
+                app:strokeColor="#E8E8E8"
+                app:strokeWidth="1dp"
+                android:layout_marginBottom="12dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -44,40 +55,176 @@
                     android:orientation="vertical"
                     android:padding="16dp">
 
+                    <!-- Compact Header -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_person"
+                            android:layout_marginEnd="8dp"
+                            app:tint="#7B1113" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Student Performance"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="#7B1113" />
+
+                        <!-- Status Badge - Moved to header -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:cardCornerRadius="8dp"
+                            app:cardBackgroundColor="#E8F5E8"
+                            app:strokeColor="#4CAF50"
+                            app:strokeWidth="1dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="COMPLETED"
+                                android:textSize="10sp"
+                                android:textStyle="bold"
+                                android:textColor="#2E7D32"
+                                android:paddingHorizontal="8dp"
+                                android:paddingVertical="4dp" />
+
+                        </com.google.android.material.card.MaterialCardView>
+
+                    </LinearLayout>
+
+                    <!-- Compact Student Info -->
                     <TextView
                         android:id="@+id/tvStudentNameHeader"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textSize="20sp"
+                        android:textSize="16sp"
                         android:textStyle="bold"
-                        android:textColor="@android:color/black"
-                        tools:text="Student: Juan Dela Cruz (Completed)" />
+                        android:textColor="#212121"
+                        tools:text="Juan Dela Cruz" />
 
                     <TextView
                         android:id="@+id/tvQuizTitleHeader"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:textSize="16sp"
-                        tools:text="Quiz: General Science - Midterm" />
+                        android:layout_marginTop="2dp"
+                        android:textSize="12sp"
+                        android:textColor="#666666"
+                        android:maxLines="2"
+                        android:ellipsize="end"
+                        tools:text="General Science - Midterm Examination" />
 
+                    <!-- Compact Score Display -->
+                    <!-- Palitan ang LinearLayout na may background ng MaterialCardView -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:cardCornerRadius="8dp"
+                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="#F8F9FA"
+                        app:strokeColor="#E8E8E8"
+                        app:strokeWidth="1dp"
+                        android:layout_marginTop="12dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:padding="12dp">
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Final Score"
+                                    android:textSize="12sp"
+                                    android:textColor="#666666" />
+
+                                <TextView
+                                    android:id="@+id/tvFinalScore"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="18"
+                                    android:textSize="24sp"
+                                    android:textStyle="bold"
+                                    android:textColor="#7B1113"
+                                    tools:text="18" />
+
+                            </LinearLayout>
+
+                            <View
+                                android:layout_width="1dp"
+                                android:layout_height="24dp"
+                                android:background="#E8E8E8"
+                                android:layout_marginHorizontal="8dp" />
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical"
+                                android:gravity="end">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Out of"
+                                    android:textSize="12sp"
+                                    android:textColor="#666666" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="20"
+                                    android:textSize="18sp"
+                                    android:textStyle="bold"
+                                    android:textColor="#212121" />
+
+                            </LinearLayout>
+
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Compact Percentage -->
                     <TextView
-                        android:id="@+id/tvFinalScore"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:textSize="24sp"
+                        android:text="90%"
+                        android:textSize="16sp"
                         android:textStyle="bold"
-                        tools:text="Final Score: 18 / 20" />
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
+                        android:textColor="#7B1113"
+                        android:gravity="center"
+                        android:layout_marginTop="8dp" />
 
-            <androidx.cardview.widget.CardView
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Integrity Log Card - COMPACT -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="8dp"
-                app:cardElevation="4dp"
-                android:layout_marginBottom="16dp">
+                app:cardCornerRadius="12dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="@android:color/white"
+                app:strokeColor="#E8E8E8"
+                app:strokeWidth="1dp"
+                android:layout_marginBottom="12dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -85,57 +232,181 @@
                     android:orientation="vertical"
                     android:padding="16dp">
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:text="Integrity Log"
-                        android:textColor="@android:color/black" />
-
-                    <TextView
-                        android:id="@+id/tvCheatSummary"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:textSize="16sp"
-                        tools:text="Detected Cheats: 3 attempts (Max: 5)" />
-
+                    <!-- Compact Integrity Header -->
                     <LinearLayout
-                        android:id="@+id/llCheatLogContainer"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:layout_marginTop="8dp">
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/ic_security"
+                            android:layout_marginEnd="8dp"
+                            app:tint="#7B1113" />
 
                         <TextView
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:textSize="14sp"
-                            android:text="[10:30 AM] App switch detected."
-                            tools:visibility="visible" />
+                            android:text="Integrity Log"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="#7B1113" />
 
                     </LinearLayout>
+
+                    <!-- Compact Cheat Summary -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:cardCornerRadius="6dp"
+                        app:cardBackgroundColor="#FFF3E0"
+                        app:strokeColor="#FF9800"
+                        app:strokeWidth="1dp"
+                        android:layout_marginBottom="12dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:padding="12dp">
+
+                            <ImageView
+                                android:layout_width="16dp"
+                                android:layout_height="16dp"
+                                android:src="@drawable/ic_warning"
+                                android:layout_marginEnd="8dp"
+                                app:tint="#FF9800" />
+
+                            <TextView
+                                android:id="@+id/tvCheatSummary"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Detected: 3 integrity violations"
+                                android:textSize="12sp"
+                                android:textStyle="bold"
+                                android:textColor="#E65100"
+                                tools:text="Detected: 3 integrity violations" />
+
+                        </LinearLayout>
+
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Compact Cheat Log -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Activity Log"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="#212121"
+                        android:layout_marginBottom="6dp" />
+
+                    <!-- Palitan ang LinearLayout na may cornerRadius ng MaterialCardView -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:cardCornerRadius="6dp"
+                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="#F8F9FA"
+                        app:strokeColor="#E8E8E8"
+                        app:strokeWidth="1dp">
+
+                        <LinearLayout
+                            android:id="@+id/llCheatLogContainer"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="8dp">
+
+                            <!-- Sample compact log entries -->
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="• [10:30] App switch"
+                                android:textSize="10sp"
+                                android:textColor="#666666"
+                                android:layout_marginBottom="2dp" />
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="• [10:32] Screen capture"
+                                android:textSize="10sp"
+                                android:textColor="#666666"
+                                android:layout_marginBottom="2dp" />
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="• [10:35] Browser access"
+                                android:textSize="10sp"
+                                android:textColor="#666666" />
+
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
                 </LinearLayout>
-            </androidx.cardview.widget.CardView>
 
+            </com.google.android.material.card.MaterialCardView>
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:layout_marginBottom="8dp"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:text="Question Review"
-                android:textColor="@android:color/black" />
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvQuestionReview"
+            <!-- Question Review Card - COMPACT -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:nestedScrollingEnabled="false"
-                tools:itemCount="5" />
+                app:cardCornerRadius="12dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="@android:color/white"
+                app:strokeColor="#E8E8E8"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <!-- Compact Question Review Header -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/ic_question_review"
+                            android:layout_marginEnd="8dp"
+                            app:tint="#7B1113" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Question Review"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="#7B1113" />
+
+                    </LinearLayout>
+
+                    <!-- Compact Questions RecyclerView -->
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rvQuestionReview"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:nestedScrollingEnabled="false"
+                        android:minHeight="120dp"
+                        tools:itemCount="3" />
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

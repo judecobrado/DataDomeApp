@@ -5,8 +5,56 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#F5F5F5"
+    android:background="@drawable/gradient_background"
     tools:context=".student.StudentFullScheduleActivity">
+
+    <!-- Header Section -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="0dp"
+        app:cardElevation="4dp"
+        app:cardBackgroundColor="#7B1113"
+        android:layout_marginBottom="8dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="20dp">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_schedule"
+                android:layout_marginEnd="12dp"
+                app:tint="@android:color/white" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Weekly Schedule"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/white"
+                android:letterSpacing="0.02" />
+
+            <TextView
+                android:id="@+id/tvCurrentWeek"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Week 1"
+                android:textSize="12sp"
+                android:textColor="@android:color/white"
+                android:background="@drawable/bg_week_pill"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="4dp" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
 
     <!-- Tab Layout para sa Days of the Week -->
     <com.google.android.material.tabs.TabLayout
@@ -15,34 +63,73 @@
         android:layout_height="wrap_content"
         android:background="@android:color/white"
         app:tabMode="scrollable"
-        app:tabTextColor="#555555"
-        app:tabSelectedTextColor="@color/design_default_color_primary"
-        app:tabIndicatorColor="@color/design_default_color_primary"/>
+        app:tabTextColor="#666666"
+        app:tabSelectedTextColor="#7B1113"
+        app:tabIndicatorColor="#7B1113"
+        app:tabIndicatorHeight="3dp"
+        app:tabIndicatorFullWidth="false"
+        app:tabPaddingStart="16dp"
+        app:tabPaddingEnd="16dp"
+        android:elevation="2dp"
+        android:layout_marginBottom="2dp"/>
 
-    <!-- Loading/Error Status -->
-    <TextView
-        android:id="@+id/tvScheduleStatus"
+    <!-- Loading/Error Status Card -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardStatus"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="24dp"
-        android:gravity="center"
-        android:text="Loading Full Schedule..."
-        android:textSize="16sp"
-        android:textColor="#888888"
-        android:visibility="visible"/>
+        android:layout_margin="16dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp"
+        app:cardBackgroundColor="@android:color/white"
+        app:strokeColor="#E8E8E8"
+        app:strokeWidth="1dp"
+        android:visibility="visible">
 
-    <ProgressBar
-        android:id="@+id/progressBar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:visibility="visible"/>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="32dp">
+
+            <ProgressBar
+                android:id="@+id/progressBar"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginBottom="16dp"
+                android:indeterminateTint="#7B1113" />
+
+            <TextView
+                android:id="@+id/tvScheduleStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Loading Full Schedule..."
+                android:textSize="16sp"
+                android:textColor="#7B1113"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvScheduleSubtitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Please wait while we fetch your schedule"
+                android:textSize="14sp"
+                android:textColor="#666666"
+                android:layout_marginTop="8dp" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
 
     <!-- ViewPager2 para sa Fragments -->
     <androidx.viewpager2.widget.ViewPager2
         android:id="@+id/viewPager"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#FFFFFF"/>
+        android:background="@android:color/transparent"
+        android:visibility="gone"/>
 
 </LinearLayout>

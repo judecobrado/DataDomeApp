@@ -1,97 +1,497 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#FAFAFA"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="20dp">
 
-        <EditText
-            android:id="@+id/etQuizTitle"
+        <!-- Header Card -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Title" />
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="#FFFFFF"
+            android:layout_marginBottom="24dp"
+            app:strokeColor="#E0E0E0"
+            app:strokeWidth="1dp">
 
-        <EditText
-            android:id="@+id/etQuizDescription"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Description" />
-
-        <RadioGroup
-            android:id="@+id/rgQuizType"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="8dp">
-
-            <TextView
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Type: "
-                android:textStyle="bold"
-                android:paddingEnd="16dp"/>
+                android:orientation="vertical"
+                android:padding="24dp">
 
-            <RadioButton
-                android:id="@+id/rbTypeQuiz"
-                android:layout_width="wrap_content"
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Create New Quiz"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    android:textColor="#800000"
+                    android:layout_marginBottom="8dp"
+                    android:letterSpacing="0.02"/>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Fill in the details below to create a new quiz or exam"
+                    android:textSize="14sp"
+                    android:textColor="#666666"
+                    android:lineSpacingExtra="4dp"/>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Quiz Details Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="#FFFFFF"
+            android:layout_marginBottom="24dp"
+            app:strokeColor="#E0E0E0"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Quiz"
-                android:checked="true"
-                android:paddingEnd="16dp"/>
+                android:orientation="vertical"
+                android:padding="24dp">
 
-            <RadioButton
-                android:id="@+id/rbTypeExam"
-                android:layout_width="wrap_content"
+                <!-- Title Input with Box Design -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Quiz Title"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#800000"
+                    android:layout_marginBottom="8dp"
+                    android:drawablePadding="8dp"
+                    android:drawableStart="@drawable/ic_title"
+                    android:drawableTint="#800000"/>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="1dp"
+                    app:cardBackgroundColor="#F8F9FA"
+                    app:strokeColor="#800000"
+                    app:strokeWidth="1dp"
+                    android:layout_marginBottom="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="4dp">
+
+                        <EditText
+                            android:id="@+id/etQuizTitle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Enter quiz title..."
+                            android:textSize="16sp"
+                            android:padding="16dp"
+                            android:background="@android:color/transparent"
+                            android:textColor="#212121"
+                            android:textColorHint="#9E9E9E"
+                            android:maxLines="1"
+                            android:singleLine="true"/>
+
+                    </LinearLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Description Input with Box Design -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Description"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#800000"
+                    android:layout_marginBottom="8dp"
+                    android:drawablePadding="8dp"
+                    android:drawableStart="@drawable/ic_description"
+                    android:drawableTint="#800000"/>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="1dp"
+                    app:cardBackgroundColor="#F8F9FA"
+                    app:strokeColor="#800000"
+                    app:strokeWidth="1dp"
+                    android:layout_marginBottom="20dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="4dp">
+
+                        <EditText
+                            android:id="@+id/etQuizDescription"
+                            android:layout_width="match_parent"
+                            android:layout_height="120dp"
+                            android:hint="Enter quiz description..."
+                            android:textSize="16sp"
+                            android:gravity="top"
+                            android:padding="16dp"
+                            android:background="@android:color/transparent"
+                            android:textColor="#212121"
+                            android:textColorHint="#9E9E9E"
+                            android:inputType="textMultiLine"
+                            android:maxLines="5"/>
+
+                    </LinearLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Quiz Type Selection -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Quiz Type"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="#212121"
+                    android:layout_marginBottom="12dp"
+                    android:drawablePadding="8dp"
+                    android:drawableStart="@drawable/ic_quiz_type"
+                    android:drawableTint="#800000"/>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="12dp"
+                    app:cardBackgroundColor="#F8F9FA"
+                    app:strokeColor="#E0E0E0"
+                    app:strokeWidth="1dp">
+
+                    <RadioGroup
+                        android:id="@+id/rgQuizType"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:padding="16dp">
+
+                        <com.google.android.material.radiobutton.MaterialRadioButton
+                            android:id="@+id/rbTypeQuiz"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Quiz"
+                            android:checked="true"
+                            android:textColor="#212121"
+                            app:buttonTint="#800000"
+                            android:padding="8dp"/>
+
+                        <com.google.android.material.radiobutton.MaterialRadioButton
+                            android:id="@+id/rbTypeExam"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Exam"
+                            android:textColor="#212121"
+                            app:buttonTint="#800000"
+                            android:padding="8dp"/>
+
+                    </RadioGroup>
+
+                </com.google.android.material.card.MaterialCardView>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Question Actions Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="#FFFFFF"
+            android:layout_marginBottom="24dp"
+            app:strokeColor="#E0E0E0"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Exam" />
-        </RadioGroup>
+                android:orientation="vertical"
+                android:padding="24dp">
 
-        <!-- Question Type Buttons -->
-        <Button
-            android:id="@+id/btnAddTF"
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Add Questions"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#212121"
+                    android:layout_marginBottom="16dp"
+                    android:drawablePadding="8dp"
+                    android:drawableStart="@drawable/ic_add_question"
+                    android:drawableTint="#800000"/>
+
+                <!-- Question Type Buttons -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="12dp">
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/btnAddTF"
+                        android:layout_width="0dp"
+                        android:layout_height="100dp"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="8dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="2dp"
+                        app:cardBackgroundColor="#FFF3E0"
+                        android:foreground="?android:attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:padding="16dp">
+
+                            <ImageView
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:src="@drawable/ic_true_false"
+                                android:layout_marginBottom="8dp"
+                                android:contentDescription="True/False icon"
+                                app:tint="#E65100" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="True/False"
+                                android:textSize="12sp"
+                                android:textColor="#E65100"
+                                android:textStyle="bold"
+                                android:textAlignment="center"/>
+
+                        </LinearLayout>
+
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/btnAddMC"
+                        android:layout_width="0dp"
+                        android:layout_height="100dp"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="8dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="2dp"
+                        app:cardBackgroundColor="#E8F5E9"
+                        android:foreground="?android:attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:padding="16dp">
+
+                            <ImageView
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:src="@drawable/ic_multiple_choice"
+                                android:layout_marginBottom="8dp"
+                                android:contentDescription="Multiple Choice icon"
+                                app:tint="#2E7D32" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Multiple Choice"
+                                android:textSize="12sp"
+                                android:textColor="#2E7D32"
+                                android:textStyle="bold"
+                                android:textAlignment="center"/>
+
+                        </LinearLayout>
+
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/btnAddMatching"
+                        android:layout_width="0dp"
+                        android:layout_height="100dp"
+                        android:layout_weight="1"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="2dp"
+                        app:cardBackgroundColor="#E3F2FD"
+                        android:foreground="?android:attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:padding="16dp">
+
+                            <ImageView
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:src="@drawable/ic_matching"
+                                android:layout_marginBottom="8dp"
+                                android:contentDescription="Matching icon"
+                                app:tint="#1565C0" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Matching"
+                                android:textSize="12sp"
+                                android:textColor="#1565C0"
+                                android:textStyle="bold"
+                                android:textAlignment="center"/>
+
+                        </LinearLayout>
+
+                    </com.google.android.material.card.MaterialCardView>
+
+                </LinearLayout>
+
+                <!-- Upload Quiz Button -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/btnUploadQuiz"
+                    android:layout_width="match_parent"
+                    android:layout_height="80dp"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="2dp"
+                    app:cardBackgroundColor="#F3E5F5"
+                    app:strokeColor="#7B1FA2"
+                    app:strokeWidth="1dp"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="20dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_upload"
+                            android:layout_marginEnd="12dp"
+                            android:contentDescription="Upload icon"
+                            app:tint="#7B1FA2" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Upload Quiz from TXT"
+                            android:textSize="14sp"
+                            android:textColor="#7B1FA2"
+                            android:textStyle="bold"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Bulk Import"
+                            android:textSize="10sp"
+                            android:textColor="#7B1FA2"
+                            android:background="@drawable/bg_pill_outline"
+                            android:paddingHorizontal="8dp"
+                            android:paddingVertical="4dp"/>
+
+                    </LinearLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Questions List Card -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Add True/False Question"
-            android:layout_marginTop="8dp"/>
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="#FFFFFF"
+            android:layout_marginBottom="24dp"
+            app:strokeColor="#E0E0E0"
+            app:strokeWidth="1dp"
+            android:visibility="gone"
+            android:id="@+id/cardQuestionsList">
 
-        <Button
-            android:id="@+id/btnAddMC"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Add Multiple Choice Question"
-            android:layout_marginTop="8dp"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp">
 
-        <Button
-            android:id="@+id/btnAddMatching"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Add Matching Question"
-            android:layout_marginTop="8dp"/>
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Questions"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#212121"
+                    android:layout_marginBottom="16dp"
+                    android:drawablePadding="8dp"
+                    android:drawableStart="@drawable/ic_questions_list"
+                    android:drawableTint="#800000"/>
 
-        <!-- NEW: Upload Quiz Button -->
-        <Button
-            android:id="@+id/btnUploadQuiz"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Upload Quiz from TXT"
-            android:layout_marginTop="8dp"/>
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/recyclerViewQuestions"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="200dp" />
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recyclerViewQuestions"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp" />
+            </LinearLayout>
 
-        <Button
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Save Button -->
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSaveQuiz"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="56dp"
             android:text="Save Quiz"
-            android:layout_marginTop="16dp" />
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:cornerRadius="12dp"
+            app:icon="@drawable/ic_save"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            app:backgroundTint="#800000"
+            android:layout_marginBottom="16dp"
+            app:elevation="4dp"/>
 
     </LinearLayout>
 </ScrollView>

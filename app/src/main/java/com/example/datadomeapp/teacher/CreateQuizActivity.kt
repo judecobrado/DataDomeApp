@@ -4,9 +4,12 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.View
 import android.widget.*
+import com.google.android.material.card.MaterialCardView
+import com.google.android.material.button.MaterialButton
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.database.GenericTypeIndicator // <-- ADD THIS
+import com.google.firebase.database.GenericTypeIndicator
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -26,13 +29,14 @@ class CreateQuizActivity : AppCompatActivity() {
     private val db = FirebaseDatabase.getInstance().reference
     private val auth = FirebaseAuth.getInstance()
     private lateinit var recyclerView: RecyclerView
-    private lateinit var btnAddTF: Button
-    private lateinit var btnAddMatching: Button
-    private lateinit var btnAddMC: Button
-    private lateinit var btnSaveQuiz: Button
-    private lateinit var btnUploadQuiz: Button // NEW
+    private lateinit var btnAddTF: MaterialCardView  // CHANGED: MaterialCardView instead of Button
+    private lateinit var btnAddMatching: MaterialCardView  // CHANGED: MaterialCardView instead of Button
+    private lateinit var btnAddMC: MaterialCardView  // CHANGED: MaterialCardView instead of Button
+    private lateinit var btnSaveQuiz: MaterialButton
+    private lateinit var btnUploadQuiz: MaterialCardView  // CHANGED: MaterialCardView instead of Button
     private lateinit var etQuizTitle: EditText
     private lateinit var etQuizDescription: EditText
+    private lateinit var cardQuestionsList: MaterialCardView  // ADDED: For visibility control
     private var currentAssignmentId: String? = null
     private val questionList = mutableListOf<Question>()
     private lateinit var adapter: QuestionAdapter
@@ -44,7 +48,6 @@ class CreateQuizActivity : AppCompatActivity() {
     private var academicYear: String? = null
     private var semester: String? = null
     private val firestore = FirebaseFirestore.getInstance()
-
 
     // NEW: File picker for upload
     private val filePickerLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -59,17 +62,19 @@ class CreateQuizActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_create_quiz)
 
+        // FIXED: Gamitin ang tamang view casting para sa MaterialCardView
         recyclerView = findViewById(R.id.recyclerViewQuestions)
         btnAddTF = findViewById(R.id.btnAddTF)
         btnAddMatching = findViewById(R.id.btnAddMatching)
         btnAddMC = findViewById(R.id.btnAddMC)
         btnSaveQuiz = findViewById(R.id.btnSaveQuiz)
-        btnUploadQuiz = findViewById(R.id.btnUploadQuiz) // NEW
+        btnUploadQuiz = findViewById(R.id.btnUploadQuiz)
         etQuizTitle = findViewById(R.id.etQuizTitle)
         etQuizDescription = findViewById(R.id.etQuizDescription)
         rgQuizType = findViewById(R.id.rgQuizType)
         rbTypeQuiz = findViewById(R.id.rbTypeQuiz)
         rbTypeExam = findViewById(R.id.rbTypeExam)
+        cardQuestionsList = findViewById(R.id.cardQuestionsList)  // ADDED
 
         recyclerView.layoutManager = LinearLayoutManager(this)
         adapter = QuestionAdapter(
@@ -83,7 +88,7 @@ class CreateQuizActivity : AppCompatActivity() {
         btnAddMatching.setOnClickListener { addMatchingQuestion() }
         btnAddMC.setOnClickListener { addMCQuestion() }
         btnSaveQuiz.setOnClickListener { saveQuiz() }
-        btnUploadQuiz.setOnClickListener { openFilePicker() } // NEW
+        btnUploadQuiz.setOnClickListener { openFilePicker() }
 
         // ----------------- Check if editing -----------------
         editingQuizId = intent.getStringExtra("QUIZ_ID")
@@ -98,6 +103,9 @@ class CreateQuizActivity : AppCompatActivity() {
             return
         }
         fetchCurrentTerm()
+
+        // Initially hide questions card if no questions
+        updateQuestionsCardVisibility()
     }
 
     private fun fetchCurrentTerm() {
@@ -113,6 +121,15 @@ class CreateQuizActivity : AppCompatActivity() {
             }
     }
 
+    // ADDED: Update questions card visibility
+    private fun updateQuestionsCardVisibility() {
+        if (questionList.isNotEmpty()) {
+            cardQuestionsList.visibility = View.VISIBLE
+        } else {
+            cardQuestionsList.visibility = View.GONE
+        }
+    }
+
     // NEW: Open file picker for TXT files
     private fun openFilePicker() {
         val intent = Intent(Intent.ACTION_GET_CONTENT)
@@ -121,7 +138,6 @@ class CreateQuizActivity : AppCompatActivity() {
         filePickerLauncher.launch(Intent.createChooser(intent, "Select Quiz TXT File"))
     }
 
-    // NEW: Process uploaded TXT file
     // NEW: Process uploaded TXT file
     private fun processUploadedFile(uri: Uri) {
         try {
@@ -285,6 +301,7 @@ class CreateQuizActivity : AppCompatActivity() {
                 }
 
                 adapter.notifyDataSetChanged()
+                updateQuestionsCardVisibility()  // ADDED: Update visibility after upload
 
                 Toast.makeText(
                     this,
@@ -341,6 +358,7 @@ class CreateQuizActivity : AppCompatActivity() {
                 }
             }
             adapter.notifyDataSetChanged()
+            updateQuestionsCardVisibility()  // ADDED: Update visibility after loading
         }
     }
 
@@ -626,6 +644,7 @@ class CreateQuizActivity : AppCompatActivity() {
         if (index != -1) {
             questionList.removeAt(index)
             adapter.notifyItemRemoved(index)
+            updateQuestionsCardVisibility()  // ADDED: Update visibility after deletion
         }
     }
 
@@ -635,11 +654,13 @@ class CreateQuizActivity : AppCompatActivity() {
             if (index != -1) {
                 questionList[index] = newQuestion
                 adapter.notifyItemChanged(index)
+                updateQuestionsCardVisibility()  // ADDED: Update visibility
                 return
             }
         }
         questionList.add(newQuestion)
         adapter.notifyItemInserted(questionList.size - 1)
+        updateQuestionsCardVisibility()  // ADDED: Update visibility after adding
     }
 
     private fun saveQuiz() {
