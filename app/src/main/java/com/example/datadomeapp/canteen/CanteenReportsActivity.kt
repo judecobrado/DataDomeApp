@@ -6,6 +6,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.DatePicker
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -16,12 +18,12 @@ import com.example.datadomeapp.R
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import java.text.SimpleDateFormat
-import com.github.mikephil.charting.charts.LineChart // LineChart for Dual-Axis
+import com.github.mikephil.charting.charts.LineChart
 import com.google.firebase.firestore.PropertyName
 import java.util.*
-import com.github.mikephil.charting.charts.BarChart // Keep if used elsewhere, otherwise remove
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout // CRITICAL: Import for SwipeRefreshLayout
 
-// Data Models
+// Data Models (No Changes)
 data class Order(
     val id: String = "",
     val timestamp: Date = Date(),
@@ -38,11 +40,10 @@ data class OrderItem(
     val quantity: Int = 0
 )
 
-// Data Model para sa Graph - May dalawang value
 data class DailySales(
     val date: String,
-    val totalSales: Double,      // Pera (Left Axis)
-    val totalQuantitySold: Int   // Dami (Right Axis)
+    val totalSales: Double,
+    val totalQuantitySold: Int
 )
 
 class CanteenReportsActivity : AppCompatActivity() {
@@ -54,12 +55,19 @@ class CanteenReportsActivity : AppCompatActivity() {
     private lateinit var tvTotalSales: TextView
     private lateinit var tvTotalOrders: TextView
     private lateinit var tvTopSellingItem: TextView
-    private lateinit var tvDateRange: TextView      // For filter label
-    private lateinit var btnFilterDate: Button      // Filter button
-    private lateinit var tvSalesChartTitle: TextView // NEW: Para sa dynamic chart title
+    private lateinit var tvDateRange: TextView
+    private lateinit var btnFilterDate: Button
+    private lateinit var tvSalesChartTitle: TextView
+
+    // NEW: Swipe Refresh Layout
+    private lateinit var swipeRefreshLayout: SwipeRefreshLayout
+
+    // Loading Indicator
+    private var progressBar: ProgressBar? = null
+    private var tvLoadingMessage: TextView? = null
 
     // Graph View
-    private lateinit var salesChart: LineChart // Ibinabalik sa LineChart para sa Dual-Axis
+    private lateinit var salesChart: LineChart
 
     // Order List Views
     private lateinit var rvOrders: RecyclerView
@@ -68,35 +76,85 @@ class CanteenReportsActivity : AppCompatActivity() {
 
     private val dateFormatter = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
 
+    // NEW: Variables to store the currently loaded date range
+    private var currentStartDate: Date? = null
+    private var currentEndDate: Date? = null
+    private var currentFilterLabel: String = "Today" // default value
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_canteen_reports)
 
         supportActionBar?.title = "Sales & Order Reports"
 
-        // Initialize Views
+        // Initialize ALL Views FIRST before using them
         tvTotalSales = findViewById(R.id.tvTotalSales)
         tvTotalOrders = findViewById(R.id.tvTotalOrders)
         tvTopSellingItem = findViewById(R.id.tvTopSellingItem)
         tvDateRange = findViewById(R.id.tvDateRange)
         btnFilterDate = findViewById(R.id.btnFilterDate)
-        salesChart = findViewById(R.id.salesChart) // LineChart na ulit
-        tvSalesChartTitle = findViewById(R.id.tvSalesChartTitle) // NEW: Initialize dynamic title
+        salesChart = findViewById(R.id.salesChart)
+        tvSalesChartTitle = findViewById(R.id.tvSalesChartTitle)
+        rvOrders = findViewById(R.id.rvOrderList)
+
+        // NEW: Initialize SwipeRefreshLayout
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout)
+
+        // Initialize Loading Views - CRITICAL: Must be initialized before loadTodayOrders()
+        progressBar = findViewById(R.id.progressBar)
+        tvLoadingMessage = findViewById(R.id.tvLoadingMessage)
 
         // Initialize RecyclerView
-        rvOrders = findViewById(R.id.rvOrderList)
         orderAdapter = OrderAdapter(orderList)
         rvOrders.layoutManager = LinearLayoutManager(this)
         rvOrders.adapter = orderAdapter
 
+        // Initialize chart
         SalesChartHelper.initializeChart(salesChart)
-        loadTodayOrders()
 
+        // Set button listener
         btnFilterDate.setOnClickListener {
             showDateFilterDialog()
         }
+
+        // NEW: Setup Swipe-to-Refresh Listener
+        swipeRefreshLayout.setOnRefreshListener {
+            // Re-load the data based on the currently applied filter
+            refreshCurrentReport()
+        }
+
+        // Load data LAST - after everything is initialized
+        loadTodayOrders()
     }
 
+    // ------------------- LOADING INDICATOR FUNCTIONS -------------------
+
+    private fun showLoading(message: String = "Loading reports...") {
+        // Only show the central ProgressBar if it wasn't triggered by a swipe (which uses its own indicator)
+        if (!swipeRefreshLayout.isRefreshing) {
+            progressBar?.visibility = View.VISIBLE
+            tvLoadingMessage?.visibility = View.VISIBLE
+            tvLoadingMessage?.text = message
+        }
+
+        // Hide content while loading
+        rvOrders.visibility = View.GONE
+        salesChart.visibility = View.GONE
+    }
+
+    private fun hideLoading() {
+        // Stop the SwipeRefresh animation
+        if (swipeRefreshLayout.isRefreshing) {
+            swipeRefreshLayout.isRefreshing = false
+        }
+
+        progressBar?.visibility = View.GONE
+        tvLoadingMessage?.visibility = View.GONE
+
+        // Show content after loading
+        rvOrders.visibility = View.VISIBLE
+        salesChart.visibility = View.VISIBLE
+    }
 
     // ------------------- DATA LOADING & FILTERING LOGIC -------------------
 
@@ -118,25 +176,30 @@ class CanteenReportsActivity : AppCompatActivity() {
     }
 
     private fun loadOrders(start: Date, end: Date, filterLabel: String) {
+        // 1. NEW: SAVE the current filter state
+        currentStartDate = start
+        currentEndDate = end
+        currentFilterLabel = filterLabel
+
+        // Show loading indicator
+        showLoading("Loading $filterLabel reports...")
+
         tvDateRange.text = "Showing results for: $filterLabel"
 
         // Update dynamic chart title
         val chartTitle = filterLabel.substringBefore(" (")
-        tvSalesChartTitle.text = "Sales & Quantity Trend ($chartTitle)" // Dynamic Title
-
-        // --- SIMULA NG PAGBABAGO SA QUERY LOGIC ---
-        // Gumawa ng dalawang queries at pagsasamahin ang resulta (This is the standard, albeit slightly complex, way to handle 'OR' in Firestore)
+        tvSalesChartTitle.text = "Sales & Quantity Trend ($chartTitle)"
 
         // 1. Query for RFID Payments
         val rfidQuery = firestore.collection("transactions")
-            .whereEqualTo("type", "RFID_PAYMENT") // RFID Transaction Type
+            .whereEqualTo("type", "RFID_PAYMENT")
             .whereGreaterThanOrEqualTo("timestamp", start)
             .whereLessThanOrEqualTo("timestamp", end)
             .orderBy("timestamp", Query.Direction.DESCENDING)
 
         // 2. Query for Cash Payments
         val cashQuery = firestore.collection("transactions")
-            .whereEqualTo("type", "CASH_PAYMENT") // Cash Transaction Type
+            .whereEqualTo("type", "CASH_PAYMENT")
             .whereGreaterThanOrEqualTo("timestamp", start)
             .whereLessThanOrEqualTo("timestamp", end)
             .orderBy("timestamp", Query.Direction.DESCENDING)
@@ -149,7 +212,7 @@ class CanteenReportsActivity : AppCompatActivity() {
                 doc.toObject(Order::class.java)?.copy(
                     id = doc.id,
                     totalAmount = totalAmount,
-                    paymentMethod = "RFID" // Tiyakin na RFID ito
+                    paymentMethod = "RFID"
                 )
             }
 
@@ -161,7 +224,7 @@ class CanteenReportsActivity : AppCompatActivity() {
                     doc.toObject(Order::class.java)?.copy(
                         id = doc.id,
                         totalAmount = totalAmount,
-                        paymentMethod = "Cash" // Tiyakin na Cash ito
+                        paymentMethod = "Cash"
                     )
                 }
 
@@ -174,32 +237,122 @@ class CanteenReportsActivity : AppCompatActivity() {
                 orderAdapter.notifyDataSetChanged()
 
                 calculateAndDisplaySummary(combinedOrders)
+
+                // Hide loading after data is loaded
+                hideLoading()
             }
                 .addOnFailureListener { e ->
+                    hideLoading()
                     Toast.makeText(this, "Failed to load cash reports: ${e.message}", Toast.LENGTH_LONG).show()
                     Log.e(TAG, "Error loading cash orders for report", e)
                 }
         }
             .addOnFailureListener { e ->
+                hideLoading()
                 Toast.makeText(this, "Failed to load RFID reports: ${e.message}", Toast.LENGTH_LONG).show()
                 Log.e(TAG, "Error loading RFID orders for report", e)
             }
     }
 
-    // ------------------- DATE FILTER DIALOG (SAME) -------------------
+    // NEW: Function to re-load the last applied filter
+    private fun refreshCurrentReport() {
+        val start = currentStartDate
+        val end = currentEndDate
+        val label = currentFilterLabel
+
+        if (start != null && end != null) {
+            // Re-load the data using the last applied filter dates
+            loadOrders(start, end, label)
+        } else {
+            // If no filter was applied yet, load the default (Today)
+            loadTodayOrders()
+        }
+    }
+
+
+    // ------------------- DATE FILTER DIALOGS -------------------
 
     private fun showDateFilterDialog() {
-        val options = arrayOf("Today", "Yesterday", "This Week", "This Month")
+        val options = arrayOf("Select Date Range", "Today", "Yesterday", "This Week", "This Month")
 
         AlertDialog.Builder(this)
             .setTitle("Filter Sales Report")
             .setItems(options) { dialog, which ->
                 when (options[which]) {
+                    "Select Date Range" -> showCustomDateRangeDialog()
                     "Today" -> loadTodayOrders()
                     "Yesterday" -> loadYesterdayOrders()
                     "This Week" -> loadCurrentPeriodOrders(Calendar.WEEK_OF_YEAR, "This Week")
                     "This Month" -> loadCurrentPeriodOrders(Calendar.MONTH, "This Month")
                 }
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun showCustomDateRangeDialog() {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_date_range_picker, null)
+        val dpStart = dialogView.findViewById<DatePicker>(R.id.dpStartDate)
+        val dpEnd = dialogView.findViewById<DatePicker>(R.id.dpEndDate)
+
+        val calendar = Calendar.getInstance()
+        val currentYear = calendar.get(Calendar.YEAR)
+        val currentMonth = calendar.get(Calendar.MONTH)
+        val currentDay = calendar.get(Calendar.DAY_OF_MONTH)
+
+        // --- Limit: 1 Year from Current Date ---
+        val minCalendar = Calendar.getInstance().apply {
+            // Itakda ang pinakaunang petsa na pwedeng piliin (1 taon ang nakalipas)
+            add(Calendar.YEAR, -1)
+        }
+        val minDate = minCalendar.timeInMillis
+
+        // Set the maximum date (Today)
+        val maxDate = calendar.timeInMillis
+        dpStart.maxDate = maxDate
+        dpEnd.maxDate = maxDate
+
+        // Apply Minimum Date (1 year ago)
+        dpStart.minDate = minDate
+        dpEnd.minDate = minDate
+
+        // Initialize End Date Picker to today
+        dpEnd.init(currentYear, currentMonth, currentDay, null)
+
+        // Initialize Start Date Picker to 7 days ago (Default range)
+        calendar.add(Calendar.DAY_OF_YEAR, -6)
+        dpStart.init(calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH), null)
+
+
+        AlertDialog.Builder(this)
+            .setTitle("Select Date Range")
+            .setView(dialogView)
+            .setPositiveButton("Apply Filter") { dialog, _ ->
+                // Kumuha ng Start Date (00:00:00)
+                val startCalendar = Calendar.getInstance().apply {
+                    set(dpStart.year, dpStart.month, dpStart.dayOfMonth, 0, 0, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+
+                // Kumuha ng End Date (23:59:59.999)
+                val endCalendar = Calendar.getInstance().apply {
+                    set(dpEnd.year, dpEnd.month, dpEnd.dayOfMonth, 23, 59, 59)
+                    set(Calendar.MILLISECOND, 999)
+                }
+
+                // Validation: Tiyaking hindi mas huli ang start date kaysa end date
+                if (startCalendar.time.after(endCalendar.time)) {
+                    Toast.makeText(this, "Error: Start Date cannot be after End Date.", Toast.LENGTH_LONG).show()
+                    dialog.dismiss()
+                    return@setPositiveButton
+                }
+
+                val start = startCalendar.time
+                val end = endCalendar.time
+
+                val filterLabel = "${dateFormatter.format(start)} - ${dateFormatter.format(end)}"
+                loadOrders(start, end, filterLabel)
                 dialog.dismiss()
             }
             .setNegativeButton("Cancel", null)
@@ -270,9 +423,6 @@ class CanteenReportsActivity : AppCompatActivity() {
         generateSalesGraphData(orders)
     }
 
-    /**
-     * Gumagawa ng data para sa Line Chart, na may dalawang set (Sales at Quantity).
-     */
     private fun generateSalesGraphData(orders: List<Order>) {
         val keyFormatter = SimpleDateFormat("MM-dd", Locale.US)
 
@@ -300,15 +450,14 @@ class CanteenReportsActivity : AppCompatActivity() {
             sortFormatter.parse(it.date)?.time ?: 0L
         }
 
-        // TAWAGIN ANG PLOTTING FUNCTION
-        SalesChartHelper.plotDualAxisChart(salesChart, dailySalesList) // UPDATED HELPER FUNCTION
+        SalesChartHelper.plotDualAxisChart(salesChart, dailySalesList)
 
         Log.d(TAG, "Daily Sales Data Prepared: $dailySalesList")
     }
 }
 
 // -----------------------------
-// RecyclerView Adapter for Orders (No change needed)
+// RecyclerView Adapter for Orders (No Changes)
 // -----------------------------
 class OrderAdapter(private val items: List<Order>) :
     RecyclerView.Adapter<OrderAdapter.OrderViewHolder>() {

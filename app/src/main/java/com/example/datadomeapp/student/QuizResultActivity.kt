@@ -77,7 +77,7 @@ class QuizResultActivity : AppCompatActivity() {
             // Determine reason for failure for display
             val failureReasonText = when (failureCategory) {
                 "CHEATING_FAIL" -> "FAILED (Max cheats reached)"
-                "SCORE_FAIL" -> "FAILED (Grade $<$ ${requiredPassingScore}%)"
+                "SCORE_FAIL" -> "FAILED"
                 else -> "FAILED "
             }
 

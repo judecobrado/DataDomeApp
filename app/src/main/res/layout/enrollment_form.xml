@@ -245,6 +245,31 @@
                 android:layout_marginBottom="8dp"
                 android:visibility="gone" />
 
+            <!-- Last Name Extension -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sufix (Optional)"
+                android:textStyle="bold"
+                android:textColor="@android:color/black"
+                android:layout_marginBottom="4dp" />
+
+            <Spinner
+                android:id="@+id/spinnerStudentLastNameExtension"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginBottom="12dp"
+                style="@style/Widget.AppCompat.Spinner.Underlined"/>
+
+            <TextView
+                android:id="@+id/errorStudentLastNameExtension"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@android:color/holo_red_dark"
+                android:textSize="12sp"
+                android:layout_marginBottom="8dp"
+                android:visibility="gone" />
+
             <!-- Email -->
             <TextView
                 android:id="@+id/tvEmail"
@@ -670,6 +695,31 @@
                 android:layout_marginBottom="8dp"
                 android:visibility="gone" />
 
+            <!-- Father Last Name Extension -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Last Name Extension (Optional)"
+                android:textStyle="bold"
+                android:textColor="@android:color/black"
+                android:layout_marginBottom="4dp" />
+
+            <Spinner
+                android:id="@+id/spinnerFatherLastNameExtension"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginBottom="12dp"
+                style="@style/Widget.AppCompat.Spinner.Underlined"/>
+
+            <TextView
+                android:id="@+id/errorFatherLastNameExtension"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@android:color/holo_red_dark"
+                android:textSize="12sp"
+                android:layout_marginBottom="8dp"
+                android:visibility="gone" />
+
             <!-- Father Date of Birth -->
             <TextView
                 android:id="@+id/tvFatherDOB"
@@ -849,6 +899,31 @@
 
             <TextView
                 android:id="@+id/errorMotherLastName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@android:color/holo_red_dark"
+                android:textSize="12sp"
+                android:layout_marginBottom="8dp"
+                android:visibility="gone" />
+
+            <!-- Mother Last Name Extension -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Last Name Extension (Optional)"
+                android:textStyle="bold"
+                android:textColor="@android:color/black"
+                android:layout_marginBottom="4dp" />
+
+            <Spinner
+                android:id="@+id/spinnerMotherLastNameExtension"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginBottom="12dp"
+                style="@style/Widget.AppCompat.Spinner.Underlined"/>
+
+            <TextView
+                android:id="@+id/errorMotherLastNameExtension"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textColor="@android:color/holo_red_dark"

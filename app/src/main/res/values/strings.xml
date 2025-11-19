@@ -39,6 +39,6 @@
     <string-array name="menu_filter_options">
         <item>All</item>
         <item>Available</item>
-        <item>Out of Stock</item>
+        <item>Not Available</item>
     </string-array>
 </resources>

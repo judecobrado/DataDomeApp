@@ -222,22 +222,22 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:padding="16dp">
 
                 <!-- Row 1 -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:layout_marginBottom="16dp">
+                    android:layout_marginBottom="12dp">
 
                     <com.google.android.material.card.MaterialCardView
                         android:id="@+id/cardManageClasses"
                         android:layout_width="0dp"
-                        android:layout_height="140dp"
+                        android:layout_height="110dp"
                         android:layout_weight="1"
-                        android:layout_marginEnd="12dp"
-                        app:cardCornerRadius="14dp"
+                        android:layout_marginEnd="8dp"
+                        app:cardCornerRadius="12dp"
                         app:cardElevation="3dp"
                         app:cardBackgroundColor="@color/card_light_red"
                         android:foreground="?android:attr/selectableItemBackground">
@@ -247,20 +247,20 @@
                             android:layout_height="match_parent"
                             android:orientation="vertical"
                             android:gravity="center"
-                            android:padding="16dp">
+                            android:padding="12dp">
 
                             <ImageView
-                                android:layout_width="56dp"
-                                android:layout_height="56dp"
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
                                 android:src="@drawable/ic_classroom"
                                 android:tint="@color/secondary_red"
-                                android:layout_marginBottom="12dp" />
+                                android:layout_marginBottom="8dp" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="My Classes"
-                                android:textSize="14sp"
+                                android:textSize="13sp"
                                 android:textStyle="bold"
                                 android:textColor="@color/primary_text"
                                 android:gravity="center" />
@@ -271,10 +271,10 @@
                     <com.google.android.material.card.MaterialCardView
                         android:id="@+id/cardMySchedule"
                         android:layout_width="0dp"
-                        android:layout_height="140dp"
+                        android:layout_height="110dp"
                         android:layout_weight="1"
-                        android:layout_marginStart="12dp"
-                        app:cardCornerRadius="14dp"
+                        android:layout_marginStart="8dp"
+                        app:cardCornerRadius="12dp"
                         app:cardElevation="3dp"
                         app:cardBackgroundColor="@color/card_light_red"
                         android:foreground="?android:attr/selectableItemBackground">
@@ -284,20 +284,20 @@
                             android:layout_height="match_parent"
                             android:orientation="vertical"
                             android:gravity="center"
-                            android:padding="16dp">
+                            android:padding="12dp">
 
                             <ImageView
-                                android:layout_width="56dp"
-                                android:layout_height="56dp"
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
                                 android:src="@drawable/ic_schedule"
                                 android:tint="@color/secondary_red"
-                                android:layout_marginBottom="12dp" />
+                                android:layout_marginBottom="8dp" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="My Schedule"
-                                android:textSize="14sp"
+                                android:textSize="13sp"
                                 android:textStyle="bold"
                                 android:textColor="@color/primary_text"
                                 android:gravity="center" />
@@ -312,15 +312,15 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:layout_marginBottom="16dp">
+                    android:layout_marginBottom="12dp">
 
                     <com.google.android.material.card.MaterialCardView
                         android:id="@+id/cardQuiz"
                         android:layout_width="0dp"
-                        android:layout_height="140dp"
+                        android:layout_height="110dp"
                         android:layout_weight="1"
-                        android:layout_marginEnd="12dp"
-                        app:cardCornerRadius="14dp"
+                        android:layout_marginEnd="8dp"
+                        app:cardCornerRadius="12dp"
                         app:cardElevation="3dp"
                         app:cardBackgroundColor="@color/card_light_red"
                         android:foreground="?android:attr/selectableItemBackground">
@@ -330,20 +330,20 @@
                             android:layout_height="match_parent"
                             android:orientation="vertical"
                             android:gravity="center"
-                            android:padding="16dp">
+                            android:padding="12dp">
 
                             <ImageView
-                                android:layout_width="56dp"
-                                android:layout_height="56dp"
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
                                 android:src="@drawable/ic_quiz"
                                 android:tint="@color/secondary_red"
-                                android:layout_marginBottom="12dp" />
+                                android:layout_marginBottom="8dp" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Quiz/Exam"
-                                android:textSize="14sp"
+                                android:textSize="13sp"
                                 android:textStyle="bold"
                                 android:textColor="@color/primary_text"
                                 android:gravity="center" />
@@ -354,10 +354,10 @@
                     <com.google.android.material.card.MaterialCardView
                         android:id="@+id/cardAssessment"
                         android:layout_width="0dp"
-                        android:layout_height="140dp"
+                        android:layout_height="110dp"
                         android:layout_weight="1"
-                        android:layout_marginStart="12dp"
-                        app:cardCornerRadius="14dp"
+                        android:layout_marginStart="8dp"
+                        app:cardCornerRadius="12dp"
                         app:cardElevation="3dp"
                         app:cardBackgroundColor="@color/card_light_red"
                         android:foreground="?android:attr/selectableItemBackground">
@@ -367,20 +367,20 @@
                             android:layout_height="match_parent"
                             android:orientation="vertical"
                             android:gravity="center"
-                            android:padding="16dp">
+                            android:padding="12dp">
 
                             <ImageView
-                                android:layout_width="56dp"
-                                android:layout_height="56dp"
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
                                 android:src="@drawable/ic_assessment"
                                 android:tint="@color/secondary_red"
-                                android:layout_marginBottom="12dp" />
+                                android:layout_marginBottom="8dp" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Assessment"
-                                android:textSize="14sp"
+                                android:textSize="13sp"
                                 android:textStyle="bold"
                                 android:textColor="@color/primary_text"
                                 android:gravity="center" />
@@ -399,10 +399,10 @@
                     <com.google.android.material.card.MaterialCardView
                         android:id="@+id/cardAttendance"
                         android:layout_width="0dp"
-                        android:layout_height="140dp"
+                        android:layout_height="110dp"
                         android:layout_weight="1"
-                        android:layout_marginEnd="12dp"
-                        app:cardCornerRadius="14dp"
+                        android:layout_marginEnd="8dp"
+                        app:cardCornerRadius="12dp"
                         app:cardElevation="3dp"
                         app:cardBackgroundColor="@color/card_light_red"
                         android:foreground="?android:attr/selectableItemBackground">
@@ -412,20 +412,20 @@
                             android:layout_height="match_parent"
                             android:orientation="vertical"
                             android:gravity="center"
-                            android:padding="16dp">
+                            android:padding="12dp">
 
                             <ImageView
-                                android:layout_width="56dp"
-                                android:layout_height="56dp"
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
                                 android:src="@drawable/ic_attendance"
                                 android:tint="@color/secondary_red"
-                                android:layout_marginBottom="12dp" />
+                                android:layout_marginBottom="8dp" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Attendance"
-                                android:textSize="14sp"
+                                android:textSize="13sp"
                                 android:textStyle="bold"
                                 android:textColor="@color/primary_text"
                                 android:gravity="center" />
@@ -436,10 +436,10 @@
                     <com.google.android.material.card.MaterialCardView
                         android:id="@+id/cardGrades"
                         android:layout_width="0dp"
-                        android:layout_height="140dp"
+                        android:layout_height="110dp"
                         android:layout_weight="1"
-                        android:layout_marginStart="12dp"
-                        app:cardCornerRadius="14dp"
+                        android:layout_marginStart="8dp"
+                        app:cardCornerRadius="12dp"
                         app:cardElevation="3dp"
                         app:cardBackgroundColor="@color/card_light_red"
                         android:foreground="?android:attr/selectableItemBackground">
@@ -449,20 +449,20 @@
                             android:layout_height="match_parent"
                             android:orientation="vertical"
                             android:gravity="center"
-                            android:padding="16dp">
+                            android:padding="12dp">
 
                             <ImageView
-                                android:layout_width="56dp"
-                                android:layout_height="56dp"
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
                                 android:src="@drawable/ic_grades"
                                 android:tint="@color/secondary_red"
-                                android:layout_marginBottom="12dp" />
+                                android:layout_marginBottom="8dp" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Grades"
-                                android:textSize="14sp"
+                                android:textSize="13sp"
                                 android:textStyle="bold"
                                 android:textColor="@color/primary_text"
                                 android:gravity="center" />
@@ -497,22 +497,22 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:padding="16dp">
 
                 <!-- Additional Tools Grid -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:layout_marginBottom="12dp">
+                    android:layout_marginBottom="8dp">
 
                     <com.google.android.material.card.MaterialCardView
                         android:id="@+id/cardCanteen"
                         android:layout_width="0dp"
-                        android:layout_height="100dp"
+                        android:layout_height="90dp"
                         android:layout_weight="1"
-                        android:layout_marginEnd="8dp"
-                        app:cardCornerRadius="12dp"
+                        android:layout_marginEnd="6dp"
+                        app:cardCornerRadius="10dp"
                         app:cardElevation="2dp"
                         app:cardBackgroundColor="@color/card_light_cream"
                         android:foreground="?android:attr/selectableItemBackground">
@@ -522,20 +522,20 @@
                             android:layout_height="match_parent"
                             android:orientation="vertical"
                             android:gravity="center"
-                            android:padding="12dp">
+                            android:padding="10dp">
 
                             <ImageView
-                                android:layout_width="40dp"
-                                android:layout_height="40dp"
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
                                 android:src="@drawable/ic_canteen"
                                 android:tint="@color/secondary_red"
-                                android:layout_marginBottom="8dp" />
+                                android:layout_marginBottom="6dp" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Canteen"
-                                android:textSize="12sp"
+                                android:textSize="11sp"
                                 android:textStyle="bold"
                                 android:textColor="@color/primary_text"
                                 android:gravity="center" />
@@ -546,11 +546,11 @@
                     <com.google.android.material.card.MaterialCardView
                         android:id="@+id/cardTodo"
                         android:layout_width="0dp"
-                        android:layout_height="100dp"
+                        android:layout_height="90dp"
                         android:layout_weight="1"
-                        android:layout_marginStart="8dp"
-                        android:layout_marginEnd="8dp"
-                        app:cardCornerRadius="12dp"
+                        android:layout_marginStart="6dp"
+                        android:layout_marginEnd="6dp"
+                        app:cardCornerRadius="10dp"
                         app:cardElevation="2dp"
                         app:cardBackgroundColor="@color/card_light_cream"
                         android:foreground="?android:attr/selectableItemBackground">
@@ -560,20 +560,20 @@
                             android:layout_height="match_parent"
                             android:orientation="vertical"
                             android:gravity="center"
-                            android:padding="12dp">
+                            android:padding="10dp">
 
                             <ImageView
-                                android:layout_width="40dp"
-                                android:layout_height="40dp"
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
                                 android:src="@drawable/ic_todo"
                                 android:tint="@color/secondary_red"
-                                android:layout_marginBottom="8dp" />
+                                android:layout_marginBottom="6dp" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="To Do List"
-                                android:textSize="12sp"
+                                android:textSize="11sp"
                                 android:textStyle="bold"
                                 android:textColor="@color/primary_text"
                                 android:gravity="center" />
@@ -584,10 +584,10 @@
                     <com.google.android.material.card.MaterialCardView
                         android:id="@+id/cardNotes"
                         android:layout_width="0dp"
-                        android:layout_height="100dp"
+                        android:layout_height="90dp"
                         android:layout_weight="1"
-                        android:layout_marginStart="8dp"
-                        app:cardCornerRadius="12dp"
+                        android:layout_marginStart="6dp"
+                        app:cardCornerRadius="10dp"
                         app:cardElevation="2dp"
                         app:cardBackgroundColor="@color/card_light_cream"
                         android:foreground="?android:attr/selectableItemBackground">
@@ -597,20 +597,20 @@
                             android:layout_height="match_parent"
                             android:orientation="vertical"
                             android:gravity="center"
-                            android:padding="12dp">
+                            android:padding="10dp">
 
                             <ImageView
-                                android:layout_width="40dp"
-                                android:layout_height="40dp"
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
                                 android:src="@drawable/ic_notes"
                                 android:tint="@color/secondary_red"
-                                android:layout_marginBottom="8dp" />
+                                android:layout_marginBottom="6dp" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Notes"
-                                android:textSize="12sp"
+                                android:textSize="11sp"
                                 android:textStyle="bold"
                                 android:textColor="@color/primary_text"
                                 android:gravity="center" />
@@ -629,10 +629,10 @@
                     <com.google.android.material.card.MaterialCardView
                         android:id="@+id/cardVoice"
                         android:layout_width="0dp"
-                        android:layout_height="100dp"
+                        android:layout_height="90dp"
                         android:layout_weight="1"
-                        android:layout_marginEnd="8dp"
-                        app:cardCornerRadius="12dp"
+                        android:layout_marginEnd="6dp"
+                        app:cardCornerRadius="10dp"
                         app:cardElevation="2dp"
                         app:cardBackgroundColor="@color/card_light_cream"
                         android:foreground="?android:attr/selectableItemBackground">
@@ -642,20 +642,20 @@
                             android:layout_height="match_parent"
                             android:orientation="vertical"
                             android:gravity="center"
-                            android:padding="12dp">
+                            android:padding="10dp">
 
                             <ImageView
-                                android:layout_width="40dp"
-                                android:layout_height="40dp"
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
                                 android:src="@drawable/ic_voice"
                                 android:tint="@color/secondary_red"
-                                android:layout_marginBottom="8dp" />
+                                android:layout_marginBottom="6dp" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Voice"
-                                android:textSize="12sp"
+                                android:textSize="11sp"
                                 android:textStyle="bold"
                                 android:textColor="@color/primary_text"
                                 android:gravity="center" />
@@ -666,11 +666,11 @@
                     <com.google.android.material.card.MaterialCardView
                         android:id="@+id/cardRoulette"
                         android:layout_width="0dp"
-                        android:layout_height="100dp"
+                        android:layout_height="90dp"
                         android:layout_weight="1"
-                        android:layout_marginStart="8dp"
-                        android:layout_marginEnd="8dp"
-                        app:cardCornerRadius="12dp"
+                        android:layout_marginStart="6dp"
+                        android:layout_marginEnd="6dp"
+                        app:cardCornerRadius="10dp"
                         app:cardElevation="2dp"
                         app:cardBackgroundColor="@color/card_light_cream"
                         android:foreground="?android:attr/selectableItemBackground">
@@ -680,20 +680,20 @@
                             android:layout_height="match_parent"
                             android:orientation="vertical"
                             android:gravity="center"
-                            android:padding="12dp">
+                            android:padding="10dp">
 
                             <ImageView
-                                android:layout_width="40dp"
-                                android:layout_height="40dp"
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
                                 android:src="@drawable/ic_roulette"
                                 android:tint="@color/secondary_red"
-                                android:layout_marginBottom="8dp" />
+                                android:layout_marginBottom="6dp" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Roleta"
-                                android:textSize="12sp"
+                                android:textSize="11sp"
                                 android:textStyle="bold"
                                 android:textColor="@color/primary_text"
                                 android:gravity="center" />
@@ -704,9 +704,9 @@
                     <!-- Empty placeholder for alignment -->
                     <View
                         android:layout_width="0dp"
-                        android:layout_height="100dp"
+                        android:layout_height="90dp"
                         android:layout_weight="1"
-                        android:layout_marginStart="8dp"
+                        android:layout_marginStart="6dp"
                         android:visibility="invisible" />
 
                 </LinearLayout>

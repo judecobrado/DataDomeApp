@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background_light"
-    android:orientation="vertical"
+    android:orientation="horizontal"
     android:padding="16dp">
 
     <!-- Header Section -->
@@ -25,12 +25,12 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
                 android:gravity="center"
                 android:text="Transaction History"
                 android:textColor="@color/primary_red"
                 android:textSize="20sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="12dp" />
+                android:textStyle="bold" />
 
             <!-- Date Range Filter -->
             <LinearLayout
@@ -66,9 +66,9 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="12dp"
                     android:layout_weight="1"
+                    android:background="@drawable/bg_date_range"
                     android:gravity="center"
                     android:padding="12dp"
-                    android:background="@drawable/bg_date_range"
                     android:text="MMM dd, yyyy - MMM dd, yyyy"
                     android:textColor="@color/gray_text"
                     android:textSize="12sp" />

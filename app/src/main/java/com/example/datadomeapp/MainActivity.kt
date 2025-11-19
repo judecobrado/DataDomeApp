@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.example.datadomeapp.admin.AdminDashboardActivity
 import com.example.datadomeapp.canteen.CanteenStaffDashboardActivity
 import com.example.datadomeapp.enrollment.ChooseStudentTypeActivity
+import com.example.datadomeapp.enrollment.VerifyEmailActivity
 import com.example.datadomeapp.student.StudentDashboardActivity
 import com.example.datadomeapp.teacher.TeacherDashboardActivity
 import com.google.firebase.auth.FirebaseAuth
@@ -93,7 +94,7 @@ class MainActivity : AppCompatActivity() {
                 if (signupEnabled) {
                     btnSignup.visibility = View.VISIBLE
                     btnSignup.setOnClickListener {
-                        startActivity(Intent(this, ChooseStudentTypeActivity::class.java))
+                        startActivity(Intent(this, VerifyEmailActivity::class.java))
                     }
                     Log.i(TAG, "Signup enabled - showing button")
                 } else {

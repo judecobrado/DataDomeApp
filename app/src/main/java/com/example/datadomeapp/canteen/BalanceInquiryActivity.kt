@@ -24,6 +24,7 @@ class BalanceInquiryActivity : AppCompatActivity() {
     private lateinit var spinnerFilter: Spinner
     private lateinit var progressBar: ProgressBar
     private lateinit var tvNoResults: TextView
+    // ⚠️ Tiyaking tama ang data model na ginagamit mo (tingnan ang huling sagot)
     private var allUsersList: List<BalanceItem> = emptyList()
     private var currentFilter: String = "High to Low"
     private var currentQuery: String = ""
@@ -50,7 +51,7 @@ class BalanceInquiryActivity : AppCompatActivity() {
         // Initialize adapter with an empty list and the click listener
         adapter = BalanceAdapter(emptyList()) { item ->
             // Action when an item is clicked: Go to History Activity
-            val intent = Intent(this, UserHistoryActivity::class.java) // Kailangan gawin ang Activity na ito
+            val intent = Intent(this, UserHistoryActivity::class.java)
             intent.putExtra("userUID", item.uid)
             intent.putExtra("userName", item.name)
             startActivity(intent)
@@ -90,7 +91,6 @@ class BalanceInquiryActivity : AppCompatActivity() {
     private fun loadAllUserBalances() {
         progressBar.visibility = View.VISIBLE
 
-        // Fetch students and teachers simultaneously
         val studentsTask = firestore.collection("students").get()
         val teachersTask = firestore.collection("teachers").get()
 
@@ -107,8 +107,9 @@ class BalanceInquiryActivity : AppCompatActivity() {
                     val balance = doc.getDouble("balance") ?: 0.0
                     totalBalance += balance
                     combinedList.add(BalanceItem(
-                        accountId = doc.id, // DDS-0007
-                        uid = doc.getString("userUid") ?: "", // Assuming the UID link is 'userUid'
+                        // ❌ TINANGGAL ANG accountId
+                        // accountId = doc.id,
+                        uid = doc.getString("userUid") ?: "",
                         name = (doc.getString("firstName") ?: "") + " " + (doc.getString("lastName") ?: ""),
                         role = "Student",
                         balance = balance
@@ -120,17 +121,18 @@ class BalanceInquiryActivity : AppCompatActivity() {
                     val balance = doc.getDouble("balance") ?: 0.0
                     totalBalance += balance
                     combinedList.add(BalanceItem(
-                        accountId = doc.id, // T-0004
-                        uid = doc.getString("uid") ?: "", // Assuming the UID link is 'uid'
-                        name = doc.getString("name") ?: "N/A", // Assuming a single 'name' field for teachers
+                        // ❌ TINANGGAL ANG accountId
+                        // accountId = doc.id,
+                        uid = doc.getString("uid") ?: "",
+                        name = doc.getString("name") ?: "N/A",
                         role = "Teacher",
                         balance = balance
                     ))
                 }
 
-                allUsersList = combinedList.sortedByDescending { it.balance } // Default sort
-                tvTotalBalance.text = "Total Money in Circulation: ₱${String.format(Locale.US, "%.2f", totalBalance)}"
-                filterAndSortList() // Apply initial filter/sort/search
+                allUsersList = combinedList.sortedByDescending { it.balance }
+                tvTotalBalance.text = "₱${String.format(Locale.US, "%.2f", totalBalance)}"
+                filterAndSortList()
                 progressBar.visibility = View.GONE
             }
             .addOnFailureListener { e ->
@@ -141,9 +143,9 @@ class BalanceInquiryActivity : AppCompatActivity() {
 
     private fun filterAndSortList() {
         var filteredList = allUsersList.filter {
-            // Search filter: check name or accountId (case-insensitive)
-            it.name.contains(currentQuery, ignoreCase = true) ||
-                    it.accountId.contains(currentQuery, ignoreCase = true)
+            // ❌ SEARCH LOGIC: Check name only (case-insensitive)
+            it.name.contains(currentQuery, ignoreCase = true)
+            // ❌ Tinanggal ang || it.accountId.contains(currentQuery, ignoreCase = true)
         }
 
         // Apply Role Filter
@@ -161,12 +163,12 @@ class BalanceInquiryActivity : AppCompatActivity() {
         }
 
         if (filteredList.isEmpty()) {
-            tvNoResults.visibility = View.VISIBLE // Ipakita ang "No user found"
-            recyclerView.visibility = View.GONE    // Itago ang listahan
-            tvNoResults.text = "No user found." // Custom message
+            tvNoResults.visibility = View.VISIBLE
+            recyclerView.visibility = View.GONE
+            tvNoResults.text = "No user found."
         } else {
-            tvNoResults.visibility = View.GONE     // Itago ang "No user found"
-            recyclerView.visibility = View.VISIBLE // Ipakita ang listahan
+            tvNoResults.visibility = View.GONE
+            recyclerView.visibility = View.VISIBLE
         }
 
         adapter.updateList(filteredList)
