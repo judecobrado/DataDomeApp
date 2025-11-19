@@ -54,7 +54,7 @@
             android:layout_gravity="center_vertical"
             android:textSize="15sp"
             android:textStyle="bold"
-            android:textColor="#00796B" android:fontFamily="sans-serif-black"
+            android:textColor="#1B5E20" android:fontFamily="sans-serif-black"
             tools:text="₱125.50"/>
 
     </LinearLayout>

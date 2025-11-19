@@ -5,9 +5,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFFFF"
-    android:paddingStart="16dp"
-    android:paddingEnd="16dp"
+    android:background="#FDFBF8"
+    android:paddingStart="24dp"
+    android:paddingEnd="24dp"
     tools:context=".canteen.BalanceInquiryActivity">
 
     <LinearLayout
@@ -15,31 +15,29 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="36dp"
         app:layout_constraintTop_toTopOf="parent">
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="FINANCIAL DIRECTORY"
-            android:textSize="10sp"
+            android:textSize="11sp"
             android:textStyle="bold"
-            android:textColor="#C0C0C0"
-            android:letterSpacing="0.1"
-            android:layout_marginBottom="2dp"/>
+            android:textColor="#9CA3AF"  android:letterSpacing="0.1"
+            android:layout_marginBottom="4dp"/>
 
         <TextView
             android:id="@+id/tvScreenTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="USER BALANCE INQUIRY"
-            android:textSize="24sp"
+            android:textSize="28sp"
             android:textStyle="bold"
-            android:textColor="#212121"
-            android:maxLines="1"
+            android:textColor="#7B1113"  android:maxLines="1"
             android:ellipsize="end"
             android:fontFamily="sans-serif-medium"
-            android:layout_marginBottom="16dp"/>
+            android:layout_marginBottom="24dp"/>
 
     </LinearLayout>
 
@@ -47,9 +45,7 @@
         android:id="@+id/cardSummary"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        app:cardCornerRadius="8dp"
-        app:cardElevation="2dp"
-        app:strokeWidth="3dp" app:strokeColor="#7B1113" app:cardBackgroundColor="#FFFFFF"
+        app:cardCornerRadius="16dp"  app:cardElevation="8dp"      app:strokeWidth="2dp" app:strokeColor="#9B1C1F" app:cardBackgroundColor="#FFFFFF"
         app:layout_constraintTop_toBottomOf="@id/headerGroup"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
@@ -58,17 +54,17 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="12dp">
+            android:padding="20dp">
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="BALANCES OVERVIEW"
-                android:textSize="11sp"
+                android:textSize="12sp"
                 android:textStyle="bold"
                 android:textColor="#7B1113"
                 android:letterSpacing="0.08"
-                android:layout_marginBottom="12dp"/>
+                android:layout_marginBottom="16dp"/>
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -81,8 +77,8 @@
                     android:layout_weight="1"
                     android:layout_height="wrap_content"
                     android:text="Total Money in Circulation"
-                    android:textSize="14sp"
-                    android:textColor="#757575"
+                    android:textSize="15sp"
+                    android:textColor="#4B5563"
                     android:maxLines="1"
                     android:ellipsize="end"/>
 
@@ -91,10 +87,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="₱0.00"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    android:textColor="#00796B"
-                    android:fontFamily="sans-serif-medium"
+                    android:textSize="24sp"  android:textStyle="bold"
+                    android:textColor="#1B5E20"  android:fontFamily="sans-serif-medium"
                     tools:text="₱50,000.00"/>
             </LinearLayout>
         </LinearLayout>
@@ -104,7 +98,7 @@
         android:id="@+id/llSearchFilter"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="24dp"
         android:orientation="horizontal"
         android:gravity="center_vertical"
         app:layout_constraintTop_toBottomOf="@id/cardSummary"
@@ -117,42 +111,41 @@
             android:layout_weight="1"
             android:layout_height="wrap_content"
             android:hint="Search Name or ID"
-            app:startIconDrawable="?android:attr/actionModeWebSearchDrawable"
+            app:startIconDrawable="@android:drawable/ic_search_category_default"
             app:startIconTint="#7B1113"
             app:boxStrokeColor="#7B1113"
             app:hintTextColor="#7B1113"
-            app:boxCornerRadiusTopStart="8dp"
-            app:boxCornerRadiusTopEnd="8dp"
-            app:boxCornerRadiusBottomStart="8dp"
-            app:boxCornerRadiusBottomEnd="8dp"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
+            app:boxCornerRadiusTopStart="12dp"
+            app:boxCornerRadiusTopEnd="12dp"
+            app:boxCornerRadiusBottomStart="12dp"
+            app:boxCornerRadiusBottomEnd="12dp"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etSearch"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textCapWords"
-                android:textColor="#333333"
-                android:paddingVertical="12dp"/>
+                android:textColor="#333333"/>
         </com.google.android.material.textfield.TextInputLayout>
 
         <Spinner
             android:id="@+id/spinnerFilter"
             android:layout_width="wrap_content"
-            android:layout_height="48dp"
-            android:layout_marginStart="8dp"
+            android:layout_height="56dp"
+            android:layout_marginStart="12dp"
             android:entries="@array/balance_filter_options"
             android:spinnerMode="dropdown"
             android:background="?attr/selectableItemBackground"
             android:popupBackground="#FFFFFF"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"/>
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"/>
     </LinearLayout>
 
     <FrameLayout
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="16dp"
         app:layout_constraintTop_toBottomOf="@id/llSearchFilter"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -170,8 +163,8 @@
 
         <ProgressBar
             android:id="@+id/progressBar"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:layout_gravity="center"
             android:visibility="gone"
             android:indeterminateTint="#7B1113"/>
@@ -181,8 +174,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="No records found."
-            android:textSize="15sp"
+            android:text="No user records found."
+            android:textSize="16sp"
             android:textColor="#AAAAAA"
             android:textStyle="italic"
             android:visibility="gone"

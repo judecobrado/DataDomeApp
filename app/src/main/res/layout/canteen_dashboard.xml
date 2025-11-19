@@ -93,7 +93,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@id/buttonRow2"
-        app:layout_constraintHeight_percent="0.15"
+        app:layout_constraintHeight_percent="0.12"
         android:layout_marginStart="24dp"
         android:layout_marginEnd="24dp">
 
@@ -119,18 +119,18 @@
                 android:foreground="?attr/selectableItemBackground">
 
                 <ImageView
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
                     android:src="@android:drawable/ic_menu_agenda"
                     app:tint="#7B1113"
-                    android:layout_marginBottom="4dp" />
+                    android:layout_marginBottom="2dp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Menu"
                     android:textColor="#7B1113"
-                    android:textSize="16sp"
+                    android:textSize="14sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -138,7 +138,7 @@
                     android:layout_height="wrap_content"
                     android:text="Management"
                     android:textColor="#6B7280"
-                    android:textSize="11sp"/>
+                    android:textSize="10sp"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -163,18 +163,18 @@
                 android:foreground="?attr/selectableItemBackground">
 
                 <ImageView
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
                     android:src="@android:drawable/ic_input_add"
                     app:tint="#FFFFFF"
-                    android:layout_marginBottom="4dp" />
+                    android:layout_marginBottom="2dp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Top-Up"
                     android:textColor="#FFFFFF"
-                    android:textSize="16sp"
+                    android:textSize="14sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -182,7 +182,7 @@
                     android:layout_height="wrap_content"
                     android:text="Cash In"
                     android:textColor="#F3F4F6"
-                    android:textSize="11sp"/>
+                    android:textSize="10sp"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
@@ -196,7 +196,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@id/buttonRow3"
-        app:layout_constraintHeight_percent="0.15"
+        app:layout_constraintHeight_percent="0.12"
         android:layout_marginStart="24dp"
         android:layout_marginEnd="24dp"
         android:layout_marginTop="12dp">
@@ -222,18 +222,18 @@
                 android:foreground="?attr/selectableItemBackground">
 
                 <ImageView
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
                     android:src="@android:drawable/ic_menu_sort_by_size"
                     app:tint="#FFFFFF"
-                    android:layout_marginBottom="4dp" />
+                    android:layout_marginBottom="2dp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="POS"
                     android:textColor="#FFFFFF"
-                    android:textSize="16sp"
+                    android:textSize="14sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -241,7 +241,7 @@
                     android:layout_height="wrap_content"
                     android:text="Point of Sale"
                     android:textColor="#F3F4F6"
-                    android:textSize="11sp"/>
+                    android:textSize="10sp"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -267,18 +267,18 @@
                 android:foreground="?attr/selectableItemBackground">
 
                 <ImageView
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
                     android:src="@android:drawable/ic_menu_view"
                     app:tint="#7B1113"
-                    android:layout_marginBottom="4dp" />
+                    android:layout_marginBottom="2dp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Reports"
                     android:textColor="#7B1113"
-                    android:textSize="16sp"
+                    android:textSize="14sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -286,7 +286,7 @@
                     android:layout_height="wrap_content"
                     android:text="Analytics"
                     android:textColor="#6B7280"
-                    android:textSize="11sp"/>
+                    android:textSize="10sp"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
@@ -301,7 +301,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@id/logoutContainer"
-        app:layout_constraintHeight_percent="0.15"
+        app:layout_constraintHeight_percent="0.12"
         android:layout_marginStart="24dp"
         android:layout_marginEnd="24dp"
         android:layout_marginTop="12dp"
@@ -330,9 +330,9 @@
                 android:orientation="vertical">
 
                 <ImageView
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_marginBottom="4dp"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginBottom="2dp"
                     android:src="@android:drawable/ic_menu_info_details"
                     app:tint="#7B1113" />
 
@@ -342,7 +342,7 @@
                     android:fontFamily="sans-serif-medium"
                     android:text="Balance"
                     android:textColor="#7B1113"
-                    android:textSize="16sp"
+                    android:textSize="14sp"
                     android:textStyle="bold"/>
 
                 <TextView
@@ -350,7 +350,7 @@
                     android:layout_height="wrap_content"
                     android:text="Inquiry"
                     android:textColor="#6B7280"
-                    android:textSize="11sp" />
+                    android:textSize="10sp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
