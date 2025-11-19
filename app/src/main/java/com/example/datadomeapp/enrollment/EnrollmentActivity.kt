@@ -92,6 +92,10 @@
         private lateinit var etGuardianName: EditText
         private lateinit var etGuardianPhone: EditText
         private lateinit var spinnerGuardianRelationship: Spinner
+
+        private lateinit var spinnerStudentLastNameExtension: Spinner
+        private lateinit var spinnerFatherLastNameExtension: Spinner
+        private lateinit var spinnerMotherLastNameExtension: Spinner
     
         // Error TextViews
         private lateinit var errorFirstName: TextView
@@ -137,6 +141,10 @@
         private lateinit var reviewFatherInfo: TextView
         private lateinit var reviewMotherInfo: TextView
         private lateinit var reviewGuardianInfo: TextView
+
+        private lateinit var errorStudentLastNameExtension: TextView
+        private lateinit var errorFatherLastNameExtension: TextView
+        private lateinit var errorMotherLastNameExtension: TextView
     
         private var docId: String? = null
         private val firestore = FirebaseFirestore.getInstance()
@@ -155,6 +163,16 @@
             "Choose Application Status",
             "New Senior High School Graduate / Freshmen",
             "Transfer Student"
+        )
+
+        // Name extension options
+        private val nameExtensionList = listOf(
+            "Choose Suffix",
+            "Jr.",
+            "Sr.",
+            "II",
+            "III",
+            "IV"
         )
     
         // Guardian Relationship options
@@ -363,7 +381,14 @@
                         val municipalityFromDb = doc.getString("municipality") ?: ""
                         val barangayFromDb = doc.getString("barangay") ?: ""
                         val streetFromDb = doc.getString("street") ?: ""
-    
+                        val studentLastNameExt = doc.getString("studentLastNameExtension") ?: ""
+                        val fatherLastNameExt = doc.getString("fatherLastNameExtension") ?: ""
+                        val motherLastNameExt = doc.getString("motherLastNameExtension") ?: ""
+
+                        setExtensionSpinnerSelection(spinnerStudentLastNameExtension, studentLastNameExt)
+                        setExtensionSpinnerSelection(spinnerFatherLastNameExtension, fatherLastNameExt)
+                        setExtensionSpinnerSelection(spinnerMotherLastNameExtension, motherLastNameExt)
+
                         // Set province spinner
                         if (provinceFromDb.isNotEmpty()) {
                             val provincePosition = provinces.indexOfFirst { it.name == provinceFromDb }
@@ -457,7 +482,17 @@
                     Toast.makeText(this, "Error loading enrollment data", Toast.LENGTH_SHORT).show()
                 }
         }
-    
+
+        private fun setExtensionSpinnerSelection(spinner: Spinner, value: String) {
+            if (value.isNotEmpty()) {
+                val position = nameExtensionList.indexOf(value)
+                if (position >= 0) {
+                    spinner.setSelection(position)
+                }
+            }
+        }
+
+
         private fun initializeViews() {
             // Page containers
             pageStudentInfo = findViewById(R.id.pageStudentInfo)
@@ -527,6 +562,14 @@
             etGuardianName = findViewById(R.id.etGuardianName)
             etGuardianPhone = findViewById(R.id.etGuardianPhone)
             spinnerGuardianRelationship = findViewById(R.id.spinnerGuardianRelationship)
+
+            spinnerStudentLastNameExtension = findViewById(R.id.spinnerStudentLastNameExtension)
+            spinnerFatherLastNameExtension = findViewById(R.id.spinnerFatherLastNameExtension)
+            spinnerMotherLastNameExtension = findViewById(R.id.spinnerMotherLastNameExtension)
+
+            errorStudentLastNameExtension = findViewById(R.id.errorStudentLastNameExtension)
+            errorFatherLastNameExtension = findViewById(R.id.errorFatherLastNameExtension)
+            errorMotherLastNameExtension = findViewById(R.id.errorMotherLastNameExtension)
     
             // Error TextViews
             errorFirstName = findViewById(R.id.errorFirstName)
@@ -750,6 +793,26 @@
 
                 override fun onNothingSelected(parent: AdapterView<*>) {}
             }
+
+            // Name Extension Spinners
+            val extensionAdapter = NonSelectableArrayAdapter(
+                this,
+                android.R.layout.simple_spinner_item,
+                nameExtensionList
+            )
+            extensionAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+
+            spinnerStudentLastNameExtension.adapter = extensionAdapter
+            spinnerFatherLastNameExtension.adapter = extensionAdapter
+            spinnerMotherLastNameExtension.adapter = extensionAdapter
+
+            spinnerStudentLastNameExtension.setSelection(0, false)
+            spinnerFatherLastNameExtension.setSelection(0, false)
+            spinnerMotherLastNameExtension.setSelection(0, false)
+
+            setupExtensionSpinnerValidation(spinnerStudentLastNameExtension, errorStudentLastNameExtension)
+            setupExtensionSpinnerValidation(spinnerFatherLastNameExtension, errorFatherLastNameExtension)
+            setupExtensionSpinnerValidation(spinnerMotherLastNameExtension, errorMotherLastNameExtension)
         }
 
 
@@ -1003,28 +1066,29 @@
     
             return commonStreets.distinct().sorted()
         }
-    
+
         private fun setupNameTextWatcher(editText: EditText) {
             editText.addTextChangedListener(object : TextWatcher {
                 private var isFormatting = false
                 private var previousText = ""
-    
+
                 override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
                     if (!isFormatting) {
                         previousText = s?.toString() ?: ""
                     }
                 }
-    
+
                 override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-    
+
                 override fun afterTextChanged(s: Editable?) {
                     if (isFormatting) return
-    
+
                     val currentText = s.toString()
-    
-                    // Remove numbers and special characters (allow only letters, spaces, and common name characters)
-                    val cleanedText = currentText.replace(Regex("[^a-zA-ZñÑ ]"), "")
-    
+
+                    // Allow letters, spaces, hyphens, and common name characters (ñÑ)
+                    // Changed from: [^a-zA-ZñÑ ] to [^a-zA-ZñÑ\\- ]
+                    val cleanedText = currentText.replace(Regex("[^a-zA-ZñÑ\\- ]"), "")
+
                     // Prevent exceeding 50 characters
                     if (cleanedText.length > 50) {
                         isFormatting = true
@@ -1037,7 +1101,7 @@
                         isFormatting = false
                         return
                     }
-    
+
                     if (cleanedText != currentText) {
                         isFormatting = true
                         editText.removeTextChangedListener(this)
@@ -1047,31 +1111,48 @@
                         isFormatting = false
                         return
                     }
-    
+
                     if (currentText == previousText) return
-    
+
                     isFormatting = true
-    
+
                     try {
                         val cursorPosition = editText.selectionStart
-    
-                        // Remove double spaces only, keep single spaces
+
+                        // Remove double spaces only, keep single spaces and hyphens
                         val textWithoutDoubleSpaces = currentText.replace(Regex("\\s{2,}"), " ")
-    
-                        // Capitalize first letter of each word
-                        val words = textWithoutDoubleSpaces.split(" ").mapIndexed { index, word ->
+
+                        // Capitalize first letter of each word (treat hyphenated names as separate words)
+                        val words = textWithoutDoubleSpaces.split(" ", "-").mapIndexed { index, word ->
                             if (word.isNotEmpty()) {
                                 word.substring(0, 1).uppercase() + word.substring(1)
                             } else {
                                 word
                             }
                         }
-                        val formattedText = words.joinToString(" ")
-    
+
+                        // Rejoin words with spaces and hyphens properly
+                        val formattedText = if (textWithoutDoubleSpaces.contains("-")) {
+                            // For hyphenated names, preserve the hyphens
+                            val parts = textWithoutDoubleSpaces.split("-")
+                            parts.joinToString("-") { part ->
+                                part.split(" ").joinToString(" ") { word ->
+                                    if (word.isNotEmpty()) {
+                                        word.substring(0, 1).uppercase() + word.substring(1)
+                                    } else {
+                                        word
+                                    }
+                                }
+                            }
+                        } else {
+                            // For regular names
+                            words.joinToString(" ")
+                        }
+
                         if (currentText != formattedText) {
                             editText.removeTextChangedListener(this)
                             editText.setText(formattedText)
-    
+
                             val newCursorPosition = if (formattedText.length > currentText.length) {
                                 cursorPosition + (formattedText.length - currentText.length)
                             } else if (formattedText.length < currentText.length) {
@@ -1079,13 +1160,13 @@
                             } else {
                                 cursorPosition
                             }
-    
+
                             editText.setSelection(newCursorPosition.coerceIn(0, formattedText.length))
                             editText.addTextChangedListener(this)
                         }
-    
+
                         previousText = formattedText
-    
+
                     } finally {
                         isFormatting = false
                     }
@@ -1403,33 +1484,41 @@
                 }
             }
         }
-    
+
         private fun displayReviewSummary() {
-            // Student Information
-            val fullName = "${etFirstName.text} ${etMiddleName.text} ${etLastName.text}".trim()
+            // Student Information with extension
+            val studentLastNameExt = if (spinnerStudentLastNameExtension.selectedItemPosition > 0) " ${spinnerStudentLastNameExtension.selectedItem}" else ""
+            val fullName = "${etFirstName.text} ${etMiddleName.text} ${etLastName.text}$studentLastNameExt".trim()
             reviewStudentName.text = "Name: $fullName"
+
+            // Father Information with extension
+            val fatherLastNameExt = if (spinnerFatherLastNameExtension.selectedItemPosition > 0) " ${spinnerFatherLastNameExtension.selectedItem}" else ""
+            val fatherFullName = "${etFatherFirstName.text} ${etFatherMiddleName.text} ${etFatherLastName.text}$fatherLastNameExt".trim()
+
+            // Mother Information with extension
+            val motherLastNameExt = if (spinnerMotherLastNameExtension.selectedItemPosition > 0) " ${spinnerMotherLastNameExtension.selectedItem}" else ""
+            val motherFullName = "${etMotherFirstName.text} ${etMotherMiddleName.text} ${etMotherLastName.text}$motherLastNameExt".trim()
+
+            // Guardian Information (no extension)
+            val guardianFullName = etGuardianName.text.toString().trim()
+
+            // Rest of the display code...
             reviewStudentEmail.text = "Email: ${etEmail.text}"
             reviewStudentPhone.text = "Phone: ${etPhone.text}"
             reviewStudentGender.text = "Gender: ${spinnerGender.selectedItem}"
             reviewStudentDOB.text = "Date of Birth: ${etDOB.text}"
             reviewStudentCourse.text = "Course: ${spinnerCourse.selectedItem}"
-    
-            // Address Information
+
             val address = "${spinnerStreet.selectedItem}, ${spinnerBarangay.selectedItem}, ${spinnerMunicipality.selectedItem}, ${spinnerProvince.selectedItem}"
             reviewStudentAddress.text = "Address: $address"
-    
-            // Father Information
-            val fatherFullName = "${etFatherFirstName.text} ${etFatherMiddleName.text} ${etFatherLastName.text}".trim()
+
             val fatherInfo = "$fatherFullName\n${etFatherPhone.text} • ${etFatherOccupation.text}"
             reviewFatherInfo.text = "Father: $fatherInfo"
-    
-            // Mother Information
-            val motherFullName = "${etMotherFirstName.text} ${etMotherMiddleName.text} ${etMotherLastName.text}".trim()
+
             val motherInfo = "$motherFullName\n${etMotherPhone.text} • ${etMotherOccupation.text}"
             reviewMotherInfo.text = "Mother: $motherInfo"
-    
-            // Guardian Information
-            val guardianInfo = "${etGuardianName.text}\n${etGuardianPhone.text} • ${spinnerGuardianRelationship.selectedItem}"
+
+            val guardianInfo = "$guardianFullName\n${etGuardianPhone.text} • ${spinnerGuardianRelationship.selectedItem}"
             reviewGuardianInfo.text = "Guardian: $guardianInfo"
         }
     
@@ -1830,6 +1919,7 @@
             errorMunicipality.visibility = View.GONE
             errorBarangay.visibility = View.GONE
             errorStreet.visibility = View.GONE
+            errorStudentLastNameExtension.visibility = View.GONE
         }
     
         private fun clearParentErrors() {
@@ -1843,6 +1933,8 @@
             errorMotherOccupation.visibility = View.GONE
             errorFatherDOB.visibility = View.GONE
             errorMotherDOB.visibility = View.GONE
+            errorFatherLastNameExtension.visibility = View.GONE
+            errorMotherLastNameExtension.visibility = View.GONE
         }
     
         private fun clearGuardianErrors() {
@@ -1942,6 +2034,19 @@
     
             datePickerDialog.show()
         }
+
+        private fun setupExtensionSpinnerValidation(spinner: Spinner, errorView: TextView) {
+            spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+                    // Clear error when a valid selection is made (position > 0)
+                    if (position > 0) {
+                        errorView.visibility = View.GONE
+                    }
+                }
+
+                override fun onNothingSelected(parent: AdapterView<*>) {}
+            }
+        }
     
         private fun submitEnrollment() {
             if (!validateStudentInfo() || !validateParentInfo() || !validateGuardianInfo()) {
@@ -1952,6 +2057,10 @@
             val studentValid = validateStudentInfo()
             val parentValid = validateParentInfo()
             val guardianValid = validateGuardianInfo()
+
+            val studentLastNameExtension = if (spinnerStudentLastNameExtension.selectedItemPosition > 0) spinnerStudentLastNameExtension.selectedItem.toString() else ""
+            val fatherLastNameExtension = if (spinnerFatherLastNameExtension.selectedItemPosition > 0) spinnerFatherLastNameExtension.selectedItem.toString() else ""
+            val motherLastNameExtension = if (spinnerMotherLastNameExtension.selectedItemPosition > 0) spinnerMotherLastNameExtension.selectedItem.toString() else ""
     
             if (!studentValid || !parentValid || !guardianValid) {
                 Toast.makeText(this, "Please fix all validation errors before submitting.", Toast.LENGTH_LONG).show()
@@ -2071,7 +2180,11 @@
                 applicationType = applicationType,
                 status = "submitted",
                 timestamp = Timestamp.now(),
-                isVerified = true
+                isVerified = true,
+
+                studentLastNameExtension = studentLastNameExtension,
+                fatherLastNameExtension = fatherLastNameExtension,
+                motherLastNameExtension = motherLastNameExtension,
             )
     
             isSubmitting = true
@@ -2167,7 +2280,10 @@
                 "applicationType" to applicationType,
                 "status" to status,
                 "timestamp" to timestamp,
-                "isVerified" to isVerified
+                "isVerified" to isVerified,
+                "studentLastNameExtension" to studentLastNameExtension,
+                "fatherLastNameExtension" to fatherLastNameExtension,
+                "motherLastNameExtension" to motherLastNameExtension
             ) as Map<String, Any>
         }
     

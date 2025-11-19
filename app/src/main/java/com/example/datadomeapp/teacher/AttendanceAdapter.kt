@@ -1,5 +1,6 @@
 package com.example.datadomeapp.teacher
 
+import android.graphics.Color
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -9,6 +10,7 @@ import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.datadomeapp.R
 import com.example.datadomeapp.models.Student
@@ -79,6 +81,9 @@ class AttendanceAdapter(
         holder.rgAttendanceStatus.visibility = View.VISIBLE
         holder.llRecitationControls.visibility = View.GONE // HIDE recitation controls
 
+        // --- Update Radio Button Colors ---
+        updateRadioButtonColors(holder, currentStatus)
+
         // --- Attendance Radio Buttons ---
         // Remove all listeners first
         holder.rgAttendanceStatus.setOnCheckedChangeListener(null)
@@ -105,10 +110,10 @@ class AttendanceAdapter(
         holder.rbAbsent.isClickable = false
 
         // Visual feedback - make disabled buttons look more disabled
-        holder.rbPresent.alpha = 0.5f
-        holder.rbLate.alpha = 0.5f
-        holder.rbAbsent.alpha = 0.5f
-        holder.rbExcused.alpha = if (isEditable) 1.0f else 0.5f
+        holder.rbPresent.alpha = if (currentStatus == "PRESENT") 1.0f else 0.6f
+        holder.rbLate.alpha = if (currentStatus == "LATE") 1.0f else 0.6f
+        holder.rbAbsent.alpha = if (currentStatus == "ABSENT") 1.0f else 0.6f
+        holder.rbExcused.alpha = if (isEditable) 1.0f else 0.6f
 
         // --- Excuse Button Toggle Logic ---
         if (isEditable) {
@@ -125,6 +130,9 @@ class AttendanceAdapter(
                     // Uncheck the radio button
                     holder.rbExcused.isChecked = false
 
+                    // Update colors
+                    updateRadioButtonColors(holder, "")
+
                     Log.i(TAG, "Student $studentId excuse removed")
                 } else {
                     // Set to excused
@@ -139,6 +147,9 @@ class AttendanceAdapter(
 
                     // Check the radio button
                     holder.rbExcused.isChecked = true
+
+                    // Update colors
+                    updateRadioButtonColors(holder, "EXCUSED")
 
                     Log.i(TAG, "Student $studentId manually excused")
                 }
@@ -177,6 +188,43 @@ class AttendanceAdapter(
 
         // Set overall item opacity
         holder.itemView.alpha = if (isEditable) 1.0f else 0.8f
+    }
+
+    private fun updateRadioButtonColors(holder: AttendanceViewHolder, currentStatus: String) {
+        val context = holder.itemView.context
+
+        // Reset all buttons to default first
+        holder.rbPresent.setBackgroundColor(Color.TRANSPARENT)
+        holder.rbLate.setBackgroundColor(Color.TRANSPARENT)
+        holder.rbAbsent.setBackgroundColor(Color.TRANSPARENT)
+        holder.rbExcused.setBackgroundColor(Color.TRANSPARENT)
+
+        // Set colors based on current status
+        when (currentStatus.uppercase()) {
+            "PRESENT" -> {
+                holder.rbPresent.setBackgroundColor(ContextCompat.getColor(context, R.color.status_present))
+                holder.rbPresent.setTextColor(ContextCompat.getColor(context, R.color.status_present_text))
+            }
+            "LATE" -> {
+                holder.rbLate.setBackgroundColor(ContextCompat.getColor(context, R.color.status_late))
+                holder.rbLate.setTextColor(ContextCompat.getColor(context, R.color.status_late_text))
+            }
+            "ABSENT" -> {
+                holder.rbAbsent.setBackgroundColor(ContextCompat.getColor(context, R.color.status_absent))
+                holder.rbAbsent.setTextColor(ContextCompat.getColor(context, R.color.status_absent_text))
+            }
+            "EXCUSED" -> {
+                holder.rbExcused.setBackgroundColor(ContextCompat.getColor(context, R.color.status_excused))
+                holder.rbExcused.setTextColor(ContextCompat.getColor(context, R.color.status_excused_text))
+            }
+            else -> {
+                // No status selected - reset all text colors
+                holder.rbPresent.setTextColor(ContextCompat.getColor(context, android.R.color.black))
+                holder.rbLate.setTextColor(ContextCompat.getColor(context, android.R.color.black))
+                holder.rbAbsent.setTextColor(ContextCompat.getColor(context, android.R.color.black))
+                holder.rbExcused.setTextColor(ContextCompat.getColor(context, android.R.color.black))
+            }
+        }
     }
 
     override fun getItemCount() = studentList.size

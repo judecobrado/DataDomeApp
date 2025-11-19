@@ -53,16 +53,102 @@
         android:drawableEnd="@android:drawable/ic_menu_today"
         android:layout_marginBottom="16dp"/>
 
-    <!-- REMOVED MODE SELECTION -->
-
     <!-- ID Tapping Button -->
     <Button
         android:id="@+id/btnStartIdTapping"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Start Class Session 🟢"
-        android:layout_marginBottom="16dp"
         android:backgroundTint="@color/green"/>
+
+    <!-- ATTENDANCE LEGEND - COLOR BASE -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="5dp"
+        android:padding="5dp">
+
+        <!-- Present - Light Green -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginEnd="12dp"
+            android:background="@color/status_present"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="4dp"
+            android:backgroundTint="@color/status_present">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Present"
+                android:textSize="12sp"
+                android:textColor="@color/status_present_text"/>
+        </LinearLayout>
+
+        <!-- Late - Light Yellow -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginEnd="12dp"
+            android:background="@color/status_late"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="4dp"
+            android:backgroundTint="@color/status_late">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Late"
+                android:textSize="12sp"
+                android:textColor="@color/status_late_text"/>
+        </LinearLayout>
+
+        <!-- Absent - Light Red -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginEnd="12dp"
+            android:background="@color/status_absent"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="4dp"
+            android:backgroundTint="@color/status_absent">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Absent"
+                android:textSize="12sp"
+                android:textColor="@color/status_absent_text"/>
+        </LinearLayout>
+
+        <!-- Excused - Light Blue -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:background="@color/status_excused"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="4dp"
+            android:backgroundTint="@color/status_excused">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Excused"
+                android:textSize="12sp"
+                android:textColor="@color/status_excused_text"/>
+        </LinearLayout>
+    </LinearLayout>
 
     <TextView
         android:id="@+id/tvNoRecords"

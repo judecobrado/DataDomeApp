@@ -32,13 +32,40 @@
             android:orientation="vertical"
             android:paddingBottom="20dp"/>
 
-        <Button
-            android:id="@+id/btnFinalizeEnrollment"
+        <!-- 🟢 DAGDAG: Cancel at Finalize Buttons sa Horizontal Layout -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Finalize Enrollment and Assign Subjects"
-            android:backgroundTint="?attr/colorPrimary"
-            android:textColor="@android:color/white" />
+            android:orientation="horizontal"
+            android:gravity="end"
+            android:paddingTop="8dp">
+
+            <Button
+                android:id="@+id/btnFinalizeEnrollment"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:backgroundTint="@color/primary_blue"
+                android:paddingStart="24dp"
+                android:paddingTop="12dp"
+                android:paddingEnd="24dp"
+                android:paddingBottom="12dp"
+                android:text="Finalize Enrollment"
+                android:textColor="@color/background_light"
+                android:textSize="13sp" />
+
+            <Button
+                android:id="@+id/btnCancelEnrollment"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Cancel"
+                android:layout_marginEnd="12dp"
+                android:backgroundTint="@color/primary_maroon"
+                android:textColor="@android:color/white"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp" />
+
+        </LinearLayout>
 
     </LinearLayout>
 </ScrollView>

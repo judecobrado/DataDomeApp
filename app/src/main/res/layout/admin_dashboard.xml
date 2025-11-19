@@ -416,57 +416,11 @@
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/btnManageLibrary"
-                android:layout_width="0dp"
-                android:layout_height="110dp"
-                android:layout_weight="1"
-                android:layout_marginStart="6dp"
-                android:clickable="true"
-                android:focusable="true"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="4dp"
-                app:cardBackgroundColor="#7B1113"
-                android:foreground="?attr/selectableItemBackground">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="vertical"
-                    android:padding="16dp"
-                    android:gravity="center">
-
-                    <ImageView
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:src="@drawable/ic_library"
-                        android:layout_marginBottom="8dp"
-                        app:tint="#FFFFFF" />
-
-                    <TextView
-                        android:text="Library"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="#FFFFFF"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:gravity="center"/>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:weightSum="2"
-            android:layout_marginBottom="24dp">
-
-            <com.google.android.material.card.MaterialCardView
                 android:id="@+id/btnManageCurriculum"
                 android:layout_width="0dp"
                 android:layout_height="110dp"
                 android:layout_weight="1"
-                android:layout_marginEnd="6dp"
+                android:layout_marginStart="6dp"
                 android:clickable="true"
                 android:focusable="true"
                 app:cardCornerRadius="16dp"
@@ -490,44 +444,6 @@
 
                     <TextView
                         android:text="Curriculum"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="#FFFFFF"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:gravity="center"/>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/btnManageCanteenStaff"
-                android:layout_width="0dp"
-                android:layout_height="110dp"
-                android:layout_weight="1"
-                android:layout_marginStart="6dp"
-                android:clickable="true"
-                android:focusable="true"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="4dp"
-                app:cardBackgroundColor="#7B1113"
-                android:foreground="?attr/selectableItemBackground">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="vertical"
-                    android:padding="16dp"
-                    android:gravity="center">
-
-                    <ImageView
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:src="@drawable/ic_canteen"
-                        android:layout_marginBottom="8dp"
-                        app:tint="#FFFFFF" />
-
-                    <TextView
-                        android:text="Canteen"
                         android:textSize="14sp"
                         android:textStyle="bold"
                         android:textColor="#FFFFFF"

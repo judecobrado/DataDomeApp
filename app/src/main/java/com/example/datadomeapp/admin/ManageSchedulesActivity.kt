@@ -533,131 +533,266 @@ class ManageSchedulesActivity : AppCompatActivity() {
     // 🟢 UPDATED: renderScheduleMatrix para gamitin ang scheduleSlots
     private fun renderScheduleMatrix() {
         tlScheduleMatrix.removeAllViews()
+        tlScheduleMatrix.setBackgroundColor(Color.parseColor("#E8E8E8"))
 
-        // --- 1. Header creation ---
-        val headerRow = TableRow(this)
-        headerRow.layoutParams = TableLayout.LayoutParams(
-            TableLayout.LayoutParams.MATCH_PARENT,
-            TableLayout.LayoutParams.WRAP_CONTENT
-        )
+        // --- 1. Enhanced Header ---
+        val headerRow = TableRow(this).apply {
+            layoutParams = TableLayout.LayoutParams(
+                TableLayout.LayoutParams.MATCH_PARENT,
+                TableLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(2, 2, 2, 2)
+            }
+        }
+
+        // Time column header
         val cornerCell = TextView(this).apply {
-            text = "Time"
-            setPadding(10, 10, 10, 10)
+            text = "TIME"
+            setPadding(8, 16, 8, 16)
             gravity = Gravity.CENTER
             setTypeface(null, Typeface.BOLD)
-            setBackgroundColor(Color.LTGRAY)
-            layoutParams = TableRow.LayoutParams(0, TableRow.LayoutParams.WRAP_CONTENT, 1.0f)
+            setTextColor(Color.WHITE)
+            setBackgroundColor(Color.parseColor("#3F51B5"))
+            layoutParams = TableRow.LayoutParams(0, TableRow.LayoutParams.WRAP_CONTENT, 1.0f).apply {
+                setMargins(1, 1, 1, 1)
+            }
         }
         headerRow.addView(cornerCell)
 
+        // Day headers
         weekDays.forEach { day ->
             val dayHeader = TextView(this).apply {
                 text = day
-                setPadding(10, 10, 10, 10)
+                setPadding(8, 16, 8, 16)
                 gravity = Gravity.CENTER
                 setTypeface(null, Typeface.BOLD)
-                setBackgroundColor(Color.LTGRAY)
-                layoutParams = TableRow.LayoutParams(0, TableRow.LayoutParams.WRAP_CONTENT, 1.5f)
+                setTextColor(Color.WHITE)
+                setBackgroundColor(Color.parseColor("#3F51B5"))
+                layoutParams = TableRow.LayoutParams(0, TableRow.LayoutParams.WRAP_CONTENT, 1.5f).apply {
+                    setMargins(1, 1, 1, 1)
+                }
             }
             headerRow.addView(dayHeader)
         }
         tlScheduleMatrix.addView(headerRow)
-        // --- End of Header creation ---
 
-
-        // --- 2. Create Time Rows and Class Blocks ---
-        val cellHeight = 100 // Height in pixels for each time slot
-        val internalHalfHourFormat = SimpleDateFormat("HH:mm")
-
-        // CRITICAL: Kumuha ng kasalukuyang Section Block para sa Matrix
+        // --- 2. Time Rows with Continuous Slot Visualization ---
         val selectedSectionBlock = spnSectionBlock.selectedItem?.toString()?.trim() ?: ""
+        val cellHeight = resources.getDimensionPixelSize(R.dimen.schedule_cell_height)
+        val internalHalfHourFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
 
-        var currentHour = timeSlots.first
-        while (currentHour < timeSlots.last) {
+        // Track which cells should show continuation markers
+        val continuationCells = mutableSetOf<Pair<String, String>>() // Pair<day, startTime>
 
-            val row = TableRow(this)
-            row.layoutParams = TableLayout.LayoutParams(
-                TableLayout.LayoutParams.MATCH_PARENT,
-                TableLayout.LayoutParams.WRAP_CONTENT
-            )
+        // First pass: Identify continuation cells
+        timeSlots.forEach { currentHour ->
+            val startInternal = internalHalfHourFormat.format(internalTimeFormat.parse("$currentHour:00"))
+            val startInternalTimeMs = internalTimeFormat.parse(startInternal)?.time ?: 0L
 
-            // Time cell (Display format)
+            weekDays.forEach { day ->
+                val assignedPair = currentAssignmentsForMatrix.firstNotNullOfOrNull { assignment ->
+                    assignment.scheduleSlots.values.firstOrNull { slot ->
+                        slot.sectionBlock == selectedSectionBlock &&
+                                slot.day == day &&
+                                (parseTimeFlexibly(slot.startTime)?.time ?: 0L) <= startInternalTimeMs &&
+                                (parseTimeFlexibly(slot.endTime)?.time ?: 0L) > startInternalTimeMs
+                    }?.let { slot ->
+                        val slotKey = assignment.scheduleSlots.entries.first { it.value == slot }.key
+                        Triple(assignment, slot, slotKey)
+                    }
+                }
+
+                if (assignedPair != null) {
+                    val (assignment, slot, slotKey) = assignedPair
+                    val slotStartTimeMs = parseTimeFlexibly(slot.startTime)?.time ?: 0L
+
+                    // If this is NOT the first time slot of this assignment, mark it as continuation
+                    if (startInternalTimeMs > slotStartTimeMs) {
+                        continuationCells.add(Pair(day, startInternal))
+                    }
+                }
+            }
+        }
+
+        // Second pass: Render the matrix
+        timeSlots.forEach { currentHour ->
+            val row = TableRow(this).apply {
+                layoutParams = TableLayout.LayoutParams(
+                    TableLayout.LayoutParams.MATCH_PARENT,
+                    TableLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    setMargins(2, 1, 2, 1)
+                }
+            }
+
+            // Time cell with better styling
             val timeDisplay = internalTimeFormat.parse("$currentHour:00")
             val timeCell = TextView(this).apply {
                 text = if (timeDisplay != null) displayTimeFormat.format(timeDisplay) else "$currentHour:00"
-                setPadding(5, 10, 5, 10)
+                setPadding(4, 12, 4, 12)
                 gravity = Gravity.CENTER
                 setTypeface(null, Typeface.BOLD)
-                setBackgroundColor(Color.parseColor("#F0F0F0"))
-                layoutParams = TableRow.LayoutParams(0, cellHeight, 1.0f)
+                setTextColor(Color.parseColor("#333333"))
+                setBackgroundColor(Color.parseColor("#F8F8F8"))
+                layoutParams = TableRow.LayoutParams(0, cellHeight, 1.0f).apply {
+                    setMargins(1, 1, 1, 1)
+                }
             }
             row.addView(timeCell)
 
-            // Loop para sa bawat araw (Mon, Tue, Wed, ...)
+            // Day cells
             weekDays.forEach { day ->
                 val startInternal = internalHalfHourFormat.format(internalTimeFormat.parse("$currentHour:00"))
                 val startInternalTimeMs = internalTimeFormat.parse(startInternal)?.time ?: 0L
 
-                // 🟢 NEW LOGIC: Hanapin ang TimeSlot na pasok sa oras na ito
                 val assignedPair = currentAssignmentsForMatrix.firstNotNullOfOrNull { assignment ->
-                    // Gamitin ang .values para i-iterate ang TimeSlot objects sa Map
                     assignment.scheduleSlots.values.firstOrNull { slot ->
-                        // ⚠️ CHECK: Siguraduhin na ang slot ay para sa kasalukuyang Section Block
                         slot.sectionBlock == selectedSectionBlock &&
                                 slot.day == day &&
-                                // CRITICAL: Time Slot Overlap Check
                                 (parseTimeFlexibly(slot.startTime)?.time ?: 0L) <= startInternalTimeMs &&
                                 (parseTimeFlexibly(slot.endTime)?.time ?: 0L) > startInternalTimeMs
                     }?.let { slot ->
-                        // CRITICAL: I-retrieve ang slot key para sa deletion/editing
                         val slotKey = assignment.scheduleSlots.entries.first { it.value == slot }.key
                         Triple(assignment, slot, slotKey)
                     }
                 }
 
                 val cell = TextView(this).apply {
-                    setPadding(5, 5, 5, 5)
+                    setPadding(6, 8, 6, 8)
                     gravity = Gravity.CENTER
                     layoutParams = TableRow.LayoutParams(0, cellHeight, 1.5f).apply {
                         setMargins(1, 1, 1, 1)
                     }
-                    setBackgroundColor(Color.WHITE)
 
                     if (assignedPair != null) {
                         val (assignment, slot, slotKey) = assignedPair
-                        // ⚠️ Gamitin ang slot.roomLocation
-                        text = "${assignment.subjectCode}\n${assignment.teacherName.split(" ").last()}\n@${slot.roomLocation}"
-                        setBackgroundColor(Color.parseColor("#BBDEFB")) // Light Blue
-                        setOnClickListener {
-                            // CRITICAL: Ipinasa ang assignment, ang TimeSlot, at ang slotKey (para sa pag-update)
-                            showAssignmentDetailsDialog(assignment, slot, slotKey)
+
+                        // Check if this is a continuation cell
+                        val isContinuationCell = continuationCells.contains(Pair(day, startInternal))
+
+                        if (isContinuationCell) {
+                            // Show hyphen for continuation cells
+                            setupContinuationCell(this, assignment, slot, slotKey)
+                        } else {
+                            // Show full info for first cell
+                            setupAssignedCell(this, assignment, slot, slotKey)
                         }
                     } else {
-                        text = ""
-                        // Cell Click Listener for adding assignment at this time
-                        setOnClickListener {
-                            // Logic para i-set ang spinner sa oras na kinlik
-                            val nextHourInternalTime = internalTimeFormat.parse("${currentHour + 1}:00")
-                            val nextHourDisplay = if (nextHourInternalTime != null) displayTimeFormat.format(nextHourInternalTime) else ""
-                            // ⚠️ Siguraduhin na ang parse ng startInternal ay tama
-                            val currentHourDisplay = displayTimeFormat.format(internalTimeFormat.parse(startInternal))
-
-                            spnDay.setSelection(weekDays.indexOf(day))
-                            spnStartTime.setSelection(availableTimeOptions.indexOf(currentHourDisplay))
-                            spnEndTime.setSelection(availableTimeOptions.indexOf(nextHourDisplay))
-                            checkConflicts()
-                        }
+                        setupEmptyCell(this, day, currentHour)
                     }
                 }
                 row.addView(cell)
             }
-
             tlScheduleMatrix.addView(row)
-
-            currentHour++
         }
     }
 
+    // NEW: Helper function for continuation cells (showing hyphen)
+    private fun setupContinuationCell(cell: TextView, assignment: ClassAssignment, slot: TimeSlot, slotKey: String) {
+        cell.text = "-"
+        cell.setTextColor(Color.parseColor("#666666"))
+        cell.setTypeface(null, Typeface.BOLD)
+        cell.textSize = 14f
+        cell.setBackgroundColor(Color.parseColor("#4CAF50")) // Same green color
+
+        // Still keep the click listeners for consistency
+        cell.setOnClickListener {
+            showAssignmentDetailsDialog(assignment, slot, slotKey)
+        }
+
+        cell.setOnLongClickListener {
+            showQuickActionsDialog(assignment, slot, slotKey)
+            true
+        }
+    }
+
+    // UPDATED: Helper function for assigned cells (first cell only)
+    private fun setupAssignedCell(cell: TextView, assignment: ClassAssignment, slot: TimeSlot, slotKey: String) {
+        // Create a more compact display for the first cell
+        val subjectAbbr = if (assignment.subjectCode.length > 8)
+            assignment.subjectCode.substring(0, 8) + ".."
+        else assignment.subjectCode
+
+        val teacherAbbr = assignment.teacherName.split(" ").last()
+        val roomAbbr = if (slot.roomLocation.length > 5)
+            slot.roomLocation.substring(0, 5) + ".."
+        else slot.roomLocation
+
+        cell.text = "$subjectAbbr\n$teacherAbbr\n@$roomAbbr"
+        cell.setTextColor(Color.WHITE)
+        cell.setTypeface(null, Typeface.BOLD)
+        cell.textSize = 10f
+        cell.setBackgroundColor(Color.parseColor("#4CAF50")) // Green for assigned
+        cell.setOnClickListener {
+            showAssignmentDetailsDialog(assignment, slot, slotKey)
+        }
+
+        // Add long press listener for quick actions
+        cell.setOnLongClickListener {
+            showQuickActionsDialog(assignment, slot, slotKey)
+            true
+        }
+    }
+
+    // Helper function for empty cells (unchanged)
+    private fun setupEmptyCell(cell: TextView, day: String, currentHour: Int) {
+        cell.text = "+"
+        cell.setTextColor(Color.parseColor("#666666"))
+        cell.setBackgroundColor(Color.WHITE)
+        cell.textSize = 14f
+
+        cell.setOnClickListener {
+            val nextHourInternalTime = internalTimeFormat.parse("${currentHour + 1}:00")
+            val nextHourDisplay = if (nextHourInternalTime != null) displayTimeFormat.format(nextHourInternalTime) else ""
+            val currentHourDisplay = displayTimeFormat.format(internalTimeFormat.parse("$currentHour:00"))
+
+            spnDay.setSelection(weekDays.indexOf(day))
+            spnStartTime.setSelection(availableTimeOptions.indexOf(currentHourDisplay))
+            spnEndTime.setSelection(availableTimeOptions.indexOf(nextHourDisplay))
+            checkConflicts()
+
+            // Visual feedback
+            cell.setBackgroundColor(Color.parseColor("#E3F2FD"))
+            cell.postDelayed({
+                cell.setBackgroundColor(Color.WHITE)
+            }, 500)
+        }
+    }
+
+    private fun showQuickActionsDialog(assignment: ClassAssignment, slot: TimeSlot, slotKey: String) {
+        val options = arrayOf("Edit", "Delete", "View Details", "Copy Time Slot")
+
+        AlertDialog.Builder(this)
+            .setTitle("Quick Actions: ${assignment.subjectCode}")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> showEditSlotDialog(assignment, slot, slotKey)
+                    1 -> deleteTimeSlot(assignment, slotKey)
+                    2 -> showAssignmentDetailsDialog(assignment, slot, slotKey)
+                    3 -> copyTimeSlot(assignment, slot)
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun copyTimeSlot(assignment: ClassAssignment, slot: TimeSlot) {
+        // Pre-fill the form with the slot's details for quick copying
+        spnDay.setSelection(weekDays.indexOf(slot.day))
+        spnStartTime.setSelection(availableTimeOptions.indexOf(slot.startTime))
+        spnEndTime.setSelection(availableTimeOptions.indexOf(slot.endTime))
+
+        // Fix for room spinner - use safe casting and type checking
+        val roomAdapter = spnRoom.adapter as? ArrayAdapter<String>
+        roomAdapter?.let { adapter ->
+            val position = adapter.getPosition(slot.roomLocation)
+            if (position >= 0) {
+                spnRoom.setSelection(position)
+            }
+        }
+
+        Toast.makeText(this, "Time slot details copied to form", Toast.LENGTH_SHORT).show()
+    }
     /**
      * Nagpapakita ng dialog para i-delete o i-edit ang detalye ng Time Slot.
      */

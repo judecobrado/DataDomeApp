@@ -52,7 +52,7 @@ class TeacherDashboardActivity : AppCompatActivity() {
 
         // Set initial values
         tvTeacherName.text = "Welcome, Teacher!"
-        tvTeacherId.text = "ID: ${teacherUid?.takeLast(6) ?: "TCH-001"}"
+        loadTeacherId(tvTeacherId)
 
         // Load teacher stats
         loadTeacherStats(tvClassCount, tvStudentCount, tvPendingCount)
@@ -133,6 +133,26 @@ class TeacherDashboardActivity : AppCompatActivity() {
             showLogoutConfirmation()
         }
     }
+
+    private fun loadTeacherId(tvTeacherId: TextView) {
+        val uid = auth.currentUser?.uid ?: return
+
+        firestore.collection("teachers")
+            .document(uid)
+            .get()
+            .addOnSuccessListener { doc ->
+                if (doc.exists()) {
+                    val teacherId = doc.getString("teacherId") ?: "TCH-0000"
+                    tvTeacherId.text = "ID: $teacherId"
+                } else {
+                    tvTeacherId.text = "ID: TCH-0000"
+                }
+            }
+            .addOnFailureListener {
+                tvTeacherId.text = "ID: TCH-0000"
+            }
+    }
+
 
     private fun loadTeacherStats(tvClassCount: TextView, tvStudentCount: TextView, tvPendingCount: TextView) {
         val currentTeacherUid = auth.currentUser?.uid ?: return
