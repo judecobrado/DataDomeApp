@@ -38,7 +38,7 @@ data class Enrollment(
     val municipality: String = "",
     val barangay: String = "",
     val street: String = "",
-    val postalCode: String,
+    val postalCode: String = "",
     val fullAddress: String = "",
     // Course information
     val courseName: String = "",
@@ -52,7 +52,8 @@ data class Enrollment(
     var fatherLastNameExtension: String = "",
     var motherLastNameExtension: String = "",
     // Additional field for raw data
-    val data: Map<String, Any> = emptyMap()
+    val data: Map<String, Any> = emptyMap(),
+    val profileImageUrl: String? = null // FIXED: Make sure this is properly handled
 ) {
     // Helper function to get data as map for Firestore
     fun toFirestoreMap(): Map<String, Any> {
@@ -102,7 +103,9 @@ data class Enrollment(
             "applicationType" to applicationType,
             "status" to status,
             "timestamp" to (timestamp ?: Timestamp.now()),
-            "isVerified" to isVerified
+            "isVerified" to isVerified,
+            // FIXED: Include profileImageUrl in Firestore map
+            "profileImageUrl" to (profileImageUrl ?: "")
         )
     }
 
@@ -155,7 +158,9 @@ data class Enrollment(
                 status = data["status"] as? String ?: "pending",
                 timestamp = data["timestamp"] as? Timestamp,
                 isVerified = data["isVerified"] as? Boolean ?: false,
-                data = data
+                data = data,
+                // FIXED: Read profileImageUrl from Firestore data
+                profileImageUrl = data["profileImageUrl"] as? String
             )
         }
     }
