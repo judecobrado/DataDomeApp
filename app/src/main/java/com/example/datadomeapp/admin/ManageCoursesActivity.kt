@@ -1,5 +1,6 @@
 package com.example.datadomeapp.admin
 
+import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.os.Bundle
 import android.util.Log
@@ -341,12 +342,11 @@ class ManageCoursesActivity : AppCompatActivity() {
 
 
     // --- ROOM MANAGEMENT DIALOG ---
-    // --- ROOM MANAGEMENT DIALOG ---
+    @SuppressLint("MissingInflatedId")
     private fun showRoomManagerDialog() {
         // I-inflate ang dialog view
         val dialogView = LayoutInflater.from(this).inflate(R.layout.admin_rooms_management_dialog, null)
         val etRoomId = dialogView.findViewById<EditText>(R.id.etRoomId)
-        // ✅ TINANGGAL: etRoomName
         val btnAddRoom = dialogView.findViewById<Button>(R.id.btnAddRoom)
         val btnDeleteRoom = dialogView.findViewById<Button>(R.id.btnDeleteRoom)
         val lvRooms = dialogView.findViewById<ListView>(R.id.lvRoomsDialog)
@@ -385,23 +385,35 @@ class ManageCoursesActivity : AppCompatActivity() {
         // 🎯 ADD ROOM
         btnAddRoom.setOnClickListener {
             val id = etRoomId.text.toString().trim().uppercase(Locale.getDefault())
-            // ✅ TINANGGAL: name field validation at pagkuha ng text
 
             if (id.isEmpty()) {
                 Toast.makeText(this, "Room ID is required.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            // ✅ Gumagamit ng Room model na mayroon lang ID
-            val room = Room(id = id)
-            roomsCollection.document(id).set(room)
-                .addOnSuccessListener {
-                    etRoomId.text.clear()
-                    Toast.makeText(this, "Room $id added.", Toast.LENGTH_SHORT).show()
-                    loadRooms()
+            // Check kung existing na ang room ID
+            roomsCollection.document(id).get()
+                .addOnSuccessListener { document ->
+                    if (document.exists()) {
+                        Toast.makeText(this, "Room ID '$id' already exists.", Toast.LENGTH_SHORT).show()
+                        return@addOnSuccessListener
+                    }
+
+                    // ✅ Gumagamit ng Room model na mayroon lang ID
+                    val room = Room(id = id)
+                    roomsCollection.document(id).set(room)
+                        .addOnSuccessListener {
+                            etRoomId.text.clear()
+                            Toast.makeText(this, "Room $id added.", Toast.LENGTH_SHORT).show()
+                            loadRooms()
+                        }
+                        .addOnFailureListener { e ->
+                            Toast.makeText(this, "Failed to add room: ${e.message}", Toast.LENGTH_SHORT).show()
+                        }
                 }
                 .addOnFailureListener { e ->
-                    Toast.makeText(this, "Failed to add room: ${e.message}", Toast.LENGTH_SHORT).show()                }
+                    Toast.makeText(this, "Error checking room: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
         }
 
         // 🎯 DELETE ROOM
