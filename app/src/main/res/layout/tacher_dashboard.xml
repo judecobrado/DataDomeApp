@@ -58,6 +58,7 @@
                             android:layout_height="wrap_content"
                             android:text="ID: TCH-001"
                             android:textSize="12sp"
+                            android:visibility="gone"
                             android:textColor="@color/white_alpha_80"
                             android:layout_marginTop="2dp" />
 
@@ -106,6 +107,7 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:visibility="gone"
                     android:orientation="horizontal"
                     android:gravity="center">
 
@@ -113,6 +115,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
+                        android:visibility="gone"
                         android:orientation="vertical"
                         android:gravity="center">
 
@@ -143,6 +146,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
+                        android:visibility="gone"
                         android:orientation="vertical"
                         android:gravity="center">
 
@@ -173,6 +177,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
+                        android:visibility="gone"
                         android:orientation="vertical"
                         android:gravity="center">
 

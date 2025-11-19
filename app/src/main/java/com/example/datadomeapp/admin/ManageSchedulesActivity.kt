@@ -49,7 +49,7 @@ class ManageSchedulesActivity : AppCompatActivity() {
 
     // Data Holders
     private val courseList = mutableListOf<String>()
-    private val yearLevels = arrayOf("1st Year", "2nd Year", "3rd Year", "4th Year")
+    private val yearLevels = arrayOf("1st Year")
     private val weekDays = arrayOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
     private val teacherList = mutableListOf<Teacher>()
     private val departmentList = mutableListOf<String>()
@@ -70,8 +70,8 @@ class ManageSchedulesActivity : AppCompatActivity() {
     private val internalTimeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
 
     // Time slots para sa Matrix header at Selection (7 AM to 8 PM)
-    private val timeSlots = 7..20
-    private val availableTimeOptions = generateTimeSlots(7, 21, 30)
+    private val timeSlots = 7..19
+    private val availableTimeOptions = generateTimeSlots(7, 19, 60)
 
 
     private var sectionBlockList = mutableListOf<String>()
@@ -144,7 +144,7 @@ class ManageSchedulesActivity : AppCompatActivity() {
                 }
             }
             .addOnFailureListener { e ->
-                Log.e("Schedule", "Error loading current term: ${e.message}")
+                Log.e("Schedule", "Error loading current term")
                 Toast.makeText(this, "Error loading current term configuration.", Toast.LENGTH_LONG).show()
             }
     }
@@ -344,26 +344,14 @@ class ManageSchedulesActivity : AppCompatActivity() {
             set(Calendar.MINUTE, 0)
         }
 
-        for (h in startHour until endHour) {
+        // Generate only full hours (no 30-minute intervals)
+        for (h in startHour..endHour) {
             calendar.set(Calendar.HOUR_OF_DAY, h)
-            for (m in 0 until 60 step intervalMinutes) {
-                calendar.set(Calendar.MINUTE, m)
-                times.add(displayTimeFormat.format(calendar.time))
-            }
+            calendar.set(Calendar.MINUTE, 0)
+            times.add(displayTimeFormat.format(calendar.time))
         }
 
-        calendar.set(Calendar.HOUR_OF_DAY, endHour)
-        calendar.set(Calendar.MINUTE, 0)
-        times.add(displayTimeFormat.format(calendar.time))
-
-        return times.distinct().sortedWith(compareBy {
-            try {
-                // Parse the display string back to a Date for sorting
-                displayTimeFormat.parse(it) ?: Date(0)
-            } catch (e: ParseException) {
-                Date(0)
-            }
-        })
+        return times
     }
 
     // NEW: Flexible parser para sa oras (Handles both "h:mm a" and "HH:mm")
@@ -433,7 +421,7 @@ class ManageSchedulesActivity : AppCompatActivity() {
 
             }
             .addOnFailureListener { e ->
-                Toast.makeText(this, "Error loading curriculum: ${e.message}", Toast.LENGTH_SHORT)
+                Toast.makeText(this, "Error loading curriculum", Toast.LENGTH_SHORT)
                     .show()
                 loadSectionBlocks(courseCode, yearLevelKey)
             }
@@ -501,7 +489,7 @@ class ManageSchedulesActivity : AppCompatActivity() {
                 filterAssignmentsAndRenderMatrix()
             }
             .addOnFailureListener { e ->
-                Toast.makeText(this, "Error fetching assignments: ${e.message}", Toast.LENGTH_LONG)
+                Toast.makeText(this, "Error fetching assignments", Toast.LENGTH_LONG)
                     .show()
             }
     }

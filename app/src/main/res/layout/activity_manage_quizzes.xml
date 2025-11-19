@@ -25,27 +25,6 @@
             android:textStyle="bold"
             android:textColor="@color/primary_maroon" />
 
-        <!-- Quiz Count Badge -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/primary_maroon">
-
-            <TextView
-                android:id="@+id/tvQuizCount"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingHorizontal="12dp"
-                android:paddingVertical="6dp"
-                android:text="0 Quizzes"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:textColor="@color/white" />
-
-        </com.google.android.material.card.MaterialCardView>
-
     </LinearLayout>
 
     <!-- Create Quiz Button -->

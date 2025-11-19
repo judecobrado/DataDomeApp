@@ -7,6 +7,7 @@ import android.os.Looper
 import android.view.View
 import android.view.animation.AnimationUtils
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.example.datadomeapp.LoginActivity
 import com.example.datadomeapp.R
@@ -190,17 +191,40 @@ class AdminDashboardActivity : AppCompatActivity() {
         //}
 
         // Logout button with animation
+        //findViewById<MaterialCardView>(R.id.btnLogout).setOnClickListener {
+            //animateButtonClick(it) {
+                //auth.signOut()
+                //val intent = Intent(this, LoginActivity::class.java)
+                //intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+                //startActivity(intent)
+                //finish()
+            //}
+        //}
         findViewById<MaterialCardView>(R.id.btnLogout).setOnClickListener {
             animateButtonClick(it) {
-                auth.signOut()
-                val intent = Intent(this, LoginActivity::class.java)
-                intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
-                startActivity(intent)
-                finish()
+                showLogoutConfirmation() // ADDED THIS LINE - replaces direct logout
             }
         }
     }
 
+    private fun showLogoutConfirmation() {
+        AlertDialog.Builder(this)
+            .setTitle("Logout")
+            .setMessage("Are you sure you want to logout?")
+            .setPositiveButton("Yes") { _, _ ->
+                logout()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun logout() {
+        auth.signOut()
+        val intent = Intent(this, LoginActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+        startActivity(intent)
+        finish()
+    }
     private fun animateButtonClick(view: View, action: () -> Unit) {
         // Scale down animation
         view.animate()

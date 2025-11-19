@@ -121,13 +121,7 @@
                             android:textColor="#7B1113"
                             tools:text="10" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="/10"
-                            android:textSize="24sp"
-                            android:textColor="#666666"
-                            android:layout_marginStart="4dp" />
+
 
                     </LinearLayout>
 
@@ -162,45 +156,10 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Accuracy"
-                            android:textSize="12sp"
+                            android:layout_marginTop="4dp"
+                            android:text="Score Percentage"
                             android:textColor="#666666"
-                            android:layout_marginTop="4dp" />
-
-                    </LinearLayout>
-
-                    <!-- Divider -->
-                    <View
-                        android:layout_width="1dp"
-                        android:layout_height="40dp"
-                        android:background="#E8E8E8"
-                        android:layout_marginHorizontal="16dp" />
-
-                    <!-- Time Taken -->
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:gravity="center">
-
-                        <TextView
-                            android:id="@+id/tvTimeTaken"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="05:30"
-                            android:textSize="20sp"
-                            android:textStyle="bold"
-                            android:textColor="#7B1113"
-                            tools:text="05:30" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Time Taken"
-                            android:textSize="12sp"
-                            android:textColor="#666666"
-                            android:layout_marginTop="4dp" />
+                            android:textSize="12sp" />
 
                     </LinearLayout>
 
@@ -225,6 +184,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
+                android:visibility="gone"
                 android:padding="24dp">
 
                 <TextView
@@ -270,7 +230,7 @@
                         android:textSize="14sp"
                         android:textStyle="bold"
                         android:textColor="#4CAF50"
-                        tools:text="10" />
+                        tools:text="-" />
 
                 </LinearLayout>
 
@@ -305,7 +265,7 @@
                         android:textSize="14sp"
                         android:textStyle="bold"
                         android:textColor="#F44336"
-                        tools:text="0" />
+                        tools:text="-" />
 
                 </LinearLayout>
 
@@ -339,7 +299,7 @@
                         android:textSize="14sp"
                         android:textStyle="bold"
                         android:textColor="#FF9800"
-                        tools:text="0" />
+                        tools:text="-" />
 
                 </LinearLayout>
 
@@ -412,25 +372,7 @@
             android:orientation="horizontal"
             android:gravity="center">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnReview"
-                android:layout_width="0dp"
-                android:layout_height="56dp"
-                android:layout_weight="1"
-                android:layout_marginEnd="8dp"
-                android:text="Review Answers"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:paddingStart="24dp"
-                android:paddingEnd="24dp"
-                app:backgroundTint="#E8E8E8"
-                app:cornerRadius="12dp"
-                app:strokeColor="#7B1113"
-                app:strokeWidth="1dp"
-                android:textColor="#7B1113"
-                app:icon="@drawable/ic_review"
-                app:iconGravity="textStart"
-                app:iconPadding="8dp" />
+
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnFinish"
@@ -438,7 +380,7 @@
                 android:layout_height="56dp"
                 android:layout_weight="1"
                 android:layout_marginStart="8dp"
-                android:text="Dashboard"
+                android:text="Go to Dashboard"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:paddingStart="24dp"

@@ -97,7 +97,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:hint="Option 3 (optional)"
+                    android:hint="Option 3"
                     android:paddingStart="8dp"/>
             </LinearLayout>
 
@@ -116,7 +116,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:hint="Option 4 (optional)"
+                    android:hint="Option 4"
                     android:paddingStart="8dp"/>
             </LinearLayout>
         </RadioGroup>

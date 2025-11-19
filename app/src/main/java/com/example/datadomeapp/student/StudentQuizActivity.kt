@@ -535,24 +535,68 @@ class StudentQuizActivity : AppCompatActivity() {
             }
 
             is Question.Matching -> {
-                val shuffledRights = q.matches.shuffled()
+                binding.tvQuestionType.text = "Question Type: Matching Type"
 
-                q.options.forEach { leftText ->
-                    val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0,10,0,10) }
+                // Clear previous views
+                binding.matchingLayout.removeAllViews()
+
+                val recordedAnswer = viewModel.getRecordedAnswer(index)
+
+                // Parse previously recorded answer if exists
+                val previousSelections = mutableMapOf<String, String>()
+                if (!recordedAnswer.isNullOrEmpty()) {
+                    recordedAnswer.split(";").forEach { pair ->
+                        val parts = pair.split("=")
+                        if (parts.size == 2) {
+                            previousSelections[parts[0]] = parts[1]
+                        }
+                    }
+                }
+
+                // Create matching pairs - shuffle only the right side for display
+                val shuffledRights = q.matches.shuffled().toMutableList()
+
+                q.options.forEachIndexed { rowIndex, leftText ->
+                    val row = LinearLayout(this).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        setPadding(0, 16, 0, 16)
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT
+                        )
+                    }
+
+                    // Left item (fixed)
                     val tvLeft = TextView(this).apply {
                         text = leftText
                         layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                        setPadding(16, 8, 16, 8)
+                        setBackgroundColor(Color.parseColor("#F5F5F5"))
+                        gravity = android.view.Gravity.CENTER
                     }
+
+                    // Right item spinner
                     val spinner = Spinner(this).apply {
                         val adapter = ArrayAdapter(this@StudentQuizActivity, android.R.layout.simple_spinner_item, shuffledRights)
                         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
                         this.adapter = adapter
+
+                        // Set previous selection if exists
+                        previousSelections[leftText]?.let { selectedValue ->
+                            val position = shuffledRights.indexOf(selectedValue)
+                            if (position >= 0) {
+                                setSelection(position)
+                            }
+                        }
+
                         layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
                     }
+
                     row.addView(tvLeft)
                     row.addView(spinner)
                     binding.matchingLayout.addView(row)
                 }
+
                 setupMatchingSpinners()
             }
         }

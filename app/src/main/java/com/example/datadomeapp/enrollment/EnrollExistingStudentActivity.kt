@@ -35,7 +35,7 @@ class EnrollExistingStudentActivity : AppCompatActivity() {
         // Example static lists
         val subjects = listOf("Select Subject", "BSIT101", "BSIT102", "BSIT103")
         val semesters = listOf("1st Semester", "2nd Semester")
-        val years = listOf("1st Year", "2nd Year", "3rd Year", "4th Year")
+        val years = listOf("1st Year")
 
         spnSubject.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, subjects)
         spnSemester.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, semesters)

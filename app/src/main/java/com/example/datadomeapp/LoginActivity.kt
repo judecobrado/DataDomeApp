@@ -115,7 +115,7 @@ class LoginActivity : AppCompatActivity() {
             .addOnFailureListener { e ->
                 // Firestore fetch failed
                 resetUI()
-                Log.e(TAG, "Error fetching user role for UID $uid: ${e.message}")
+                Log.e(TAG, "Something Went Wrong!")
                 AlertDialog.Builder(this)
                     .setTitle("Something Went Wrong!")
                     .setMessage("Please contact admin.")

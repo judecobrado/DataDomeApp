@@ -30,7 +30,7 @@ class ManageCurriculumActivity : AppCompatActivity() {
     private lateinit var btnBack: Button
 
     // --- Data & State ---
-    private val yearLevels = arrayOf("1st Year", "2nd Year", "3rd Year", "4th Year")
+    private val yearLevels = arrayOf("1st Year")
     private val courseList = mutableListOf<String>()
     private val currentSubjectList = mutableListOf<SubjectEntry>()
 

@@ -123,8 +123,8 @@ class ManageCanteenStaffActivity : AppCompatActivity() {
                     val bitmap = BitmapFactory.decodeStream(inputStream)
                     ivStoreImage.setImageBitmap(bitmap)
                 } catch (e: Exception) {
-                    Log.e(TAG, "Image loading failed: ${e.message}", e)
-                    Toast.makeText(this, "Failed to load image: ${e.message}", Toast.LENGTH_LONG).show()
+                    Log.e(TAG, "Image loading failed", e)
+                    Toast.makeText(this, "Failed to load image.", Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -158,7 +158,7 @@ class ManageCanteenStaffActivity : AppCompatActivity() {
                     val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
                     ivStoreImage.setImageBitmap(bitmap)
                 } catch (e: Exception) {
-                    Log.e(TAG, "Failed to decode Base64 image: ${e.message}", e)
+                    Log.e(TAG, "Failed to decode Base64 image", e)
                     ivStoreImage.setImageDrawable(null)
                     Toast.makeText(this, "Failed to load existing image (Corrupt Data).", Toast.LENGTH_LONG).show()
                 }
@@ -273,14 +273,14 @@ class ManageCanteenStaffActivity : AppCompatActivity() {
                             }
                             .addOnFailureListener { e ->
                                 Log.e(TAG, "Failed to update user document (User Collection) for UID: $userId", e)
-                                Toast.makeText(this, "Update failed in User Collection: ${e.message}", Toast.LENGTH_LONG).show()
+                                Toast.makeText(this, "Update failed in User Collection.", Toast.LENGTH_LONG).show()
                             }
                     }
                 }
                 .addOnFailureListener { e ->
                     // Show error on failure
                     Log.e(TAG, "Failed to update staff document (Canteen Staff Collection) for ID: $staffId", e)
-                    Toast.makeText(this, "Failed to update staff in Firestore: ${e.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, "Failed to update staff in Firestore.", Toast.LENGTH_LONG).show()
                 }
 
         } else {

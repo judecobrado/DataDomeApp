@@ -208,13 +208,13 @@ class ManageStudentsActivity : AppCompatActivity() {
                 applyFilters()
             }
             .addOnFailureListener { e ->
-                Toast.makeText(this, "Error loading students: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Error loading students", Toast.LENGTH_SHORT).show()
                 Log.e("Students", "Error loading students", e)
             }
     }
 
     private fun setupFilters() {
-        val years = listOf("All Year Levels", "1st Year", "2nd Year", "3rd Year", "4th Year")
+        val years = listOf("All Year Levels", "1st Year")
         setupSpinner(spinnerFilterYear, years) { _ -> applyFilters() }
 
         etSearch.addTextChangedListener {

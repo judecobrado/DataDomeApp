@@ -137,7 +137,7 @@ class BalanceInquiryActivity : AppCompatActivity() {
             }
             .addOnFailureListener { e ->
                 progressBar.visibility = View.GONE
-                Toast.makeText(this, "Error loading balances: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Failed to load balances", Toast.LENGTH_LONG).show()
             }
     }
 

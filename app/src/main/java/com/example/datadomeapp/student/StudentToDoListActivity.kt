@@ -143,7 +143,7 @@ class StudentToDoListActivity : AppCompatActivity() {
             }
             .addOnFailureListener { e ->
                 Log.e("ToDoListDebug", "Firestore Query Failed!", e)
-                Toast.makeText(this, "Error loading tasks: ${e.message}.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Failed to loading tasks.", Toast.LENGTH_LONG).show()
             }
     }
 
@@ -352,7 +352,7 @@ class StudentToDoListActivity : AppCompatActivity() {
                             loadTasks()
                         }
                         .addOnFailureListener { e ->
-                            Toast.makeText(this, "Error updating task: ${e.message}", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this, "Failed to update task", Toast.LENGTH_SHORT).show()
                             cbDone.isChecked = false
                         }
                 }
@@ -499,7 +499,7 @@ class StudentToDoListActivity : AppCompatActivity() {
                     loadTasks()
                 }
                 .addOnFailureListener { e ->
-                    Toast.makeText(this, "Error adding task: ${e.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Failed adding task", Toast.LENGTH_SHORT).show()
                 }
         } else {
             taskRef.document(taskId).update(taskMap as Map<String, Any>)
@@ -508,7 +508,7 @@ class StudentToDoListActivity : AppCompatActivity() {
                     loadTasks()
                 }
                 .addOnFailureListener { e ->
-                    Toast.makeText(this, "Error updating task: ${e.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Failed updating task", Toast.LENGTH_SHORT).show()
                 }
         }
     }

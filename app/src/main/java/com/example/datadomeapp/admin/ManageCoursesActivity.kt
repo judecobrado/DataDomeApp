@@ -49,7 +49,7 @@ class ManageCoursesActivity : AppCompatActivity() {
     private lateinit var adapter: ArrayAdapter<String>
     private var selectedCourseCode: String? = null
     private var selectedCourseDocId: String? = null
-    private val yearLevels = arrayOf("1st Year", "2nd Year", "3rd Year", "4th Year")
+    private val yearLevels = arrayOf("1st Year")
 
 
     override fun onCreate(savedInstanceState: Bundle?) {

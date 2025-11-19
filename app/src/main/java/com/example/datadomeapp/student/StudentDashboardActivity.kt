@@ -13,6 +13,7 @@ import android.widget.TableLayout
 import android.widget.TableRow
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import com.example.datadomeapp.R
@@ -305,14 +306,9 @@ class StudentDashboardActivity : AppCompatActivity() {
     private fun setupFeatureButtons() {
         // Logout Button
         findViewById<Button>(R.id.btnLogout).setOnClickListener {
-            auth.signOut()
 
-            val intent = Intent(this, com.example.datadomeapp.LoginActivity::class.java)
+            showLogoutConfirmation()
 
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-
-            startActivity(intent)
-            finish()
         }
 
         // Subjects Button
@@ -423,4 +419,33 @@ class StudentDashboardActivity : AppCompatActivity() {
             startActivity(intent)
         }
     }
+
+    private fun showLogoutConfirmation() {
+        AlertDialog.Builder(this)
+            .setTitle("Logout")
+            .setMessage("Are you sure you want to logout?")
+            .setPositiveButton("Yes") { dialog, which ->
+                performLogout()
+            }
+            .setNegativeButton("No") { dialog, which ->
+                dialog.dismiss()
+            }
+            .setCancelable(true)
+            .show()
+    }
+
+    /**
+     * Performs the actual logout process
+     */
+    private fun performLogout() {
+        auth.signOut()
+
+        val intent = Intent(this, com.example.datadomeapp.LoginActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
+        finish()
+
+        Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show()
+    }
+
 }

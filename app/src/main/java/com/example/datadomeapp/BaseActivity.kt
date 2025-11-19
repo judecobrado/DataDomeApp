@@ -67,7 +67,6 @@ open class BaseActivity : AppCompatActivity() {
             override fun onAvailable(network: Network) {
                 runOnUiThread {
                     hideNoInternet()
-                    showConnectedSnackbar()
                     onInternetConnected()
                 }
             }
@@ -113,13 +112,6 @@ open class BaseActivity : AppCompatActivity() {
         return capabilities != null &&
                 (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
                         capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR))
-    }
-
-    private fun showConnectedSnackbar() {
-        Snackbar.make(findViewById(android.R.id.content),
-            "Internet connection restored", Snackbar.LENGTH_SHORT)
-            .setBackgroundTint(getColor(R.color.green_success))
-            .show()
     }
 
     override fun onDestroy() {

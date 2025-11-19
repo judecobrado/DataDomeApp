@@ -50,7 +50,7 @@ class ResetPasswordActivity : AppCompatActivity() {
                     }
                 }
                 .addOnFailureListener { e ->
-                    Toast.makeText(this, "Error fetching user: ${e.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, "Error fetching user", Toast.LENGTH_LONG).show()
                 }
         }
     }

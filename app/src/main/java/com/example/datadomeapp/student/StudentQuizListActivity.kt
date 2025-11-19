@@ -201,21 +201,41 @@ class StudentQuizListActivity : AppCompatActivity() {
         val type = map["type"] as? String ?: return null
         val questionText = map["questionText"] as? String ?: ""
 
-        val optionsList = (map["options"] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
-
         return when (type) {
             "TF" -> Question.TrueFalse(questionText, map["answer"] as? Boolean ?: false)
-            "MC" -> Question.MultipleChoice(
-                questionText,
-                optionsList,
-                (map["correctAnswerIndex"] as? Number)?.toInt() ?: 0
-            )
-            "MATCHING" -> Question.Matching(
-                questionText,
-                optionsList,
-                (map["matches"] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
-            )
-            else -> null
+
+            "MC" -> {
+                val optionsList = (map["options"] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
+                Question.MultipleChoice(
+                    questionText,
+                    optionsList,
+                    (map["correctAnswerIndex"] as? Number)?.toInt() ?: 0
+                )
+            }
+
+            "MATCHING" -> {
+                // CRITICAL FIX: Properly deserialize matching type questions
+                val leftItems = (map["options"] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
+                val rightItems = (map["matches"] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
+
+                // Ensure we have valid data for matching type
+                if (leftItems.isNotEmpty() && rightItems.isNotEmpty()) {
+                    Question.Matching(
+                        questionText,
+                        leftItems,
+                        rightItems
+                    )
+                } else {
+                    // Log error and return null if data is invalid
+                    Log.e("QuizList", "Invalid matching question data: left=$leftItems, right=$rightItems")
+                    null
+                }
+            }
+
+            else -> {
+                Log.e("QuizList", "Unknown question type: $type")
+                null
+            }
         }
     }
 

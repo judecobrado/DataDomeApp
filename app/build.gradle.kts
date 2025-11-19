@@ -70,18 +70,23 @@ dependencies {
     implementation("com.google.firebase:firebase-functions:21.2.1")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
 
-    // Glide - inayos ang duplicates
     implementation("com.github.bumptech.glide:glide:4.16.0")
-    kapt("com.github.bumptech.glide:compiler:4.16.0")
 
+    implementation("com.github.bumptech.glide:glide:4.15.1")
     implementation(libs.androidx.gridlayout)
     implementation(libs.androidx.camera.camera2.pipe)
+    kapt("com.github.bumptech.glide:compiler:4.15.1")
 
     implementation("com.google.firebase:firebase-appcheck-debug:17.0.0")
 
-    // Retrofit - inayos ang duplicates
+    //eto na add
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+    annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    //eto na add
 
     implementation("com.google.android.gms:play-services-maps:19.2.0")
 

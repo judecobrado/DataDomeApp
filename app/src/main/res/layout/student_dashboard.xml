@@ -148,21 +148,24 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Next_class"
-                            android:textSize="12sp"
-                            android:textStyle="bold"
-                            android:textColor="#9B1C1F"
-                            android:letterSpacing="0.1" />
-
-                        <TextView
-                            android:id="@+id/tvNextClassDetails"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="Loading next class..."
+                            android:text="Daily Notes"
                             android:textSize="16sp"
                             android:textStyle="bold"
-                            android:textColor="#333333" />
+                            android:textColor="#333333"
+                            android:letterSpacing="0.06"
+                            android:paddingBottom="4dp" />
+
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="The future belongs to those who believe in the beauty of their dreams. - Eleanor Roosevelt"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="#9B1C1F"
+                        android:letterSpacing="0.1" />
+
+
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -207,83 +210,6 @@
                         android:textColor="#888888" />
 
                 </TableLayout>
-
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardAlertsDeadlines"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="20dp"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="4dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="20dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="12dp">
-
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/ic_alert"
-                        android:layout_marginEnd="8dp"
-                        app:tint="#9B1C1F" />
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Upcoming Deadlines"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:textColor="#9B1C1F" />
-                </LinearLayout>
-
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    app:cardCornerRadius="8dp"
-                    app:cardBackgroundColor="#FBEFEF"
-                    app:cardElevation="0dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="16dp">
-
-                        <TextView
-                            android:id="@+id/tvAssignmentAlert"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Loading assignments..."
-                            android:textColor="#555555"
-                            android:drawableStart="@drawable/ic_assignment"
-                            android:drawablePadding="8dp"
-                            android:drawableTint="#9B1C1F"
-                            android:paddingBottom="8dp" />
-
-                        <TextView
-                            android:id="@+id/tvQuizAlert"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Loading quizzes..."
-                            android:textColor="#555555"
-                            android:drawableStart="@drawable/ic_quiz"
-                            android:drawablePadding="8dp"
-                            android:drawableTint="#9B1C1F" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

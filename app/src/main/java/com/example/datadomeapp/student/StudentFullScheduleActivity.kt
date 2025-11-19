@@ -150,7 +150,7 @@ class StudentFullScheduleActivity : AppCompatActivity() {
                     }
             }
             .addOnFailureListener { e ->
-                tvScheduleStatus.text = "Error loading subjects: ${e.message}"
+                tvScheduleStatus.text = "Failed to laod subjects."
                 tvScheduleStatus.setTextColor(ContextCompat.getColor(this@StudentFullScheduleActivity, R.color.poor_red))
                 Log.e("WEEKLY_SCHEDULE", "Failed to load student subjects", e)
             }

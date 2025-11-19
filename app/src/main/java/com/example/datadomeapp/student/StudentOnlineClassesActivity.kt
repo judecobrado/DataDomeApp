@@ -118,7 +118,7 @@ class StudentOnlineClassesActivity : AppCompatActivity() {
 
             } catch (e: Exception) {
                 Log.e("OnlineClasses", "Failed to load subjects or assignments: $e")
-                Toast.makeText(this@StudentOnlineClassesActivity, "Failed to load classes: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@StudentOnlineClassesActivity, "Failed to load classes.", Toast.LENGTH_LONG).show()
             }
         }
     }

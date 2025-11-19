@@ -235,6 +235,11 @@ class CreateQuizActivity : AppCompatActivity() {
                             val options = parts.subList(1, 5)
                             val answer = parts[5]
 
+                            if (options.any { it.isEmpty() }) {
+                                skippedCount++
+                                continue
+                            }
+
                             // Find correct answer index
                             val correctIndex = when (answer.uppercase()) {
                                 "A", options[0].uppercase() -> 0
@@ -525,6 +530,7 @@ class CreateQuizActivity : AppCompatActivity() {
         )
 
         val minOptionChars = 1
+        val requiredOptions = 4
 
         // Manual single selection + Validation for Radio Button
         radioButtons.forEachIndexed { index, rb ->
@@ -597,10 +603,10 @@ class CreateQuizActivity : AppCompatActivity() {
                     return@setOnClickListener
                 }
 
-                if (validOptions.size < 2) {
+                if (validOptions.size < 4) {
                     Toast.makeText(
                         this,
-                        "You need at least 2 valid options (min $minOptionChars character each).",
+                        "Multiple choice must have exactly 4 options (min $minOptionChars character each).",
                         Toast.LENGTH_SHORT
                     ).show()
                     return@setOnClickListener

@@ -110,7 +110,7 @@ class MainActivity : AppCompatActivity() {
                     // Firestore failed, default to showing button
                     btnSignup.visibility = View.VISIBLE
                     btnSignup.setOnClickListener {
-                        startActivity(Intent(this, ChooseStudentTypeActivity::class.java))
+                        startActivity(Intent(this, VerifyEmailActivity::class.java))
                     }
                     return@addSnapshotListener
                 }
@@ -119,7 +119,7 @@ class MainActivity : AppCompatActivity() {
                 if (signupEnabled) {
                     btnSignup.visibility = View.VISIBLE
                     btnSignup.setOnClickListener {
-                        startActivity(Intent(this, ChooseStudentTypeActivity::class.java))
+                        startActivity(Intent(this, VerifyEmailActivity::class.java))
                     }
                 } else {
                     btnSignup.visibility = View.GONE
@@ -178,7 +178,7 @@ class MainActivity : AppCompatActivity() {
             }
             .addOnFailureListener { e ->
                 // Handle error if Firestore is unreachable or document lookup fails
-                Toast.makeText(this, "Error: Could not retrieve user role.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Something Went Wrong. Try again later!.", Toast.LENGTH_LONG).show()
                 auth.signOut()
                 // Redirect to LoginActivity after sign out
                 startActivity(Intent(this, LoginActivity::class.java))
