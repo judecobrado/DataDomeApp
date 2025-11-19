@@ -11,6 +11,27 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
+        <!-- PROFILE PICTURE SECTION -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_gravity="center"
+            android:layout_marginBottom="24dp"
+            app:cardCornerRadius="60dp"
+            app:cardElevation="8dp"
+            app:strokeColor="#7B1113"
+            app:strokeWidth="2dp">
+
+            <ImageView
+                android:id="@+id/ivProfilePicture"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:src="@drawable/ic_profile_placeholder"
+                android:contentDescription="Student profile picture" />
+
+        </com.google.android.material.card.MaterialCardView>
+
         <!-- Profile Header Card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"

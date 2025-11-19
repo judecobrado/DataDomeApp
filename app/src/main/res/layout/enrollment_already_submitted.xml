@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -7,41 +8,96 @@
     android:padding="32dp"
     android:background="@android:color/white">
 
-    <ImageView
-        android:layout_width="100dp"
-        android:layout_height="100dp"
-        android:src="@drawable/ic_check_circle"
-        android:tint="#4CAF50"
-        android:contentDescription="Submission Successful"
-        android:layout_marginBottom="24dp"/>
+    <!-- Success Icon Container -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:layout_marginBottom="32dp"
+        app:cardCornerRadius="60dp"
+        app:cardElevation="8dp"
+        app:cardBackgroundColor="#E8F5E9"
+        app:strokeColor="#4CAF50"
+        app:strokeWidth="2dp">
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <ImageView
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:src="@drawable/ic_check_circle"
+                android:contentDescription="Submission Successful"
+                app:tint="#4CAF50" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Success Message -->
     <TextView
         android:id="@+id/tvMessage"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textAlignment="center"
         android:text="Submission Successful!"
-        android:textSize="24sp"
+        android:textSize="28sp"
         android:textStyle="bold"
-        android:textColor="@android:color/black"
-        android:layout_marginBottom="16dp"/>
+        android:textColor="#2E7D32"
+        android:layout_marginBottom="16dp" />
 
+    <!-- Description -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textAlignment="center"
         android:text="We have received your enrollment application. Please wait for an email regarding the next steps."
         android:textSize="16sp"
-        android:textColor="@android:color/darker_gray"
-        android:layout_marginBottom="40dp"/>
+        android:textColor="#666666"
+        android:lineSpacingExtra="4dp"
+        android:layout_marginBottom="40dp" />
 
-    <Button
+    <!-- Action Button -->
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnBackToHome"
-        android:text="Back to Home"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:backgroundTint="#2196F3"
-        android:textColor="#FFFFFF"
-        android:textStyle="bold"/>
+        android:text="Back to Home"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:cornerRadius="12dp"
+        app:backgroundTint="#7B1113"
+        app:icon="@drawable/ic_home"
+        app:iconTint="@android:color/white"
+        app:iconSize="24dp"
+        app:iconPadding="8dp"
+        android:layout_marginTop="8dp" />
+
+    <!-- Additional Info -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="24dp">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/ic_info"
+            android:layout_marginEnd="8dp"
+            app:tint="#2196F3" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Application ID: ENR-2024-00123"
+            android:textSize="14sp"
+            android:textColor="#2196F3"
+            android:textStyle="bold" />
+
+    </LinearLayout>
 
 </LinearLayout>

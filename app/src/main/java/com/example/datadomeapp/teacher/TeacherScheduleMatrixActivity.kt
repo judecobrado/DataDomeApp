@@ -4,297 +4,563 @@ import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
+import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
-import android.widget.LinearLayout
-import android.widget.TableLayout
-import android.widget.TableRow
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import androidx.cardview.widget.CardView
+import androidx.core.content.ContextCompat
+import androidx.core.view.setPadding
 import com.example.datadomeapp.R
 import com.example.datadomeapp.models.ClassAssignment
 import com.example.datadomeapp.models.TimeSlot
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import java.text.SimpleDateFormat
-import java.util.Locale
+import java.util.*
+import kotlin.math.absoluteValue
 
 class TeacherScheduleMatrixActivity : AppCompatActivity() {
-
-    private val TAG = "ScheduleMatrix"
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
-    private lateinit var tableLayout: TableLayout
+    private lateinit var tlScheduleMatrix: TableLayout
+    private lateinit var tvScheduleStatus: TextView
+    private lateinit var mainLayout: LinearLayout
+    private lateinit var weekDaysContainer: LinearLayout
+    private lateinit var timelineContainer: LinearLayout
+    private lateinit var selectedDayText: TextView
+    private lateinit var currentDateText: TextView
+    private var selectedDay: String = "Mon"
 
-    // Define days (Must match the format saved in Firestore)
-    private val days = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+    // Days of the week in order (Monday to Saturday only)
+    private val daysOfWeek = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+    private val daysFullName = mapOf(
+        "Mon" to "Monday",
+        "Tue" to "Tuesday",
+        "Wed" to "Wednesday",
+        "Thu" to "Thursday",
+        "Fri" to "Friday",
+        "Sat" to "Saturday"
+    )
 
-    // Generate 30-minute interval time slots from 7:00 to 19:00 (7:00 PM)
-    private val timeSlots24Hr = generateTimeSlots24Hr("07:00", "19:00", 30)
-
-    // The base height of a single 30-minute card cell (used for flexible height calculation)
-    private val BASE_CELL_HEIGHT_DP = 40
+    // Time slots for the day view (7:00 AM to 7:00 PM)
+    private val timeSlots = generateTimeSlots()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_schedule_matrix)
+        setContentView(R.layout.activity_teacher_daily_schedule)
 
-        tableLayout = findViewById(R.id.tableLayoutSchedule)
-
-        initializeTableLayout()
-        loadAssignedClasses()
+        setupViews()
+        loadTeacherSchedule()
     }
 
-    /**
-     * Helper function to generate time slots in 24-hour format with a given interval.
-     */
-    private fun generateTimeSlots24Hr(startHour: String, endHour: String, intervalMinutes: Int): List<String> {
-        val format = SimpleDateFormat("HH:mm", Locale.US)
-        val slots = mutableListOf<String>()
-        var currentTime = format.parse(startHour)
-        val endTime = format.parse(endHour)
+    private fun setupViews() {
+        mainLayout = findViewById(R.id.mainLayout)
+        tlScheduleMatrix = findViewById(R.id.tlScheduleMatrix)
+        tvScheduleStatus = findViewById(R.id.tvScheduleStatus)
+        weekDaysContainer = findViewById(R.id.weekDaysContainer)
+        timelineContainer = findViewById(R.id.timelineContainer)
+        selectedDayText = findViewById(R.id.selectedDayText)
+        currentDateText = findViewById(R.id.currentDateText)
 
-        // Loop until the current time is the end time
-        while (currentTime != null && endTime != null && currentTime.before(endTime)) {
-            slots.add(format.format(currentTime))
+        // Set current date and initial selected day
+        updateCurrentDate()
+        updateSelectedDayDisplay()
+    }
 
-            // Add the interval (30 minutes)
-            val calendar = java.util.Calendar.getInstance()
-            calendar.time = currentTime
-            calendar.add(java.util.Calendar.MINUTE, intervalMinutes)
-            currentTime = calendar.time
+    private fun updateCurrentDate() {
+        val dateFormat = SimpleDateFormat("EEEE, d MMMM yyyy", Locale.US)
+        val currentDate = dateFormat.format(Date())
+        currentDateText.text = currentDate
+
+        // Auto-select current day
+        val currentDay = SimpleDateFormat("EEE", Locale.US).format(Date())
+        selectedDay = when (currentDay) {
+            "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" -> currentDay
+            else -> "Mon" // Default to Monday if it's Sunday
         }
+    }
+
+    private fun generateTimeSlots(): List<String> {
+        val slots = mutableListOf<String>()
+        val timeFormat = SimpleDateFormat("h:mm a", Locale.US)
+        val calendar = Calendar.getInstance()
+
+        // Set start time to 7:00 AM
+        calendar.set(Calendar.HOUR_OF_DAY, 7)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+
+        // Generate slots from 7:00 AM to 7:00 PM (12 hours = 24 slots)
+        for (i in 0 until 24) {
+            slots.add(timeFormat.format(calendar.time))
+            calendar.add(Calendar.MINUTE, 30) // Add 30 minutes
+        }
+
         return slots
     }
 
-    /** Helper function to convert 24hr time (HH:mm) to 12hr time (h:mm a) */
-    private fun formatTime12Hr(time24Hr: String): String {
-        return try {
-            val format24 = SimpleDateFormat("HH:mm", Locale.US)
-            val format12 = SimpleDateFormat("h:mm a", Locale.US)
-            val date = format24.parse(time24Hr)
-            if (date != null) format12.format(date) else time24Hr
-        } catch (e: Exception) {
-            time24Hr
-        }
-    }
-
-
-    private fun initializeTableLayout() {
-        // --- 1. Add Column Headers (Day Names) ---
-        val headerRow = TableRow(this)
-        headerRow.addView(createHeaderCell("Time", isTimeHeader = true))
-
-        days.forEach { day ->
-            headerRow.addView(createHeaderCell(day))
-        }
-        tableLayout.addView(headerRow)
-
-        // --- 2. Add Rows for each 30-Minute Time Slot ---
-        timeSlots24Hr.forEach { time24Hr ->
-            val dataRow = TableRow(this)
-
-            // Use 12-hour format for display
-            val time12Hr = formatTime12Hr(time24Hr)
-            dataRow.addView(createHeaderCell(time12Hr, isTimeHeader = true))
-
-            // Add an empty cell for each day (to be filled later)
-            days.forEach { day ->
-                val cell = createDataCell(time24Hr, day) // Use 24Hr for the tag/key
-                dataRow.addView(cell)
-            }
-            tableLayout.addView(dataRow)
-        }
-        Log.d(TAG, "Table structure initialized with ${days.size} days and ${timeSlots24Hr.size} time slots.")
-    }
-
-    private fun createHeaderCell(text: String, isTimeHeader: Boolean = false): TextView {
-        val cell = TextView(this).apply {
-            this.text = text
-            textSize = 12f
-            setPadding(8, 8, 8, 8)
-            gravity = Gravity.CENTER
-            setBackgroundColor(if (isTimeHeader) Color.parseColor("#CCCCCC") else Color.parseColor("#E0E0E0"))
-            setTextColor(Color.BLACK)
-        }
-        val layoutParams = TableRow.LayoutParams(0, TableRow.LayoutParams.WRAP_CONTENT, if (isTimeHeader) 1f else 2f)
-        cell.layoutParams = layoutParams
-        return cell
-    }
-
-    // Helper function to create the empty data cells (CardView container)
-    private fun createDataCell(startTime24Hr: String, day: String): View {
-        val cellTag = "$day-$startTime24Hr"
-        val card = CardView(this).apply {
-            tag = cellTag
-            layoutParams = TableRow.LayoutParams(0, TableRow.LayoutParams.WRAP_CONTENT, 2f).apply {
-                setMargins(2, 2, 2, 2)
-            }
-            radius = 4f
-            elevation = 2f
-            // Set minimum height based on the defined constant
-            minimumHeight = (BASE_CELL_HEIGHT_DP * resources.displayMetrics.density).toInt()
-            setBackgroundColor(Color.WHITE)
-        }
-        return card
-    }
-
-    private fun loadAssignedClasses() {
+    private fun loadTeacherSchedule() {
         val currentTeacherUid = auth.currentUser?.uid
         if (currentTeacherUid == null) {
-            Toast.makeText(this, "Error: Teacher not logged in.", Toast.LENGTH_LONG).show()
-            finish()
+            showErrorMessage("Error: Teacher not logged in")
             return
         }
+
+        showLoading("Loading your weekly schedule...")
 
         firestore.collection("classAssignments")
             .whereEqualTo("teacherUid", currentTeacherUid)
             .get()
             .addOnSuccessListener { snapshot ->
-                val classList = mutableListOf<ClassAssignment>()
-
-                for (document in snapshot.documents) {
-                    val assignment = document.toObject(ClassAssignment::class.java)
-                    if (assignment != null) {
-                        // Using assignmentNo to store the document ID
-                        classList.add(assignment.copy(assignmentNo = document.id))
-                    }
+                val classAssignments = snapshot.documents.mapNotNull {
+                    it.toObject(ClassAssignment::class.java)?.copy(assignmentNo = it.id)
                 }
 
-                if (classList.isEmpty()) {
-                    Toast.makeText(this, "You have no classes assigned this week.", Toast.LENGTH_LONG).show()
+                if (classAssignments.isEmpty()) {
+                    showNoScheduleMessage()
+                    return@addOnSuccessListener
                 }
 
-                // Populate the schedule matrix
-                classList.forEach { assignment ->
-                    // Loop through all time slots for this assignment
-                    assignment.scheduleSlots.forEach { mapEntry -> // 👈 Pinalitan ang 'slot' ng 'mapEntry' para sa kalinawan
-                        val slot = mapEntry.value // 👈 Kinuha ang TimeSlot object (ang Value ng Map Entry)
-                        populateScheduleCells(assignment, slot)
-                    }
-                }
+                // Create daily schedule
+                val dailySchedule = buildDailySchedule(classAssignments)
+
+                // Display weekly schedule
+                displayWeeklySchedule(dailySchedule)
+                hideLoading()
             }
             .addOnFailureListener { e ->
-                Log.e(TAG, "❌ Fetch Failed: Error loading assigned classes: ${e.message}", e)
-                Toast.makeText(this, "Failed to load schedule: ${e.message}", Toast.LENGTH_LONG).show()
+                showErrorMessage("Error loading schedule: ${e.message}")
+                Log.e("TEACHER_SCHEDULE", "Failed to load class assignments", e)
             }
     }
 
-    // Fills the starting cell and hides all subsequent cells covered by the class
-    private fun populateScheduleCells(assignment: ClassAssignment, slot: TimeSlot) {
+    private fun buildDailySchedule(classAssignments: List<ClassAssignment>): Map<String, List<DailyEvent>> {
+        val dailyEvents = mutableMapOf<String, MutableList<DailyEvent>>()
 
-        // 1. Calculations
-        val startMinutes = timeToMinutes(slot.startTime)
-        val endMinutes = timeToMinutes(slot.endTime)
-        val durationMinutes = endMinutes - startMinutes
+        // Initialize with empty lists for each day
+        daysOfWeek.forEach { day ->
+            dailyEvents[day] = mutableListOf()
+        }
 
-        val placementKey24Hr = findNearestSlotKey(slot.startTime)
-        val numBlocks = (durationMinutes / 30).coerceAtLeast(1)
+        // Fill with actual classes
+        for (assignment in classAssignments) {
+            for (slot in assignment.scheduleSlots.values) {
+                if (!daysOfWeek.contains(slot.day)) continue
 
-        // Convert DP to Pixels based on screen density
-        val density = resources.displayMetrics.density
-        val baseHeightPx = (BASE_CELL_HEIGHT_DP * density).toInt()
-        val requiredHeightPx = baseHeightPx * numBlocks
+                val event = DailyEvent(
+                    subjectCode = assignment.subjectCode,
+                    subjectTitle = assignment.subjectTitle,
+                    sectionName = slot.sectionBlock,
+                    room = slot.roomLocation,
+                    startTime = slot.startTime,
+                    endTime = slot.endTime,
+                    teacherName = assignment.teacherName ?: "N/A",
+                    isCurrent = isCurrentClass(slot.day, slot.startTime, slot.endTime),
+                    isUpcoming = isUpcomingClass(slot.day, slot.startTime),
+                    color = getEventColor(assignment.subjectCode),
+                    assignment = assignment,
+                    timeSlot = slot
+                )
 
-        // Get the section name from the TimeSlot
-        val sectionBlock = slot.sectionBlock.ifEmpty { "N/A" }
+                dailyEvents[slot.day]!!.add(event)
+            }
+        }
 
-        // 2. PLACE CLASS INFO AND SET CUSTOM HEIGHT ON THE STARTING SLOT
-        val firstCellTag = "${slot.day}-$placementKey24Hr"
-        val cardView = tableLayout.findViewWithTag<CardView>(firstCellTag)
+        // Sort events by start time for each day
+        dailyEvents.values.forEach { events ->
+            events.sortBy { it.startTime }
+        }
 
-        if (cardView != null) {
+        return dailyEvents
+    }
 
-            // CRITICAL: Set Custom Height
-            val params = cardView.layoutParams as TableRow.LayoutParams
-            params.height = requiredHeightPx
-            cardView.layoutParams = params
-            cardView.visibility = View.VISIBLE // Ensure it's visible
+    private fun displayWeeklySchedule(dailySchedule: Map<String, List<DailyEvent>>) {
+        // Create week days selector
+        createWeekDaysSelector(dailySchedule)
 
+        // Update selected day display
+        updateSelectedDayDisplay()
 
-            // 3. Populate the CardView
-            val roomDisplay = if (slot.roomLocation.isNotEmpty()) " (${slot.roomLocation})" else ""
-            val startTime12Hr = formatTime12Hr(slot.startTime)
-            val endTime12Hr = formatTime12Hr(slot.endTime)
+        // Display timeline for selected day
+        displayTimelineForSelectedDay(dailySchedule)
+    }
 
-            val tvClassInfo = TextView(this).apply {
-                // Use the sectionBlock
-                text = "${assignment.subjectCode}\n$sectionBlock\n$startTime12Hr - $endTime12Hr $roomDisplay"
-                textSize = 9f
-                setPadding(4, 4, 4, 4)
-                gravity = Gravity.CENTER_HORIZONTAL or Gravity.TOP
-                setTextColor(Color.WHITE)
-                setBackgroundColor(Color.parseColor("#00796B"))
+    private fun createWeekDaysSelector(dailySchedule: Map<String, List<DailyEvent>>) {
+        weekDaysContainer.removeAllViews()
 
+        daysOfWeek.forEachIndexed { index, day ->
+            val dayContainer = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutParams = LinearLayout.LayoutParams(
+                    0,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    1f
+                ).apply {
+                    setMargins(dpToPx(2), dpToPx(2), dpToPx(2), dpToPx(2))
+                }
+                gravity = Gravity.CENTER
+                setPadding(dpToPx(8), dpToPx(12), dpToPx(8), dpToPx(12))
+                background = ContextCompat.getDrawable(this@TeacherScheduleMatrixActivity, R.drawable.day_selector_background)
+
+                // Set click listener
+                setOnClickListener {
+                    selectedDay = day
+                    updateDaySelection()
+                    updateSelectedDayDisplay()
+                    displayTimelineForSelectedDay(dailySchedule)
+                }
+            }
+
+            val dayText = TextView(this).apply {
+                text = day
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+                setTextColor(ContextCompat.getColor(this@TeacherScheduleMatrixActivity, R.color.text_secondary))
+                setTypeface(typeface, android.graphics.Typeface.NORMAL)
+                gravity = Gravity.CENTER
+            }
+
+            // Show dot indicator if day has classes
+            val hasClasses = dailySchedule[day]?.isNotEmpty() == true
+            if (hasClasses) {
+                val dotIndicator = View(this).apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                        dpToPx(6),
+                        dpToPx(6)
+                    ).apply {
+                        setMargins(0, dpToPx(4), 0, 0)
+                    }
+                    setBackgroundColor(ContextCompat.getColor(this@TeacherScheduleMatrixActivity, R.color.gold))
+                }
+                dayContainer.addView(dotIndicator)
+            }
+
+            dayContainer.addView(dayText)
+            weekDaysContainer.addView(dayContainer)
+        }
+
+        // Update selection after creating all views
+        updateDaySelection()
+    }
+
+    private fun updateDaySelection() {
+        for (i in 0 until weekDaysContainer.childCount) {
+            val dayContainer = weekDaysContainer.getChildAt(i) as LinearLayout
+            val dayText = dayContainer.getChildAt(if (dayContainer.childCount > 1) 1 else 0) as TextView
+            val day = daysOfWeek[i]
+
+            if (day == selectedDay) {
+                dayContainer.setBackgroundColor(ContextCompat.getColor(this, R.color.primary_red))
+                dayText.setTextColor(ContextCompat.getColor(this, R.color.white))
+                dayText.setTypeface(dayText.typeface, android.graphics.Typeface.BOLD)
+            } else {
+                dayContainer.setBackgroundResource(R.drawable.day_selector_background)
+                dayText.setTextColor(ContextCompat.getColor(this, R.color.text_secondary))
+                dayText.setTypeface(dayText.typeface, android.graphics.Typeface.NORMAL)
+            }
+        }
+    }
+
+    private fun updateSelectedDayDisplay() {
+        val fullDayName = daysFullName[selectedDay] ?: selectedDay
+        selectedDayText.text = fullDayName
+    }
+
+    private fun displayTimelineForSelectedDay(dailySchedule: Map<String, List<DailyEvent>>) {
+        timelineContainer.removeAllViews()
+
+        val selectedDayEvents = dailySchedule[selectedDay] ?: emptyList()
+
+        // TIME COLUMN
+        val timeColumn = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                dpToPx(70),
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            setBackgroundColor(ContextCompat.getColor(this@TeacherScheduleMatrixActivity, R.color.white))
+        }
+
+        // Add time labels
+        timeSlots.forEach { time ->
+            val timeCell = TextView(this).apply {
+                text = if (time.endsWith(":00 AM") || time.endsWith(":00 PM")) time else ""
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
+                setTextColor(ContextCompat.getColor(this@TeacherScheduleMatrixActivity, R.color.text_secondary))
+                setPadding(dpToPx(4), dpToPx(28), dpToPx(4), dpToPx(28))
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.MATCH_PARENT
+                    LinearLayout.LayoutParams.WRAP_CONTENT
                 )
+                gravity = Gravity.CENTER_HORIZONTAL
             }
-            cardView.removeAllViews()
-            cardView.addView(tvClassInfo)
-            cardView.elevation = 4f
-            cardView.radius = 8f
-
-            // Set Click Listener
-            cardView.setOnClickListener {
-                navigateToClassDetails(assignment, sectionBlock)
-            }
+            timeColumn.addView(timeCell)
         }
 
-        // 4. HIDE SUBSEQUENT CELLS (CRITICAL STEP)
-        var currentSlotMinutes = timeToMinutes(placementKey24Hr)
+        timelineContainer.addView(timeColumn)
 
-        // Loop through subsequent 30-minute blocks covered by the class
-        for (i in 1 until numBlocks) {
-            currentSlotMinutes += 30
-            val nextSlot24Hr = minutesToTime(currentSlotMinutes)
-            val nextCellTag = "${slot.day}-$nextSlot24Hr"
+        // EVENTS COLUMN
+        val eventsColumn = FrameLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                0,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                1f
+            )
+            setBackgroundColor(ContextCompat.getColor(this@TeacherScheduleMatrixActivity, R.color.background_light))
+            setPadding(dpToPx(8), 0, dpToPx(8), 0)
+        }
 
-            val nextCard = tableLayout.findViewWithTag<CardView>(nextCellTag)
-            if (nextCard != null) {
-                // CRITICAL: Set Height to 0 and V.GONE to make it disappear completely
-                nextCard.removeAllViews()
-                nextCard.visibility = View.GONE
-                val nextParams = nextCard.layoutParams as TableRow.LayoutParams
-                nextParams.height = 0
-                nextCard.layoutParams = nextParams
+        // Add time slot lines
+        addTimeSlotLines(eventsColumn)
+
+        // Add event views
+        selectedDayEvents.forEach { event ->
+            val eventView = createEventView(event)
+            eventsColumn.addView(eventView)
+        }
+
+        // Show message if no classes for selected day
+        if (selectedDayEvents.isEmpty()) {
+            val noClassesText = TextView(this).apply {
+                text = "No classes scheduled for $selectedDay"
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+                setTextColor(ContextCompat.getColor(this@TeacherScheduleMatrixActivity, R.color.text_secondary))
+                gravity = Gravity.CENTER
+                layoutParams = FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    topMargin = dpToPx(200)
+                }
             }
+            eventsColumn.addView(noClassesText)
+        }
+
+        timelineContainer.addView(eventsColumn)
+    }
+
+    private fun addTimeSlotLines(container: FrameLayout) {
+        for (i in 0..timeSlots.size) {
+            val line = View(this).apply {
+                layoutParams = FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    1
+                ).apply {
+                    topMargin = i * dpToPx(60)
+                }
+                setBackgroundColor(ContextCompat.getColor(this@TeacherScheduleMatrixActivity, R.color.card_stroke_color))
+            }
+            container.addView(line)
         }
     }
 
-    /** Converts HH:mm (24hr) to total minutes from midnight. */
-    private fun timeToMinutes(time24Hr: String): Int {
-        return try {
-            val parts = time24Hr.split(":")
-            parts[0].toInt() * 60 + parts[1].toInt()
-        } catch (e: Exception) {
-            0
+    private fun createEventView(event: DailyEvent): LinearLayout {
+        val topPosition = calculateTopPosition(event.startTime)
+        val height = calculateEventHeight(event.startTime, event.endTime)
+
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                dpToPx(height.toInt())
+            ).apply {
+                setMargins(dpToPx(2), dpToPx(topPosition.toInt()), dpToPx(2), 0)
+            }
+            setBackgroundColor(event.color)
+            setPadding(dpToPx(8))
+            elevation = dpToPx(2).toFloat()
+
+            // Add border for current class
+            if (event.isCurrent) {
+                background = ContextCompat.getDrawable(this@TeacherScheduleMatrixActivity, R.drawable.current_class_border)
+            }
+
+            // Make event clickable
+            setOnClickListener {
+                showEventDetails(event)
+            }
+
+            // Event title
+            val titleText = TextView(this@TeacherScheduleMatrixActivity).apply {
+                text = event.subjectCode
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+                setTextColor(Color.WHITE)
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+            }
+
+            // Event time
+            val timeText = TextView(this@TeacherScheduleMatrixActivity).apply {
+                text = "${event.startTime} - ${event.endTime}"
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
+                setTextColor(Color.WHITE)
+                setPadding(0, dpToPx(2), 0, 0)
+            }
+
+            // Section and room information
+            val sectionRoomText = TextView(this@TeacherScheduleMatrixActivity).apply {
+                text = "${event.sectionName} • ${event.room}"
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
+                setTextColor(Color.WHITE)
+                setPadding(0, dpToPx(2), 0, 0)
+            }
+
+            addView(titleText)
+            addView(timeText)
+            addView(sectionRoomText)
         }
     }
 
-    /** Converts total minutes to HH:mm (24hr). */
-    private fun minutesToTime(totalMinutes: Int): String {
-        val hours = totalMinutes / 60
-        val minutes = totalMinutes % 60
-        return String.format(Locale.US, "%02d:%02d", hours, minutes)
+    private fun showEventDetails(event: DailyEvent) {
+        val dialog = android.app.AlertDialog.Builder(this)
+            .setTitle(event.subjectCode)
+            .setMessage(
+                "Subject: ${event.subjectTitle}\n" +
+                        "Time: ${event.startTime} - ${event.endTime}\n" +
+                        "Room: ${event.room}\n" +
+                        "Section: ${event.sectionName}\n" +
+                        "Teacher: ${event.teacherName}"
+            )
+            .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
+            .setNeutralButton("Class Details") { dialog, _ ->
+                navigateToClassDetails(event)
+                dialog.dismiss()
+            }
+            .create()
+
+        dialog.show()
     }
 
-    /** Finds the 30-minute slot key (HH:00 or HH:30) that the class starts in. */
-    private fun findNearestSlotKey(startTime24Hr: String): String {
-        return timeSlots24Hr.firstOrNull { slot ->
-            timeToMinutes(slot) <= timeToMinutes(startTime24Hr) && timeToMinutes(startTime24Hr) < timeToMinutes(slot) + 30
-        } ?: timeSlots24Hr.first() // Fallback to 7:00 AM
-    }
-
-    private fun navigateToClassDetails(assignment: ClassAssignment, sectionBlock: String) {
+    private fun navigateToClassDetails(event: DailyEvent) {
         val intent = Intent(this, ClassDetailsActivity::class.java)
-        // Use assignment.assignmentNo for consistency
-        intent.putExtra("ASSIGNMENT_ID", assignment.assignmentNo)
-        intent.putExtra("CLASS_NAME", "${assignment.subjectTitle} - $sectionBlock")
-        intent.putExtra("SUBJECT_CODE", assignment.subjectCode)
+        intent.putExtra("ASSIGNMENT_ID", event.assignment?.assignmentNo)
+        intent.putExtra("CLASS_NAME", "${event.subjectTitle} - ${event.sectionName}")
+        intent.putExtra("SUBJECT_CODE", event.subjectCode)
         startActivity(intent)
     }
+
+    private fun calculateTopPosition(startTime: String): Float {
+        val timeFormat = SimpleDateFormat("h:mm a", Locale.US)
+        return try {
+            val start = timeFormat.parse(startTime)
+            val calendar = Calendar.getInstance().apply { time = start }
+            val hour = calendar.get(Calendar.HOUR)
+            val minute = calendar.get(Calendar.MINUTE)
+            val isPM = calendar.get(Calendar.AM_PM) == Calendar.PM
+
+            // Convert to 24-hour format for calculation
+            var totalHours = hour + if (isPM) 12 else 0
+            if (totalHours == 12 && !isPM) totalHours = 0 // Handle 12 AM
+            if (totalHours == 24) totalHours = 12 // Handle 12 PM
+
+            val totalMinutes = totalHours * 60 + minute
+            val startMinutes = 7 * 60 // Calendar starts at 7:00 AM
+
+            ((totalMinutes - startMinutes) / 60.0f) * dpToPx(60) // 60 pixels per hour
+        } catch (e: Exception) {
+            0f
+        }
+    }
+
+    private fun calculateEventHeight(startTime: String, endTime: String): Float {
+        val timeFormat = SimpleDateFormat("h:mm a", Locale.US)
+        return try {
+            val start = timeFormat.parse(startTime)
+            val end = timeFormat.parse(endTime)
+            val duration = end.time - start.time
+            val hours = duration / (1000 * 60 * 60).toFloat()
+            hours * dpToPx(60) // 60 pixels per hour
+        } catch (e: Exception) {
+            dpToPx(60).toFloat() // Default height (1 hour)
+        }
+    }
+
+    private fun getEventColor(subjectCode: String): Int {
+        // Generate consistent color based on subject code using red palette
+        val colors = listOf(
+            ContextCompat.getColor(this, R.color.primary_red),
+            ContextCompat.getColor(this, R.color.primary_red_dark),
+            ContextCompat.getColor(this, R.color._9b1c1f),
+            ContextCompat.getColor(this, R.color.color_absent),
+            ContextCompat.getColor(this, R.color.red_700),
+            ContextCompat.getColor(this, R.color.status_cheating),
+            ContextCompat.getColor(this, R.color.status_expired),
+            ContextCompat.getColor(this, R.color.design_default_color_error),
+            ContextCompat.getColor(this, R.color.poor_red)
+        )
+        val index = subjectCode.hashCode().absoluteValue % colors.size
+        return colors[index]
+    }
+
+    private fun isCurrentClass(day: String, startTime: String, endTime: String): Boolean {
+        val currentDay = SimpleDateFormat("EEE", Locale.US).format(Date())
+        if (currentDay != day) return false
+        return isTimeInRange(startTime, endTime)
+    }
+
+    private fun isUpcomingClass(day: String, startTime: String): Boolean {
+        val currentDay = SimpleDateFormat("EEE", Locale.US).format(Date())
+        if (currentDay != day) return false
+        val timeFormat = SimpleDateFormat("HH:mm", Locale.US)
+        val currentTime = timeFormat.format(Date())
+        return startTime > currentTime
+    }
+
+    private fun isTimeInRange(startTime: String, endTime: String): Boolean {
+        try {
+            val timeFormat = SimpleDateFormat("HH:mm", Locale.US)
+            val current = timeFormat.format(Date())
+            val currentTime = timeFormat.parse(current)
+            val start = timeFormat.parse(startTime)
+            val end = timeFormat.parse(endTime)
+            return currentTime in start..end
+        } catch (e: Exception) {
+            return false
+        }
+    }
+
+    // Helper methods for status messages
+    private fun showLoading(message: String) {
+        tvScheduleStatus.text = message
+        tvScheduleStatus.setTextColor(ContextCompat.getColor(this, R.color.text_secondary))
+        tvScheduleStatus.visibility = View.VISIBLE
+    }
+
+    private fun hideLoading() {
+        tvScheduleStatus.visibility = View.GONE
+    }
+
+    private fun showErrorMessage(message: String) {
+        tvScheduleStatus.text = message
+        tvScheduleStatus.setTextColor(ContextCompat.getColor(this, R.color.poor_red))
+        tvScheduleStatus.visibility = View.VISIBLE
+    }
+
+    private fun showNoScheduleMessage() {
+        tvScheduleStatus.text = "No classes scheduled for the current semester."
+        tvScheduleStatus.setTextColor(ContextCompat.getColor(this, R.color.text_secondary))
+        tvScheduleStatus.visibility = View.VISIBLE
+    }
+
+    private fun dpToPx(dp: Int): Int {
+        return TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP,
+            dp.toFloat(),
+            resources.displayMetrics
+        ).toInt()
+    }
+
+    data class DailyEvent(
+        val subjectCode: String = "",
+        val subjectTitle: String = "",
+        val sectionName: String = "",
+        val room: String = "",
+        val startTime: String = "",
+        val endTime: String = "",
+        val teacherName: String = "",
+        val isCurrent: Boolean = false,
+        val isUpcoming: Boolean = false,
+        val color: Int = Color.BLUE,
+        val assignment: ClassAssignment? = null,
+        val timeSlot: TimeSlot? = null
+    )
 }
