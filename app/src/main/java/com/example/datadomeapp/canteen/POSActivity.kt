@@ -4,6 +4,8 @@ import android.app.PendingIntent
 import android.content.Intent
 import android.nfc.NfcAdapter
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.Log
 import android.view.View
 import android.widget.*
@@ -13,13 +15,14 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.datadomeapp.R
+import com.google.android.material.textfield.TextInputEditText
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import java.util.*
 
-// Data class para sa Cart Item (Nasa loob na ng POSActivity package)
+// Data class para sa Cart Item
 data class CartItem(
     val menuId: String,
     val name: String,
@@ -30,9 +33,8 @@ data class CartItem(
         get() = price * quantity
 }
 
-// NOTE: Ang MenuItem data class ay INILIPAT sa sarili nitong file (MenuItem.kt)
-// para maiwasan ang "duplicate class" error.
-// Assuming mayroon kang: data class MenuItem(var id: String = "", val name: String? = null, ...)
+// NOTE: Ang MenuItem data class ay DAPAT nasa sarili nitong file (MenuItem.kt)
+// para maiwasan ang "Redeclaration" error.
 
 class POSActivity : AppCompatActivity() {
 
@@ -42,9 +44,9 @@ class POSActivity : AppCompatActivity() {
     private val nfcAdapter: NfcAdapter? by lazy { NfcAdapter.getDefaultAdapter(this) }
     private lateinit var pendingIntent: PendingIntent
 
-    private lateinit var searchMenu: SearchView // ⬅️ IDINAGDAG
-    private lateinit var pbMenuLoading: ProgressBar // ⬅️ IDINAGDAG
-    private lateinit var tvNoResults: TextView // ⬅️ IDINAGDAG
+    private lateinit var etSearchMenu: TextInputEditText
+    private lateinit var pbMenuLoading: ProgressBar
+    private lateinit var tvNoResults: TextView
 
     private val menuList = mutableListOf<MenuItem>() // Original full list
     private val cartList = mutableListOf<CartItem>()
@@ -68,18 +70,27 @@ class POSActivity : AppCompatActivity() {
     private lateinit var btnCancelOrder: Button
     private lateinit var pbLoading: ProgressBar // Transaction loading bar
 
+    // FOCUS FIX: Property para sa dummy focus container
+    private lateinit var focusDummyContainer: LinearLayout
+
+    // MAX QUANTITY CONSTANT
+    private val MAX_QUANTITY = 20
+
     // ------------------- LIFECYCLE -------------------
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.canteen_pos)
+        setContentView(R.layout.canteen_pos) // Make sure this layout includes focus_dummy_container
         supportActionBar?.title = "Canteen Point of Sale"
 
         initializeViews()
         setupNFC()
-        setupListeners()
         setupAdapters()
-        setupSearch() // ⬅️ IDINAGDAG
+        setupListeners()
+        setupSearch()
+
+        // **FOCUS FIX:** Pilitin na makuha ng dummy container ang focus sa simula
+        focusDummyContainer.requestFocus()
 
         staffUid = auth.currentUser?.uid
         if (staffUid == null) {
@@ -101,27 +112,25 @@ class POSActivity : AppCompatActivity() {
         llNfcPrompt = findViewById(R.id.llNfcPrompt)
         tvNfcPrompt = findViewById(R.id.tvNfcPrompt)
         btnCancelOrder = findViewById(R.id.btnCancelOrder)
-        pbLoading = findViewById(R.id.pbLoading) // Transaction loading bar
+        pbLoading = findViewById(R.id.pbLoading)
 
-        // ⬅️ IDINAGDAG ANG SEARCH UI ELEMENTS
-        searchMenu = findViewById(R.id.searchMenu)
-        pbMenuLoading = findViewById(R.id.pbMenuLoading) // Menu loading bar
+        etSearchMenu = findViewById(R.id.etSearchMenu)
+        pbMenuLoading = findViewById(R.id.pbMenuLoading)
         tvNoResults = findViewById(R.id.tvNoResults)
+
+        // FOCUS FIX: Initialize the dummy container
+        focusDummyContainer = findViewById(R.id.focus_dummy_container)
     }
 
     // ------------------- SEARCH & FILTERING -------------------
 
     private fun setupSearch() {
-        searchMenu.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(query: String?): Boolean {
-                filterMenu(query)
-                return true
+        etSearchMenu.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                filterMenu(s.toString())
             }
-
-            override fun onQueryTextChange(newText: String?): Boolean {
-                filterMenu(newText)
-                return true
-            }
+            override fun afterTextChanged(s: Editable?) {}
         })
     }
 
@@ -135,11 +144,10 @@ class POSActivity : AppCompatActivity() {
             }
         }
 
-        menuAdapter.updateList(filteredList) // Requires 'updateList' in MenuAdapterPOS
+        menuAdapter.updateList(filteredList)
 
         // NO RESULTS CHECK
         if (filteredList.isEmpty()) {
-            // Check if the empty list is due to no results from a query, or if the whole list is empty
             if (menuList.isEmpty() && query.isNullOrBlank()) {
                 tvNoResults.text = "No items available in the menu yet."
             } else {
@@ -148,23 +156,42 @@ class POSActivity : AppCompatActivity() {
             tvNoResults.visibility = View.VISIBLE
             rvMenu.visibility = View.GONE
         } else {
-            // May laman ang filtered list
             tvNoResults.visibility = View.GONE
             rvMenu.visibility = View.VISIBLE
         }
     }
 
+    // ------------------- LISTENERS & ADAPTER SETUP -------------------
 
     private fun setupListeners() {
         btnCheckout.setOnClickListener {
-            if (cartList.isNotEmpty()) {
+            // CHECKOUT VALIDATION: Siguraduhin na may item sa cart.
+            if (validateCartQuantities()) {
                 showCheckoutPrompt()
             } else {
                 Toast.makeText(this, "Please add items to the cart first.", Toast.LENGTH_SHORT).show()
             }
         }
+
+        // **NA-UPDATE NA LOGIC PARA SA CLEAR CART CONFIRMATION**
         btnCancelOrder.setOnClickListener {
-            resetCheckoutState()
+            if (cartList.isEmpty()) {
+                // Kung walang laman, i-reset lang ang state
+                resetCheckoutState()
+                return@setOnClickListener
+            }
+
+            AlertDialog.Builder(this)
+                .setTitle("Clear Cart Confirmation")
+                .setMessage("Are you sure you want to clear all ${cartList.size} items from the cart? This action cannot be undone.")
+                .setPositiveButton("Yes, Clear Cart") { dialog, which ->
+                    // Kung kinumpirma, i-reset ang checkout state
+                    resetCheckoutState()
+                    Toast.makeText(this, "Cart cleared.", Toast.LENGTH_SHORT).show()
+                    dialog.dismiss()
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
         }
     }
 
@@ -173,17 +200,19 @@ class POSActivity : AppCompatActivity() {
         menuAdapter = MenuAdapterPOS(menuList) { menuItem ->
             addItemToCart(menuItem)
         }
-        rvMenu.layoutManager = GridLayoutManager(this, 2) // 2 columns for menu
+        rvMenu.layoutManager = GridLayoutManager(this, 3)
         rvMenu.adapter = menuAdapter
 
         // 2. Cart Adapter (Linear Layout)
         cartAdapter = CartAdapter(cartList,
             onQuantityChange = { cartItem, newQuantity ->
+                // Force minimum quantity to 1 if it somehow became 0 or less
                 updateCartItemQuantity(cartItem, newQuantity)
             },
             onRemove = { cartItem ->
                 removeItemFromCart(cartItem)
-            }
+            },
+            maxQuantity = MAX_QUANTITY
         )
         rvCart.layoutManager = LinearLayoutManager(this)
         rvCart.adapter = cartAdapter
@@ -193,7 +222,6 @@ class POSActivity : AppCompatActivity() {
     // ------------------- DATA LOADING & REAL-TIME MENU -------------------
 
     private fun loadStaffCanteen() {
-        // Fetch Canteen Name to filter the menu (Assuming canteenName is stored in 'users' doc)
         firestore.collection("users").document(staffUid!!).get()
             .addOnSuccessListener { doc ->
                 staffCanteenName = doc.getString("canteenName")
@@ -209,15 +237,15 @@ class POSActivity : AppCompatActivity() {
 
         menuListener?.remove()
 
-        pbMenuLoading.visibility = View.VISIBLE // ⬅️ SHOW Menu Loading
+        pbMenuLoading.visibility = View.VISIBLE
         tvNoResults.visibility = View.GONE
 
         // Filter menu by canteenName AND available=true
         menuListener = firestore.collection("canteenMenu")
             .whereEqualTo("canteenName", staffCanteenName)
-            .whereEqualTo("available", true) // Only show available items
+            .whereEqualTo("available", true)
             .addSnapshotListener { snapshot, error ->
-                pbMenuLoading.visibility = View.GONE // ⬅️ HIDE Menu Loading
+                pbMenuLoading.visibility = View.GONE
 
                 if (error != null) {
                     Toast.makeText(this, "Error loading menu: ${error.message}", Toast.LENGTH_SHORT).show()
@@ -231,25 +259,23 @@ class POSActivity : AppCompatActivity() {
                     if (item != null) menuList.add(item)
                 }
 
-                // I-update ang listahan at i-apply ang search filter
-                filterMenu(searchMenu.query.toString())
+                // Ginagamit ang kasalukuyang text sa search bar para sa filtering
+                filterMenu(etSearchMenu.text.toString())
             }
     }
 
     override fun onResume() {
         super.onResume()
-        // Gumamit ng FLAG_UPDATE_CURRENT o FLAG_IMMUTABLE kasama ng FLAG_MUTABLE
         pendingIntent = PendingIntent.getActivity(this, 0, Intent(this, javaClass).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         nfcAdapter?.enableForegroundDispatch(this, pendingIntent, null, null)
-        startMenuListener() // Re-attach listener on resume
+        startMenuListener()
     }
 
     override fun onPause() {
         super.onPause()
         nfcAdapter?.disableForegroundDispatch(this)
-        menuListener?.remove() // Remove listener on pause
+        menuListener?.remove()
     }
-
 
     // ------------------- CART MANAGEMENT -------------------
 
@@ -257,15 +283,19 @@ class POSActivity : AppCompatActivity() {
         val existingItem = cartList.find { it.menuId == menuItem.id }
 
         if (existingItem != null) {
+            if (existingItem.quantity >= MAX_QUANTITY) {
+                Toast.makeText(this, "Maximum quantity of $MAX_QUANTITY reached for ${menuItem.name}.", Toast.LENGTH_SHORT).show()
+                return
+            }
             existingItem.quantity++
         } else {
-            // Check if price is valid before adding to cart
             val price = menuItem.price ?: 0.0
             if (price <= 0.0) {
                 Toast.makeText(this, "${menuItem.name} has an invalid price.", Toast.LENGTH_SHORT).show()
                 return
             }
 
+            // Always add with quantity 1
             cartList.add(CartItem(menuItem.id, menuItem.name ?: "Unknown Item", price, 1))
         }
 
@@ -281,24 +311,63 @@ class POSActivity : AppCompatActivity() {
     }
 
     private fun updateCartItemQuantity(cartItem: CartItem, newQuantity: Int) {
-        cartItem.quantity = newQuantity
-        cartAdapter.notifyDataSetChanged()
-        updateTotal()
+        var finalQuantity = newQuantity
+
+        // Force minimum quantity to 1
+        if (newQuantity < 1) {
+            finalQuantity = 1
+        }
+
+        cartItem.quantity = finalQuantity
+
+        // Gumagamit ng post para maiwasan ang focus issues
+        rvCart.post {
+            cartAdapter.notifyDataSetChanged()
+            updateTotal()
+        }
     }
 
     private fun updateTotal() {
         val total = cartList.sumOf { it.subtotal }
         tvTotal.text = String.format(Locale.US, "₱%.2f", total)
 
-        // Only allow checkout if there are items and total > 0
+        // Nagdi-disable sa Checkout button kung ₱0.00 ang total
         btnCheckout.isEnabled = total > 0.0
 
         if (total > 0.0) {
-            btnCancelOrder.text = "Clear Cart" // Baguhin ang text
+            btnCancelOrder.text = "Clear Cart"
             btnCancelOrder.visibility = View.VISIBLE
         } else {
             btnCancelOrder.visibility = View.GONE
         }
+    }
+
+    // ------------------- VALIDATION -------------------
+
+    private fun validateCartQuantities(): Boolean {
+        // Tiyakin na may laman ang cart bago mag-validate
+        if (cartList.isEmpty()) return false
+
+        var needsUpdate = false
+
+        // Final check for max quantity clamping
+        for (item in cartList) {
+            if (item.quantity > MAX_QUANTITY) {
+                // Clamping sa MAX_QUANTITY
+                item.quantity = MAX_QUANTITY
+                needsUpdate = true
+                Toast.makeText(this, "The quantity for ${item.name} was capped at $MAX_QUANTITY.", Toast.LENGTH_LONG).show()
+            }
+        }
+
+        // I-refresh ang UI at Total kung may pagbabago
+        if (needsUpdate) {
+            cartAdapter.notifyDataSetChanged()
+            updateTotal()
+        }
+
+        // HULING CHECK: Kung blangko ang cart, bawal mag-checkout.
+        return cartList.isNotEmpty()
     }
 
     // ------------------- CHECKOUT & NFC PROCESSING -------------------
@@ -311,7 +380,6 @@ class POSActivity : AppCompatActivity() {
             .setTitle("Confirm Payment")
             .setMessage("Total Amount: $totalFormatted\n\nPlease select the payment method.")
 
-        // ⬅️ BAGONG LOGIC DITO: I-check kung may NFC adapter at kung ito ay enabled.
         val hasWorkingNfc = nfcAdapter != null && nfcAdapter?.isEnabled == true
 
         if (hasWorkingNfc) {
@@ -319,10 +387,8 @@ class POSActivity : AppCompatActivity() {
                 enterNfcScanningState()
             }
         } else {
-            // Kung walang NFC, o naka-off, magbigay ng opsyon na i-enable ito (optional)
-            // o di kaya'y gawing default ang cash payment kung walang ibang digital option.
             Log.w("POSActivity", "NFC is not available or disabled.")
-            // Maaari mo ring maglagay ng Toast dito kung gusto mo i-notify ang staff.
+            Toast.makeText(this, "NFC/RFID scanning is unavailable.", Toast.LENGTH_LONG).show()
         }
 
         builder.setNeutralButton("CASH PAYMENT") { _, _ ->
@@ -338,26 +404,24 @@ class POSActivity : AppCompatActivity() {
     }
 
     private fun enterNfcScanningState() {
-        // Disable UI interactions, show prompt
         llNfcPrompt.visibility = View.VISIBLE
         tvNfcPrompt.text = "Awaiting customer RFID scan..."
         btnCheckout.isEnabled = false
+        pbLoading.visibility = View.GONE
 
-        // Update Cancel button to handle returning to the payment method selection
         btnCancelOrder.text = "Cancel/Change Payment"
         btnCancelOrder.visibility = View.VISIBLE
+        // Logic for canceling payment scan remains the same
         btnCancelOrder.setOnClickListener {
-            // I-reset ang NFC state at bumalik sa payment prompt
             llNfcPrompt.visibility = View.GONE
             btnCheckout.isEnabled = true
-            btnCancelOrder.text = "Cancel Order"
-            btnCancelOrder.setOnClickListener { resetCheckoutState() } // Ibalik ang default reset action
-            showCheckoutPrompt() // Ipakita ulit ang payment prompt
+            btnCancelOrder.text = "Clear Cart"
+            btnCancelOrder.setOnClickListener { resetCheckoutState() }
+            showCheckoutPrompt()
         }
     }
 
     private fun resetCheckoutState() {
-        // Clear cart and reset UI
         cartList.clear()
         cartAdapter.notifyDataSetChanged()
         updateTotal()
@@ -368,30 +432,32 @@ class POSActivity : AppCompatActivity() {
 
         llNfcPrompt.visibility = View.GONE
         btnCheckout.isEnabled = true
-        btnCancelOrder.visibility = View.GONE
-        // Ensure btnCancelOrder goes back to its default reset action
+        // Important: After reset, ibabalik ang listener sa confirmation dialog setup
         btnCancelOrder.text = "Clear Cart"
-        btnCancelOrder.setOnClickListener { resetCheckoutState() }
+        btnCancelOrder.setOnClickListener {
+            if (cartList.isEmpty()) {
+                resetCheckoutState()
+                return@setOnClickListener
+            }
+            // Dapat ito ang mag-trigger ng confirmation dialog kapag may laman
+            setupListeners()
+        }
     }
 
-    // --- NFC Setup & Handling (Reused from TopUpActivity) ---
     private fun setupNFC() {
         if (nfcAdapter == null) {
             Toast.makeText(this, "NFC is not available on this device.", Toast.LENGTH_LONG).show()
             return
         }
-        // Gagamitin na lang natin ang pendingIntent generation sa onResume, para ma-handle ang lifecycle.
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        // Check if we are in the scanning state before processing
         if (llNfcPrompt.visibility != View.VISIBLE) {
             return
         }
         if (NfcAdapter.ACTION_TAG_DISCOVERED == intent.action) {
             val tag = intent.getParcelableExtra<android.nfc.Tag>(NfcAdapter.EXTRA_TAG)
-            // Fix: Check for null tag before trying to get its ID
             val rfidData = bytesToHex(tag?.id ?: return)
 
             tvNfcPrompt.text = "RFID Detected. Validating user..."
@@ -402,10 +468,8 @@ class POSActivity : AppCompatActivity() {
     private fun bytesToHex(bytes: ByteArray): String {
         return bytes.joinToString("") { "%02x".format(it) }.uppercase(Locale.US)
     }
-    // -----------------------------------------------------
 
     private fun logCashTransaction(amount: Double) {
-        // ... (Log cash transaction logic remains the same)
         val transaction = hashMapOf(
             "userId" to "CASH",
             "role" to "cash",
@@ -426,16 +490,14 @@ class POSActivity : AppCompatActivity() {
         firestore.collection("transactions").add(transaction)
     }
 
-    // ------------------- DATA VALIDATION (PRE-PAYMENT) -------------------
-
     private fun loadUserByRfidForPayment(rfidData: String) {
-        pbLoading.visibility = View.VISIBLE // SHOW Transaction Loading
+        pbLoading.visibility = View.VISIBLE
         firestore.collection("users")
             .whereEqualTo("rfidTag", rfidData)
             .limit(1)
             .get()
             .addOnSuccessListener { querySnapshot ->
-                pbLoading.visibility = View.GONE // HIDE Transaction Loading
+                pbLoading.visibility = View.GONE
 
                 if (querySnapshot.isEmpty) {
                     Toast.makeText(this, "RFID tag not registered.", Toast.LENGTH_LONG).show()
@@ -445,7 +507,7 @@ class POSActivity : AppCompatActivity() {
 
                 val userDoc = querySnapshot.documents.first()
                 val uid = userDoc.id
-                val role = userDoc.getString("role")?.lowercase(Locale.getDefault()) // Lowercase for safety
+                val role = userDoc.getString("role")?.lowercase(Locale.getDefault())
                 val status = userDoc.getString("rfidStatus")?.uppercase(Locale.getDefault())
                 val totalAmount = cartList.sumOf { it.subtotal }
 
@@ -472,22 +534,18 @@ class POSActivity : AppCompatActivity() {
                     return@addOnSuccessListener
                 }
 
-                // Store user data
                 scannedUserId = uid
                 scannedUserAccountId = accountId
                 scannedUserRole = role
 
-                // Proceed to secure transaction (Use !! assertion since we checked for null)
-                processSecurePayment(totalAmount, uid, accountId!!, role!!)
+                processSecurePayment(totalAmount, uid, accountId, role)
 
             }.addOnFailureListener { e ->
-                pbLoading.visibility = View.GONE // HIDE Transaction Loading
+                pbLoading.visibility = View.GONE
                 Toast.makeText(this, "Error scanning RFID: ${e.message}", Toast.LENGTH_LONG).show()
                 tvNfcPrompt.text = "Scan Error. Please rescan."
             }
     }
-
-    // ------------------- SECURE FIREBASE TRANSACTION -------------------
 
     private fun processSecurePayment(
         totalAmount: Double,
@@ -545,9 +603,6 @@ class POSActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Logs the transaction after a successful payment.
-     */
     private fun logTransaction(
         userId: String,
         amount: Double,

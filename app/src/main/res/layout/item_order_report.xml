@@ -1,75 +1,100 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="8dp"
-    app:cardCornerRadius="8dp"
-    app:cardElevation="1dp">
+    android:layout_marginBottom="8dp" app:cardCornerRadius="12dp" app:cardElevation="2dp" app:cardBackgroundColor="#FFFFFF"
+    app:strokeColor="#7B1113"
+    app:strokeWidth="1dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="12dp">
+        android:padding="12dp"> <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="10dp"> <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="REFERENCE ID"
+            android:textSize="9sp"
+            android:textColor="#9E9E9E"
+            android:letterSpacing="0.1"
+            android:layout_marginBottom="0dp" /> <TextView
+        android:id="@+id/tvOrderId"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="15sp" android:textStyle="bold"
+        android:textColor="#212121"
+        android:letterSpacing="0.03"
+        android:fontFamily="sans-serif-medium"
+        tools:text="A1B2C3-RPT-001" />
+    </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvOrderTotal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="18sp" android:textStyle="bold"
+            android:textColor="#1B5E20"
+            android:fontFamily="sans-serif-black"
+            tools:text="₱185.00" />
+    </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginBottom="8dp">
-
-            <TextView
-                android:id="@+id/tvOrderId"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:textColor="@android:color/black"
-                tools:text="Order #A1B2C3" />
-
-            <TextView
-                android:id="@+id/tvOrderTime"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="14sp"
-                android:textColor="@android:color/darker_gray"
-                android:layout_marginEnd="16dp"
-                tools:text="12:45 PM" />
-
-            <TextView
-                android:id="@+id/tvOrderTotal"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                tools:text="₱185.00" />
-        </LinearLayout>
-
-        <TextView
-            android:id="@+id/tvPaymentMethod"
+            android:paddingVertical="0dp"> <TextView
+            android:id="@+id/tvOrderTime"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="12sp"
-            android:textStyle="italic"
-            android:text="Paid via: RFID/Cash" />
+            android:textSize="11sp" android:textColor="#555555"
+            tools:text="🕒 12:45 PM" />
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="12dp" android:background="#E0E0E0"
+                android:layout_marginStart="12dp" android:layout_marginEnd="12dp"/> <TextView
+                android:id="@+id/tvPaymentMethod"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:textSize="11sp" android:textColor="#555555"
+                android:text="💳 Paid via: RFID" />
+        </LinearLayout>
+
 
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:background="#f0f0f0"
-            android:layout_marginBottom="8dp"/>
-
-        <TextView
+            android:background="#E0E0E0"
+            android:layout_marginTop="10dp" android:layout_marginBottom="10dp"/> <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Items Purchased Details"
+            android:textSize="11sp" android:textColor="#7B1113"
+            android:fontFamily="sans-serif-medium"
+            android:layout_marginBottom="3dp"/> <TextView
             android:id="@+id/tvItemDetails"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="14sp"
-            android:textColor="#333333"
-            tools:text="3x Siopao, 2x Soda, 1x Water" />
+            android:textSize="12sp" android:textColor="#333333"
+            android:maxLines="2"
+            android:ellipsize="end"
+            tools:text="3x Siopao (Asado), 2x Soda (Coke Regular), 1x Water (Bottled)" />
 
     </LinearLayout>
-</androidx.cardview.widget.CardView>
+</com.google.android.material.card.MaterialCardView>

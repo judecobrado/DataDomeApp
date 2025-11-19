@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FDFBF8"
+    android:background="#F8F9FA"
     android:scrollbars="none"
     android:padding="16dp">
 
@@ -12,34 +13,36 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Back Button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnBackTeacher"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:backgroundTint="#666666"
-            android:text="Back to Dashboard"
+            android:layout_marginTop="8dp"
+            android:backgroundTint="#495057"
+            android:text="BACK TO DASHBOARD"
             android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:textStyle="bold"
             app:cornerRadius="12dp"
             app:icon="@drawable/ic_arrow_back"
-            app:iconTint="#FFFFFF" />
+            app:iconTint="#FFFFFF"
+            app:iconSize="20dp"/>
 
-        <!-- Header Section -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:paddingBottom="24dp"
-            android:paddingTop="10dp">
+            android:paddingTop="20dp">
 
             <ImageView
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:src="@drawable/ic_teacher"
-                android:layout_marginEnd="12dp"
-                app:tint="#7B1113" />
+                android:layout_marginEnd="16dp"
+                app:tint="#7B1113"
+                android:contentDescription="Teacher Icon" />
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -51,28 +54,27 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Teacher Management"
-                    android:textColor="#7B1113"
-                    android:textSize="24sp"
+                    android:textColor="#343A40"
+                    android:textSize="26sp"
                     android:textStyle="bold" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="Manage teacher records and profiles"
-                    android:textColor="#666666"
+                    android:layout_marginTop="2dp"
+                    android:text="Manage all faculty records and profiles."
+                    android:textColor="#6C757D"
                     android:textSize="14sp" />
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Search & Filter Card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="20dp"
+            android:layout_marginBottom="24dp"
             app:cardCornerRadius="16dp"
-            app:cardElevation="4dp"
-            app:strokeColor="#9B1C1F"
+            app:cardElevation="8dp"
+            app:strokeColor="#DEE2E6"
             app:strokeWidth="1dp">
 
             <LinearLayout
@@ -81,7 +83,6 @@
                 android:orientation="vertical"
                 android:padding="20dp">
 
-                <!-- Card Header -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -92,50 +93,68 @@
                     <ImageView
                         android:layout_width="24dp"
                         android:layout_height="24dp"
-                        android:src="@drawable/ic_search"
+                        android:src="@drawable/ic_filter"
                         android:layout_marginEnd="12dp"
-                        app:tint="#7B1113" />
+                        app:tint="#7B1113"
+                        android:contentDescription="Filter Icon" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Search and Filter"
-                        android:textColor="#7B1113"
+                        android:text="Filter &amp; Search Tools"
+                        android:textColor="#343A40"
                         android:textSize="18sp"
                         android:textStyle="bold" />
                 </LinearLayout>
 
-                <!-- Search Input - CHANGED TO SEARCHVIEW -->
-                <androidx.appcompat.widget.SearchView
-                    android:id="@+id/searchViewTeachers"
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="4dp"
+                    android:text="SEARCH TEACHER"
+                    android:textColor="#7B1113"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardSearchWrapper"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
-                    android:queryHint="Search by Name, ID, or RFID Tag..."
-                    android:iconifiedByDefault="false"
-                    app:queryBackground="@android:color/transparent"
-                    app:searchHintIcon="@drawable/ic_search"
-                    app:closeIcon="@drawable/ic_close" />
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="2dp"
+                    app:strokeColor="#CED4DA"
+                    app:strokeWidth="1dp">
 
-                <!-- Filter Section -->
+                    <androidx.appcompat.widget.SearchView
+                        android:id="@+id/searchViewTeachers"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:queryHint="Search by Name or Teacher ID..."
+                        android:iconifiedByDefault="false"
+                        app:queryBackground="@android:color/transparent"
+                        app:searchHintIcon="@drawable/ic_search"
+                        app:closeIcon="@drawable/ic_close" />
+                </com.google.android.material.card.MaterialCardView>
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
 
-                    <!-- Department Filter -->
                     <LinearLayout
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginEnd="8dp"
                         android:orientation="vertical">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginBottom="4dp"
-                            android:text="Department"
+                            android:text="DEPARTMENT FILTER"
                             android:textColor="#7B1113"
                             android:textSize="12sp"
                             android:textStyle="bold" />
@@ -145,7 +164,7 @@
                             android:layout_height="wrap_content"
                             app:cardCornerRadius="12dp"
                             app:cardElevation="2dp"
-                            app:strokeColor="#7B1113"
+                            app:strokeColor="#CED4DA"
                             app:strokeWidth="1dp">
 
                             <Spinner
@@ -153,44 +172,9 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="52dp"
                                 android:background="@android:color/transparent"
+                                android:spinnerMode="dropdown"
                                 android:paddingStart="16dp"
-                                android:paddingEnd="16dp"
-                                android:textColor="#333333" />
-                        </com.google.android.material.card.MaterialCardView>
-                    </LinearLayout>
-
-                    <!-- Status Filter -->
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginBottom="4dp"
-                            android:text="Status"
-                            android:textColor="#7B1113"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
-
-                        <com.google.android.material.card.MaterialCardView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            app:cardCornerRadius="12dp"
-                            app:cardElevation="2dp"
-                            app:strokeColor="#7B1113"
-                            app:strokeWidth="1dp">
-
-                            <Spinner
-                                android:id="@+id/spinnerFilterStatus"
-                                android:layout_width="match_parent"
-                                android:layout_height="52dp"
-                                android:background="@android:color/transparent"
-                                android:paddingStart="16dp"
-                                android:paddingEnd="16dp"
-                                android:textColor="#333333" />
+                                android:paddingEnd="16dp" />
                         </com.google.android.material.card.MaterialCardView>
                     </LinearLayout>
                 </LinearLayout>
@@ -198,13 +182,13 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Teachers List Card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
             app:cardCornerRadius="16dp"
-            app:cardElevation="4dp"
-            app:strokeColor="#9B1C1F"
+            app:cardElevation="8dp"
+            app:strokeColor="#DEE2E6"
             app:strokeWidth="1dp">
 
             <LinearLayout
@@ -213,7 +197,6 @@
                 android:orientation="vertical"
                 android:padding="20dp">
 
-                <!-- Card Header -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -224,15 +207,16 @@
                     <ImageView
                         android:layout_width="24dp"
                         android:layout_height="24dp"
-                        android:src="@drawable/ic_group"
+                        android:src="@drawable/ic_list"
                         android:layout_marginEnd="12dp"
-                        app:tint="#7B1113" />
+                        app:tint="#7B1113"
+                        android:contentDescription="List Icon" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Teacher Records"
-                        android:textColor="#7B1113"
+                        android:text="Faculty List"
+                        android:textColor="#343A40"
                         android:textSize="18sp"
                         android:textStyle="bold" />
 
@@ -245,16 +229,16 @@
                         android:id="@+id/tvTeacherCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:background="@drawable/bg_count_badge_maroon"
+                        android:background="#F0E0E0"
                         android:paddingHorizontal="12dp"
                         android:paddingVertical="6dp"
                         android:text="0 teachers"
                         android:textColor="#7B1113"
                         android:textSize="12sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        tools:backgroundTint="#F0E0E0"/>
                 </LinearLayout>
 
-                <!-- Action Buttons -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -268,11 +252,14 @@
                         android:layout_weight="1"
                         android:layout_marginEnd="8dp"
                         android:backgroundTint="#7B1113"
-                        android:text="Add New Teacher"
+                        android:text="ADD NEW"
                         android:textColor="#FFFFFF"
                         app:cornerRadius="12dp"
                         app:icon="@drawable/ic_add"
-                        app:iconTint="#FFFFFF" />
+                        app:iconTint="#FFFFFF"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        app:iconSize="20dp"/>
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnDeleteTeacher"
@@ -280,21 +267,25 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginStart="8dp"
-                        android:backgroundTint="#D32F2F"
-                        android:text="Delete Selected"
+                        android:backgroundTint="#C93030"
+                        android:text="DELETE"
                         android:textColor="#FFFFFF"
                         app:cornerRadius="12dp"
                         app:icon="@drawable/ic_delete"
-                        app:iconTint="#FFFFFF" />
+                        app:iconTint="#FFFFFF"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        app:iconSize="20dp"/>
                 </LinearLayout>
 
-                <!-- Teachers ListView -->
                 <ListView
                     android:id="@+id/lvTeachers"
                     android:layout_width="match_parent"
                     android:layout_height="400dp"
-                    android:background="#F8F8F8"
-                    android:padding="4dp" />
+                    android:background="#FFFFFF"
+                    android:divider="#E9ECEF"
+                    android:dividerHeight="1dp"
+                    android:padding="1dp" />
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

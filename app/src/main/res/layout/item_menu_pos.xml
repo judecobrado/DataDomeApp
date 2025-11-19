@@ -1,51 +1,74 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView
+<com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="4dp"
-    app:cardCornerRadius="8dp"
-    app:cardElevation="4dp">
+    android:layout_margin="3dp"
+    app:cardCornerRadius="10dp"
+    app:cardElevation="2dp"
+    app:strokeColor="#7B1113"
+    app:strokeWidth="1dp"
+    app:cardBackgroundColor="#FFFFFF"
+    app:rippleColor="#FCD6D6">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="8dp"
-        android:gravity="center_horizontal">
+        android:gravity="center_horizontal"
+        android:paddingBottom="6dp">
 
         <ImageView
             android:id="@+id/ivMenuItemImage"
             android:layout_width="match_parent"
-            android:layout_height="100dp"
+            android:layout_height="70dp"
             android:scaleType="centerCrop"
-            android:src="@drawable/ic_image_placeholder" />
+            android:background="#E0E0E0"
+            android:layout_marginBottom="6dp"
+            tools:src="@tools:sample/avatars"
+            android:contentDescription="Menu Item Image"/>
 
         <TextView
             android:id="@+id/tvMenuName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Food Name"
-            android:textSize="16sp"
+            tools:text="Savory Beef Tapa"
+            android:textSize="12sp"
             android:textStyle="bold"
-            android:gravity="center"/>
+            android:textColor="#7B1113"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:paddingHorizontal="6dp"
+            android:gravity="center"
+            android:layout_marginBottom="2dp"/>
 
         <TextView
             android:id="@+id/tvMenuPrice"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="₱0.00"
-            android:textSize="18sp"
-            android:textColor="@color/design_default_color_primary"
-            android:textStyle="italic"
-            android:gravity="center"/>
+            tools:text="₱125.00"
+            android:textSize="16sp"
+            android:textColor="#1F1F1F"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:fontFamily="sans-serif-medium"
+            android:layout_marginBottom="6dp"/>
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnAddItem"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Add to Cart"/>
+            android:layout_height="32dp"
+            android:layout_marginHorizontal="6dp"
+            android:text="ADD"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#7B1113"
+            app:cornerRadius="6dp"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:paddingVertical="0dp"
+            app:rippleColor="#FCD6D6"/>
+
     </LinearLayout>
-</androidx.cardview.widget.CardView>
+</com.google.android.material.card.MaterialCardView>

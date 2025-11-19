@@ -78,9 +78,9 @@ class AdminDashboardActivity : AppCompatActivity() {
                 R.id.btnManageStudents,
                 R.id.btnManageTeachers,
                 R.id.btnManageEnrollment,
-                //R.id.btnManageCourses,
+
                 R.id.btnManageSchedules,
-                R.id.btnManageLibrary,
+
                 R.id.btnManageCurriculum,
                 //R.id.btnManageCanteenStaff
             )
