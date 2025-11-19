@@ -44,8 +44,6 @@ class StudentDashboardActivity : AppCompatActivity() {
         tlDailySchedule = findViewById(R.id.tlDailySchedule)
         tvScheduleStatus = findViewById(R.id.tvScheduleStatus)
         tvUserInfo = findViewById(R.id.tvUserInfo)
-        tvAssignmentAlert = findViewById(R.id.tvAssignmentAlert)
-        tvQuizAlert = findViewById(R.id.tvQuizAlert)
 
         studentUid = intent.getStringExtra("USER_UID") ?: auth.currentUser?.uid
 
