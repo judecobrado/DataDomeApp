@@ -384,10 +384,11 @@
                 android:padding="24dp">
 
                 <TextView
+                    android:id="@+id/tvStudentsHeader"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Enrolled Students"
+                    android:text="Students in this class"
                     android:textSize="19sp"
                     android:textStyle="bold"
                     android:textColor="#212121"
@@ -398,7 +399,7 @@
                     android:id="@+id/chipStudentCount"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="35 students"
+                    android:text="0 students"
                     app:chipBackgroundColor="#E8F5E9"
                     app:chipStrokeColor="#2E7D32"
                     app:chipStrokeWidth="1dp"

@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.datadomeapp.R
 import com.example.datadomeapp.models.Student
 import com.google.android.material.card.MaterialCardView
+import com.google.android.material.chip.Chip
 import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.async
@@ -32,6 +33,8 @@ class ClassDetailsActivity : AppCompatActivity() {
     private lateinit var btnTakeAttendance: MaterialCardView
     private lateinit var btnManageGrades: MaterialCardView
     private lateinit var btnStartRoulette: MaterialCardView
+    private lateinit var chipStudentCount: Chip
+    private lateinit var tvStudentsHeader: TextView
     private var studentNamesForRoulette: ArrayList<String> = ArrayList()
     private var autoStartRoulette: Boolean = false
     private var assignmentId: String? = null
@@ -55,6 +58,8 @@ class ClassDetailsActivity : AppCompatActivity() {
         tvClassNameHeader = findViewById(R.id.tvClassNameHeader)
         tvLoading = findViewById(R.id.tvLoading)
         recyclerView = findViewById(R.id.recyclerViewStudents)
+        chipStudentCount = findViewById(R.id.chipStudentCount)
+        tvStudentsHeader = findViewById(R.id.tvStudentsHeader)
 
         // ✅ CHANGED: MaterialCardView instead of Button
         btnCreateQuiz = findViewById(R.id.btnCreateQuiz)
@@ -174,6 +179,7 @@ class ClassDetailsActivity : AppCompatActivity() {
 
                 if (studentIds.isEmpty()) {
                     tvLoading.text = "No Admitted students found in section $selectedSectionName."
+                    updateStudentCount(0)
                     return@addOnSuccessListener
                 }
 
@@ -182,6 +188,7 @@ class ClassDetailsActivity : AppCompatActivity() {
             .addOnFailureListener { e ->
                 Log.e("ClassDetails", "Error querying students by section: $e")
                 tvLoading.text = "Error fetching student profiles."
+                updateStudentCount(0)
             }
     }
 
@@ -236,6 +243,7 @@ class ClassDetailsActivity : AppCompatActivity() {
 
                 if (finalEnrolledStudents.isEmpty()) {
                     tvLoading.text = "No students officially enrolled in $subjectCode."
+                    updateStudentCount(0)
                 } else {
                     finalEnrolledStudents.forEach { student ->
                         studentNamesForRoulette.add("${student.lastName}, ${student.firstName}")
@@ -244,6 +252,8 @@ class ClassDetailsActivity : AppCompatActivity() {
                     val studentAdapter = ClassStudentAdapter(finalEnrolledStudents)
                     recyclerView.adapter = studentAdapter
                     tvLoading.text = "✅ ${finalEnrolledStudents.size} students successfully loaded."
+
+                    updateStudentCount(finalEnrolledStudents.size)
 
                     if (autoStartRoulette) {
                         navigateToRoulette()
@@ -254,6 +264,7 @@ class ClassDetailsActivity : AppCompatActivity() {
             } catch (e: Exception) {
                 Log.e("ClassDetails", "Error validating student enrollment: ${e.message}", e)
                 tvLoading.text = "Error fetching profiles."
+                updateStudentCount(0)
             }
         }
     }
@@ -298,5 +309,11 @@ class ClassDetailsActivity : AppCompatActivity() {
         intent.putStringArrayListExtra("STUDENT_NAMES_LIST", studentNamesForRoulette)
         intent.putExtra("CLASS_NAME", className)
         startActivity(intent)
+    }
+
+    // ✅ ADD: New method to update student count
+    private fun updateStudentCount(count: Int) {
+        chipStudentCount.text = "$count students"
+        tvStudentsHeader.text = "Students in this class"
     }
 }
