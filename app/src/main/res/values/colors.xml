@@ -21,6 +21,8 @@
     <color name="button_disabled_color">#9E9E9E</color>
 
     <!-- Gold Theme -->
+    <color name="gray">#808080</color>
+
     <color name="gold_primary">#CA8A04</color>
     <color name="gold_secondary">#FACC15</color>
     <color name="gold_light">#FEF9C3</color>

@@ -90,14 +90,16 @@
         android:visibility="visible"
         android:textColor="#7B1113" />
 
-    <!-- Student List -->
+    <!-- Student List with subtle spacing -->
     <ListView
         android:id="@+id/lvStudents"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:visibility="gone"
-        android:divider="#9B1C1F"
-        android:dividerHeight="1dp" />
+        android:divider="#E0DEDB"
+        android:dividerHeight="1dp"
+        android:padding="4dp"
+        android:clipToPadding="false" />
 
 </LinearLayout>
