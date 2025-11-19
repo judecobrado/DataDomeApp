@@ -25,8 +25,8 @@
             android:layout_width="20dp"
             android:layout_height="20dp"
             android:src="@drawable/ic_meeting_room"
-            android:tint="#7B1113"
-            android:layout_marginEnd="12dp" />
+            android:layout_marginEnd="12dp"
+            app:tint="#7B1113" />
 
         <TextView
             android:id="@+id/tvRoomId"
