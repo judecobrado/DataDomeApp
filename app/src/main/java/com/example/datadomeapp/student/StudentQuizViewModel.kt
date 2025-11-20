@@ -68,20 +68,31 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
 
     private var persistedAnswers: Map<Int, String>
         get() {
+            val answersMap = mutableMapOf<Int, String>()
             val answersString = prefs.getString("answers_${initialQuiz.quizId}", "") ?: ""
-            return if (answersString.isNotEmpty()) {
-                answersString.split(";").associate {
-                    val parts = it.split("=")
-                    parts[0].toInt() to parts[1]
+
+            if (answersString.isNotEmpty()) {
+                answersString.split(";").forEach { pair ->
+                    val parts = pair.split(":")
+                    if (parts.size == 2) {
+                        try {
+                            val questionIndex = parts[0].toInt()
+                            val answer = parts[1]
+                            answersMap[questionIndex] = answer
+                        } catch (e: NumberFormatException) {
+                            // Skip invalid entries instead of crashing
+                            android.util.Log.e("StudentQuizViewModel", "Invalid question index format: ${parts[0]}")
+                        }
+                    }
                 }
-            } else {
-                emptyMap()
             }
+            return answersMap
         }
         set(value) {
-            val answersString = value.entries.joinToString(";") { "${it.key}=${it.value}" }
+            val answersString = value.entries.joinToString(";") { "${it.key}:${it.value}" }
             prefs.edit().putString("answers_${initialQuiz.quizId}", answersString).apply()
         }
+
 
     private var persistedStartTime: Long
         get() = prefs.getLong("start_time_${initialQuiz.quizId}", 0L)
@@ -304,33 +315,58 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
     fun fetchServerTime() {
         // Cancel the previous listener if it exists to prevent memory leaks or duplicate calls
         serverTimeListenerRegistration?.remove()
-        val timeDocRef = firestore.collection("serverTime").document("timeDoc")
+
+        // TRY DIFFERENT DOCUMENT PATHS - Server time might be stored differently
+        val timeDocRef = firestore.collection("serverTime").document("current")
+        // OR try: firestore.collection("systemSettings").document("serverTime")
+        // OR try: firestore.collection("timestamp").document("current")
 
         // Gumamit ng addSnapshotListener para sa real-time updates
         serverTimeListenerRegistration = timeDocRef.addSnapshotListener { snapshot, e ->
             if (e != null) {
                 _uiMessage.value = "Error listening to server time: ${e.message}"
-                // Sa error, auto-submit para hindi ma-stuck
-                _quizResultData.value = QuizResultData(0, mutableQuestions.size, _cheatCount.value ?: 0)
+                // Fallback to device time if server time fails
+                _uiMessage.value = "Using device time as fallback"
+                startLocalTimer()
                 return@addSnapshotListener
             }
 
             if (snapshot != null && snapshot.exists()) {
-                val serverTs = snapshot.getTimestamp("ts")?.toDate()?.time
-                if (serverTs != null) {
+                // Try different field names
+                val serverTs = snapshot.getTimestamp("timestamp")?.toDate()?.time
+                    ?: snapshot.getTimestamp("serverTime")?.toDate()?.time
+                    ?: snapshot.getTimestamp("currentTime")?.toDate()?.time
+                    ?: snapshot.getLong("timestamp")
+                    ?: snapshot.getLong("serverTime")
+                    ?: snapshot.getLong("currentTime")
 
+                if (serverTs != null) {
+                    _uiMessage.value = "Server time connected"
                     updateTimer(serverTs)
 
                     if (!isTicking) {
                         isTicking = true
                         handler.post(tickRunnable)
                     }
-
                 } else {
-                    _uiMessage.value = "Failed to get server time."
-                    handleTimeExpired()
+                    _uiMessage.value = "Server time field not found. Using device time."
+                    startLocalTimer()
                 }
+            } else {
+                _uiMessage.value = "Server time document not found. Using device time."
+                startLocalTimer()
             }
+        }
+    }
+
+    // ADD THIS NEW FUNCTION AS FALLBACK
+    private fun startLocalTimer() {
+        val currentTime = System.currentTimeMillis()
+        updateTimer(currentTime)
+
+        if (!isTicking) {
+            isTicking = true
+            handler.post(tickRunnable)
         }
     }
 

@@ -30,7 +30,7 @@
             android:layout_height="wrap_content"
             android:text="MATH101 - Mathematics 101"
             android:textSize="14sp"
-            android:textColor="@color/green_700"
+            android:textColor="@color/primary_text"
             android:textStyle="bold"
             android:layout_marginTop="2dp"
             android:layout_marginBottom="4dp" />

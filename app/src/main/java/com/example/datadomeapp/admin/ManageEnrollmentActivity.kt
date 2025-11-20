@@ -746,6 +746,18 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
         return false
     }
 
+    // Add this method to your class
+    private fun createLoadingDialog(message: String): AlertDialog {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.loading_dialog_en, null)
+        val tvMessage = dialogView.findViewById<TextView>(R.id.tvLoadingMessage)
+        tvMessage.text = message
+
+        return AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+    }
+
     // ----------------------------------------------------
     // Finalization with Auth Creation and Firestore Transaction (SECURE)
     // ----------------------------------------------------
@@ -753,6 +765,8 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
         studentEmail: String, pendingEnrollmentId: String,
         selectedAssignments: List<LocalClassAssignment>, finalYearLevel: String, finalEnrollmentType: String, courseCode: String
     ) {
+        val loadingDialog = createLoadingDialog("Finalizing enrollment...")
+        loadingDialog.show()
         // --- Added: Get the current timestamp once for consistency across all records ---
         val enrollmentTimestamp = Timestamp.now()
 
@@ -764,6 +778,7 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                     val e = Enrollment.fromFirestore(doc.id, enrollmentData)
 
                     if (e.firstName.isEmpty()) {
+                        loadingDialog.dismiss()
                         Toast.makeText(this, "Error: Original enrollment record not found or invalid.", Toast.LENGTH_LONG).show()
                         return@addOnSuccessListener
                     }
@@ -923,6 +938,9 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                                 batch.commit().addOnSuccessListener {
                                     Toast.makeText(this, "Enrollment Finalized! Student ID: $studentId.", Toast.LENGTH_LONG).show()
 
+                                    loadingDialog.dismiss()
+                                    Toast.makeText(this, "Enrollment Finalized! Student ID: $studentId.", Toast.LENGTH_LONG).show()
+
                                     // 6. Send enrollment email using GmailSender
                                     sendEnrollmentEmail(studentEmail, studentId, finalPassword)
 
@@ -932,6 +950,7 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                                     .addOnFailureListener { batchError ->
                                         Toast.makeText(this, "Batch Setup Error: ${batchError.message}. Deleting created Auth user.", Toast.LENGTH_LONG).show()
                                         Log.e("EnrollmentDebug", "Batch commit failed.", batchError)
+                                        loadingDialog.dismiss()
                                         auth.currentUser?.delete()
                                     }
 
@@ -942,7 +961,8 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                             }
                         }
                         .addOnFailureListener { authError ->
-                            Toast.makeText(this, "Enrollment Failed: Failed to create user account: ${authError.message}", Toast.LENGTH_LONG).show()
+                            loadingDialog.dismiss()
+                            Toast.makeText(this, "Enrollment Failed! Try again.", Toast.LENGTH_LONG).show()
                             Log.e("EnrollmentDebug", "Auth Creation failed in finalization.", authError)
                         }
                 }

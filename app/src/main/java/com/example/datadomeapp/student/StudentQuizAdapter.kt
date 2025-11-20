@@ -25,6 +25,7 @@ class StudentQuizAdapter(
 
     override fun onBindViewHolder(holder: QuizViewHolder, position: Int) = holder.bind(quizzes[position])
 
+
     override fun getItemCount(): Int = quizzes.size
 
     fun updateList(newList: List<StudentQuizItem>) {

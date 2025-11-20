@@ -77,9 +77,6 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
     private var gradingPeriod: String? = null
     private var areGradesPublished: Boolean = false
 
-    private var sectionName: String? = null
-    private var yearLevel: String? = null
-
     // Enhanced caching system
     private val metadataCache = MetadataCache()
     private val studentScoresCache = StudentScoresCache()
@@ -105,9 +102,6 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         subjectCode = intent.getStringExtra("SUBJECT_CODE")
         className = intent.getStringExtra("CLASS_NAME")
         gradingPeriod = intent.getStringExtra("GRADING_PERIOD")
-
-        sectionName = intent.getStringExtra("SECTION_NAME")
-        yearLevel = intent.getStringExtra("YEAR_LEVEL")
 
         Log.d("GradeDebug", "Activity Started. AssignmentID: $assignmentId, Period: $gradingPeriod")
 
@@ -419,6 +413,8 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         attendanceSnapshot.documents.forEach { doc ->
             totalClassSessions++
             val statuses = doc.get("statuses") as? Map<String, String> ?: emptyMap()
+
+            // 🟢 FIX: Directly use studentDocId - NO NEED FOR UID CONVERSION
             if (statuses[studentDocId] == "Present") presentCount++
         }
 
@@ -438,6 +434,7 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
             .get().await()
 
         attendanceSnapshot.documents.forEach { doc ->
+            // 🟢 FIX: Directly use studentDocId for recitation points
             val recitationLong = doc.get("recitationPoints") as? Map<String, Long> ?: emptyMap()
             val recitationPoints = recitationLong.mapValues { it.value.toInt() }
             totalRecitationPoints += recitationPoints[studentDocId] ?: 0
@@ -784,8 +781,8 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
 
     private fun isValidAttendanceWithFixedTotal(newPresent: Int, fixedTotal: Int, originalPresent: Int): Boolean {
         //if (newPresent < originalPresent) {
-            //Toast.makeText(this, "Cannot decrease present days from $originalPresent to $newPresent", Toast.LENGTH_LONG).show()
-            //return false
+        //Toast.makeText(this, "Cannot decrease present days from $originalPresent to $newPresent", Toast.LENGTH_LONG).show()
+        //return false
         //}
 
         if (newPresent < 0) {
@@ -1159,34 +1156,25 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
             try {
                 // 1. Get class info
                 val classDoc = firestore.collection("classAssignments").document(assignmentId!!).get().await()
-                val yearLevelFromClass = classDoc.getString("yearLevel") ?: ""
+                val yearLevel = classDoc.getString("yearLevel") ?: ""
                 val semester = classDoc.getString("semester") ?: ""
                 val subjectId = classDoc.getString("subjectId") ?: ""
+                val sectionId = className?.split(" - ")?.lastOrNull() ?: ""
 
-                // 🟢 FIX: Add proper null checking for section and year level
-                val sectionName = intent.getStringExtra("SECTION_NAME") ?: className?.split(" - ")?.lastOrNull() ?: ""
-                val yearLevel = intent.getStringExtra("YEAR_LEVEL") ?: yearLevelFromClass
-
-                if (sectionName.isEmpty() || yearLevel.isEmpty()) {
+                if (yearLevel.isEmpty() || semester.isEmpty() || sectionId.isEmpty()) {
                     tvLoadingStatus.text = "Error: Missing class details."
-                    Log.e("GradeDebug", "❌ Missing section: $sectionName or year: $yearLevel")
                     return@launch
                 }
 
-                Log.d("GradeDebug", "🔍 Loading students for Section: $sectionName, Year: $yearLevel")
-
                 // 2. Fetch students
                 val studentsSnapshot = firestore.collection("students")
-                    .whereEqualTo("sectionId", sectionName)
+                    .whereEqualTo("sectionId", sectionId)
                     .whereEqualTo("yearLevel", yearLevel)
-                    .whereEqualTo("status", "Admitted")
                     .get().await()
 
                 val studentIds = studentsSnapshot.documents.map { it.id }
-                Log.d("GradeDebug", "✅ Found ${studentIds.size} students in section: $sectionName")
-
                 if (studentIds.isEmpty()) {
-                    tvLoadingStatus.text = "No admitted students found in section $sectionName."
+                    tvLoadingStatus.text = "No admitted students found."
                     return@launch
                 }
 
@@ -1198,13 +1186,8 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
                 }.toMap()
                 Log.d("GradeDebug", "Student UID mapping created: ${studentUidToDocIdMap.size} students mapped.")
 
-                // 3. Check enrollment - 🟢 FIX: Add null safety for subjectCode
-                val cleanYearLevel = yearLevel.replace(" ", "")
-                val cleanSemester = semester.replace(" ", "")
-                val cleanSubjectCode = subjectCode?.replace(" ", "") ?: ""
-
-                val enrollmentDocId = "${cleanYearLevel}_${cleanSemester}_${cleanSubjectCode}"
-
+                // 3. Check enrollment
+                val enrollmentDocId = "${yearLevel.replace(" ", "")}_${semester.replace(" ", "")}_${subjectCode}"
                 val studentMap = studentsSnapshot.documents.mapNotNull { it.toObject(Student::class.java)?.copy(id = it.id) }.associateBy { it.id }
                 val enrolledStudents = mutableListOf<Student>()
 
@@ -1223,19 +1206,25 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
                     return@launch
                 }
 
+                // 🟢 ADD: Debug student mapping
+                debugStudentMapping(enrolledStudents)
+
                 val studentGradesData = mutableMapOf<String, GradeInputAdapter.GradeData>()
                 enrolledStudents.forEach { student ->
                     studentGradesData[student.id] = GradeInputAdapter.GradeData(
                         studentDocId = student.id,
-                        firstName = student.firstName ?: "",
-                        lastName = student.lastName ?: "",
+                        firstName = student.firstName,
+                        lastName = student.lastName,
                         subjectId = subjectId,
-                        gradingPeriod = gradingPeriod ?: ""
+                        gradingPeriod = gradingPeriod!!
                     )
                 }
 
                 // 4. Fetch and Calculate Scores CONCURRENTLY
                 tvLoadingStatus.text = "Fetching all grades concurrently..."
+
+                // 🟢 ADD: Debug attendance data first
+                debugAttendanceData()
 
                 val attendanceJob = async {
                     fetchAttendanceAndRecitationScores(enrolledStudents, studentGradesData)
@@ -1270,7 +1259,75 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         }
     }
 
-    // OPTIMIZED: Attendance and recitation calculation
+    private suspend fun debugAttendanceData() {
+        val termDoc = firestore.document("systemSettings/currentTerm").get().await()
+        val semester = termDoc.getString("semester") ?: ""
+
+        Log.d("GradeDebug", "🔍 DEBUG ATTENDANCE DATA:")
+        Log.d("GradeDebug", "   - Assignment ID: $assignmentId")
+        Log.d("GradeDebug", "   - Grading Period: $gradingPeriod")
+        Log.d("GradeDebug", "   - Semester: $semester")
+
+        try {
+            val attendanceSnapshot = firestore.collection("dailyAttendanceRecords")
+                .whereEqualTo("assignmentId", assignmentId!!)
+                .whereEqualTo("academicTerm", gradingPeriod!!)
+                .whereEqualTo("semester", semester)
+                .get().await()
+
+            Log.d("GradeDebug", "📊 Found ${attendanceSnapshot.documents.size} attendance records")
+
+            attendanceSnapshot.documents.forEachIndexed { index, doc ->
+                Log.d("GradeDebug", "   📄 Record ${index + 1}:")
+                Log.d("GradeDebug", "      - ID: ${doc.id}")
+                Log.d("GradeDebug", "      - Date: ${doc.getString("date")}")
+
+                val statuses = doc.get("statuses") as? Map<String, String> ?: emptyMap()
+                Log.d("GradeDebug", "      - Statuses count: ${statuses.size}")
+
+                // Show ALL statuses to see what student IDs are being used
+                statuses.forEach { (studentId, status) ->
+                    Log.d("GradeDebug", "         👤 $studentId: $status")
+                }
+
+                val recitationPoints = doc.get("recitationPoints") as? Map<String, Any> ?: emptyMap()
+                Log.d("GradeDebug", "      - Recitation points count: ${recitationPoints.size}")
+
+                recitationPoints.forEach { (studentId, points) ->
+                    Log.d("GradeDebug", "         🎤 $studentId: $points points")
+                }
+            }
+
+            if (attendanceSnapshot.isEmpty) {
+                Log.d("GradeDebug", "❌ NO ATTENDANCE RECORDS FOUND!")
+                Log.d("GradeDebug", "   Check if records exist with:")
+                Log.d("GradeDebug", "   - assignmentId: $assignmentId")
+                Log.d("GradeDebug", "   - academicTerm: $gradingPeriod")
+                Log.d("GradeDebug", "   - semester: $semester")
+            }
+
+        } catch (e: Exception) {
+            Log.e("GradeDebug", "❌ Error debugging attendance: ${e.message}")
+        }
+    }
+
+    private suspend fun debugStudentMapping(enrolledStudents: List<Student>) {
+        Log.d("GradeDebug", "🔍 DEBUG STUDENT MAPPING:")
+        Log.d("GradeDebug", "   - Total enrolled students: ${enrolledStudents.size}")
+
+        enrolledStudents.forEach { student ->
+            Log.d("GradeDebug", "   👤 Student: ${student.id} - ${student.firstName} ${student.lastName}")
+            Log.d("GradeDebug", "      - Year Level: ${student.yearLevel}")
+            Log.d("GradeDebug", "      - userUid: ${student.userUid}")
+        }
+
+        Log.d("GradeDebug", "   - Student UID to DocID mapping: ${studentUidToDocIdMap.size} entries")
+        studentUidToDocIdMap.forEach { (uid, docId) ->
+            Log.d("GradeDebug", "      🔄 $uid -> $docId")
+        }
+    }
+
+    // OPTIMIZED: Attendance and recitation calculation WITH DEBUG
     private suspend fun fetchAttendanceAndRecitationScores(
         enrolledStudents: List<Student>,
         studentGradesData: MutableMap<String, GradeInputAdapter.GradeData>
@@ -1284,22 +1341,24 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
             return
         }
 
+        Log.d("GradeDebug", "📅 Fetching attendance for:")
+        Log.d("GradeDebug", "   - Assignment: $assignmentId")
+        Log.d("GradeDebug", "   - Grading Period: $gradingPeriod")
+        Log.d("GradeDebug", "   - Semester: $semester")
+
         val attendanceSnapshot = firestore.collection("dailyAttendanceRecords")
             .whereEqualTo("assignmentId", assignmentId!!)
             .whereEqualTo("academicTerm", gradingPeriod!!)
             .whereEqualTo("semester", semester)
             .get().await()
 
-        if (attendanceSnapshot.isEmpty) {
-            Log.d("GradeDebug", "No daily attendance records found for this term.")
-        } else {
-            Log.d("GradeDebug", "Fetched ${attendanceSnapshot.size()} attendance records.")
-        }
+        Log.d("GradeDebug", "📊 Found ${attendanceSnapshot.documents.size} attendance records")
 
         val studentAttendanceCounts = mutableMapOf<String, Int>()
         var totalClassSessions = 0
         val studentRecitationPoints = mutableMapOf<String, Int>()
 
+        // Initialize counters
         enrolledStudents.forEach { student ->
             studentAttendanceCounts[student.id] = 0
             studentRecitationPoints[student.id] = 0
@@ -1309,42 +1368,83 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
             val statuses = doc.get("statuses") as? Map<String, String> ?: emptyMap()
             totalClassSessions++
 
-            statuses.forEach { (studentId, status) ->
+            Log.d("GradeDebug", "   📆 Session $totalClassSessions - Statuses: ${statuses.size}")
+
+            // 🟢 FIX: Use student document ID directly
+            statuses.forEach { (studentDocId, status) ->
                 if (status == "Present") {
-                    studentAttendanceCounts[studentId] = studentAttendanceCounts.getOrDefault(studentId, 0) + 1
+                    studentAttendanceCounts[studentDocId] = studentAttendanceCounts.getOrDefault(studentDocId, 0) + 1
+                    Log.d("GradeDebug", "      ✅ $studentDocId marked Present")
                 }
             }
 
-            val recitationLong = doc.get("recitationPoints") as? Map<String, Long> ?: emptyMap()
-            val recitationPoints = recitationLong.mapValues { it.value.toInt() }
-
-            recitationPoints.forEach { (studentUid, points) ->
-                studentRecitationPoints[studentUid] = studentRecitationPoints.getOrDefault(studentUid, 0) + points
+            // 🟢 FIX: Handle recitation points with better type checking
+            val recitationData = doc.get("recitationPoints")
+            when (recitationData) {
+                is Map<*, *> -> {
+                    recitationData.forEach { (key, value) ->
+                        val studentDocId = key.toString()
+                        val points = when (value) {
+                            is Long -> value.toInt()
+                            is Int -> value
+                            is Double -> value.toInt()
+                            is String -> value.toIntOrNull() ?: 0
+                            else -> 0
+                        }
+                        if (points > 0) {
+                            studentRecitationPoints[studentDocId] = studentRecitationPoints.getOrDefault(studentDocId, 0) + points
+                            Log.d("GradeDebug", "      🎤 $studentDocId +$points recitation points")
+                        }
+                    }
+                }
+                else -> {
+                    Log.d("GradeDebug", "      ℹ️ No recitation points in this session")
+                }
             }
         }
 
+        Log.d("GradeDebug", "🏫 Total class sessions: $totalClassSessions")
+
+        // Calculate final scores
         enrolledStudents.forEach { student ->
             val studentDocId = student.id
             val grades = studentGradesData[studentDocId] ?: GradeInputAdapter.GradeData()
 
             val presentCount = studentAttendanceCounts[studentDocId] ?: 0
+            Log.d("GradeDebug", "👤 Student ${student.lastName} ($studentDocId): $presentCount/$totalClassSessions present")
+
             val attendanceScoreRaw = if (totalClassSessions > 0) {
                 (presentCount.toDouble() / totalClassSessions.toDouble()) * 100.0
-            } else { 50.0 }
+            } else {
+                Log.d("GradeDebug", "      ⚠️ No class sessions - using default 50%")
+                50.0
+            }
 
-            grades.attendance = attendanceScoreRaw.safeMax(50.0).roundToTwoDecimals()
+            // 🟢 FIX: Apply 50% base correctly
+            val finalAttendance = attendanceScoreRaw.safeMax(50.0).roundToTwoDecimals()
+            grades.attendance = finalAttendance
 
             val totalRecitationPoints = studentRecitationPoints[studentDocId] ?: 0
+            Log.d("GradeDebug", "🎤 Student ${student.lastName}: $totalRecitationPoints total recitation points")
+
             val recitationScore = if (totalRecitationPoints >= 5) {
                 100.0
             } else {
                 (totalRecitationPoints.toDouble() / 5.0) * 100.0
             }
 
-            grades.recitation = recitationScore.safeMax(50.0).roundToTwoDecimals()
+            val finalRecitation = recitationScore.safeMax(50.0).roundToTwoDecimals()
+            grades.recitation = finalRecitation
 
             studentGradesData[studentDocId] = grades
-            Log.d("GradeDebug", "A/R Calculated for ${student.lastName} (${student.id}): Att=${grades.attendance}, Rec=${grades.recitation}")
+            Log.d("GradeDebug", "✅ FINAL: ${student.lastName} - Att=$finalAttendance, Rec=$finalRecitation")
+        }
+
+        // 🟢 ADD: Summary log
+        Log.d("GradeDebug", "📈 ATTENDANCE SUMMARY:")
+        enrolledStudents.forEach { student ->
+            val grades = studentGradesData[student.id]!!
+            Log.d("GradeDebug", "   ${student.lastName}: ${grades.attendance}% attendance, ${grades.recitation}% recitation")
         }
     }
 

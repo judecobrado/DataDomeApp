@@ -3,19 +3,11 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:padding="24dp"
-    android:gravity="center_horizontal"
+    android:gravity="center"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="#FFF7F3">
+    android:background="#FDFBF8"
+    android:layout_height="match_parent">
 
-    <ImageView
-        android:id="@+id/vMainIllustration"
-        android:layout_width="160dp"
-        android:layout_height="160dp"
-        android:adjustViewBounds="true"
-        android:contentDescription="App Logo"
-        android:scaleType="fitCenter"
-        android:src="@raw/logo_final" />
 
     <TextView
         android:id="@+id/tvBranding"
@@ -31,32 +23,12 @@
         android:layout_marginTop="-24dp"
         android:layout_marginBottom="12dp" />
 
-    <TextView
-        android:id="@+id/tvMainHeader"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:text="Secure School Data Platform"
-        android:textColor="#9B1C1F"
-        android:textSize="18sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:id="@+id/tvDescription"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:layout_marginBottom="32dp"
-        android:gravity="center"
-        android:text="Trusted infrastructure for administrative control, student performance tracking, and resource management."
-        android:textColor="#5C5C5C"
-        android:textSize="14sp" />
     <!-- Instruction -->
     <TextView
         android:id="@+id/tvInstruction"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Enter your registered email to verify your account."
+        android:text="Enter your registered email to verify your account"
         android:textSize="16sp"
         android:textColor="#4D4D4D"
         android:textAlignment="center"
@@ -87,7 +59,8 @@
             android:textColorHint="#999999"
             android:fontFamily="sans-serif-medium"
             android:paddingStart="16dp"
-            android:paddingEnd="16dp"/>
+            android:paddingEnd="16dp"
+            android:gravity="center"/>
     </com.google.android.material.textfield.TextInputLayout>
 
     <!-- Verify Button -->
@@ -103,5 +76,6 @@
         android:textAllCaps="false"
         android:textColor="#FFFFFF"
         android:textStyle="bold"
+        android:layout_gravity="center"
         app:cornerRadius="28dp" />
 </LinearLayout>

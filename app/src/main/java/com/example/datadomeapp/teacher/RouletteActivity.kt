@@ -59,7 +59,7 @@ class RouletteActivity : AppCompatActivity() {
         title = "Roleta: $className"
 
         if (activeStudentNames.size < 2) {
-            Toast.makeText(this, "Error: Kailangan ng hindi bababa sa 2 estudyante para sa Roleta.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Need more then 2 Student to start.", Toast.LENGTH_LONG).show()
             tvWinnerName.text = "Masyadong Kakaunti"
             btnSpinRoulette.isEnabled = false
             updateStudentDisplay()
@@ -184,7 +184,6 @@ class RouletteActivity : AppCompatActivity() {
         if (remove) {
             activeStudentNames.remove(winner)
             removedStudentNames.add(winner)
-            Toast.makeText(this, "$winner ay tinanggal sa listahan.", Toast.LENGTH_SHORT).show()
         } else {
             Toast.makeText(this, "$winner ay nanatili sa listahan.", Toast.LENGTH_SHORT).show()
         }
@@ -200,6 +199,5 @@ class RouletteActivity : AppCompatActivity() {
         flashAnimation.repeatMode = Animation.REVERSE
 
         tvWinnerName.startAnimation(flashAnimation)
-        Toast.makeText(this, "Ang Nanalo sa Roleta ay si: $winnerName! Ano ang desisyon?", Toast.LENGTH_LONG).show()
     }
 }

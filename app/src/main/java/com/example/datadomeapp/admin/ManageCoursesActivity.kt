@@ -19,7 +19,6 @@ import java.util.Locale
 data class Course(
     val name: String = "",
     val code: String = "",
-    val description: String = "",
 )
 
 // Data class para sa Course Sections
@@ -41,7 +40,6 @@ class ManageCoursesActivity : AppCompatActivity() {
     private lateinit var btnManageRooms: Button
     private lateinit var etName: EditText
     private lateinit var etCode: EditText
-    private lateinit var etDescription: EditText
 
     // Data Holders
     private val courseMap = mutableMapOf<String, String>()
@@ -60,7 +58,6 @@ class ManageCoursesActivity : AppCompatActivity() {
         listView = findViewById(R.id.lvCourses)
         etName = findViewById(R.id.etCourseName)
         etCode = findViewById(R.id.etCourseCode)
-        etDescription = findViewById(R.id.etCourseDescription)
         val btnAdd = findViewById<Button>(R.id.btnAddCourse)
         val btnDelete = findViewById<Button>(R.id.btnDeleteCourse)
         btnManageSections = findViewById(R.id.btnManageSections)
@@ -120,9 +117,8 @@ class ManageCoursesActivity : AppCompatActivity() {
     private fun addNewCourse() {
         val name = etName.text.toString().trim()
         val code = etCode.text.toString().trim().uppercase(Locale.getDefault())
-        val desc = etDescription.text.toString().trim()
 
-        if (name.isEmpty() || code.isEmpty() || desc.isEmpty()) {
+        if (name.isEmpty() || code.isEmpty()) {
             Toast.makeText(this, "Fill all fields", Toast.LENGTH_SHORT).show()
             return
         }
@@ -134,12 +130,11 @@ class ManageCoursesActivity : AppCompatActivity() {
                     return@addOnSuccessListener
                 }
 
-                val course = Course(name, code, desc)
+                val course = Course(name, code)
                 coursesCollection.document(code).set(course)
                     .addOnSuccessListener {
                         etName.text.clear()
                         etCode.text.clear()
-                        etDescription.text.clear()
                         Toast.makeText(this, "Course added: $code!", Toast.LENGTH_SHORT).show()
                         loadCoursesOnce()
                     }

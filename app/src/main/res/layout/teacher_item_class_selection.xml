@@ -55,6 +55,7 @@
                     android:text="CS-ELECTIVE"
                     android:textSize="12sp"
                     android:textColor="#666666"
+                    android:visibility="gone"
                     tools:text="CS-ELECTIVE" />
 
             </LinearLayout>

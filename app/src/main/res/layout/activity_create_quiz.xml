@@ -340,6 +340,7 @@
                         android:id="@+id/btnAddMatching"
                         android:layout_width="0dp"
                         android:layout_height="100dp"
+                        android:visibility="gone"
                         android:layout_weight="1"
                         app:cardCornerRadius="12dp"
                         app:cardElevation="2dp"
@@ -434,7 +435,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="📋 Supported Formats:\n• True/False: Question|True|False|Answer\n• Multiple Choice: Q|A|B|C|D|Correct\n• Matching: Left|Right"
+                    android:text="📋 Supported Formats:\n• True/False: Question|True|False|Answer\n• Multiple Choice: Q|A|B|C|D|Correct\n"
                     android:textSize="12sp"
                     android:textColor="#6B7280"
                     android:gravity="center"

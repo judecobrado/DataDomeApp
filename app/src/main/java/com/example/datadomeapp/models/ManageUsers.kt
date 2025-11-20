@@ -31,6 +31,21 @@ data class Student(
     val rfidTag: String? = null // ⬅️ I-check kung ganito ang spelling/casing at nullable
 )
 
+data class GradeStudent(
+    var id: String = "",
+    val firstName: String = "",
+    val lastName: String = "",
+
+    val sectionId: String = "",
+    val section: String = "",
+
+    val yearLevel: String = "",
+    val status: String = "",
+    val userUid: String? = null,
+
+    val email: String = ""
+)
+
 // 👩‍🏫 Teacher model
 data class AdminTeacher(
     val id: String = "",

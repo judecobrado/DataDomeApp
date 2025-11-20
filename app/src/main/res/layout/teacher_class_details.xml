@@ -48,6 +48,7 @@
                 android:layout_height="wrap_content"
                 android:text="CS-ELECTIVE • 35 Students"
                 android:textSize="15sp"
+                android:visibility="gone"
                 android:textColor="#757575"
                 android:layout_marginBottom="20dp"
                 android:letterSpacing="0.02"/>

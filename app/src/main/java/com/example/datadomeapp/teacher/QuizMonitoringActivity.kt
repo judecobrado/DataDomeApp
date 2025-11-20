@@ -442,13 +442,13 @@ class QuizMonitoringActivity : BaseActivity() {
         if (isExamType && !isQuizGloballyFinished &&
             (studentData.status == "EXAM_READY" || studentData.status == "NOT_STARTED" || studentData.status == "UNATTEMPTED_TIME_EXPIRED" ||
                     studentData.status == "RETAKE_EXPIRED")) {
-            actions.add("START / OPEN ACCESS")
+            actions.add("ALLOW ACCESS")
         }
 
         val restartableStatuses = listOf("COMPLETED")
 
         if (!isQuizGloballyFinished && studentData.status in restartableStatuses) {
-            actions.add("RESTART QUIZ")
+            actions.add("RESTART")
         }
 
         if (isQuizGloballyFinished &&
@@ -466,8 +466,8 @@ class QuizMonitoringActivity : BaseActivity() {
             .setTitle("Access Control for ${studentData.studentName}")
             .setItems(actions.toTypedArray()) { dialog, which ->
                 when (actions[which]) {
-                    "START / OPEN ACCESS" -> confirmIndividualStart(studentData)
-                    "RESTART QUIZ" -> confirmIndividualRestart(studentData)
+                    "ALLOW ACCESS" -> confirmIndividualStart(studentData)
+                    "RESTART" -> confirmIndividualRestart(studentData)
                     "GRANT RETAKE" -> showRetakeDeadlinePicker(studentData)
                 }
             }
@@ -502,8 +502,8 @@ class QuizMonitoringActivity : BaseActivity() {
         val endTimeText = timeFormat.format(Date(quizEndTime))
 
         AlertDialog.Builder(this)
-            .setTitle("Confirm Start Exam")
-            .setMessage("Start the exam for ${studentData.studentName} now? The deadline will be set to: $endTimeText")
+            .setTitle("Confirm Allowed Exam")
+            .setMessage("Allowed to exam for ${studentData.studentName}.")
             .setPositiveButton("START NOW") { _, _ ->
                 // ✅ Pinalitan ng performBulkAction (REOPEN)
                 viewModel.performBulkAction(

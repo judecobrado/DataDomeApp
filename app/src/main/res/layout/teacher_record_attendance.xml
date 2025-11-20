@@ -178,6 +178,142 @@
 
     </com.google.android.material.card.MaterialCardView>
 
+    <!-- Color Legend Card - COMPACT -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="1dp"
+        app:cardBackgroundColor="@android:color/white"
+        app:strokeColor="#E8E8E8"
+        app:strokeWidth="1dp"
+        android:layout_marginBottom="12dp">
+
+        <!-- Color Legend Card - COMPACT & MODERN -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@android:color/white"
+            app:strokeColor="#E8E8E8"
+            app:strokeWidth="1dp"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="8dp">
+
+                <!-- Legend Items - Single Row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:paddingVertical="4dp">
+
+                    <!-- Present -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="horizontal"
+                        android:gravity="center"
+                        android:padding="4dp">
+
+                        <View
+                            android:layout_width="10dp"
+                            android:layout_height="10dp"
+                            android:background="@drawable/circle_present"
+                            android:layout_marginEnd="4dp"/>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Present"
+                            android:textSize="10sp"
+                            android:textColor="#666666"
+                            android:textStyle="bold"/>
+                    </LinearLayout>
+
+                    <!-- Late -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="horizontal"
+                        android:gravity="center"
+                        android:padding="4dp">
+
+                        <View
+                            android:layout_width="10dp"
+                            android:layout_height="10dp"
+                            android:background="@drawable/circle_late"
+                            android:layout_marginEnd="4dp"/>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Late"
+                            android:textSize="10sp"
+                            android:textColor="#666666"
+                            android:textStyle="bold"/>
+                    </LinearLayout>
+
+                    <!-- Absent -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="horizontal"
+                        android:gravity="center"
+                        android:padding="4dp">
+
+                        <View
+                            android:layout_width="10dp"
+                            android:layout_height="10dp"
+                            android:background="@drawable/circle_absent"
+                            android:layout_marginEnd="4dp"/>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Absent"
+                            android:textSize="10sp"
+                            android:textColor="#666666"
+                            android:textStyle="bold"/>
+                    </LinearLayout>
+
+                    <!-- Excused -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="horizontal"
+                        android:gravity="center"
+                        android:padding="4dp">
+
+                        <View
+                            android:layout_width="10dp"
+                            android:layout_height="10dp"
+                            android:background="@drawable/circle_excused"
+                            android:layout_marginEnd="4dp"/>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Excused"
+                            android:textSize="10sp"
+                            android:textColor="#666666"
+                            android:textStyle="bold"/>
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+    </com.google.android.material.card.MaterialCardView>
+
     <!-- Students List Card - MAXIMIZED SPACE -->
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
@@ -230,15 +366,6 @@
                     app:strokeColor="#E8E8E8"
                     app:strokeWidth="0dp">
 
-                    <TextView
-                        android:id="@+id/tvStudentCount"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="0"
-                        android:textSize="12sp"
-                        android:textColor="#666666"
-                        android:paddingHorizontal="8dp"
-                        android:paddingVertical="4dp"/>
 
                 </com.google.android.material.card.MaterialCardView>
 

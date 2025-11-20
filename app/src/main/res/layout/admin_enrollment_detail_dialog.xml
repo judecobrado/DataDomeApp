@@ -424,7 +424,7 @@
                     app:boxStrokeColor="#7B1113"
                     style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
 
-                    <AutoCompleteTextView
+                    <Spinner
                         android:id="@+id/spinnerFinalYearLevel"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -444,7 +444,7 @@
                     app:boxStrokeColor="#7B1113"
                     style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
 
-                    <AutoCompleteTextView
+                    <Spinner
                         android:id="@+id/spinnerFinalEnrollmentType"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"

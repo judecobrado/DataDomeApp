@@ -452,7 +452,7 @@ class ManageQuizzesActivity : BaseActivity() {
         val status = if (isOngoing) "Live View" else "View Results"
 
         // 2. Ipakita ang Toast
-        Toast.makeText(this, "Opening $status for: ${quiz.title}", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Opening: ${quiz.title}", Toast.LENGTH_SHORT).show()
 
         // 3. I-launch ang TAMANG activity
         val intent = Intent(this, QuizMonitoringActivity::class.java).apply {

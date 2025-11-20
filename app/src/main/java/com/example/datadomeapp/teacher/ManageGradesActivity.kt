@@ -361,9 +361,8 @@ class ManageGradesActivity : AppCompatActivity() {
                 if (document.exists()) {
                     // 🔥 FIX: Use "academicTerm" instead of "currentTerm"
                     currentTerm = document.getString("academicTerm") ?: "Prelim"
-                    Log.d("SystemSettings", "✅ Loaded academicTerm: $currentTerm")
+                    Log.d("SystemSettings", "AcademicTerm: $currentTerm")
                     runOnUiThread {
-                        Toast.makeText(this@ManageGradesActivity, "✅ Grades loaded for $currentTerm", Toast.LENGTH_SHORT).show()
                     }
                 } else {
                     Log.w("SystemSettings", "📝 Document doesn't exist")

@@ -276,7 +276,7 @@ class StudentQuizActivity : AppCompatActivity() {
             if (!hasFocus && !isSpinnerOpen()) {
                 // Set flag to indicate home button was pressed
                 homeButtonPressed = true
-                viewModel.handleCheatAttempt("Home button / Recent apps pressed")
+                viewModel.handleCheatAttempt("CHEATING DETECTED")
             } else if (hasFocus) {
                 viewModel.resetCheat()
                 homeButtonPressed = false
@@ -390,9 +390,20 @@ class StudentQuizActivity : AppCompatActivity() {
                 }
                 viewModel.recordMatchingAnswers(currentIndex, answerPairs)
             }
-            viewModel.nextQuestion()
+            val isLastQuestion = currentIndex == totalQuestions - 1
+            if (isLastQuestion) {
+                // Submit the quiz
+                viewModel.submitQuiz()
+            } else {
+                // Proceed to next question
+                viewModel.nextQuestion()
+            }
             spinnerActive = false
         }
+    }
+
+    private val totalQuestions: Int by lazy {
+        quiz.questions.size
     }
 
     private fun clearPersistedState() {
@@ -459,6 +470,8 @@ class StudentQuizActivity : AppCompatActivity() {
         binding.tvQuestionType.text = questionType
 
         binding.tvQuestionText.text = "${index + 1}. ${q.questionText}"
+        val isLastQuestion = index == totalQuestions - 1
+        binding.btnSubmit.text = if (isLastQuestion) "SUBMIT QUIZ" else "NEXT QUESTION"
         val optionButtons = listOf(binding.btnOption1, binding.btnOption2, binding.btnOption3, binding.btnOption4)
         optionButtons.forEach { it.visibility = View.GONE }
         binding.matchingLayout.removeAllViews()

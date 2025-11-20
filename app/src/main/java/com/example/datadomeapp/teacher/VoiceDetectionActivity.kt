@@ -36,7 +36,6 @@ class VoiceDetectionActivity : AppCompatActivity() {
     private lateinit var noiseProgressBar: ProgressBar
     private lateinit var tvThresholdLabel: TextView
     private lateinit var thresholdSeekBar: SeekBar
-    private lateinit var btnCalibrate: com.google.android.material.button.MaterialButton
     private lateinit var tvStatusInfo: TextView
 
     private val firestore = FirebaseFirestore.getInstance()
@@ -137,7 +136,6 @@ class VoiceDetectionActivity : AppCompatActivity() {
         noiseProgressBar = findViewById(com.example.datadomeapp.R.id.noiseProgressBar)
         tvThresholdLabel = findViewById(com.example.datadomeapp.R.id.tvThresholdLabel)
         thresholdSeekBar = findViewById(com.example.datadomeapp.R.id.thresholdSeekBar)
-        btnCalibrate = findViewById(com.example.datadomeapp.R.id.btnCalibrate)
         tvStatusInfo = findViewById(com.example.datadomeapp.R.id.tvStatusInfo)
 
         // Load saved threshold
@@ -165,17 +163,9 @@ class VoiceDetectionActivity : AppCompatActivity() {
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
 
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
-                Toast.makeText(
-                    this@VoiceDetectionActivity,
-                    "Noise threshold set to $currentNoiseThreshold dB",
-                    Toast.LENGTH_SHORT
-                ).show()
             }
         })
 
-        btnCalibrate.setOnClickListener {
-            calibrateVoiceThreshold()
-        }
     }
 
     private fun setupAudioRecording() {
@@ -191,7 +181,7 @@ class VoiceDetectionActivity : AppCompatActivity() {
     }
 
     private fun updateThresholdDisplay() {
-        tvThresholdLabel.text = "Noise Threshold: ${currentNoiseThreshold} dB"
+        tvThresholdLabel.text = "Noise Measurement"
     }
 
     private fun saveThreshold() {

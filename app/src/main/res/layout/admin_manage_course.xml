@@ -111,7 +111,7 @@
                         android:id="@+id/etCourseName"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Course Name (e.g., Bachelor of Science in IT)"
+                        android:hint="Course Name (e.g., Bachelor of Science in Information Technology)"
                         android:textColor="#333333"
                         android:textSize="14sp"
                         android:minHeight="52dp" />
@@ -140,30 +140,6 @@
                         android:textSize="14sp"
                         android:maxLength="5"
                         android:inputType="textCapCharacters"
-                        android:minHeight="52dp" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <!-- Course Description -->
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="20dp"
-                    app:boxCornerRadiusBottomEnd="12dp"
-                    app:boxCornerRadiusBottomStart="12dp"
-                    app:boxCornerRadiusTopEnd="12dp"
-                    app:boxCornerRadiusTopStart="12dp"
-                    app:boxStrokeColor="#7B1113"
-                    app:hintTextColor="#7B1113"
-                    app:startIconDrawable="@drawable/ic_description"
-                    app:startIconTint="#7B1113">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etCourseDescription"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="Course Description"
-                        android:textColor="#333333"
-                        android:textSize="14sp"
                         android:minHeight="52dp" />
                 </com.google.android.material.textfield.TextInputLayout>
 

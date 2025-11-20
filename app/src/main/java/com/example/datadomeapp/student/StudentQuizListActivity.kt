@@ -31,7 +31,8 @@ data class StudentQuizItem(
     var totalQuestions: Int = 0,
     var cheatCount: Int = 0,
     var courseCode: String = "",
-    var subjectTitle: String = ""
+    var subjectTitle: String = "",
+    var courseName: String = ""
 )
 
 class StudentQuizListActivity : AppCompatActivity() {
@@ -311,6 +312,12 @@ class StudentQuizListActivity : AppCompatActivity() {
                             .get()
                             .addOnSuccessListener { assignmentDoc ->
                                 if (assignmentDoc.exists()) {
+                                    // GET COURSE NAME (Year Level + Section)
+                                    val yearLevel = assignmentDoc.getString("yearLevel") ?: ""
+                                    val section = assignmentDoc.getString("section") ?: ""
+                                    item.courseName = "$yearLevel - $section"
+
+                                    // GET SUBJECT INFO
                                     item.courseCode = assignmentDoc.getString("subjectCode") ?: ""
                                     item.subjectTitle = assignmentDoc.getString("subjectTitle") ?: ""
                                 }
@@ -324,11 +331,15 @@ class StudentQuizListActivity : AppCompatActivity() {
                 .addOnCompleteListener {
                     countdown--
                     if (countdown == 0) {
+                        // IDAGDAG ITO PARA MAKITA KUNG MAY DATA
+                        Log.d("QuizDebug", "Total quiz items: ${quizItems.size}")
+                        quizItems.forEach { item ->
+                            Log.d("QuizDebug", "Quiz: ${item.quiz.title}, Course: ${item.courseCode}, Subject: ${item.subjectTitle}")
+                        }
+
                         quizAdapter.updateList(quizItems)
                         showLoading(false)
                         showEmptyState(quizItems.isEmpty())
-
-                        // UPDATE STATS WITH ACTUAL COMPLETED COUNT
                         updateStats(quizzes, completedCount)
                     }
                 }
