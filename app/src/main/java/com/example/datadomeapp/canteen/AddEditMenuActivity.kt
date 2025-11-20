@@ -15,6 +15,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AlertDialog
 import com.example.datadomeapp.R
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import java.io.ByteArrayOutputStream
@@ -49,17 +50,18 @@ class AddEditMenuActivity : AppCompatActivity() {
         registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
             if (uri != null) {
                 // ✅ FIX: Removed takePersistableUriPermission to avoid SecurityException
-                // No need for persistable permission since we process the image immediately.
-
                 imageUri = uri
                 val bitmap = getBitmapFromUri(uri)
                 if (bitmap != null) {
                     ivPreview.setImageBitmap(bitmap)
                 } else {
-                    Toast.makeText(this, "Failed to load or resize image.", Toast.LENGTH_SHORT).show()
+                    // Removed Toast
+                    // Toast.makeText(this, "Failed to load or resize image.", Toast.LENGTH_SHORT).show()
+                    showCriticalErrorDialog("Failed to load or resize image.", "Image Error")
                 }
             } else {
-                Toast.makeText(this, "Image selection cancelled.", Toast.LENGTH_SHORT).show()
+                // Removed Toast
+                // Toast.makeText(this, "Image selection cancelled.", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -84,12 +86,108 @@ class AddEditMenuActivity : AppCompatActivity() {
             loadMenuData(menuId!!)
         } else {
             supportActionBar?.title = "Add New Menu Item"
+            // ✅ DEFAULT PRICE: I-set sa ₱1.00 ang default price para sa bagong item.
+            etPrice.setText("1.00")
         }
 
+        // 🟢 FOCUS LISTENER: Para sa automatic ₱1.00 adjustment at formatting pag-alis sa field
+        etPrice.onFocusChangeListener = View.OnFocusChangeListener { v, hasFocus ->
+            if (!hasFocus) {
+                val priceText = etPrice.text.toString().trim()
+                val parsedPrice = priceText.toDoubleOrNull()
+
+                // 🚫 CHECK: Kung empty, null, o mas mababa sa 1.00, gawing 1.00
+                if (parsedPrice == null || parsedPrice < 1.00) {
+                    etPrice.setText("1.00")
+                } else {
+                    // Para masiguro na 2 decimal places ang format kapag umalis
+                    etPrice.setText(String.format("%.2f", parsedPrice))
+                }
+            }
+        }
+
+        // 🟢 REAL-TIME INPUT VALIDATION LOGIC
         val validationTextWatcher = object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
+            private var currentNameText: String = ""
+            private var currentPriceText: String = ""
+
+            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {
+                if (etName.isFocused) {
+                    currentNameText = s.toString()
+                } else if (etPrice.isFocused) {
+                    currentPriceText = s.toString()
+                }
+            }
 
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
+                // --- Price Validation (Existing Logic) ---
+                if (etPrice.isFocused) {
+                    val priceText = s.toString()
+                    etPrice.removeTextChangedListener(this) // Pansamantalang i-alis ang listener
+
+                    val parsedPrice = priceText.toDoubleOrNull()
+                    var revert = false
+
+                    // 1. Decimal Place Check (Hahadlang sa pag-input ng 3rd decimal place)
+                    if (priceText.contains('.') && priceText.substringAfter('.').length > 2) {
+                        revert = true
+                        etPrice.error = "Only 2 decimal places allowed."
+                        // Removed Toast
+                        // Toast.makeText(this@AddEditMenuActivity, "Only 2 decimal places allowed.", Toast.LENGTH_SHORT).show()
+                    }
+                    // 2. Price Cap Check (Hahadlang sa ₱1000.00 at pataas)
+                    else if (parsedPrice != null && parsedPrice >= 1000.00) {
+                        revert = true
+                        etPrice.error = "Price limit is ₱999.99."
+                        // Removed Toast
+                        // Toast.makeText(this@AddEditMenuActivity, "Price limit is ₱999.99.", Toast.LENGTH_SHORT).show()
+                    }
+                    // 3. Invalid Leading Zero Check (Hahadlang sa 00, 01, 000, etc.)
+                    else if (priceText.startsWith("0") && priceText.length > 1 && !priceText.startsWith("0.")) {
+                        revert = true
+                        etPrice.error = "Cannot start with multiple zeros."
+                        // Removed Toast
+                        // Toast.makeText(this@AddEditMenuActivity, "Cannot start with multiple zeros.", Toast.LENGTH_SHORT).show()
+                    }
+
+                    if (revert) {
+                        // Ibalik ang dating laman at cursor position
+                        etPrice.setText(currentPriceText)
+                        etPrice.setSelection(currentPriceText.length)
+                    } else {
+                        etPrice.error = null
+                    }
+                    etPrice.addTextChangedListener(this) // Ibalik ang listener
+                }
+
+                // --- Name Validation (NEW Logic) ---
+                if (etName.isFocused) {
+                    val nameText = s.toString()
+                    etName.removeTextChangedListener(this)
+
+                    // 1. No Numbers/Digits Check (Bawal ang numbers/digits)
+                    if (nameText.any { it.isDigit() }) {
+                        // Ibalik sa dating text na walang number
+                        etName.setText(currentNameText)
+                        etName.setSelection(currentNameText.length)
+                        etName.error = "Menu name cannot contain numbers."
+                        // Removed Toast
+                        // Toast.makeText(this@AddEditMenuActivity, "Numbers are not allowed in the menu name.", Toast.LENGTH_SHORT).show()
+                    } else {
+                        etName.error = null
+                        // 2. Max 50 Characters Check (Kapag lampas sa 50, hahadlang din)
+                        if (nameText.length > 50) {
+                            etName.setText(nameText.substring(0, 50))
+                            etName.setSelection(50)
+                            etName.error = "Menu name is limited to 50 characters."
+                            // Removed Toast
+                            // Toast.makeText(this@AddEditMenuActivity, "Menu name is limited to 50 characters.", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    etName.addTextChangedListener(this)
+                }
+
+                // I-update ang Save button status (lagi itong dapat gawin)
                 btnSave.isEnabled = validateInputFields()
             }
 
@@ -147,13 +245,16 @@ class AddEditMenuActivity : AppCompatActivity() {
 
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(this, "Error loading image: ${e.message}", Toast.LENGTH_LONG).show()
+            // Removed Toast
+            // Toast.makeText(this, "Error loading image: ${e.message}", Toast.LENGTH_LONG).show()
+            showCriticalErrorDialog("Error loading image: ${e.message}", "Image Loading Error")
             null
         }
     }
 
     private fun bitmapToBase64(bitmap: Bitmap): String {
         val baos = ByteArrayOutputStream()
+        // Reduced compression quality for faster upload/download and smaller database size
         bitmap.compress(Bitmap.CompressFormat.JPEG, 50, baos)
         return Base64.encodeToString(baos.toByteArray(), Base64.DEFAULT)
     }
@@ -202,6 +303,7 @@ class AddEditMenuActivity : AppCompatActivity() {
                     originalMenuName = loadedName
 
                     val priceValue = doc.getDouble("price")
+                    // I-format sa 2 decimal places ang presyo
                     etPrice.setText(if (priceValue != null) String.format("%.2f", priceValue) else "")
                     switchAvailable.isChecked = doc.getBoolean("available") ?: true
 
@@ -219,7 +321,9 @@ class AddEditMenuActivity : AppCompatActivity() {
                 }
             }
             .addOnFailureListener {
-                Toast.makeText(this, "Failed to load menu data.", Toast.LENGTH_SHORT).show()
+                // Removed Toast
+                // Toast.makeText(this, "Failed to load menu data.", Toast.LENGTH_SHORT).show()
+                showCriticalErrorDialog("Failed to load menu data from database.", "Data Load Error")
             }
     }
 
@@ -232,23 +336,34 @@ class AddEditMenuActivity : AppCompatActivity() {
 
         var isValid = true
 
-        if (name.length < 3 || name.length > 50) {
-            etName.error = "Name must be 3 to 50 characters long."
+        // 1. Menu Name Validation (50 Characters Max, No Numbers)
+        if (name.length < 3) {
+            etName.error = "Name must be at least 3 characters long."
+            isValid = false
+        } else if (name.length > 50) {
+            etName.error = "Name is limited to 50 characters."
+            isValid = false
+        } else if (name.any { it.isDigit() }) { // Final check for numbers just in case
+            etName.error = "Menu name cannot contain numbers."
             isValid = false
         }
 
+        // 2. Price Validation
         if (priceText.isEmpty()) {
             etPrice.error = "Price is required."
             isValid = false
         } else {
             val parsedPrice = priceText.toDoubleOrNull()
-            if (parsedPrice == null || parsedPrice <= 0) {
-                etPrice.error = "Enter a valid positive price."
+
+            // 🚫 FINAL VALIDATION: Price must be strictly >= ₱1.00 and <= ₱999.99
+            if (parsedPrice == null || parsedPrice < 1.00) {
+                etPrice.error = "Enter a valid price, minimum is ₱1.00."
                 isValid = false
-            } else if (parsedPrice > 1000.00) {
-                etPrice.error = "Price cannot exceed ₱1,000.00."
+            } else if (parsedPrice >= 1000.00) {
+                etPrice.error = "Price cannot be ₱1,000.00 or more."
                 isValid = false
             }
+            // Final check for decimal places
             else if (priceText.contains('.') && priceText.substringAfter('.').length > 2) {
                 etPrice.error = "Price can only have up to two decimal places."
                 isValid = false
@@ -263,8 +378,9 @@ class AddEditMenuActivity : AppCompatActivity() {
             return
         }
 
+        // I-format ang presyo bago i-save para masigurado ang tamang format (min 1.00 enforced by focus listener/validation)
+        val price = String.format("%.2f", etPrice.text.toString().trim().toDouble()).toDouble()
         val name = etName.text.toString().trim()
-        val price = etPrice.text.toString().trim().toDouble()
 
         progressBar.visibility = View.VISIBLE
         btnSave.isEnabled = false
@@ -289,7 +405,7 @@ class AddEditMenuActivity : AppCompatActivity() {
         val formattedName = formatMenuName(name)
 
         lifecycleScope.launch {
-
+            // ✅ Stability Fix: Image conversion is done on the IO thread
             val base64Image = withContext(Dispatchers.IO) {
                 when {
                     imageUri != null -> {
@@ -348,8 +464,13 @@ class AddEditMenuActivity : AppCompatActivity() {
                             firestore.collection("canteenMenu").document(oldDocId).delete()
                                 .addOnSuccessListener {
                                     progressBar.visibility = View.GONE
-                                    Toast.makeText(this, "Menu updated and name changed successfully!", Toast.LENGTH_LONG).show()
-                                    finish()
+                                    // Removed Toast
+                                    // Toast.makeText(this, "Menu updated and name changed successfully!", Toast.LENGTH_LONG).show()
+                                    // Use AlertDialog for successful completion of a complex operation
+                                    AlertDialog.Builder(this).setTitle("Success")
+                                        .setMessage("Menu updated and name changed successfully!")
+                                        .setPositiveButton("OK") { _, _ -> finish() }
+                                        .show()
                                 }
                                 .addOnFailureListener { e ->
                                     progressBar.visibility = View.GONE
@@ -362,7 +483,9 @@ class AddEditMenuActivity : AppCompatActivity() {
             .addOnFailureListener { e ->
                 progressBar.visibility = View.GONE
                 btnSave.isEnabled = true
-                Toast.makeText(this, "Error checking new name existence: ${e.message}", Toast.LENGTH_SHORT).show()
+                // Removed Toast
+                // Toast.makeText(this, "Error checking new name existence: ${e.message}", Toast.LENGTH_SHORT).show()
+                showCriticalErrorDialog("Error checking new name existence: ${e.message}", "Database Error")
             }
     }
 
@@ -389,7 +512,9 @@ class AddEditMenuActivity : AppCompatActivity() {
             .addOnFailureListener { e ->
                 progressBar.visibility = View.GONE
                 btnSave.isEnabled = true
-                Toast.makeText(this, "Error checking menu existence: ${e.message}", Toast.LENGTH_SHORT).show()
+                // Removed Toast
+                // Toast.makeText(this, "Error checking menu existence: ${e.message}", Toast.LENGTH_SHORT).show()
+                showCriticalErrorDialog("Error checking menu existence: ${e.message}", "Database Error")
             }
     }
 
@@ -409,7 +534,8 @@ class AddEditMenuActivity : AppCompatActivity() {
             "available" to available,
             "imageUrl" to base64Image,
             "staffUid" to staffUid,
-            "canteenName" to canteenName
+            "canteenName" to canteenName,
+            "updatedAt" to com.google.firebase.Timestamp.now()
         )
 
         val task = firestore.collection("canteenMenu").document(docId).set(menuMap)
@@ -417,8 +543,13 @@ class AddEditMenuActivity : AppCompatActivity() {
         task.addOnSuccessListener {
             if (!isNameChange) {
                 progressBar.visibility = View.GONE
-                Toast.makeText(this, "Menu saved successfully!", Toast.LENGTH_SHORT).show()
-                finish()
+                // Removed Toast
+                // Toast.makeText(this, "Menu saved successfully!", Toast.LENGTH_SHORT).show()
+                // Use AlertDialog for successful completion
+                AlertDialog.Builder(this).setTitle("Success")
+                    .setMessage("Menu item saved successfully!")
+                    .setPositiveButton("OK") { _, _ -> finish() }
+                    .show()
             }
         }.addOnFailureListener { e ->
             progressBar.visibility = View.GONE

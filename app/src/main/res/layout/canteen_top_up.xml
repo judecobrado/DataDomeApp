@@ -134,7 +134,7 @@
                 android:id="@+id/etAmount"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="e.g., 50.00"
+                android:hint="Enter Amount "
                 android:inputType="numberDecimal"
                 android:textColor="#212121"
                 android:textSize="24sp"
@@ -142,11 +142,24 @@
                 android:paddingVertical="18dp"/>
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- ⭐ INILIPAT DITO: Note tungkol sa balanse limitasyon, direkta sa ilalim ng input field. -->
+        <TextView
+            android:id="@+id/tvBalanceLimitNote"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Note: Maximum wallet balance is ₱3000.00"
+            android:gravity="center"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:textSize="12sp"
+            android:textColor="@android:color/holo_red_dark"
+            tools:visibility="visible" />
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnConfirmTopUp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="40dp"
+            android:layout_marginTop="32dp"
             android:text="CONFIRM TOP-UP"
             android:backgroundTint="#7B1113"
             android:textColor="#FFFFFF"

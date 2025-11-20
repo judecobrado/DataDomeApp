@@ -53,6 +53,11 @@ android {
 }
 
 dependencies {
+    // >> CRITICAL FIX: Add this line for SwipeRefreshLayout <<
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+// You can use a newer version if available, but 1.1.0 is stable and common.
+    implementation(libs.material)
+// Which typically resolves to: implementation("com.google.android.material:material:1.x.x")
 
     implementation(platform("com.google.firebase:firebase-bom:34.3.0"))
 

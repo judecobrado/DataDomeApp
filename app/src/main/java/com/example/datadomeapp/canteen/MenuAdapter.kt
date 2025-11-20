@@ -40,7 +40,7 @@ class MenuAdapter(
         holder.tvPrice.text = "₱%.2f".format(item.price)
 
         // Status and Color Logic
-        holder.tvStatus.text = if (item.available) "Available" else "Out of Stock"
+        holder.tvStatus.text = if (item.available) "Available" else "Not Available"
         holder.tvStatus.setTextColor(
             if (item.available) Color.parseColor("#4CAF50") else Color.parseColor("#F44336")
         )

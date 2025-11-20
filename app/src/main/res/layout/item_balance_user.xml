@@ -26,22 +26,23 @@
             android:orientation="vertical">
 
             <TextView
-                android:id="@+id/tvUserName"
+                android:id="@+id/tvUserInfo"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:textColor="#212121"
-                android:maxLines="1"
+                android:maxLines="2"
                 android:ellipsize="end"
                 android:fontFamily="sans-serif-medium"
-                tools:text="Juan Dela Cruz (Student)"/>
+                tools:text="Juan Dela Cruz\n(Student)"/>
 
             <TextView
                 android:id="@+id/tvAccountId"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textSize="12sp"
+                android:visibility="gone"
                 android:textColor="#A0A0A0" android:layout_marginTop="2dp"
                 tools:text="ID: DDS-0007"/>
         </LinearLayout>
