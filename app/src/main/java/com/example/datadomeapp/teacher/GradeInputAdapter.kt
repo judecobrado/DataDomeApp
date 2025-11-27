@@ -13,7 +13,8 @@ import com.example.datadomeapp.models.Student
 class GradeInputAdapter(
     private val gradeDataList: List<GradeData>,
     private val listener: OnStudentClickListener,
-    private var isPublished: Boolean = false
+    private var isPublished: Boolean = false,
+    private var gradeWeights: GradeWeights = GradeWeights() // Add customizable weights
 ) : RecyclerView.Adapter<GradeInputAdapter.GradeViewHolder>() {
 
     fun setPublishedState(published: Boolean) {
@@ -22,6 +23,19 @@ class GradeInputAdapter(
     }
 
     fun isGradesPublished(): Boolean = isPublished
+
+    // Update grade weights and recalculate all grades
+    fun updateGradeWeights(newWeights: GradeWeights) {
+        gradeWeights = newWeights
+        recalculateAllGrades()
+        notifyDataSetChanged()
+    }
+
+    private fun recalculateAllGrades() {
+        studentGrades.values.forEach { gradeData ->
+            calculateTotal(gradeData)
+        }
+    }
 
     // Map for easy access using StudentDocId (StudentDocId -> GradeData)
     private val studentGrades: MutableMap<String, GradeData> =
@@ -63,6 +77,13 @@ class GradeInputAdapter(
     }
 
     /**
+     * Get current grade weights
+     */
+    fun getGradeWeights(): GradeWeights {
+        return gradeWeights
+    }
+
+    /**
      * Update student grade when detailed scores are modified
      */
     fun updateStudentGrade(studentId: String, newQuiz: Double, newExam: Double, newAssignment: Double) {
@@ -70,7 +91,7 @@ class GradeInputAdapter(
             gradeData.quiz = newQuiz
             gradeData.exam = newExam
             gradeData.assignment = newAssignment
-            // Recalculate final grade
+            // Recalculate final grade with current weights
             calculateTotal(gradeData)
         }
         notifyDataSetChanged()
@@ -83,7 +104,7 @@ class GradeInputAdapter(
         studentGrades[studentId]?.let { gradeData ->
             gradeData.attendance = newAttendance
             gradeData.recitation = newRecitation
-            // Recalculate final grade
+            // Recalculate final grade with current weights
             calculateTotal(gradeData)
         }
         notifyDataSetChanged()
@@ -109,6 +130,14 @@ class GradeInputAdapter(
             tvRecitation.text = String.format("%.2f", grades.recitation)
             tvAssignment.text = String.format("%.2f", grades.assignment)
             tvExam.text = String.format("%.2f", grades.exam)
+
+            // Show weights as hints (optional)
+            tvAttendance.hint = "${gradeWeights.attendance}%"
+            tvQuiz.hint = "${gradeWeights.quiz}%"
+            tvRecitation.hint = "${gradeWeights.recitation}%"
+            tvAssignment.hint = "${gradeWeights.assignment}%"
+            tvExam.hint = "${gradeWeights.exam}%"
+
             tvTotal.text = calculateTotal(grades)
 
             if (isPublished) {
@@ -122,24 +151,11 @@ class GradeInputAdapter(
         }
 
         private fun calculateTotal(grades: GradeData): String {
-            // Weights based on a standard 100% component grading system
-            val WEIGHT_ATTENDANCE = 0.10 // 10%
-            val WEIGHT_RECITATION = 0.10  // 10%
-            val WEIGHT_QUIZ = 0.20        // 20%
-            val WEIGHT_ASSIGNMENT = 0.20  // 20%
-            val WEIGHT_EXAM = 0.40        // 40%
-
-            val attendance = grades.attendance ?: 0.0
-            val quiz = grades.quiz ?: 0.0
-            val recitation = grades.recitation ?: 0.0
-            val assignment = grades.assignment ?: 0.0
-            val exam = grades.exam ?: 0.0
-
-            val computedTotal = (attendance * WEIGHT_ATTENDANCE) +
-                    (quiz * WEIGHT_QUIZ) +
-                    (recitation * WEIGHT_RECITATION) +
-                    (assignment * WEIGHT_ASSIGNMENT) +
-                    (exam * WEIGHT_EXAM)
+            val computedTotal = (grades.attendance * gradeWeights.attendance / 100) +
+                    (grades.quiz * gradeWeights.quiz / 100) +
+                    (grades.recitation * gradeWeights.recitation / 100) +
+                    (grades.assignment * gradeWeights.assignment / 100) +
+                    (grades.exam * gradeWeights.exam / 100)
 
             // Save computedTotal to GradeData before displaying
             grades.finalGrade = String.format("%.2f", computedTotal).toDouble()
@@ -152,24 +168,11 @@ class GradeInputAdapter(
      * Helper function to calculate total grade (accessible from both ViewHolder and adapter)
      */
     private fun calculateTotal(grades: GradeData): String {
-        // Weights based on a standard 100% component grading system
-        val WEIGHT_ATTENDANCE = 0.10 // 10%
-        val WEIGHT_RECITATION = 0.10  // 10%
-        val WEIGHT_QUIZ = 0.20        // 20%
-        val WEIGHT_ASSIGNMENT = 0.20  // 20%
-        val WEIGHT_EXAM = 0.40        // 40%
-
-        val attendance = grades.attendance ?: 0.0
-        val quiz = grades.quiz ?: 0.0
-        val recitation = grades.recitation ?: 0.0
-        val assignment = grades.assignment ?: 0.0
-        val exam = grades.exam ?: 0.0
-
-        val computedTotal = (attendance * WEIGHT_ATTENDANCE) +
-                (quiz * WEIGHT_QUIZ) +
-                (recitation * WEIGHT_RECITATION) +
-                (assignment * WEIGHT_ASSIGNMENT) +
-                (exam * WEIGHT_EXAM)
+        val computedTotal = (grades.attendance * gradeWeights.attendance / 100) +
+                (grades.quiz * gradeWeights.quiz / 100) +
+                (grades.recitation * gradeWeights.recitation / 100) +
+                (grades.assignment * gradeWeights.assignment / 100) +
+                (grades.exam * gradeWeights.exam / 100)
 
         // Save computedTotal to GradeData before displaying
         grades.finalGrade = String.format("%.2f", computedTotal).toDouble()
@@ -194,4 +197,24 @@ class GradeInputAdapter(
         var assignment: Double = 50.0,
         var finalGrade: Double = 0.0
     )
+
+    /**
+     * Data class for customizable grade weights
+     */
+    data class GradeWeights(
+        val attendance: Double = 10.0,
+        val recitation: Double = 10.0,
+        val quiz: Double = 20.0,
+        val assignment: Double = 20.0,
+        val exam: Double = 40.0
+    ) {
+        fun isValid(): Boolean {
+            val total = attendance + recitation + quiz + assignment + exam
+            return total == 100.0
+        }
+
+        fun getTotal(): Double {
+            return attendance + recitation + quiz + assignment + exam
+        }
+    }
 }
