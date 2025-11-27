@@ -488,7 +488,7 @@ class ManageSchedulesActivity : AppCompatActivity() {
                 filterAssignmentsAndRenderMatrix()
             }
             .addOnFailureListener { e ->
-                Toast.makeText(this, "Error fetching assignments", Toast.LENGTH_LONG)
+                Toast.makeText(this, "Something went wrong, try again later.", Toast.LENGTH_LONG)
                     .show()
             }
     }
