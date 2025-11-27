@@ -11,6 +11,7 @@ import android.os.*
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -388,6 +389,11 @@ class RecordAttendanceActivity : AppCompatActivity() {
             return false
         }
 
+        findNextSessionNumber(dateToSave) { nextSessionNumber ->
+            currentSessionNumber = nextSessionNumber
+            proceedWithSessionStart()
+        }
+
         val currentTime = System.currentTimeMillis()
         val tapTimeFromStart = currentTime - sessionStartTime
         val isWithinLateThreshold = tapTimeFromStart <= lateThreshold
@@ -410,6 +416,42 @@ class RecordAttendanceActivity : AppCompatActivity() {
         }
 
         return false
+    }
+
+    private fun proceedWithSessionStart() {
+        isIdTappingActive = true
+        isSessionActive = true
+
+        // Clear data when starting new session
+        clearCurrentSessionData()
+
+        sessionStartTime = System.currentTimeMillis()
+
+        setupBackgroundNfc()
+
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        wakeLock = powerManager.newWakeLock(
+            PowerManager.PARTIAL_WAKE_LOCK,
+            "DataDomeApp::NFCWakeLock"
+        )
+        wakeLock?.acquire(sessionDuration)
+
+        btnStartIdTapping.text = "Stop Session 🔴"
+        btnStartIdTapping.setBackgroundColor(ContextCompat.getColor(this, android.R.color.holo_red_dark))
+
+        tvTimer.visibility = View.VISIBLE
+        tvSessionInfo.visibility = View.VISIBLE
+        tvSessionInfo.text = "Class Session ${currentSessionNumber} - ${getDurationText(sessionDuration)}"
+
+        // Show save button when session starts
+        btnSaveAttendance.visibility = View.VISIBLE
+
+        startTimer()
+        Toast.makeText(this, "Class Session ${currentSessionNumber} Started! Students can tap for attendance AND recitation.", Toast.LENGTH_LONG).show()
+
+        // Hide the "no session" message when session starts
+        tvNoRecords.visibility = View.GONE
+        recyclerView.visibility = View.VISIBLE
     }
 
     private fun isNfcSupported(): Boolean {
@@ -557,6 +599,10 @@ class RecordAttendanceActivity : AppCompatActivity() {
             attendanceAdapter.setEditable(!isPreviousDay)
         }
 
+        btnStartIdTapping.isEnabled = !isPreviousDay
+        btnStartIdTapping.text = "Start Session 🟢"
+        btnStartIdTapping.setBackgroundColor(ContextCompat.getColor(this, android.R.color.holo_green_dark))
+
         tappedStudents.clear()
         isExistingRecordLoaded = false
         isDataModified = false
@@ -647,52 +693,81 @@ class RecordAttendanceActivity : AppCompatActivity() {
     }
 
     private fun performSaveToDatabase(dateToSave: String, attendanceMap: Map<String, String>, recitationMap: Map<String, Int>) {
-        val sessionNum = currentSessionNumber
-        val recordId = "${assignmentId}_${dateToSave}_session_${sessionNum}"
+        // Determine next available session number
+        findNextSessionNumber(dateToSave) { nextSessionNumber ->
+            val recordId = "${assignmentId}_${dateToSave}_session_${nextSessionNumber}"
 
-        firestore.document("systemSettings/currentTerm")
+            firestore.document("systemSettings/currentTerm")
+                .get()
+                .addOnSuccessListener { termDoc ->
+                    val academicTerm = termDoc.getString("academicTerm") ?: ""
+                    val academicYear = termDoc.getString("academicYear") ?: ""
+                    val semester = termDoc.getString("semester") ?: ""
+
+                    val dailyRecord = hashMapOf(
+                        "assignmentId" to assignmentId!!,
+                        "subjectCode" to subjectCode!!,
+                        "date" to dateToSave,
+                        "sessionType" to "CLASS_SESSION",
+                        "sessionNumber" to nextSessionNumber, // ✅ Use the calculated session number
+                        "displaySession" to "Class Session $nextSessionNumber", // ✅ Updated display name
+                        "statuses" to attendanceMap,
+                        "recitationPoints" to recitationMap,
+                        "tapTimestamps" to tapTimestamps,
+                        "sessionStartTime" to sessionStartTime,
+                        "sessionDuration" to sessionDuration,
+                        "lateThreshold" to lateThreshold,
+                        "academicTerm" to academicTerm,
+                        "academicYear" to academicYear,
+                        "semester" to semester
+                    )
+
+                    firestore.collection(ATTENDANCE_COLLECTION).document(recordId)
+                        .set(dailyRecord)
+                        .addOnSuccessListener {
+                            Log.i("AttendanceSaver", "NEW Class session saved successfully. Document ID: $recordId")
+
+                            // ✅ Update currentSessionNumber for next potential session
+                            currentSessionNumber = nextSessionNumber + 1
+
+                            // Clear ALL data after successful save
+                            clearDataAfterSave()
+
+                            Toast.makeText(this, "✅ Class Session $nextSessionNumber successfully saved! Start a new session to record more data.", Toast.LENGTH_LONG).show()
+                        }
+                        .addOnFailureListener { e ->
+                            Log.e("AttendanceSaver", "Save FAILED: ${e.message}", e)
+                            Toast.makeText(this, "Failed to save session: ${e.message}", Toast.LENGTH_LONG).show()
+                        }
+                }
+                .addOnFailureListener { e ->
+                    Log.e("AttendanceSaver", "Failed to fetch current term: ${e.message}", e)
+                    Toast.makeText(this, "Failed to fetch current term info.", Toast.LENGTH_LONG).show()
+                }
+        }
+    }
+
+    private fun findNextSessionNumber(dateToSave: String, callback: (Int) -> Unit) {
+        firestore.collection(ATTENDANCE_COLLECTION)
+            .whereEqualTo("assignmentId", assignmentId)
+            .whereEqualTo("date", dateToSave)
             .get()
-            .addOnSuccessListener { termDoc ->
-                val academicTerm = termDoc.getString("academicTerm") ?: ""
-                val academicYear = termDoc.getString("academicYear") ?: ""
-                val semester = termDoc.getString("semester") ?: ""
+            .addOnSuccessListener { snapshot ->
+                val existingSessions = snapshot.documents.mapNotNull {
+                    it.getLong("sessionNumber")?.toInt()
+                }
 
-                val dailyRecord = hashMapOf(
-                    "assignmentId" to assignmentId!!,
-                    "subjectCode" to subjectCode!!,
-                    "date" to dateToSave,
-                    "sessionType" to "CLASS_SESSION",
-                    "sessionNumber" to sessionNum,
-                    "displaySession" to "Class Session $sessionNum",
-                    "statuses" to attendanceMap,
-                    "recitationPoints" to recitationMap,
-                    "tapTimestamps" to tapTimestamps,
-                    "sessionStartTime" to sessionStartTime,
-                    "sessionDuration" to sessionDuration,
-                    "lateThreshold" to lateThreshold,
-                    "academicTerm" to academicTerm,
-                    "academicYear" to academicYear,
-                    "semester" to semester
-                )
+                val nextSession = if (existingSessions.isEmpty()) {
+                    1
+                } else {
+                    existingSessions.max() + 1
+                }
 
-                firestore.collection(ATTENDANCE_COLLECTION).document(recordId)
-                    .set(dailyRecord)
-                    .addOnSuccessListener {
-                        Log.i("AttendanceSaver", "Class session saved successfully. Document ID: $recordId")
-
-                        // Clear ALL data after successful save
-                        clearDataAfterSave()
-
-                        Toast.makeText(this, "✅ Class Session $sessionNum successfully saved! Start a new session to record more data.", Toast.LENGTH_LONG).show()
-                    }
-                    .addOnFailureListener { e ->
-                        Log.e("AttendanceSaver", "Save FAILED: ${e.message}", e)
-                        Toast.makeText(this, "Failed to save session: ${e.message}", Toast.LENGTH_LONG).show()
-                    }
+                callback(nextSession)
             }
-            .addOnFailureListener { e ->
-                Log.e("AttendanceSaver", "Failed to fetch current term: ${e.message}", e)
-                Toast.makeText(this, "Failed to fetch current term info.", Toast.LENGTH_LONG).show()
+            .addOnFailureListener {
+                // Fallback to current session number
+                callback(currentSessionNumber)
             }
     }
 
@@ -712,6 +787,10 @@ class RecordAttendanceActivity : AppCompatActivity() {
         isExistingRecordLoaded = false
 
         // Update UI to reflect fresh state
+        btnStartIdTapping.text = "Start Session 🟢"
+        btnStartIdTapping.setBackgroundColor(ContextCompat.getColor(this, android.R.color.holo_green_dark))
+
+        btnStartIdTapping.isEnabled = !isPreviousDay
         btnStartIdTapping.text = "Start Session 🟢"
         btnStartIdTapping.setBackgroundColor(ContextCompat.getColor(this, android.R.color.holo_green_dark))
 
@@ -754,40 +833,98 @@ class RecordAttendanceActivity : AppCompatActivity() {
                 val existingRecords = snapshot.documents.mapNotNull { doc ->
                     val displaySession = doc.getString("displaySession")
                     val sessionNumber = doc.getLong("sessionNumber")?.toInt()
+                    val documentId = doc.id
                     if (displaySession != null && sessionNumber != null) {
-                        Pair(displaySession, sessionNumber)
+                        Triple(displaySession, sessionNumber, documentId)
                     } else {
                         null
                     }
-                }
+                }.sortedBy { it.second }
 
-                val options = mutableListOf<String>()
-                existingRecords.forEach { (displaySession, _) ->
-                    options.add("Tingnan: $displaySession")
-                }
+                val options = existingRecords.map { it.first }.toMutableList()
                 options.add("➕ Mag-set ng Bagong Session")
 
-                AlertDialog.Builder(this)
-                    .setTitle("Class Sessions para sa $date")
-                    .setItems(options.toTypedArray()) { dialog, which ->
-                        if (which < existingRecords.size) {
-                            val (displaySession, sessionNumber) = existingRecords[which]
-                            currentSessionNumber = sessionNumber
-                            loadExistingAttendanceForViewing(displaySession)
-                        } else {
-                            currentSessionNumber = 1
+                // GUMAMIT NG CUSTOM DIALOG LAYOUT
+                val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_custom_session_list, null)
+                val listView = dialogView.findViewById<ListView>(R.id.listViewSessions)
+
+                val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, options)
+                listView.adapter = adapter
+
+                val dialog = AlertDialog.Builder(this)
+                    .setTitle("Class Sessions para sa $date \n\uD83D\uDCCDLong-press any session to delete")
+                    .setView(dialogView)
+                    .setNegativeButton("Cancel") { d, _ -> d.dismiss() }
+                    .create()
+
+                // CLICK LISTENER - for normal tap (view session)
+                listView.setOnItemClickListener { _, _, position, _ ->
+                    if (position < existingRecords.size) {
+                        val (displaySession, sessionNumber, _) = existingRecords[position]
+                        currentSessionNumber = sessionNumber
+                        loadExistingAttendanceForViewing(displaySession)
+                    } else {
+                        findNextSessionNumber(date) { nextSessionNumber ->
+                            currentSessionNumber = nextSessionNumber
                             initializeFreshSession()
                         }
-                        dialog.dismiss()
                     }
-                    .setNegativeButton("Cancel") { dialog, _ ->
+                    dialog.dismiss()
+                }
+
+                // LONG PRESS LISTENER - for delete
+                listView.setOnItemLongClickListener { _, _, position, _ ->
+                    if (position < existingRecords.size) {
+                        val (displaySession, _, documentId) = existingRecords[position]
+                        showDeleteConfirmationDialog(displaySession, documentId)
                         dialog.dismiss()
+                        true // return true to indicate the long press was handled
+                    } else {
+                        false // return false for "New Session" item
                     }
-                    .show()
+                }
+
+                dialog.show()
             }
             .addOnFailureListener { e ->
                 Log.e("AttendanceManagement", "Error fetching existing records: $e")
                 Toast.makeText(this, "Failed to load existing session records.", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    private fun showDeleteConfirmationDialog(sessionName: String, documentId: String) {
+        AlertDialog.Builder(this)
+            .setTitle("Delete Session")
+            .setMessage("Are you sure you want to delete:\n\"$sessionName\"?\n\nThis action cannot be undone!")
+            .setPositiveButton("DELETE") { dialog, _ ->
+                deleteSession(documentId, sessionName)
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .setIcon(R.drawable.ic_warning_yellow)
+            .show()
+    }
+
+    private fun deleteSession(documentId: String, sessionName: String) {
+        firestore.collection(ATTENDANCE_COLLECTION).document(documentId)
+            .delete()
+            .addOnSuccessListener {
+                Log.i(TAG, "Session deleted: $documentId")
+                Toast.makeText(this, "✅ '$sessionName' deleted successfully!", Toast.LENGTH_LONG).show()
+
+                // Refresh the dialog to show updated list
+                showAttendanceManagementDialog()
+
+                // If we were viewing the deleted session, clear the display
+                if (isExistingRecordLoaded) {
+                    initializeFreshSession()
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e(TAG, "Error deleting session: ${e.message}", e)
+                Toast.makeText(this, "❌ Failed to delete session: ${e.message}", Toast.LENGTH_LONG).show()
             }
     }
 
@@ -814,6 +951,10 @@ class RecordAttendanceActivity : AppCompatActivity() {
                     attendanceAdapter.updateStatuses(existingAttendance, existingRecitation)
                     attendanceAdapter.setEditable(false) // View only
                 }
+
+                btnStartIdTapping.isEnabled = false
+                btnStartIdTapping.text = "View Only Mode"
+                btnStartIdTapping.setBackgroundColor(ContextCompat.getColor(this, android.R.color.darker_gray))
 
                 tvNoRecords.visibility = View.GONE
                 recyclerView.visibility = View.VISIBLE

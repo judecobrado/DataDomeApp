@@ -101,6 +101,25 @@
                         tools:text="75.00"/>
                 </com.google.android.material.textfield.TextInputLayout>
 
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Category"
+                    android:textColor="#444444"
+                    android:textSize="15sp"
+                    android:fontFamily="sans-serif-medium"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginBottom="4dp"/>
+
+                <Spinner
+                    android:id="@+id/spinnerCategory"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:entries="@array/menu_categories"
+                    android:paddingVertical="10dp"
+                    android:layout_marginBottom="8dp"
+                    android:spinnerMode="dropdown"/>
+
                 <Switch
                     android:id="@+id/switchAvailable"
                     android:text="Available for Order"

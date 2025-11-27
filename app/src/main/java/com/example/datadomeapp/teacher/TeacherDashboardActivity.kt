@@ -340,7 +340,15 @@ class TeacherDashboardActivity : AppCompatActivity() {
             intent.putExtra("ASSIGNMENT_ID", classDTO.assignmentId)
         }
 
-        intent.putExtra("CLASS_NAME", classDTO.className)
+        val classNameToPass = if (classDTO.activityType == "Grades") {
+            // Use "Subject Title - Section" format for Grades
+            "${classDTO.subjectTitle} - ${classDTO.section}"
+        } else {
+            // Keep original format for other activities
+            classDTO.className
+        }
+
+        intent.putExtra("CLASS_NAME", classNameToPass)
         intent.putExtra("SUBJECT_CODE", classDTO.subjectCode)
 
         if (classDTO.activityType == "Grades") {
@@ -355,6 +363,27 @@ class TeacherDashboardActivity : AppCompatActivity() {
         intent.putExtra("TOTAL_STUDENTS", classDTO.totalStudents)
 
         startActivity(intent)
+    }
+
+    private fun extractSectionIdFromClassName(className: String): String {
+        return try {
+            // Try different patterns:
+            // "BSIT - 1A - GE 2" -> "1A"
+            // "BSIT - 2B - Mathematics" -> "2B"
+            // "BSCS - 3C - Programming" -> "3C"
+            val pattern = """[A-Z]+ - (\d+[A-Z]) - .+""".toRegex()
+            val match = pattern.find(className)
+
+            if (match != null) {
+                match.groupValues[1] // Returns "1A", "2B", etc.
+            } else {
+                // Fallback: get the part after first " - "
+                className.split(" - ").getOrNull(1) ?: "A"
+            }
+        } catch (e: Exception) {
+            Log.e("Dashboard", "Error extracting section from: $className")
+            "A"
+        }
     }
 
     // OLD METHOD - KEEP FOR REFERENCE BUT NOT USED

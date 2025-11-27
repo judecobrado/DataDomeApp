@@ -8,6 +8,9 @@ import android.util.Log
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import android.os.Build
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import com.example.datadomeapp.admin.AdminDashboardActivity
 import com.example.datadomeapp.canteen.CanteenStaffDashboardActivity
 import com.example.datadomeapp.student.StudentDashboardActivity
@@ -70,13 +73,62 @@ class LoginActivity : AppCompatActivity() {
                     } else {
                         // Auth failed
                         resetUI()
-                        AlertDialog.Builder(this)
-                            .setTitle("Login Failed")
-                            .setMessage("The email or password you entered is incorrect.")
-                            .setPositiveButton("OK", null)
-                            .show()
+                        handleLoginError(task.exception)
                     }
                 }
+        }
+    }
+
+    private fun handleLoginError(exception: Exception?) {
+        val errorMessage = when {
+            !isNetworkAvailable() -> {
+                "No internet connection. Please check your network and try again."
+            }
+            exception?.message?.contains("network error", ignoreCase = true) == true -> {
+                "Network error. Please check your internet connection."
+            }
+            exception?.message?.contains("invalid email", ignoreCase = true) == true -> {
+                "Invalid email format."
+            }
+            exception?.message?.contains("login failed", ignoreCase = true) == true -> {
+                "The email or password you entered is incorrect."
+            }
+            exception?.message?.contains("login failed", ignoreCase = true) == true -> {
+                "The email or password you entered is incorrect."
+            }
+            exception?.message?.contains("too many requests", ignoreCase = true) == true -> {
+                "Too many login attempts. Please try again later."
+            }
+            else -> {
+                "The email or password you entered is incorrect."
+            }
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("Login Failed")
+            .setMessage(errorMessage)
+            .setPositiveButton("OK", null)
+            .show()
+    }
+
+    private fun isNetworkAvailable(): Boolean {
+        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val network = connectivityManager.activeNetwork ?: return false
+            val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
+
+            return when {
+                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
+                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
+                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> true
+                else -> false
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            val networkInfo = connectivityManager.activeNetworkInfo
+            @Suppress("DEPRECATION")
+            return networkInfo != null && networkInfo.isConnected
         }
     }
 

@@ -1,6 +1,5 @@
 package com.example.datadomeapp.canteen
 
-import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
@@ -9,26 +8,34 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.util.Base64
 import android.view.View
-import android.widget.*
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.Button
+import android.widget.EditText
+import android.widget.ImageView
+import android.widget.ProgressBar
+import android.widget.Spinner
+import android.widget.Switch
+import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.example.datadomeapp.R
-import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import java.io.ByteArrayOutputStream
-import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.*
+import java.io.ByteArrayOutputStream
+import java.util.Locale
 
 class AddEditMenuActivity : AppCompatActivity() {
 
     private lateinit var etName: EditText
     private lateinit var etPrice: EditText
+    private lateinit var spinnerCategory: Spinner
     private lateinit var switchAvailable: Switch
     private lateinit var btnSave: Button
     private lateinit var btnUploadImage: Button
@@ -71,11 +78,21 @@ class AddEditMenuActivity : AppCompatActivity() {
 
         etName = findViewById(R.id.etMenuName)
         etPrice = findViewById(R.id.etMenuPrice)
+        spinnerCategory = findViewById(R.id.spinnerCategory)
         switchAvailable = findViewById(R.id.switchAvailable)
         btnSave = findViewById(R.id.btnSaveMenu)
         btnUploadImage = findViewById(R.id.btnUploadImage)
         ivPreview = findViewById(R.id.ivMenuPreview)
         progressBar = findViewById(R.id.progressBar)
+
+        val categoryList = resources.getStringArray(R.array.menu_categories).toList()
+        val adapter = DisabledPlaceholderSpinnerAdapter(
+            this,
+            android.R.layout.simple_spinner_item, // Layout for the selected item view
+            categoryList
+        )
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) // Layout for the dropdown items
+        spinnerCategory.adapter = adapter
 
         staffUid = auth.currentUser?.uid
         canteenName = intent.getStringExtra("canteenName")
@@ -103,6 +120,15 @@ class AddEditMenuActivity : AppCompatActivity() {
                     // Para masiguro na 2 decimal places ang format kapag umalis
                     etPrice.setText(String.format("%.2f", parsedPrice))
                 }
+            }
+        }
+
+        spinnerCategory.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                btnSave.isEnabled = validateInputFields()
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                // Not strictly needed, but included for completeness
             }
         }
 
@@ -305,6 +331,12 @@ class AddEditMenuActivity : AppCompatActivity() {
                     val priceValue = doc.getDouble("price")
                     // I-format sa 2 decimal places ang presyo
                     etPrice.setText(if (priceValue != null) String.format("%.2f", priceValue) else "")
+                    val category = doc.getString("category") ?: resources.getStringArray(R.array.menu_categories)[0]
+                    val adapter = spinnerCategory.adapter as ArrayAdapter<String>
+                    val categoryPosition = adapter.getPosition(category)
+                    if (categoryPosition >= 0) {
+                        spinnerCategory.setSelection(categoryPosition)
+                    }
                     switchAvailable.isChecked = doc.getBoolean("available") ?: true
 
                     val base64Image = doc.getString("imageUrl")
@@ -370,6 +402,10 @@ class AddEditMenuActivity : AppCompatActivity() {
             }
         }
 
+        if (spinnerCategory.selectedItemPosition == 0) { // ⬅️ Change check to position 0
+            isValid = false
+        }
+
         return isValid
     }
 
@@ -416,8 +452,8 @@ class AddEditMenuActivity : AppCompatActivity() {
                     else -> ""
                 }
             }
-
-            continueSaveLogic(formattedName, price, available, base64Image, uid, canteen)
+            val category = spinnerCategory.selectedItem.toString()
+            continueSaveLogic(formattedName, price, available, base64Image, uid, canteen, category)
         }
     }
 
@@ -427,17 +463,18 @@ class AddEditMenuActivity : AppCompatActivity() {
         available: Boolean,
         base64Image: String,
         uid: String,
-        canteen: String
+        canteen: String,
+        category: String
     ) {
         if (menuId == null) {
-            checkExistenceAndSave(formattedName, price, available, base64Image, uid, canteen)
+            checkExistenceAndSave(formattedName, price, available, base64Image, uid, canteen, category)
         } else {
             val newCustomDocId = createDocumentId(canteen, formattedName)
 
             if (newCustomDocId != menuId) {
-                handleNameChangeUpdate(menuId!!, formattedName, price, available, base64Image, uid, canteen, newCustomDocId)
+                handleNameChangeUpdate(menuId!!, formattedName, price, available, base64Image, uid, canteen, newCustomDocId, category)
             } else {
-                saveToFirestore(formattedName, price, available, base64Image, uid, canteen, menuId!!)
+                saveToFirestore(formattedName, price, available, base64Image, uid, canteen, menuId!!, category)
             }
         }
     }
@@ -450,7 +487,8 @@ class AddEditMenuActivity : AppCompatActivity() {
         base64Image: String,
         staffUid: String,
         canteenName: String,
-        newDocId: String
+        newDocId: String,
+        category: String
     ) {
         firestore.collection("canteenMenu").document(newDocId).get()
             .addOnSuccessListener { doc ->
@@ -459,7 +497,7 @@ class AddEditMenuActivity : AppCompatActivity() {
                     btnSave.isEnabled = true
                     showCriticalErrorDialog("The new name '$newName' already exists as a separate item. Please choose a unique name.", "Name Conflict")
                 } else {
-                    saveToFirestore(newName, price, available, base64Image, staffUid, canteenName, newDocId, isNameChange = true)
+                    saveToFirestore(newName, price, available, base64Image, staffUid, canteenName, newDocId, category, isNameChange = true)
                         .addOnSuccessListener {
                             firestore.collection("canteenMenu").document(oldDocId).delete()
                                 .addOnSuccessListener {
@@ -495,7 +533,8 @@ class AddEditMenuActivity : AppCompatActivity() {
         available: Boolean,
         base64Image: String,
         staffUid: String,
-        canteenName: String
+        canteenName: String,
+        category: String
     ) {
         val customDocId = createDocumentId(canteenName, name)
 
@@ -506,7 +545,7 @@ class AddEditMenuActivity : AppCompatActivity() {
                     btnSave.isEnabled = true
                     showCriticalErrorDialog("A menu item named '$name' already exists for your canteen. Please use the Edit feature to modify it.", "Duplicate Item")
                 } else {
-                    saveToFirestore(name, price, available, base64Image, staffUid, canteenName, customDocId)
+                    saveToFirestore(name, price, available, base64Image, staffUid, canteenName, customDocId, category)
                 }
             }
             .addOnFailureListener { e ->
@@ -526,6 +565,7 @@ class AddEditMenuActivity : AppCompatActivity() {
         staffUid: String,
         canteenName: String,
         docId: String,
+        category: String,
         isNameChange: Boolean = false
     ): com.google.android.gms.tasks.Task<Void> {
         val menuMap = hashMapOf(
@@ -535,6 +575,7 @@ class AddEditMenuActivity : AppCompatActivity() {
             "imageUrl" to base64Image,
             "staffUid" to staffUid,
             "canteenName" to canteenName,
+            "category" to category,
             "updatedAt" to com.google.firebase.Timestamp.now()
         )
 
@@ -558,5 +599,32 @@ class AddEditMenuActivity : AppCompatActivity() {
         }
 
         return task
+    }
+}
+
+// Place this class at the bottom of the AddEditMenuActivity.kt file
+class DisabledPlaceholderSpinnerAdapter(
+    context: android.content.Context,
+    resource: Int,
+    private val items: List<String>
+) : ArrayAdapter<String>(context, resource, items) {
+
+    // 1. Physically prevents the user from selecting the item at position 0
+    override fun isEnabled(position: Int): Boolean {
+        return position != 0
+    }
+
+    // 2. Greys out the text for the placeholder in the dropdown list
+    override fun getDropDownView(position: Int, convertView: View?, parent: android.view.ViewGroup): View {
+        val view = super.getDropDownView(position, convertView, parent)
+        // We use the default TextView ID (android.R.id.text1) used by simple_spinner_dropdown_item
+        val tv = view.findViewById<android.widget.TextView>(android.R.id.text1)
+
+        if (position == 0) {
+            tv.setTextColor(android.graphics.Color.GRAY)
+        } else {
+            tv.setTextColor(android.graphics.Color.BLACK)
+        }
+        return view
     }
 }

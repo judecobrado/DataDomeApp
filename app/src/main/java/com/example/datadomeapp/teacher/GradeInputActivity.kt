@@ -415,7 +415,7 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
             val statuses = doc.get("statuses") as? Map<String, String> ?: emptyMap()
 
             // 🟢 FIX: Directly use studentDocId - NO NEED FOR UID CONVERSION
-            if (statuses[studentDocId] == "Present") presentCount++
+            if (statuses[studentDocId] == "PRESENT") presentCount++
         }
 
         return Pair(presentCount, totalClassSessions)
@@ -1327,7 +1327,7 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         }
     }
 
-    // OPTIMIZED: Attendance and recitation calculation WITH DEBUG
+    // OPTIMIZED: Attendance and recitation calculation WITH DEBUG AND MANUAL OVERRIDES
     private suspend fun fetchAttendanceAndRecitationScores(
         enrolledStudents: List<Student>,
         studentGradesData: MutableMap<String, GradeInputAdapter.GradeData>
@@ -1346,6 +1346,9 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         Log.d("GradeDebug", "   - Grading Period: $gradingPeriod")
         Log.d("GradeDebug", "   - Semester: $semester")
 
+        // 🟢 NEW: Fetch manual overrides first
+        val manualOverrides = fetchManualGradeOverrides(enrolledStudents)
+
         val attendanceSnapshot = firestore.collection("dailyAttendanceRecords")
             .whereEqualTo("assignmentId", assignmentId!!)
             .whereEqualTo("academicTerm", gradingPeriod!!)
@@ -1354,11 +1357,15 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
 
         Log.d("GradeDebug", "📊 Found ${attendanceSnapshot.documents.size} attendance records")
 
+        // 🟢 SIMPLER APPROACH: Create a map of enrolled student IDs for quick lookup
+        val enrolledStudentIds = enrolledStudents.map { it.id }.toSet()
+        Log.d("GradeDebug", "📋 Enrolled Student IDs: $enrolledStudentIds")
+
         val studentAttendanceCounts = mutableMapOf<String, Int>()
         var totalClassSessions = 0
         val studentRecitationPoints = mutableMapOf<String, Int>()
 
-        // Initialize counters
+        // Initialize counters ONLY for enrolled students
         enrolledStudents.forEach { student ->
             studentAttendanceCounts[student.id] = 0
             studentRecitationPoints[student.id] = 0
@@ -1370,30 +1377,43 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
 
             Log.d("GradeDebug", "   📆 Session $totalClassSessions - Statuses: ${statuses.size}")
 
-            // 🟢 FIX: Use student document ID directly
+            // 🟢 ADD DETAILED DEBUG HERE
+            Log.d("GradeDebug", "   🔍 PROCESSING STATUSES:")
             statuses.forEach { (studentDocId, status) ->
-                if (status == "Present") {
-                    studentAttendanceCounts[studentDocId] = studentAttendanceCounts.getOrDefault(studentDocId, 0) + 1
-                    Log.d("GradeDebug", "      ✅ $studentDocId marked Present")
+                Log.d("GradeDebug", "      Checking: $studentDocId -> $status")
+
+                // Check if this student is enrolled using the set
+                if (enrolledStudentIds.contains(studentDocId)) {
+                    Log.d("GradeDebug", "      ✅ $studentDocId is enrolled!")
+                    if (status.equals("Present", ignoreCase = true) || status == "PRESENT") {
+                        studentAttendanceCounts[studentDocId] = studentAttendanceCounts.getOrDefault(studentDocId, 0) + 1
+                        Log.d("GradeDebug", "      ✅✅✅ $studentDocId marked Present - Count: ${studentAttendanceCounts[studentDocId]}")
+                    } else {
+                        Log.d("GradeDebug", "      ℹ️ $studentDocId status: $status (not Present)")
+                    }
+                } else {
+                    Log.w("GradeDebug", "      ⚠️ Student $studentDocId not in enrolled list - skipping")
                 }
             }
 
-            // 🟢 FIX: Handle recitation points with better type checking
+            // Same for recitation points
             val recitationData = doc.get("recitationPoints")
             when (recitationData) {
                 is Map<*, *> -> {
                     recitationData.forEach { (key, value) ->
                         val studentDocId = key.toString()
-                        val points = when (value) {
-                            is Long -> value.toInt()
-                            is Int -> value
-                            is Double -> value.toInt()
-                            is String -> value.toIntOrNull() ?: 0
-                            else -> 0
-                        }
-                        if (points > 0) {
-                            studentRecitationPoints[studentDocId] = studentRecitationPoints.getOrDefault(studentDocId, 0) + points
-                            Log.d("GradeDebug", "      🎤 $studentDocId +$points recitation points")
+                        if (enrolledStudentIds.contains(studentDocId)) {
+                            val points = when (value) {
+                                is Long -> value.toInt()
+                                is Int -> value
+                                is Double -> value.toInt()
+                                is String -> value.toIntOrNull() ?: 0
+                                else -> 0
+                            }
+                            if (points > 0) {
+                                studentRecitationPoints[studentDocId] = studentRecitationPoints.getOrDefault(studentDocId, 0) + points
+                                Log.d("GradeDebug", "      🎤 $studentDocId +$points recitation points")
+                            }
                         }
                     }
                 }
@@ -1405,35 +1425,82 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
 
         Log.d("GradeDebug", "🏫 Total class sessions: $totalClassSessions")
 
-        // Calculate final scores
+        // 🟢 ADD: Debug attendance counts before calculation
+        Log.d("GradeDebug", "🎯 ATTENDANCE COUNTS VERIFICATION:")
+        enrolledStudents.forEach { student ->
+            val count = studentAttendanceCounts[student.id] ?: 0
+            Log.d("GradeDebug", "   ${student.lastName} (${student.id}): $count/$totalClassSessions present")
+        }
+
+        // 🟢 ADD: Debug manual overrides
+        Log.d("GradeDebug", "📝 MANUAL OVERRIDES VERIFICATION:")
+        manualOverrides.forEach { (studentId, overrideData) ->
+            Log.d("GradeDebug", "   $studentId: Present=${overrideData.present}/${overrideData.total}, Recitation=${overrideData.recitationPoints}")
+        }
+
+        // Calculate final scores WITH MANUAL OVERRIDES
         enrolledStudents.forEach { student ->
             val studentDocId = student.id
             val grades = studentGradesData[studentDocId] ?: GradeInputAdapter.GradeData()
 
-            val presentCount = studentAttendanceCounts[studentDocId] ?: 0
-            Log.d("GradeDebug", "👤 Student ${student.lastName} ($studentDocId): $presentCount/$totalClassSessions present")
+            // 🟢 CHECK FOR MANUAL OVERRIDE FIRST
+            val manualOverride = manualOverrides[studentDocId]
 
-            val attendanceScoreRaw = if (totalClassSessions > 0) {
-                (presentCount.toDouble() / totalClassSessions.toDouble()) * 100.0
+            val finalAttendance: Double
+            val finalRecitation: Double
+
+            if (manualOverride != null) {
+                Log.d("GradeDebug", "🎯 USING MANUAL OVERRIDE for $studentDocId")
+
+                // Calculate attendance from manual override
+                val presentCount = manualOverride.present
+                val totalSessions = manualOverride.total
+                val attendanceScoreRaw = if (totalSessions > 0) {
+                    val rawPercentage = (presentCount.toDouble() / totalSessions.toDouble()) * 100.0
+                    rawPercentage.coerceIn(0.0, 100.0) // LIMIT TO 100%
+                } else {
+                    50.0
+                }
+                finalAttendance = attendanceScoreRaw.coerceAtLeast(50.0).roundToTwoDecimals()
+
+                // Calculate recitation from manual override
+                val totalRecitationPoints = manualOverride.recitationPoints
+                val recitationScore = if (totalRecitationPoints >= 5) {
+                    100.0
+                } else {
+                    (totalRecitationPoints.toDouble() / 5.0) * 100.0
+                }
+                finalRecitation = recitationScore.safeMax(50.0).roundToTwoDecimals()
+
+                Log.d("GradeDebug", "👤 Student ${student.lastName} (OVERRIDE): $presentCount/$totalSessions present, $totalRecitationPoints recitation points")
+
             } else {
-                Log.d("GradeDebug", "      ⚠️ No class sessions - using default 50%")
-                50.0
+                Log.d("GradeDebug", "📊 USING ORIGINAL DATA for $studentDocId")
+
+                // Use original calculation
+                val presentCount = studentAttendanceCounts[studentDocId] ?: 0
+                Log.d("GradeDebug", "👤 Student ${student.lastName} ($studentDocId): $presentCount/$totalClassSessions present")
+
+                val attendanceScoreRaw = if (totalClassSessions > 0) {
+                    (presentCount.toDouble() / totalClassSessions.toDouble()) * 100.0
+                } else {
+                    Log.d("GradeDebug", "      ⚠️ No class sessions - using default 50%")
+                    50.0
+                }
+                finalAttendance = attendanceScoreRaw.safeMax(50.0).roundToTwoDecimals()
+
+                val totalRecitationPoints = studentRecitationPoints[studentDocId] ?: 0
+                Log.d("GradeDebug", "🎤 Student ${student.lastName}: $totalRecitationPoints total recitation points")
+
+                val recitationScore = if (totalRecitationPoints >= 5) {
+                    100.0
+                } else {
+                    (totalRecitationPoints.toDouble() / 5.0) * 100.0
+                }
+                finalRecitation = recitationScore.safeMax(50.0).roundToTwoDecimals()
             }
 
-            // 🟢 FIX: Apply 50% base correctly
-            val finalAttendance = attendanceScoreRaw.safeMax(50.0).roundToTwoDecimals()
             grades.attendance = finalAttendance
-
-            val totalRecitationPoints = studentRecitationPoints[studentDocId] ?: 0
-            Log.d("GradeDebug", "🎤 Student ${student.lastName}: $totalRecitationPoints total recitation points")
-
-            val recitationScore = if (totalRecitationPoints >= 5) {
-                100.0
-            } else {
-                (totalRecitationPoints.toDouble() / 5.0) * 100.0
-            }
-
-            val finalRecitation = recitationScore.safeMax(50.0).roundToTwoDecimals()
             grades.recitation = finalRecitation
 
             studentGradesData[studentDocId] = grades
@@ -1446,6 +1513,60 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
             val grades = studentGradesData[student.id]!!
             Log.d("GradeDebug", "   ${student.lastName}: ${grades.attendance}% attendance, ${grades.recitation}% recitation")
         }
+    }
+
+    // 🟢 NEW: Function to fetch manual grade overrides
+    private suspend fun fetchManualGradeOverrides(enrolledStudents: List<Student>): Map<String, ManualOverrideData> {
+        val overridesMap = mutableMapOf<String, ManualOverrideData>()
+
+        try {
+            // Create document IDs for all enrolled students
+            val overrideDocIds = enrolledStudents.map { student ->
+                "${student.id}_${assignmentId!!}_${gradingPeriod!!}"
+            }
+
+            Log.d("GradeDebug", "🔍 Fetching manual overrides for ${overrideDocIds.size} students")
+
+            // Fetch overrides in batches to avoid too many queries
+            val batchSize = 10
+            for (i in overrideDocIds.indices step batchSize) {
+                val batch = overrideDocIds.subList(i, minOf(i + batchSize, overrideDocIds.size))
+
+                val batchOverrides = firestore.collection("manualGradeOverrides")
+                    .whereIn(com.google.firebase.firestore.FieldPath.documentId(), batch)
+                    .get()
+                    .await()
+
+                batchOverrides.documents.forEach { doc ->
+                    val studentId = doc.getString("studentId") ?: return@forEach
+                    val present = doc.getLong("attendancePresent")?.toInt() ?: 0
+                    val total = doc.getLong("attendanceTotal")?.toInt() ?: 1
+                    val recitationPoints = doc.getLong("recitationPoints")?.toInt() ?: 0
+
+                    overridesMap[studentId] = ManualOverrideData(present, total, recitationPoints)
+                    Log.d("GradeDebug", "   ✅ Found override for $studentId: $present/$total present, $recitationPoints recitation")
+                }
+            }
+
+            Log.d("GradeDebug", "📋 Total manual overrides found: ${overridesMap.size}")
+
+        } catch (e: Exception) {
+            Log.e("GradeDebug", "❌ Error fetching manual overrides: ${e.message}")
+        }
+
+        return overridesMap
+    }
+
+    // 🟢 NEW: Data class for manual override data
+    private data class ManualOverrideData(
+        val present: Int,
+        val total: Int,
+        val recitationPoints: Int
+    )
+
+    // Add this to your utils or in the same file
+    private fun List<Double>.safeAverage(): Double {
+        return if (this.isEmpty()) 50.0 else this.average()
     }
 
     // OPTIMIZED: Quiz and assignment scores with better performance

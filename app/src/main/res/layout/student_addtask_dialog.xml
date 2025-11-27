@@ -11,7 +11,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Add New Task"
+        android:text="Task"
         android:textSize="24sp"
         android:textStyle="bold"
         android:textColor="#7B1113"
@@ -29,31 +29,72 @@
         app:strokeColor="#E8E8E8"
         app:strokeWidth="1dp">
 
-        <com.google.android.material.textfield.TextInputLayout
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Task Title"
-            app:hintTextColor="#7B1113"
-            app:boxBackgroundMode="outline"
-            app:boxCornerRadiusBottomEnd="12dp"
-            app:boxCornerRadiusBottomStart="12dp"
-            app:boxCornerRadiusTopEnd="12dp"
-            app:boxCornerRadiusTopStart="12dp"
-            app:boxStrokeColor="#7B1113"
-            app:endIconMode="clear_text"
-            app:endIconTint="#7B1113">
+            android:orientation="vertical"
+            android:padding="4dp">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etTitle"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textCapSentences"
-                android:maxLines="1"
-                android:maxLength="100"
-                android:textColor="#333333"
-                android:textSize="16sp"/>
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="16dp"
+                android:paddingTop="12dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="8dp">
 
-        </com.google.android.material.textfield.TextInputLayout>
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="TITLE *"
+                    android:textColor="#7B1113"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-medium"
+                    android:letterSpacing="0.05"/>
+
+                <TextView
+                    android:id="@+id/tvTitleCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0/50"
+                    android:textColor="#BCAAA4"
+                    android:textSize="10sp"
+                    android:fontFamily="sans-serif"/>
+
+            </LinearLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Task Title"
+                app:hintTextColor="#7B1113"
+                app:boxBackgroundMode="none"
+                app:endIconMode="clear_text"
+                app:endIconTint="#7B1113"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="12dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textCapSentences"
+                    android:maxLines="1"
+                    android:maxLength="50"
+                    android:textColor="#333333"
+                    android:textSize="16sp"
+                    android:background="@android:color/transparent"
+                    android:paddingVertical="12dp"
+                    android:paddingHorizontal="8dp"/>
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+        </LinearLayout>
 
     </com.google.android.material.card.MaterialCardView>
 
@@ -67,34 +108,77 @@
         app:strokeColor="#E8E8E8"
         app:strokeWidth="1dp">
 
-        <com.google.android.material.textfield.TextInputLayout
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Task Details (Optional)"
-            app:hintTextColor="#7B1113"
-            app:boxBackgroundMode="outline"
-            app:boxCornerRadiusBottomEnd="12dp"
-            app:boxCornerRadiusBottomStart="12dp"
-            app:boxCornerRadiusTopEnd="12dp"
-            app:boxCornerRadiusTopStart="12dp"
-            app:boxStrokeColor="#7B1113">
+            android:orientation="vertical"
+            android:padding="4dp">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etDetails"
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="120dp"
-                android:inputType="textMultiLine"
-                android:gravity="top"
-                android:maxLines="5"
-                android:textColor="#333333"
-                android:textSize="16sp"
-                android:padding="16dp"/>
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="16dp"
+                android:paddingTop="12dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="8dp">
 
-        </com.google.android.material.textfield.TextInputLayout>
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="DETAILS*"
+                    android:textColor="#7B1113"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-medium"
+                    android:letterSpacing="0.05"/>
+
+                <TextView
+                    android:id="@+id/tvDetailsCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0/500"
+                    android:textColor="#BCAAA4"
+                    android:textSize="10sp"
+                    android:fontFamily="sans-serif"/>
+
+            </LinearLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Task Details (Optional)"
+                app:hintTextColor="#7B1113"
+                app:boxBackgroundMode="none"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="12dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etDetails"
+                    android:layout_width="match_parent"
+                    android:layout_height="120dp"
+                    android:inputType="textMultiLine|textCapSentences"
+                    android:gravity="top"
+                    android:maxLines="5"
+                    android:maxLength="500"
+                    android:textColor="#333333"
+                    android:textSize="16sp"
+                    android:lineSpacingExtra="6dp"
+                    android:background="@android:color/transparent"
+                    android:paddingVertical="12dp"
+                    android:paddingHorizontal="8dp"
+                    android:scrollbars="vertical"/>
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+        </LinearLayout>
 
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- DATE &amp; TIME SECTION -->
+    <!-- DATE & TIME SECTION -->
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -163,20 +247,6 @@
                     app:iconTint="#7B1113"/>
 
             </LinearLayout>
-
-            <!-- SELECTED DATE &amp; TIME DISPLAY -->
-            <TextView
-                android:id="@+id/tvSelectedDateTime"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="No date and time set"
-                android:textSize="12sp"
-                android:textColor="#666666"
-                android:gravity="center"
-                android:layout_marginTop="8dp"
-                android:padding="8dp"
-                android:background="#FBEFEF"
-                android:visibility="gone"/>
 
         </LinearLayout>
 

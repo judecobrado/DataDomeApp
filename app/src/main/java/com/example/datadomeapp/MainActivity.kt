@@ -195,7 +195,7 @@ class MainActivity : AppCompatActivity() {
             "canteen_staff" -> Intent(this, CanteenStaffDashboardActivity::class.java)
             else -> {
                 // If role is unrecognized, log them out for security and consistency
-                Toast.makeText(this, "Unrecognized role. Logging out.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Logging out. Try to login again", Toast.LENGTH_LONG).show()
                 auth.signOut()
                 Intent(this, LoginActivity::class.java) // Redirect to login
             }

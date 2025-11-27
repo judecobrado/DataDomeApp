@@ -7,6 +7,7 @@ data class MenuItem(
     var name: String = "",
     var price: Double = 0.0,
     var available: Boolean = true,
+    val category: String = "",
     var imageUrl: String = "",
     var staffUid: String = "",
     val canteenName: String = ""

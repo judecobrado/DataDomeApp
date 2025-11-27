@@ -71,7 +71,7 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.3.2")
 
     implementation("com.github.bumptech.glide:glide:4.16.0")
-
+    implementation("com.airbnb.android:lottie:6.2.0")
     implementation("com.github.bumptech.glide:glide:4.15.1")
     implementation(libs.androidx.gridlayout)
     implementation(libs.androidx.camera.camera2.pipe)

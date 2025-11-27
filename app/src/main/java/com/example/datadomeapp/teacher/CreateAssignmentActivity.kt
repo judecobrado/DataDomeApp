@@ -113,7 +113,7 @@ class CreateAssignmentActivity : AppCompatActivity() {
         if (message.contains("upload", ignoreCase = true)) {
             subMessage?.text = "Uploading file, please wait..."
         } else if (message.contains("saving", ignoreCase = true)) {
-            subMessage?.text = "Saving to database..."
+            subMessage?.text = "Creating..."
         } else {
             subMessage?.text = "This may take a moment..."
         }
@@ -166,7 +166,7 @@ class CreateAssignmentActivity : AppCompatActivity() {
 
         // Disable create button to prevent multiple clicks
         btnCreate.isEnabled = false
-        btnCreate.text = "Creating..."
+        btnCreate.text = "Please wait...."
 
         val newAssignmentId = UUID.randomUUID().toString()
 

@@ -138,14 +138,13 @@ class ManageSchedulesActivity : AppCompatActivity() {
                     currentAcademicYear = doc.getString("academicYear") ?: currentAcademicYear
                     currentSemester = doc.getString("semester") ?: currentSemester
                     Log.d("Schedule", "Current Term loaded: $currentSemester, $currentAcademicYear")
-                    Toast.makeText(this, "Term: $currentSemester $currentAcademicYear loaded.", Toast.LENGTH_SHORT).show()
                 } else {
                     Log.w("Schedule", "Missing 'currentTerm' document in systemSettings. Using defaults.")
                 }
             }
             .addOnFailureListener { e ->
                 Log.e("Schedule", "Error loading current term")
-                Toast.makeText(this, "Error loading current term configuration.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Something went wrong! Try again later.", Toast.LENGTH_LONG).show()
             }
     }
 

@@ -31,7 +31,7 @@ class MenuManagementActivity : AppCompatActivity() {
 
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
-
+    private lateinit var spCategoryFilter: Spinner
     private val allMenuList = mutableListOf<MenuItem>()      // Stores all fetched data from Firestore
     private val filteredMenuList = mutableListOf<MenuItem>() // List currently displayed in RecyclerView
     private lateinit var adapter: MenuAdapter
@@ -43,6 +43,7 @@ class MenuManagementActivity : AppCompatActivity() {
     // Tracking state for search and filter
     private var currentQueryText = ""
     private var currentFilter = "All"
+    private var currentCategoryFilter = "All Categories"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,6 +54,7 @@ class MenuManagementActivity : AppCompatActivity() {
         btnAddMenu = findViewById(R.id.btnAddMenu)
         etSearch = findViewById(R.id.etSearch)
         spFilter = findViewById(R.id.spFilter)
+        spCategoryFilter = findViewById(R.id.spCategoryFilter)
         progressBar = findViewById(R.id.progressBar)
         tvNoItems = findViewById(R.id.tvNoItems)
 
@@ -175,6 +177,15 @@ class MenuManagementActivity : AppCompatActivity() {
             }
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
+
+        // Category filter spinner listener
+        spCategoryFilter.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+                currentCategoryFilter = parent.getItemAtPosition(position).toString()
+                applyFiltersAndSearch() // Trigger filter/search on category change
+            }
+            override fun onNothingSelected(parent: AdapterView<*>) {}
+        }
     }
 
     private fun startMenuListener() {
@@ -224,6 +235,11 @@ class MenuManagementActivity : AppCompatActivity() {
                 else -> true // "All"
             }
 
+            val matchesCategoryFilter = when (currentCategoryFilter) {
+                "All Categories" -> true
+                else -> item.category == currentCategoryFilter
+            }
+
             // Check if item matches the search query (case-insensitive contains)
             val matchesSearch = if (currentQueryText.isEmpty()) {
                 true
@@ -232,7 +248,7 @@ class MenuManagementActivity : AppCompatActivity() {
                 item.name.toLowerCase(Locale.getDefault()).contains(lowerCaseQuery)
             }
 
-            matchesFilter && matchesSearch
+            matchesFilter && matchesCategoryFilter && matchesSearch
         }
 
         // 2. Update the RecyclerView's data source

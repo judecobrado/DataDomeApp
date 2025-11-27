@@ -239,7 +239,7 @@ class ClassDetailsActivity : AppCompatActivity() {
                     studentMap[id]?.let { finalEnrolledStudents.add(it) }
                 }
 
-                finalEnrolledStudents.sortBy { it.id }
+                finalEnrolledStudents.sortBy { it.lastName }
 
                 if (finalEnrolledStudents.isEmpty()) {
                     tvLoading.text = "No students officially enrolled in $subjectCode."
