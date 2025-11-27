@@ -9,10 +9,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -62,6 +65,8 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
     private val firestore = FirebaseFirestore.getInstance()
     private val realtimeDb = FirebaseDatabase.getInstance()
 
+    private lateinit var progressBarLoading: ProgressBar
+
     private var studentUidToDocIdMap: Map<String, String> = emptyMap()
     private var activityMetadata: Map<String, ActivityMetadata> = emptyMap()
 
@@ -70,6 +75,14 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
     private lateinit var recyclerViewGrades: RecyclerView
     private lateinit var btnPublishGrades: Button
     private lateinit var gradeAdapter: GradeInputAdapter
+
+    private lateinit var llGradeWeights: LinearLayout
+    private lateinit var tvAttendanceWeight: TextView
+    private lateinit var tvRecitationWeight: TextView
+    private lateinit var tvQuizWeight: TextView
+    private lateinit var tvAssignmentWeight: TextView
+    private lateinit var tvExamWeight: TextView
+    private lateinit var tvTotalWeight: TextView
 
     private var assignmentId: String? = null
     private var subjectCode: String? = null
@@ -80,6 +93,9 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
     // Enhanced caching system
     private val metadataCache = MetadataCache()
     private val studentScoresCache = StudentScoresCache()
+
+    private lateinit var btnConfigureWeights: Button
+    private var currentGradeWeights = GradeInputAdapter.GradeWeights()
 
     // Batch operation helper
     private suspend fun <T> processInBatches(
@@ -105,12 +121,24 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
 
         Log.d("GradeDebug", "Activity Started. AssignmentID: $assignmentId, Period: $gradingPeriod")
 
+        progressBarLoading = findViewById(R.id.progressBarLoading)
+
         tvGradeTitle = findViewById(R.id.tvGradeTitle)
         tvLoadingStatus = findViewById(R.id.tvLoadingStatus)
         recyclerViewGrades = findViewById(R.id.recyclerViewGrades)
         btnPublishGrades = findViewById(R.id.btnSaveGrades)
         btnPublishGrades.text = "Publish Grades"
         btnPublishGrades.visibility = View.GONE
+
+        llGradeWeights = findViewById(R.id.llGradeWeights)
+        tvAttendanceWeight = findViewById(R.id.tvAttendanceWeight)
+        tvRecitationWeight = findViewById(R.id.tvRecitationWeight)
+        tvQuizWeight = findViewById(R.id.tvQuizWeight)
+        tvAssignmentWeight = findViewById(R.id.tvAssignmentWeight)
+        tvExamWeight = findViewById(R.id.tvExamWeight)
+        tvTotalWeight = findViewById(R.id.tvTotalWeight)
+
+        llGradeWeights.visibility = View.GONE
 
         recyclerViewGrades.layoutManager = LinearLayoutManager(this)
 
@@ -121,10 +149,12 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
             return
         }
 
-        tvGradeTitle.text = "$gradingPeriod Grades\n$className ($subjectCode)"
+        showLoading(true)
+        tvGradeTitle.text = "$gradingPeriod Grades\nLoading..."
 
         lifecycleScope.launch {
             checkIfGradesPublished()
+            loadCourseDetailsForTitle()
         }
 
         btnPublishGrades.setOnClickListener {
@@ -135,10 +165,375 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
             }
         }
 
+        btnConfigureWeights = findViewById(R.id.btnConfigureWeights)
+        btnConfigureWeights.setOnClickListener {
+            if (areGradesPublished) {
+                Toast.makeText(this, "Cannot modify weights after grades are published", Toast.LENGTH_SHORT).show()
+            } else {
+                showGradeWeightsDialog()
+            }
+        }
+
         // Pre-load metadata for faster access
         lifecycleScope.launch {
             loadActivityMetadata()
             loadGradingData()
+
+            currentGradeWeights = loadGradeWeightsFromFirestore()
+            updateGradeWeightsDisplay(currentGradeWeights)
+
+            updateConfigureButtonVisibility()
+        }
+    }
+
+    private fun showLoading(show: Boolean) {
+        runOnUiThread {
+            // SIGURADUHING NA-INITIALIZE NA ANG progressBarLoading
+            if (!::progressBarLoading.isInitialized) {
+                Log.w("GradeDebug", "progressBarLoading not initialized yet")
+                return@runOnUiThread
+            }
+
+            if (show) {
+                progressBarLoading.visibility = View.VISIBLE
+                tvLoadingStatus.visibility = View.VISIBLE
+                // I-DISABLE ANG INTERACTION HABANG NAGLOLOAD
+                recyclerViewGrades.isEnabled = false
+                btnPublishGrades.isEnabled = false
+                if (::btnConfigureWeights.isInitialized) {
+                    btnConfigureWeights.isEnabled = false
+                }
+            } else {
+                progressBarLoading.visibility = View.GONE
+                // I-ENABLE ANG INTERACTION
+                recyclerViewGrades.isEnabled = true
+                btnPublishGrades.isEnabled = !areGradesPublished
+                if (::btnConfigureWeights.isInitialized) {
+                    btnConfigureWeights.isEnabled = !areGradesPublished
+                }
+            }
+        }
+    }
+
+    private fun updateGradeWeightsDisplay(weights: GradeInputAdapter.GradeWeights) {
+        runOnUiThread {
+            tvAttendanceWeight.text = "${weights.attendance.toInt()}%"
+            tvRecitationWeight.text = "${weights.recitation.toInt()}%"
+            tvQuizWeight.text = "${weights.quiz.toInt()}%"
+            tvAssignmentWeight.text = "${weights.assignment.toInt()}%"
+            tvExamWeight.text = "${weights.exam.toInt()}%"
+
+            val total = weights.getTotal().toInt()
+            tvTotalWeight.text = "Total: ${total}%"
+
+            // Change color based on whether total is 100%
+            if (total == 100) {
+                tvTotalWeight.setTextColor(ContextCompat.getColor(this, R.color.black))
+                tvTotalWeight.setBackgroundColor(ContextCompat.getColor(this, R.color.excellent_green))
+            } else {
+                tvTotalWeight.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark))
+                tvTotalWeight.setBackgroundColor(ContextCompat.getColor(this, R.color.status_expired))
+            }
+
+            // Show the weights layout
+            llGradeWeights.visibility = View.VISIBLE
+        }
+    }
+
+    /**
+     * NEW: Load course details and update title
+     */
+    private fun loadCourseDetailsForTitle() {
+        if (assignmentId.isNullOrEmpty()) {
+            return
+        }
+
+        firestore.collection("classAssignments").document(assignmentId!!)
+            .get()
+            .addOnSuccessListener { document ->
+                if (document.exists()) {
+                    // Get data from database
+                    val courseCode = document.getString("courseCode") ?: ""
+                    val yearLevel = document.getString("yearLevel") ?: ""
+                    val subjectCode = document.getString("subjectCode") ?: ""
+                    val subjectTitle = document.getString("subjectTitle") ?: ""
+                    val section = document.getString("section") ?: ""
+
+                    // Extract only the number from yearLevel (e.g., "1st Year" -> "1")
+                    val yearNumber = yearLevel.takeWhile { it.isDigit() }.ifEmpty { "" }
+
+                    // Build the display text
+                    val displayText = buildString {
+                        append("$gradingPeriod Grades\n")
+                        if (courseCode.isNotEmpty()) append("$courseCode ")
+                        if (yearNumber.isNotEmpty() && section.isNotEmpty()) append("$yearNumber$section")
+                        if (subjectCode.isNotEmpty()) append(" - $subjectCode")
+                        if (subjectTitle.isNotEmpty()) append(" - $subjectTitle")
+                    }
+
+                    // UPDATE THE TITLE
+                    tvGradeTitle.text = displayText
+
+                    Log.d("GradeDebug", "Title updated: $displayText")
+
+                } else {
+                    // Fallback to original
+                    tvGradeTitle.text = "$gradingPeriod Grades\n$className ($subjectCode)"
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e("GradeDebug", "Error loading course details for title: ${e.message}")
+                tvGradeTitle.text = "$gradingPeriod Grades\n$className ($subjectCode)"
+            }
+    }
+
+    private fun updateConfigureButtonVisibility() {
+        runOnUiThread {
+            if (areGradesPublished) {
+                btnConfigureWeights.visibility = View.GONE
+                btnPublishGrades.text = "Grades Published"
+                btnPublishGrades.isEnabled = false
+                btnPublishGrades.alpha = 0.6f
+            } else {
+                btnConfigureWeights.visibility = View.VISIBLE
+                btnPublishGrades.text = "Publish Grades"
+                btnPublishGrades.isEnabled = true
+                btnPublishGrades.alpha = 1.0f
+            }
+        }
+    }
+    private fun showGradeWeightsDialog() {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_grade_weights, null)
+
+        val etAttendanceWeight = dialogView.findViewById<EditText>(R.id.etAttendanceWeight)
+        val etRecitationWeight = dialogView.findViewById<EditText>(R.id.etRecitationWeight)
+        val etQuizWeight = dialogView.findViewById<EditText>(R.id.etQuizWeight)
+        val etAssignmentWeight = dialogView.findViewById<EditText>(R.id.etAssignmentWeight)
+        val etExamWeight = dialogView.findViewById<EditText>(R.id.etExamWeight)
+        val tvTotalPercentage = dialogView.findViewById<TextView>(R.id.tvTotalPercentage)
+        val tvError = dialogView.findViewById<TextView>(R.id.tvError)
+
+        // Set current values
+        etAttendanceWeight.setText(currentGradeWeights.attendance.toInt().toString())
+        etRecitationWeight.setText(currentGradeWeights.recitation.toInt().toString())
+        etQuizWeight.setText(currentGradeWeights.quiz.toInt().toString())
+        etAssignmentWeight.setText(currentGradeWeights.assignment.toInt().toString())
+        etExamWeight.setText(currentGradeWeights.exam.toInt().toString())
+
+        // Update total percentage in real-time
+        val textWatcher = object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                updateTotalPercentage(
+                    etAttendanceWeight,
+                    etRecitationWeight,
+                    etQuizWeight,
+                    etAssignmentWeight,
+                    etExamWeight,
+                    tvTotalPercentage,
+                    tvError
+                )
+            }
+        }
+
+        etAttendanceWeight.addTextChangedListener(textWatcher)
+        etRecitationWeight.addTextChangedListener(textWatcher)
+        etQuizWeight.addTextChangedListener(textWatcher)
+        etAssignmentWeight.addTextChangedListener(textWatcher)
+        etExamWeight.addTextChangedListener(textWatcher)
+
+        // Initial calculation
+        updateTotalPercentage(
+            etAttendanceWeight,
+            etRecitationWeight,
+            etQuizWeight,
+            etAssignmentWeight,
+            etExamWeight,
+            tvTotalPercentage,
+            tvError
+        )
+
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("Configure Grade Weights")
+            .setView(dialogView)
+            .setPositiveButton("Save") { dialog, _ ->
+                // Validation will be handled in the click listener override
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .create()
+
+        // Override the positive button to prevent automatic dismissal
+        dialog.setOnShowListener {
+            val saveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            saveButton.setOnClickListener {
+                if (validateAndSaveGradeWeights(
+                        etAttendanceWeight,
+                        etRecitationWeight,
+                        etQuizWeight,
+                        etAssignmentWeight,
+                        etExamWeight,
+                        tvError, // ADD THIS PARAMETER
+                        dialog
+                    )
+                ) {
+                    dialog.dismiss()
+                }
+                // If validation fails, don't dismiss the dialog
+            }
+        }
+
+        dialog.show()
+    }
+
+    private fun validateAndSaveGradeWeights(
+        etAttendance: EditText,
+        etRecitation: EditText,
+        etQuiz: EditText,
+        etAssignment: EditText,
+        etExam: EditText,
+        tvError: TextView, // ADD THIS PARAMETER
+        dialog: AlertDialog
+    ): Boolean {
+        val attendance = etAttendance.text.toString().toDoubleOrNull() ?: 0.0
+        val recitation = etRecitation.text.toString().toDoubleOrNull() ?: 0.0
+        val quiz = etQuiz.text.toString().toDoubleOrNull() ?: 0.0
+        val assignment = etAssignment.text.toString().toDoubleOrNull() ?: 0.0
+        val exam = etExam.text.toString().toDoubleOrNull() ?: 0.0
+
+        val total = attendance + recitation + quiz + assignment + exam
+
+        if (total != 100.0) {
+            tvError.visibility = View.VISIBLE
+            tvError.text = "Total must be exactly 100%! Current total: ${total.toInt()}%"
+            tvError.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark))
+            return false // DON'T CLOSE DIALOG
+        }
+
+        val newWeights = GradeInputAdapter.GradeWeights(attendance, recitation, quiz, assignment, exam)
+
+        // Show confirmation dialog before saving
+        showSaveWeightsConfirmation(newWeights)
+        return true // CLOSE DIALOG
+    }
+
+    private fun updateTotalPercentage(
+        etAttendance: EditText,
+        etRecitation: EditText,
+        etQuiz: EditText,
+        etAssignment: EditText,
+        etExam: EditText,
+        tvTotal: TextView,
+        tvError: TextView
+    ) {
+        val attendance = etAttendance.text.toString().toIntOrNull() ?: 0
+        val recitation = etRecitation.text.toString().toIntOrNull() ?: 0
+        val quiz = etQuiz.text.toString().toIntOrNull() ?: 0
+        val assignment = etAssignment.text.toString().toIntOrNull() ?: 0
+        val exam = etExam.text.toString().toIntOrNull() ?: 0
+
+        val total = attendance + recitation + quiz + assignment + exam
+
+        tvTotal.text = "Total: $total%"
+
+        // Change color based on total
+        if (total == 100) {
+            tvTotal.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_dark))
+            tvError.visibility = View.GONE
+        } else {
+            tvTotal.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark))
+            tvError.visibility = View.VISIBLE // SHOW ERROR WHEN TOTAL IS NOT 100%
+            tvError.text = "Total must be exactly 100%"
+            tvError.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark))
+        }
+    }
+
+    private fun showSaveWeightsConfirmation(newWeights: GradeInputAdapter.GradeWeights) {
+        AlertDialog.Builder(this)
+            .setTitle("Save Grade Weights")
+            .setMessage("Are you sure you want to save these grade weights?"
+                    //+
+                    //"Attendance: ${newWeights.attendance}%\n" +
+                    //"Recitation: ${newWeights.recitation}%\n" +
+                    //"Quiz: ${newWeights.quiz}%\n" +
+                    //"Assignment: ${newWeights.assignment}%\n" +
+                    //"Exam: ${newWeights.exam}%\n\n" +
+                    //"Total: ${newWeights.getTotal()}%\n\n" +
+                    //"This will recalculate all student grades.
+                    )
+            .setPositiveButton("Yes, Save") { dialog, _ ->
+                updateGradeWeightsDisplay(newWeights)
+
+                currentGradeWeights = newWeights
+
+                // Update adapter with new weights
+                if (::gradeAdapter.isInitialized) {
+                    gradeAdapter.updateGradeWeights(newWeights)
+                }
+
+                // Save to Firestore for persistence
+                saveWeightsToFirestore(newWeights)
+
+                Toast.makeText(this, "Grade weights updated successfully!", Toast.LENGTH_SHORT).show()
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+            //.setNeutralButton("Review Changes") { dialog, _ ->
+                // Stay in the dialog to review changes
+                //dialog.dismiss()
+            //}
+            .show()
+    }
+
+    private fun saveWeightsToFirestore(weights: GradeInputAdapter.GradeWeights) {
+        val weightsData = hashMapOf(
+            "attendance" to weights.attendance,
+            "recitation" to weights.recitation,
+            "quiz" to weights.quiz,
+            "assignment" to weights.assignment,
+            "exam" to weights.exam,
+            "assignmentId" to assignmentId,
+            "subjectCode" to subjectCode,
+            "gradingPeriod" to gradingPeriod,
+            "updatedAt" to System.currentTimeMillis()
+        )
+
+        firestore.collection("gradeWeights")
+            .document("${assignmentId}_${gradingPeriod}")
+            .set(weightsData, SetOptions.merge())
+            .addOnSuccessListener {
+                Log.d("GradeWeights", "Grade weights saved successfully")
+            }
+            .addOnFailureListener { e ->
+                Log.e("GradeWeights", "Error saving grade weights: ${e.message}")
+            }
+    }
+
+    private suspend fun loadGradeWeightsFromFirestore(): GradeInputAdapter.GradeWeights {
+        return try {
+            val doc = firestore.collection("gradeWeights")
+                .document("${assignmentId}_${gradingPeriod}")
+                .get()
+                .await()
+
+            if (doc.exists()) {
+                GradeInputAdapter.GradeWeights(
+                    attendance = doc.getDouble("attendance") ?: 10.0,
+                    recitation = doc.getDouble("recitation") ?: 10.0,
+                    quiz = doc.getDouble("quiz") ?: 20.0,
+                    assignment = doc.getDouble("assignment") ?: 20.0,
+                    exam = doc.getDouble("exam") ?: 40.0
+                )
+            } else {
+                GradeInputAdapter.GradeWeights() // Default weights
+            }
+        } catch (e: Exception) {
+            Log.e("GradeWeights", "Error loading grade weights: ${e.message}")
+            GradeInputAdapter.GradeWeights() // Default weights
         }
     }
 
@@ -155,6 +550,8 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
 
             areGradesPublished = !publishedGradesQuery.isEmpty
             Log.d("GradeDebug", "Grades published status: $areGradesPublished")
+
+            updateConfigureButtonVisibility()
 
             if (areGradesPublished) {
                 runOnUiThread {
@@ -321,7 +718,7 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
 
     private fun showDetailedScoreDialog(student: Student) {
         val dialog = ProgressDialog(this).apply {
-            setMessage("Fetching detailed scores for ${student.lastName}...")
+            setMessage("Loading...")//${student.lastName}
             setCancelable(false)
             show()
         }
@@ -906,9 +1303,10 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
                     btnPublishGrades.text = "Grades Published"
                     btnPublishGrades.isEnabled = false
                     btnPublishGrades.alpha = 0.6f
+                    gradeAdapter.setPublishedState(true)
 
                     // Update adapter state
-                    gradeAdapter.setPublishedState(true)
+                    updateConfigureButtonVisibility()
                 }
 
                 tvLoadingStatus.text = "✅ Grades successfully published for ${gradesToSave.size} students."
@@ -1150,6 +1548,7 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
     // OPTIMIZED: Main data loading with performance improvements
     private fun loadGradingData() {
         tvLoadingStatus.text = "Fetching enrolled students..."
+        showLoading(true)
 
         lifecycleScope.launch {
             Log.d("GradeDebug", "Starting loadGradingData coroutine.")
@@ -1245,16 +1644,18 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
                 gradeAdapter = GradeInputAdapter(
                     gradeDataList = gradesList,
                     listener = this@GradeInputActivity,
-                    isPublished = areGradesPublished
+                    isPublished = areGradesPublished,
+                    gradeWeights = currentGradeWeights
                 )
                 recyclerViewGrades.adapter = gradeAdapter
                 tvLoadingStatus.text = "✅ ${enrolledStudents.size} students loaded. Grades are ready."
                 btnPublishGrades.visibility = View.VISIBLE
 
+                showLoading(false)
+
             } catch (e: Exception) {
                 Log.e("GradeInput", "Error fetching students or scores: ${e.message}", e)
                 tvLoadingStatus.text = "Error loading students."
-                Toast.makeText(this@GradeInputActivity, "Loading error: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }
