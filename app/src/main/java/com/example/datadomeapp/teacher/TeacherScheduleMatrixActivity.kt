@@ -43,9 +43,6 @@ class TeacherScheduleMatrixActivity : AppCompatActivity() {
         "Sat" to "Saturday"
     )
 
-    // Time slots for the day view (7:00 AM to 7:00 PM)
-    private val timeSlots = generateTimeSlots()
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_teacher_daily_schedule)
@@ -79,25 +76,6 @@ class TeacherScheduleMatrixActivity : AppCompatActivity() {
             "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" -> currentDay
             else -> "Mon" // Default to Monday if it's Sunday
         }
-    }
-
-    private fun generateTimeSlots(): List<String> {
-        val slots = mutableListOf<String>()
-        val timeFormat = SimpleDateFormat("h:mm a", Locale.US)
-        val calendar = Calendar.getInstance()
-
-        // Set start time to 7:00 AM
-        calendar.set(Calendar.HOUR_OF_DAY, 7)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-
-        // Generate slots from 7:00 AM to 7:00 PM (12 hours = 24 slots)
-        for (i in 0 until 24) {
-            slots.add(timeFormat.format(calendar.time))
-            calendar.add(Calendar.MINUTE, 30) // Add 30 minutes
-        }
-
-        return slots
     }
 
     private fun loadTeacherSchedule() {
@@ -271,46 +249,54 @@ class TeacherScheduleMatrixActivity : AppCompatActivity() {
 
         val selectedDayEvents = dailySchedule[selectedDay] ?: emptyList()
 
-        // TIME COLUMN
+        // TIME COLUMN - Fixed height to match events column
         val timeColumn = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(
                 dpToPx(70),
-                LinearLayout.LayoutParams.WRAP_CONTENT
+                calculateTotalTimelineHeight()
             )
             setBackgroundColor(ContextCompat.getColor(this@TeacherScheduleMatrixActivity, R.color.white))
         }
 
-        // Add time labels
-        timeSlots.forEach { time ->
+        // Add hourly time labels (7:00 AM to 7:00 PM)
+        for (hour in 7..19) {
+            val timeText = when {
+                hour == 12 -> "12:00 PM"
+                hour > 12 -> "${hour - 12}:00 PM"
+                else -> "$hour:00 AM"
+            }
+
             val timeCell = TextView(this).apply {
-                text = if (time.endsWith(":00 AM") || time.endsWith(":00 PM")) time else ""
+                text = timeText
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
                 setTextColor(ContextCompat.getColor(this@TeacherScheduleMatrixActivity, R.color.text_secondary))
-                setPadding(dpToPx(4), dpToPx(28), dpToPx(4), dpToPx(28))
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                )
-                gravity = Gravity.CENTER_HORIZONTAL
+                    dpToPx(60) // Each hour slot is 60dp tall
+                ).apply {
+                    gravity = Gravity.TOP
+                }
+                setPadding(dpToPx(4), dpToPx(4), dpToPx(4), dpToPx(4))
+                gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
             }
             timeColumn.addView(timeCell)
         }
 
         timelineContainer.addView(timeColumn)
 
-        // EVENTS COLUMN
+        // EVENTS COLUMN - Fixed height
         val eventsColumn = FrameLayout(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 0,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
+                calculateTotalTimelineHeight(),
                 1f
             )
             setBackgroundColor(ContextCompat.getColor(this@TeacherScheduleMatrixActivity, R.color.background_light))
             setPadding(dpToPx(8), 0, dpToPx(8), 0)
         }
 
-        // Add time slot lines
+        // Add hourly lines
         addTimeSlotLines(eventsColumn)
 
         // Add event views
@@ -339,14 +325,21 @@ class TeacherScheduleMatrixActivity : AppCompatActivity() {
         timelineContainer.addView(eventsColumn)
     }
 
+    private fun calculateTotalTimelineHeight(): Int {
+        // From 7:00 AM to 7:00 PM = 12 hours = 720 minutes
+        // Using 1dp per minute = 720dp total height
+        return dpToPx(780)
+    }
+
     private fun addTimeSlotLines(container: FrameLayout) {
-        for (i in 0..timeSlots.size) {
+        // Add lines for each hour from 7:00 AM to 7:00 PM (13 lines total)
+        for (i in 0..12) {
             val line = View(this).apply {
                 layoutParams = FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.MATCH_PARENT,
                     1
                 ).apply {
-                    topMargin = i * dpToPx(60)
+                    topMargin = i * dpToPx(60) // Each hour line (60 minutes = 60dp)
                 }
                 setBackgroundColor(ContextCompat.getColor(this@TeacherScheduleMatrixActivity, R.color.card_stroke_color))
             }
@@ -443,20 +436,31 @@ class TeacherScheduleMatrixActivity : AppCompatActivity() {
         return try {
             val start = timeFormat.parse(startTime)
             val calendar = Calendar.getInstance().apply { time = start }
+
             val hour = calendar.get(Calendar.HOUR)
             val minute = calendar.get(Calendar.MINUTE)
-            val isPM = calendar.get(Calendar.AM_PM) == Calendar.PM
+            val amPm = calendar.get(Calendar.AM_PM)
 
-            // Convert to 24-hour format for calculation
-            var totalHours = hour + if (isPM) 12 else 0
-            if (totalHours == 12 && !isPM) totalHours = 0 // Handle 12 AM
-            if (totalHours == 24) totalHours = 12 // Handle 12 PM
+            // Convert to 24-hour format for easier calculation
+            var hour24 = hour
+            if (amPm == Calendar.PM && hour24 != 12) {
+                hour24 += 12
+            } else if (amPm == Calendar.AM && hour24 == 12) {
+                hour24 = 0
+            }
 
-            val totalMinutes = totalHours * 60 + minute
-            val startMinutes = 7 * 60 // Calendar starts at 7:00 AM
+            val totalMinutes = hour24 * 60 + minute
+            val startMinutes = 7 * 60 // 7:00 AM = 420 minutes
 
-            ((totalMinutes - startMinutes) / 60.0f) * dpToPx(60) // 60 pixels per hour
+            // Calculate minutes from 7:00 AM and convert to dp (1dp per minute)
+            val minutesFromStart = totalMinutes - startMinutes
+
+            val offset = 10f
+
+            // Ensure position is within visible range
+            (minutesFromStart.toFloat() + offset).coerceIn(0f, 720f)
         } catch (e: Exception) {
+            Log.e("TIME_CALC", "Error calculating top position for $startTime: ${e.message}")
             0f
         }
     }
@@ -466,11 +470,15 @@ class TeacherScheduleMatrixActivity : AppCompatActivity() {
         return try {
             val start = timeFormat.parse(startTime)
             val end = timeFormat.parse(endTime)
-            val duration = end.time - start.time
-            val hours = duration / (1000 * 60 * 60).toFloat()
-            hours * dpToPx(60) // 60 pixels per hour
+
+            val durationMillis = end.time - start.time
+            val durationMinutes = durationMillis / (1000 * 60)
+
+            // Return duration in minutes (1dp per minute)
+            durationMinutes.toFloat().coerceAtLeast(30f) // Minimum height of 30 minutes
         } catch (e: Exception) {
-            dpToPx(60).toFloat() // Default height (1 hour)
+            Log.e("TIME_CALC", "Error calculating event height: ${e.message}")
+            60f // Default height (1 hour)
         }
     }
 

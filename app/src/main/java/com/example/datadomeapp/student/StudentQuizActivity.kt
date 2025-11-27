@@ -242,7 +242,6 @@ class StudentQuizActivity : AppCompatActivity() {
     }
 
     private fun resetQuiz() {
-        Toast.makeText(this, "Quiz reset to Question 1 due to cheating.", Toast.LENGTH_LONG).show()
         removeCheatOverlay()
 
         viewModel.resetQuizProgress(keepCheatCount = true)
@@ -287,9 +286,11 @@ class StudentQuizActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         if (!quizFinished && !isRequestingDndPermission && !isSpinnerOpen()) {
-            // Only trigger cheat detection if it wasn't already handled by home button
+
+            viewModel.saveCurrentState()
+
             if (!homeButtonPressed) {
-                viewModel.handleCheatAttempt("App backgrounded / Home button pressed")
+                viewModel.handleCheatAttempt("CHEATING DETECTED")
             }
         }
         homeButtonPressed = false // Reset the flag
@@ -297,6 +298,10 @@ class StudentQuizActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
+
+        if (!quizFinished) {
+            viewModel.saveCurrentState()
+        }
     }
 
     override fun onMultiWindowModeChanged(isInMultiWindowMode: Boolean) {

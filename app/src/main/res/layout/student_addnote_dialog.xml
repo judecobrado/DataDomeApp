@@ -104,7 +104,8 @@
                     android:id="@+id/tvTitleCount"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="0/100"
+                    android:text="0/50"
+                    android:maxLength="50"
                     android:textColor="#BCAAA4"
                     android:textSize="10sp"
                     android:fontFamily="sans-serif"/>
@@ -193,7 +194,8 @@
                     android:id="@+id/tvContentCount"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="0/1000"
+                    android:text="0/500"
+                    android:maxLength="500"
                     android:textColor="#BCAAA4"
                     android:textSize="10sp"
                     android:fontFamily="sans-serif"/>
@@ -231,21 +233,5 @@
         </LinearLayout>
 
     </com.google.android.material.card.MaterialCardView>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:layout_marginTop="16dp"
-        android:paddingTop="12dp">
-
-        <View
-            android:layout_width="4dp"
-            android:layout_height="4dp"
-            android:background="#7B1113"
-            android:layout_marginEnd="6dp"/>
-
-    </LinearLayout>
 
 </LinearLayout>

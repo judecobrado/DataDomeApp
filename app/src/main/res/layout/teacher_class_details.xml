@@ -7,53 +7,41 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="#FAFAFA"
-    android:padding="16dp"
-    tools:context=".teacher.ClassDetailsActivity">
+    android:padding="12dp" tools:context=".teacher.ClassDetailsActivity">
 
-    <!-- Header Card -->
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:cardCornerRadius="20dp"
         app:cardElevation="6dp"
-        app:cardBackgroundColor="#FFFFFF"
-        android:layout_marginBottom="24dp"
-        app:strokeColor="#E0E0E0"
+        app:cardBackgroundColor="@color/primary_maroon"
+        android:layout_marginBottom="16dp" app:strokeColor="#E0E0E0"
         app:strokeWidth="1dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="28dp">
+            android:padding="20dp"> <TextView
+            android:id="@+id/tvClassNameHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Advanced Mobile Development - BSIT-4A"
+            android:textSize="20sp" android:textStyle="bold"
+            android:textColor="@color/white"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:layout_marginBottom="8dp" android:lineSpacingExtra="4dp"/>
 
-            <!-- Class Name -->
-            <TextView
-                android:id="@+id/tvClassNameHeader"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Advanced Mobile Development - BSIT-4A"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                android:textColor="#800000"
-                android:maxLines="2"
-                android:ellipsize="end"
-                android:layout_marginBottom="12dp"
-                android:lineSpacingExtra="4dp"/>
-
-            <!-- Subject Code -->
             <TextView
                 android:id="@+id/tvSubjectCode"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="CS-ELECTIVE • 35 Students"
-                android:textSize="15sp"
-                android:visibility="gone"
+                android:textSize="14sp" android:visibility="gone"
                 android:textColor="#757575"
-                android:layout_marginBottom="20dp"
-                android:letterSpacing="0.02"/>
+                android:layout_marginBottom="16dp" android:letterSpacing="0.02"/>
 
-            <!-- Loading/Status with Progress Bar -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -76,7 +64,7 @@
                     android:layout_height="wrap_content"
                     android:text="Loading student roster..."
                     android:textSize="14sp"
-                    android:textColor="#666666"/>
+                    android:textColor="@color/white"/>
 
             </LinearLayout>
 
@@ -84,40 +72,38 @@
 
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- Quick Actions Card -->
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:cardCornerRadius="20dp"
         app:cardElevation="4dp"
         app:cardBackgroundColor="#FFFFFF"
-        android:layout_marginBottom="24dp"
-        app:strokeColor="#E0E0E0"
+        android:layout_marginBottom="16dp" app:strokeColor="#E0E0E0"
         app:strokeWidth="1dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="24dp">
+            android:paddingTop="16dp"
+            android:paddingBottom="16dp">
 
-            <!-- Section Title with Icon -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:layout_marginBottom="20dp">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Class Management"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:textColor="#212121"
-                    android:letterSpacing="0.02"/>
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
+                android:layout_marginBottom="16dp"> <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Class Management"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#212121"
+                android:letterSpacing="0.02"/>
 
                 <ImageView
                     android:layout_width="20dp"
@@ -128,244 +114,212 @@
 
             </LinearLayout>
 
-            <!-- First Row of Buttons -->
-            <LinearLayout
+            <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="16dp">
+                android:scrollbars="none"
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp">
 
-                <!-- Manage Quiz Button -->
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="0dp"
-                    android:layout_height="88dp"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="12dp"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="2dp"
-                    app:strokeColor="#E0E0E0"
-                    app:strokeWidth="1dp"
-                    android:foreground="?android:attr/selectableItemBackground"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:id="@+id/btnCreateQuiz">
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical"
-                        android:gravity="center"
-                        android:padding="12dp">
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="100dp"
+                        android:layout_height="80dp" android:layout_marginEnd="12dp"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="2dp"
+                        app:strokeColor="#E0E0E0"
+                        app:strokeWidth="1dp"
+                        android:foreground="?android:attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:id="@+id/btnCreateQuiz">
 
-                        <ImageView
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
-                            android:src="@drawable/ic_quiz"
-                            android:tint="#800000"
-                            android:layout_marginBottom="8dp"
-                            android:contentDescription="Quiz icon"/>
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:padding="8dp">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Quizzes"
-                            android:textSize="13sp"
-                            android:textColor="#800000"
-                            android:textStyle="bold"/>
+                            <ImageView
+                                android:layout_width="28dp" android:layout_height="28dp"
+                                android:src="@drawable/ic_quiz"
+                                android:tint="#800000"
+                                android:layout_marginBottom="4dp" android:contentDescription="Quiz icon"/>
 
-                    </LinearLayout>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Quizzes"
+                                android:textSize="12sp" android:textColor="#800000"
+                                android:textStyle="bold"/>
 
-                </com.google.android.material.card.MaterialCardView>
+                        </LinearLayout>
 
-                <!-- Manage Assessment Button -->
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="0dp"
-                    android:layout_height="88dp"
-                    android:layout_weight="1"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="2dp"
-                    app:strokeColor="#E0E0E0"
-                    app:strokeWidth="1dp"
-                    android:foreground="?android:attr/selectableItemBackground"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:id="@+id/btnCreateAssignment">
+                    </com.google.android.material.card.MaterialCardView>
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical"
-                        android:gravity="center"
-                        android:padding="12dp">
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="100dp"
+                        android:layout_height="80dp" android:layout_marginEnd="12dp"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="2dp"
+                        app:strokeColor="#E0E0E0"
+                        app:strokeWidth="1dp"
+                        android:foreground="?android:attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:id="@+id/btnCreateAssignment">
 
-                        <ImageView
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
-                            android:src="@drawable/ic_assignment"
-                            android:tint="#800000"
-                            android:layout_marginBottom="8dp"
-                            android:contentDescription="Assignment icon"/>
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:padding="8dp">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Assessments"
-                            android:textSize="13sp"
-                            android:textColor="#800000"
-                            android:textStyle="bold"
-                            android:textAlignment="center"/>
+                            <ImageView
+                                android:layout_width="28dp" android:layout_height="28dp"
+                                android:src="@drawable/ic_assignment"
+                                android:tint="#800000"
+                                android:layout_marginBottom="4dp" android:contentDescription="Assignment icon"/>
 
-                    </LinearLayout>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Assessments"
+                                android:textSize="12sp" android:textColor="#800000"
+                                android:textStyle="bold"
+                                android:textAlignment="center"/>
 
-                </com.google.android.material.card.MaterialCardView>
+                        </LinearLayout>
 
-            </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
 
-            <!-- Second Row of Buttons -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="8dp">
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="100dp"
+                        android:layout_height="80dp" android:layout_marginEnd="12dp"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="2dp"
+                        app:strokeColor="#E0E0E0"
+                        app:strokeWidth="1dp"
+                        android:foreground="?android:attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:id="@+id/btnTakeAttendance">
 
-                <!-- Attendance Button -->
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="0dp"
-                    android:layout_height="88dp"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="12dp"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="2dp"
-                    app:strokeColor="#E0E0E0"
-                    app:strokeWidth="1dp"
-                    android:foreground="?android:attr/selectableItemBackground"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:id="@+id/btnTakeAttendance">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:padding="8dp">
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical"
-                        android:gravity="center"
-                        android:padding="12dp">
+                            <ImageView
+                                android:layout_width="28dp" android:layout_height="28dp"
+                                android:src="@drawable/ic_attendance"
+                                android:tint="#800000"
+                                android:layout_marginBottom="4dp" android:contentDescription="Attendance icon"/>
 
-                        <ImageView
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
-                            android:src="@drawable/ic_attendance"
-                            android:tint="#800000"
-                            android:layout_marginBottom="8dp"
-                            android:contentDescription="Attendance icon"/>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Attendance"
+                                android:textSize="12sp" android:textColor="#800000"
+                                android:textStyle="bold"
+                                android:textAlignment="center"/>
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Attendance"
-                            android:textSize="13sp"
-                            android:textColor="#800000"
-                            android:textStyle="bold"
-                            android:textAlignment="center"/>
+                        </LinearLayout>
 
-                    </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
 
-                </com.google.android.material.card.MaterialCardView>
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="100dp"
+                        android:layout_height="80dp" android:layout_marginEnd="12dp"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="2dp"
+                        app:strokeColor="#E0E0E0"
+                        app:strokeWidth="1dp"
+                        android:foreground="?android:attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:id="@+id/btnManageGrades">
 
-                <!-- Manage Grades Button -->
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="0dp"
-                    android:layout_height="88dp"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="12dp"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="2dp"
-                    app:strokeColor="#E0E0E0"
-                    app:strokeWidth="1dp"
-                    android:foreground="?android:attr/selectableItemBackground"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:id="@+id/btnManageGrades">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:padding="8dp">
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical"
-                        android:gravity="center"
-                        android:padding="12dp">
+                            <ImageView
+                                android:layout_width="28dp" android:layout_height="28dp"
+                                android:src="@drawable/ic_grades"
+                                android:tint="#800000"
+                                android:layout_marginBottom="4dp" android:contentDescription="Grades icon"/>
 
-                        <ImageView
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
-                            android:src="@drawable/ic_grades"
-                            android:tint="#800000"
-                            android:layout_marginBottom="8dp"
-                            android:contentDescription="Grades icon"/>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Grades"
+                                android:textSize="12sp" android:textColor="#800000"
+                                android:textStyle="bold"/>
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Grades"
-                            android:textSize="13sp"
-                            android:textColor="#800000"
-                            android:textStyle="bold"/>
+                        </LinearLayout>
 
-                    </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
 
-                </com.google.android.material.card.MaterialCardView>
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="100dp"
+                        android:layout_height="80dp" app:cardCornerRadius="16dp"
+                        app:cardElevation="2dp"
+                        app:strokeColor="#E0E0E0"
+                        app:strokeWidth="1dp"
+                        android:foreground="?android:attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:id="@+id/btnStartRoulette">
 
-                <!-- Roulette Button -->
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="0dp"
-                    android:layout_height="88dp"
-                    android:layout_weight="1"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="2dp"
-                    app:strokeColor="#E0E0E0"
-                    app:strokeWidth="1dp"
-                    android:foreground="?android:attr/selectableItemBackground"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:id="@+id/btnStartRoulette">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:padding="8dp">
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical"
-                        android:gravity="center"
-                        android:padding="12dp">
+                            <ImageView
+                                android:layout_width="28dp" android:layout_height="28dp"
+                                android:src="@drawable/ic_roulette"
+                                android:tint="#800000"
+                                android:layout_marginBottom="4dp" android:contentDescription="Roulette icon"/>
 
-                        <ImageView
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
-                            android:src="@drawable/ic_roulette"
-                            android:tint="#800000"
-                            android:layout_marginBottom="8dp"
-                            android:contentDescription="Roulette icon"/>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Roulette"
+                                android:textSize="12sp" android:textColor="#800000"
+                                android:textStyle="bold"/>
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Roulette"
-                            android:textSize="13sp"
-                            android:textColor="#800000"
-                            android:textStyle="bold"/>
+                        </LinearLayout>
 
-                    </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
 
-                </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
 
-            </LinearLayout>
+            </HorizontalScrollView>
 
         </LinearLayout>
 
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- Students List Card -->
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        app:cardCornerRadius="20dp"
+        android:layout_weight="1.5" app:cardCornerRadius="20dp"
         app:cardElevation="4dp"
         app:cardBackgroundColor="#FFFFFF"
         app:strokeColor="#E0E0E0"
@@ -376,26 +330,23 @@
             android:layout_height="match_parent"
             android:orientation="vertical">
 
-            <!-- Students Header -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:padding="24dp">
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
+                android:paddingTop="16dp" android:paddingBottom="12dp"> <TextView
+                android:id="@+id/tvStudentsHeader"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Students in this class"
+                android:textSize="18sp" android:textStyle="bold"
+                android:textColor="#212121"
+                android:letterSpacing="0.02"/>
 
-                <TextView
-                    android:id="@+id/tvStudentsHeader"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Students in this class"
-                    android:textSize="19sp"
-                    android:textStyle="bold"
-                    android:textColor="#212121"
-                    android:letterSpacing="0.02"/>
-
-                <!-- Student Count Badge -->
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipStudentCount"
                     android:layout_width="wrap_content"
@@ -412,16 +363,16 @@
 
             </LinearLayout>
 
-            <!-- Students List -->
             <androidx.recyclerview.widget.RecyclerView
+                android:scrollbars="none"
                 android:id="@+id/recyclerViewStudents"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"
                 android:clipToPadding="false"
                 android:paddingHorizontal="16dp"
-                android:paddingVertical="8dp"
-                android:scrollbars="vertical"/>
+                android:paddingTop="0dp"
+                android:paddingBottom="16dp" />
 
         </LinearLayout>
 

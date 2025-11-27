@@ -121,6 +121,7 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
                 persistedCurrentQuestion = _currentQuestionIndex.value ?: 0
                 persistedCheatCount = _cheatCount.value ?: 0
                 persistedAnswers = studentAnswers.associate { it.first to it.second }
+                persistedCheatLog = cheatLogList
             }
             autoSaveHandler.postDelayed(this, 30000) // Save every 30 seconds
         }
@@ -148,6 +149,8 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
         persistedCurrentQuestion = _currentQuestionIndex.value ?: 0
         persistedAnswers = studentAnswers.associate { it.first to it.second }
 
+        persistedCheatLog = cheatLogList
+
         // Kung may start time na, i-save rin
         if (persistedStartTime == 0L) {
             persistedStartTime = System.currentTimeMillis()
@@ -155,18 +158,35 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
 
     }
 
+    private var persistedCheatLog: List<String>
+        get() {
+            // Kunin ang string at i-split gamit ang delimiter
+            val logString = prefs.getString("cheat_log_${initialQuiz.quizId}", "") ?: ""
+            // Gumamit ng malabong delimiter (e.g., "||") na hindi madalas gamitin sa loob ng log entry
+            return if (logString.isNotEmpty()) logString.split("||") else emptyList()
+        }
+        set(value) {
+            // I-join ang listahan sa isang string bago i-save
+            val logString = value.joinToString("||")
+            prefs.edit().putString("cheat_log_${initialQuiz.quizId}", logString).apply()
+        }
+
     private fun restoreQuizState() {
         val savedCheatCount = persistedCheatCount
         val savedCurrentQuestion = persistedCurrentQuestion
         val savedAnswers = persistedAnswers
         val savedStartTime = persistedStartTime
-
+        val savedCheatLog = persistedCheatLog
 
         if (savedStartTime > 0L) {
+
             _cheatCount.value = savedCheatCount
             _currentQuestionIndex.value = savedCurrentQuestion
             studentAnswers.clear()
             studentAnswers.addAll(savedAnswers.map { it.key to it.value })
+
+            cheatLogList.clear()
+            cheatLogList.addAll(savedCheatLog)
 
             if (savedCurrentQuestion < mutableQuestions.size) {
                 _currentQuestion.value = mutableQuestions[savedCurrentQuestion]
@@ -341,7 +361,6 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
                     ?: snapshot.getLong("currentTime")
 
                 if (serverTs != null) {
-                    _uiMessage.value = "Server time connected"
                     updateTimer(serverTs)
 
                     if (!isTicking) {
@@ -349,11 +368,9 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
                         handler.post(tickRunnable)
                     }
                 } else {
-                    _uiMessage.value = "Server time field not found. Using device time."
                     startLocalTimer()
                 }
             } else {
-                _uiMessage.value = "Server time document not found. Using device time."
                 startLocalTimer()
             }
         }
@@ -530,10 +547,15 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
         persistedCheatCount = newCount // Persist cheat count
 
         val timestamp = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date(currentTime))
-        val logEntry = "[$timestamp] ${reason} (Q:${_currentQuestionIndex.value})"
+        val currentQuestionIndex = _currentQuestionIndex.value ?: 0
+        val humanReadableQuestionNumber = currentQuestionIndex + 1
+        val logEntry = "[$timestamp] ${reason} (Q:${humanReadableQuestionNumber})"
         cheatLogList.add(logEntry)
 
-        _uiMessage.value = "Cheating detected: $reason (Attempt $newCount/$maxCheatAttempts)"
+        persistedCheatLog = cheatLogList
+
+        saveCurrentState()
+
         _isCheating.value = true
 
         if (newCount >= maxCheatAttempts) {
@@ -648,6 +670,8 @@ class StudentQuizViewModel(application: Application, private val initialQuiz: Qu
         editor.remove("current_question_${initialQuiz.quizId}")
         editor.remove("answers_${initialQuiz.quizId}")
         editor.remove("start_time_${initialQuiz.quizId}")
+        editor.remove("cheat_log_${initialQuiz.quizId}")
+
         editor.apply()
     }
 

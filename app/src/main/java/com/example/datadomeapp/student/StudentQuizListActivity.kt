@@ -1,13 +1,17 @@
 package com.example.datadomeapp.student
 
+import android.app.NotificationManager
+import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
+import android.provider.Settings
 import android.util.Log
 import android.view.View
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -40,7 +44,8 @@ class StudentQuizListActivity : AppCompatActivity() {
     private lateinit var rvQuizzes: RecyclerView
     private lateinit var quizAdapter: StudentQuizAdapter
     private val quizItemList = mutableListOf<StudentQuizItem>()
-
+    private var isRequestingDndPermission: Boolean = false
+    private var onDndGrantedCallback: (() -> Unit)? = null
     // BAGONG MGA VIEWS PARA SA MODERN LAYOUT
     private lateinit var tvTotalQuizzes: TextView
     private lateinit var tvCompletedQuizzes: TextView
@@ -368,9 +373,63 @@ class StudentQuizListActivity : AppCompatActivity() {
             // Case 2: ONGOING or EXPIRED - Titingnan ang result sa Firestore
             else -> {
                 // FIXED: Ipasa ang buong item
-                checkQuizResultsAndDetermineAccess(item, currentTime, endTime)
+                checkDndPermissionAndProceed(item, currentTime, endTime)
             }
         }
+    }
+
+    private fun checkDndPermissionAndProceed(item: StudentQuizItem, currentTime: Long, endTime: Long) {
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        if (!notificationManager.isNotificationPolicyAccessGranted) {
+            // Show DND permission request BEFORE entering quiz
+            showDndPermissionDialog {
+                // After permission granted, proceed to check quiz access
+                checkQuizResultsAndDetermineAccess(item, currentTime, endTime)
+            }
+        } else {
+            // DND already granted, proceed directly
+            checkQuizResultsAndDetermineAccess(item, currentTime, endTime)
+        }
+    }
+
+    private fun showDndPermissionDialog(onGranted: () -> Unit) {
+        AlertDialog.Builder(this)
+            .setTitle("Do Not Disturb Permission Required")
+            .setMessage("To ensure quiz security, please grant Do Not Disturb access. This prevents interruptions during the quiz.")
+            .setPositiveButton("Grant Permission") { _, _ ->
+                requestDndPermission(onGranted)
+            }
+            .setNegativeButton("Cancel") { _, _ ->
+                Toast.makeText(this, "DND permission is required to take the quiz", Toast.LENGTH_LONG).show()
+            }
+            .setCancelable(false)
+            .show()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Check if we were just requesting DND permission
+        if (isRequestingDndPermission) {
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            isRequestingDndPermission = false // Reset the flag
+
+            if (notificationManager.isNotificationPolicyAccessGranted) {
+                // Permission was granted, execute the stored callback
+                onDndGrantedCallback?.invoke()
+                onDndGrantedCallback = null // Clear the callback
+            } else {
+                // Permission was NOT granted after the request
+                Toast.makeText(this, "DND permission is required to take the quiz", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun requestDndPermission(onGranted: () -> Unit) {
+        isRequestingDndPermission = true
+        startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
+        // You'll handle the result in onResume()
+        this.onDndGrantedCallback = onGranted
     }
 
     // FIXED: Tumatanggap na ng StudentQuizItem at inayos ang logic flow para sa IN_PROGRESS

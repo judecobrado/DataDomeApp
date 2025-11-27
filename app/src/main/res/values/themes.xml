@@ -6,4 +6,15 @@
     </style>
 
     <style name="Theme.DataDomeAPP" parent="Base.Theme.DataDomeAPP" />
+
+    <style name="Theme.DataDomeAPP.Splash" parent="Theme.DataDomeAPP">
+        <item name="android:statusBarColor">@color/white</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="windowNoTitle">true</item>
+        <item name="windowActionBar">false</item>
+    </style>
+
+    <style name="Theme.DataDomeAPP.NoActionBar" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    </style>
+
 </resources>

@@ -65,7 +65,7 @@
             android:id="@+id/btnAddTask"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Add New Task"
+            android:text="To-Do List"
             android:textSize="16sp"
             android:textStyle="bold"
             android:paddingVertical="16dp"

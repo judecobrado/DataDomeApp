@@ -1,9 +1,14 @@
 package com.example.datadomeapp.student
 
 import android.app.AlertDialog
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.*
@@ -44,20 +49,96 @@ class StudentNotesActivity : AppCompatActivity() {
         val etTitle = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etTitle)
         val etContent = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etContent)
 
+        val tvTitleCount = dialogView.findViewById<TextView>(R.id.tvTitleCount)
+        val tvContentCount = dialogView.findViewById<TextView>(R.id.tvContentCount)
+
+        tvTitleCount.text = "${oldTitle?.length ?: 0}/50"
+        tvContentCount.text = "${oldContent?.length ?: 0}/500"
+
         etTitle.setText(oldTitle)
         etContent.setText(oldContent)
 
-        MaterialAlertDialogBuilder(this)
+        // Add text watchers for validation
+// Add text watchers for validation
+        etTitle.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                // Update character count
+                tvTitleCount.text = "${s?.length ?: 0}/50"
+
+                if (s?.toString()?.contains("  ") == true) {
+                    val cleanedText = s.toString().replace("  ", " ")
+                    etTitle.setText(cleanedText)
+                    etTitle.setSelection(cleanedText.length)
+                    return
+                }
+
+                // Prevent input beyond 50 characters
+                if (s?.length ?: 0 > 50) {
+                    etTitle.setText(s?.subSequence(0, 50))
+                    etTitle.setSelection(50)
+                    tvTitleCount.text = "50/50"
+                }
+
+                // Auto-capitalize first word
+                val text = s.toString()
+                if (text.isNotEmpty() && text[0].isLowerCase()) {
+                    val capitalized = text.replaceFirstChar { it.uppercase() }
+                    etTitle.setText(capitalized)
+                    etTitle.setSelection(capitalized.length)
+                }
+            }
+        })
+
+        etContent.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                // Update character count
+                tvContentCount.text = "${s?.length ?: 0}/500"
+
+                if (s?.toString()?.contains("  ") == true) {
+                    val cleanedText = s.toString().replace("  ", " ")
+                    etContent.setText(cleanedText)
+                    etContent.setSelection(cleanedText.length)
+                    return
+                }
+
+                // Prevent input beyond 500 characters
+                if (s?.length ?: 0 > 500) {
+                    etContent.setText(s?.subSequence(0, 500))
+                    etContent.setSelection(500)
+                    tvContentCount.text = "500/500"
+                }
+            }
+        })
+
+        // STEP 1: Gumawa ng AlertDialog
+        val dialog = AlertDialog.Builder(this)
             .setTitle(if (noteId == null) "Add New Note" else "Edit Note")
             .setView(dialogView)
-            .setPositiveButton(if (noteId == null) "Add" else "Update") { dialog, _ ->
+            .setPositiveButton(if (noteId == null) "Add" else "Update", null) // SET TO NULL
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .create()
+
+        // STEP 2: I-override ang positive button behavior
+        dialog.setOnShowListener {
+            val positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            positiveButton.setOnClickListener {
                 val title = etTitle.text.toString().trim()
                 val content = etContent.text.toString().trim()
-                val userId = auth.currentUser?.uid ?: return@setPositiveButton
+                val userId = auth.currentUser?.uid ?: return@setOnClickListener
 
                 if (title.isEmpty() || content.isEmpty()) {
                     Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show()
-                    return@setPositiveButton
+                    return@setOnClickListener
+                }
+
+                if (!validateTitle(title) || !validateContent(content)) {
+                    return@setOnClickListener // Hindi magdi-dismiss kapag failed validation
                 }
 
                 val noteMap = hashMapOf(
@@ -68,33 +149,61 @@ class StudentNotesActivity : AppCompatActivity() {
                 )
 
                 if (noteId == null) {
+                    // ADD NEW NOTE
                     db.collection("students").document(userId)
                         .collection("notes")
                         .add(noteMap)
                         .addOnSuccessListener {
                             loadNotes()
+                            dialog.dismiss() // MAGDI-DISMISS LANG KAPAG SUCCESS
                             Toast.makeText(this, "Note added successfully", Toast.LENGTH_SHORT).show()
                         }
                         .addOnFailureListener {
                             Toast.makeText(this, "Failed to add note", Toast.LENGTH_SHORT).show()
+                            // HINDI MAGDI-DISMISS KAPAG FAILED
                         }
                 } else {
+                    // UPDATE EXISTING NOTE
                     db.collection("students").document(userId)
                         .collection("notes").document(noteId)
                         .update(noteMap as Map<String, Any>)
                         .addOnSuccessListener {
                             loadNotes()
+                            dialog.dismiss() // MAGDI-DISMISS LANG KAPAG SUCCESS
                             Toast.makeText(this, "Note updated successfully", Toast.LENGTH_SHORT).show()
                         }
                         .addOnFailureListener {
                             Toast.makeText(this, "Failed to update note", Toast.LENGTH_SHORT).show()
+                            // HINDI MAGDI-DISMISS KAPAG FAILED
                         }
                 }
             }
-            .setNegativeButton("Cancel") { dialog, _ ->
-                dialog.dismiss()
-            }
-            .show()
+        }
+
+        // STEP 3: I-show ang dialog
+        dialog.show()
+    }
+
+    private fun validateTitle(title: String): Boolean {
+        val words = title.trim().split("\\s+".toRegex())
+
+        if (title.length > 50) {
+            return false
+        }
+
+        if (words.isNotEmpty() && !words[0].first().isUpperCase()) {
+            return false
+        }
+
+        return true
+    }
+
+    private fun validateContent(content: String): Boolean {
+        if (content.length > 500) {
+            Toast.makeText(this, "Content must be 500 characters or less", Toast.LENGTH_SHORT).show()
+            return false
+        }
+        return true
     }
 
     private fun loadNotes() {
@@ -139,6 +248,7 @@ class StudentNotesActivity : AppCompatActivity() {
             radius = 16f
             elevation = 4f
             setCardBackgroundColor(ContextCompat.getColor(this@StudentNotesActivity, R.color.white))
+
         }
 
         val container = LinearLayout(this).apply {
@@ -158,6 +268,7 @@ class StudentNotesActivity : AppCompatActivity() {
             ).apply {
                 setMargins(0, 0, 0, 8)
             }
+
         }
 
         // Content (limited to 3 lines)
@@ -249,14 +360,27 @@ class StudentNotesActivity : AppCompatActivity() {
             showDeleteConfirmationDialog(noteId)
         }
 
+        noteCard.setOnLongClickListener {
+            val combinedText = "Title: $title\n\nContent: $content"
+            copyToClipboard(combinedText, "Note")
+            true
+        }
+
         // Card click to view full content
         noteCard.setOnClickListener {
             showNoteDetailDialog(title, content, timestamp)
         }
     }
 
+    private fun copyToClipboard(text: String, label: String) {
+        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clip = ClipData.newPlainText(label, text)
+        clipboard.setPrimaryClip(clip)
+        Toast.makeText(this, "$label copied to clipboard", Toast.LENGTH_SHORT).show()
+    }
+
     private fun showDeleteConfirmationDialog(noteId: String) {
-        MaterialAlertDialogBuilder(this)
+        AlertDialog.Builder(this)
             .setTitle("Delete Note")
             .setMessage("Are you sure you want to delete this note?")
             .setPositiveButton("Delete") { dialog, _ ->
@@ -279,7 +403,7 @@ class StudentNotesActivity : AppCompatActivity() {
     }
 
     private fun showNoteDetailDialog(title: String, content: String, timestamp: Long) {
-        MaterialAlertDialogBuilder(this)
+        AlertDialog.Builder(this)
             .setTitle(title)
             .setMessage("$content\n\n\nCreated: ${formatTimestamp(timestamp)}")
             .setPositiveButton("Close") { dialog, _ ->

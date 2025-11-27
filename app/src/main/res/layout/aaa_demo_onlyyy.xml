@@ -1,39 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/networkStatusIndicator"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:background="#FF4444"
-    android:padding="12dp"
-    android:gravity="center_vertical"
-    android:orientation="horizontal"
-    android:visibility="gone"
-    android:elevation="8dp">
+    android:layout_height="match_parent"
+    android:background="@color/white">
 
     <ImageView
-        android:layout_width="20dp"
-        android:layout_height="20dp"
-        android:src="@android:drawable/ic_dialog_alert"
-        android:layout_marginEnd="8dp" />
+        android:id="@+id/imgLogo"
+        android:layout_width="160dp"
+        android:layout_height="160dp"
+        android:layout_centerInParent="true"
+        android:src="@raw/dd_logo"
+        android:alpha="0"
+        android:scaleX="0.6"
+        android:scaleY="0.6" />
 
     <TextView
-        android:id="@+id/tvNetworkStatus"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:text="No internet connection"
-        android:textColor="#FFFFFF"
-        android:textSize="14sp"
-        android:textStyle="bold" />
-
-    <Button
-        android:id="@+id/btnRetry"
+        android:id="@+id/txtTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="RETRY"
-        android:textColor="#FFFFFF"
-        android:background="@android:color/transparent"
+        android:text="DataDome School System"
+        android:textSize="20sp"
         android:textStyle="bold"
-        android:layout_marginStart="8dp" />
+        android:textColor="#9B1C1F"
+        android:alpha="0"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="330dp"
+        android:translationY="60dp"/>
 
-</LinearLayout>
+</RelativeLayout>

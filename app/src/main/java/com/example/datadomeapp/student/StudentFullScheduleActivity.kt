@@ -41,9 +41,6 @@ class StudentFullScheduleActivity : AppCompatActivity() {
         "Sat" to "Saturday"
     )
 
-    // Time slots for the day view (7:00 AM to 7:00 PM)
-    private val timeSlots = generateTimeSlots()
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_student_daily_schedule)
@@ -69,38 +66,26 @@ class StudentFullScheduleActivity : AppCompatActivity() {
         selectedDayText = findViewById(R.id.selectedDayText)
         currentDateText = findViewById(R.id.currentDateText)
 
-        // Set current date
+        // Set current date and initial selected day
         updateCurrentDate()
+        updateSelectedDayDisplay()
     }
 
     private fun updateCurrentDate() {
         val dateFormat = SimpleDateFormat("EEEE, d MMMM yyyy", Locale.US)
         val currentDate = dateFormat.format(Date())
         currentDateText.text = currentDate
-    }
 
-    private fun generateTimeSlots(): List<String> {
-        val slots = mutableListOf<String>()
-        val timeFormat = SimpleDateFormat("h:mm a", Locale.US)
-        val calendar = Calendar.getInstance()
-
-        // Set start time to 7:00 AM
-        calendar.set(Calendar.HOUR_OF_DAY, 7)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-
-        // Generate slots from 7:00 AM to 7:00 PM (12 hours = 24 slots)
-        for (i in 0 until 24) {
-            slots.add(timeFormat.format(calendar.time))
-            calendar.add(Calendar.MINUTE, 30) // Add 30 minutes
+        // Auto-select current day
+        val currentDay = SimpleDateFormat("EEE", Locale.US).format(Date())
+        selectedDay = when (currentDay) {
+            "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" -> currentDay
+            else -> "Mon" // Default to Monday if it's Sunday
         }
-
-        return slots
     }
 
     private fun loadFullSchedule() {
-        tvScheduleStatus.text = "Loading your weekly schedule..."
-        tvScheduleStatus.visibility = View.VISIBLE
+        showLoading("Loading your weekly schedule...")
 
         // Clear existing rows
         if (tlScheduleMatrix.childCount > 0) {
@@ -141,17 +126,15 @@ class StudentFullScheduleActivity : AppCompatActivity() {
 
                         // Step 4: Display weekly schedule
                         displayWeeklySchedule(dailySchedule)
-                        tvScheduleStatus.visibility = View.GONE
+                        hideLoading()
                     }
                     .addOnFailureListener { e ->
-                        tvScheduleStatus.text = "Error loading schedule: ${e.message}"
-                        tvScheduleStatus.setTextColor(ContextCompat.getColor(this@StudentFullScheduleActivity, R.color.poor_red))
+                        showErrorMessage("Error loading schedule: ${e.message}")
                         Log.e("WEEKLY_SCHEDULE", "Failed to load class assignments", e)
                     }
             }
             .addOnFailureListener { e ->
-                tvScheduleStatus.text = "Failed to laod subjects."
-                tvScheduleStatus.setTextColor(ContextCompat.getColor(this@StudentFullScheduleActivity, R.color.poor_red))
+                showErrorMessage("Failed to load subjects.")
                 Log.e("WEEKLY_SCHEDULE", "Failed to load student subjects", e)
             }
     }
@@ -193,6 +176,11 @@ class StudentFullScheduleActivity : AppCompatActivity() {
             }
         }
 
+        // Sort events by start time for each day
+        dailyEvents.values.forEach { events ->
+            events.sortBy { it.startTime }
+        }
+
         return dailyEvents
     }
 
@@ -231,19 +219,13 @@ class StudentFullScheduleActivity : AppCompatActivity() {
                     updateSelectedDayDisplay()
                     displayTimelineForSelectedDay(dailySchedule)
                 }
-
-                // Initial selection
-                if (day == selectedDay) {
-                    setBackgroundColor(ContextCompat.getColor(this@StudentFullScheduleActivity, R.color.primary_red))
-                }
             }
 
             val dayText = TextView(this).apply {
                 text = day
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
-                setTextColor(if (day == selectedDay) ContextCompat.getColor(this@StudentFullScheduleActivity, R.color.white)
-                else ContextCompat.getColor(this@StudentFullScheduleActivity, R.color.text_secondary))
-                setTypeface(typeface, if (day == selectedDay) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+                setTextColor(ContextCompat.getColor(this@StudentFullScheduleActivity, R.color.text_secondary))
+                setTypeface(typeface, android.graphics.Typeface.NORMAL)
                 gravity = Gravity.CENTER
             }
 
@@ -265,6 +247,9 @@ class StudentFullScheduleActivity : AppCompatActivity() {
             dayContainer.addView(dayText)
             weekDaysContainer.addView(dayContainer)
         }
+
+        // Update selection after creating all views
+        updateDaySelection()
     }
 
     private fun updateDaySelection() {
@@ -295,46 +280,54 @@ class StudentFullScheduleActivity : AppCompatActivity() {
 
         val selectedDayEvents = dailySchedule[selectedDay] ?: emptyList()
 
-        // TIME COLUMN
+        // TIME COLUMN - Fixed height to match events column
         val timeColumn = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(
                 dpToPx(70),
-                LinearLayout.LayoutParams.WRAP_CONTENT
+                calculateTotalTimelineHeight()
             )
             setBackgroundColor(ContextCompat.getColor(this@StudentFullScheduleActivity, R.color.white))
         }
 
-        // Add time labels
-        timeSlots.forEach { time ->
+        // Add hourly time labels (7:00 AM to 7:00 PM)
+        for (hour in 7..19) {
+            val timeText = when {
+                hour == 12 -> "12:00 PM"
+                hour > 12 -> "${hour - 12}:00 PM"
+                else -> "$hour:00 AM"
+            }
+
             val timeCell = TextView(this).apply {
-                text = if (time.endsWith(":00 AM") || time.endsWith(":00 PM")) time else ""
+                text = timeText
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
                 setTextColor(ContextCompat.getColor(this@StudentFullScheduleActivity, R.color.text_secondary))
-                setPadding(dpToPx(4), dpToPx(28), dpToPx(4), dpToPx(28))
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                )
-                gravity = Gravity.CENTER_HORIZONTAL
+                    dpToPx(60) // Each hour slot is 60dp tall
+                ).apply {
+                    gravity = Gravity.TOP
+                }
+                setPadding(dpToPx(4), dpToPx(4), dpToPx(4), dpToPx(4))
+                gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
             }
             timeColumn.addView(timeCell)
         }
 
         timelineContainer.addView(timeColumn)
 
-        // EVENTS COLUMN
+        // EVENTS COLUMN - Fixed height
         val eventsColumn = FrameLayout(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 0,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
+                calculateTotalTimelineHeight(),
                 1f
             )
             setBackgroundColor(ContextCompat.getColor(this@StudentFullScheduleActivity, R.color.background_light))
             setPadding(dpToPx(8), 0, dpToPx(8), 0)
         }
 
-        // Add time slot lines
+        // Add hourly lines
         addTimeSlotLines(eventsColumn)
 
         // Add event views
@@ -343,17 +336,41 @@ class StudentFullScheduleActivity : AppCompatActivity() {
             eventsColumn.addView(eventView)
         }
 
+        // Show message if no classes for selected day
+        if (selectedDayEvents.isEmpty()) {
+            val noClassesText = TextView(this).apply {
+                text = "No classes scheduled for $selectedDay"
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+                setTextColor(ContextCompat.getColor(this@StudentFullScheduleActivity, R.color.text_secondary))
+                gravity = Gravity.CENTER
+                layoutParams = FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    topMargin = dpToPx(200)
+                }
+            }
+            eventsColumn.addView(noClassesText)
+        }
+
         timelineContainer.addView(eventsColumn)
     }
 
+    private fun calculateTotalTimelineHeight(): Int {
+        // From 7:00 AM to 7:00 PM = 12 hours = 720 minutes
+        // Using 1dp per minute = 720dp total height
+        return dpToPx(780) // Adding 60dp extra for padding/buffer
+    }
+
     private fun addTimeSlotLines(container: FrameLayout) {
-        for (i in 0..timeSlots.size) {
+        // Add lines for each hour from 7:00 AM to 7:00 PM (13 lines total)
+        for (i in 0..12) {
             val line = View(this).apply {
                 layoutParams = FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.MATCH_PARENT,
                     1
                 ).apply {
-                    topMargin = i * dpToPx(60)
+                    topMargin = i * dpToPx(60) // Each hour line (60 minutes = 60dp)
                 }
                 setBackgroundColor(ContextCompat.getColor(this@StudentFullScheduleActivity, R.color.card_stroke_color))
             }
@@ -403,9 +420,9 @@ class StudentFullScheduleActivity : AppCompatActivity() {
                 setPadding(0, dpToPx(2), 0, 0)
             }
 
-            // Room information
-            val roomText = TextView(this@StudentFullScheduleActivity).apply {
-                text = event.room
+            // Section and room information
+            val sectionRoomText = TextView(this@StudentFullScheduleActivity).apply {
+                text = "${event.sectionName} • ${event.room}"
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
                 setTextColor(Color.WHITE)
                 setPadding(0, dpToPx(2), 0, 0)
@@ -413,7 +430,7 @@ class StudentFullScheduleActivity : AppCompatActivity() {
 
             addView(titleText)
             addView(timeText)
-            addView(roomText)
+            addView(sectionRoomText)
         }
     }
 
@@ -424,8 +441,8 @@ class StudentFullScheduleActivity : AppCompatActivity() {
                 "Subject: ${event.subjectTitle}\n" +
                         "Time: ${event.startTime} - ${event.endTime}\n" +
                         "Room: ${event.room}\n" +
-                        "Teacher: ${event.teacherName}\n" +
-                        "Section: ${event.sectionName}"
+                        "Section: ${event.sectionName}\n" +
+                        "Teacher: ${event.teacherName}"
             )
             .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
             .create()
@@ -438,20 +455,31 @@ class StudentFullScheduleActivity : AppCompatActivity() {
         return try {
             val start = timeFormat.parse(startTime)
             val calendar = Calendar.getInstance().apply { time = start }
+
             val hour = calendar.get(Calendar.HOUR)
             val minute = calendar.get(Calendar.MINUTE)
-            val isPM = calendar.get(Calendar.AM_PM) == Calendar.PM
+            val amPm = calendar.get(Calendar.AM_PM)
 
-            // Convert to 24-hour format for calculation
-            var totalHours = hour + if (isPM) 12 else 0
-            if (totalHours == 12 && !isPM) totalHours = 0 // Handle 12 AM
-            if (totalHours == 24) totalHours = 12 // Handle 12 PM
+            // Convert to 24-hour format for easier calculation
+            var hour24 = hour
+            if (amPm == Calendar.PM && hour24 != 12) {
+                hour24 += 12
+            } else if (amPm == Calendar.AM && hour24 == 12) {
+                hour24 = 0
+            }
 
-            val totalMinutes = totalHours * 60 + minute
-            val startMinutes = 7 * 60 // Calendar starts at 7:00 AM
+            val totalMinutes = hour24 * 60 + minute
+            val startMinutes = 7 * 60 // 7:00 AM = 420 minutes
 
-            ((totalMinutes - startMinutes) / 60.0f) * dpToPx(60) // 60 pixels per hour
+            // Calculate minutes from 7:00 AM and convert to dp (1dp per minute)
+            val minutesFromStart = totalMinutes - startMinutes
+
+            val offset = 10f
+
+            // Ensure position is within visible range
+            (minutesFromStart.toFloat() + offset).coerceIn(0f, 720f)
         } catch (e: Exception) {
+            Log.e("TIME_CALC", "Error calculating top position for $startTime: ${e.message}")
             0f
         }
     }
@@ -461,11 +489,15 @@ class StudentFullScheduleActivity : AppCompatActivity() {
         return try {
             val start = timeFormat.parse(startTime)
             val end = timeFormat.parse(endTime)
-            val duration = end.time - start.time
-            val hours = duration / (1000 * 60 * 60).toFloat()
-            hours * dpToPx(60) // 60 pixels per hour
+
+            val durationMillis = end.time - start.time
+            val durationMinutes = durationMillis / (1000 * 60)
+
+            // Return duration in minutes (1dp per minute)
+            durationMinutes.toFloat().coerceAtLeast(30f) // Minimum height of 30 minutes
         } catch (e: Exception) {
-            dpToPx(60).toFloat() // Default height (1 hour)
+            Log.e("TIME_CALC", "Error calculating event height: ${e.message}")
+            60f // Default height (1 hour)
         }
     }
 
@@ -513,9 +545,27 @@ class StudentFullScheduleActivity : AppCompatActivity() {
         }
     }
 
-    private fun showNoScheduleMessage() {
-        tvScheduleStatus.text = "No schedule found for the current semester.\nPlease check your enrollment or contact administration."
+    // Helper methods for status messages
+    private fun showLoading(message: String) {
+        tvScheduleStatus.text = message
         tvScheduleStatus.setTextColor(ContextCompat.getColor(this, R.color.text_secondary))
+        tvScheduleStatus.visibility = View.VISIBLE
+    }
+
+    private fun hideLoading() {
+        tvScheduleStatus.visibility = View.GONE
+    }
+
+    private fun showErrorMessage(message: String) {
+        tvScheduleStatus.text = message
+        tvScheduleStatus.setTextColor(ContextCompat.getColor(this, R.color.poor_red))
+        tvScheduleStatus.visibility = View.VISIBLE
+    }
+
+    private fun showNoScheduleMessage() {
+        tvScheduleStatus.text = "No classes scheduled for the current semester."
+        tvScheduleStatus.setTextColor(ContextCompat.getColor(this, R.color.text_secondary))
+        tvScheduleStatus.visibility = View.VISIBLE
     }
 
     private fun dpToPx(dp: Int): Int {
