@@ -9,6 +9,7 @@ import android.widget.Button
 import android.widget.Toast
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import com.example.datadomeapp.admin.AdminDashboardActivity
 import com.example.datadomeapp.canteen.CanteenStaffDashboardActivity
 import com.example.datadomeapp.enrollment.ChooseStudentTypeActivity

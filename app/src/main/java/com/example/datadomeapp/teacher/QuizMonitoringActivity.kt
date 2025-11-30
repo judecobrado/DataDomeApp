@@ -100,7 +100,8 @@ class QuizMonitoringActivity : BaseActivity() {
         adapter = QuizMonitoringAdapter(
             dataList = emptyList(),
             onIntegrityClick = { studentData -> onIntegrityClicked(studentData) },
-            onAccessControlClick = { studentData -> showIndividualAccessControlDialog(studentData) }
+            onAccessControlClick = { studentData -> showIndividualAccessControlDialog(studentData) },
+            quizType = quizType
         )
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
@@ -236,7 +237,7 @@ class QuizMonitoringActivity : BaseActivity() {
             val affected = when (studentsType) {
                 "ALL" -> currentList
                 "SPECIFIC" -> currentList.filter { it.studentUid in specificUids }
-                "MISSED" -> currentList.filter { it.status == "UNATTEMPTED_TIME_EXPIRED" || it.status == "NOT_STARTED" }
+                "MISSED" -> currentList.filter { it.status == "UNATTEMPTED_TIME_EXPIRED" || it.status == "NOT_STARTED" || it.status == "N/A" }
                 else -> emptyList()
             }
 
@@ -400,7 +401,7 @@ class QuizMonitoringActivity : BaseActivity() {
                 if (finalAction == "RETAKE") {
                     val retakeableStatuses = listOf(
                         "COMPLETED", "TIME_EXPIRED", "UNATTEMPTED_TIME_EXPIRED",
-                        "ACCESS_REVOKED", "RETAKE_EXPIRED"
+                        "ACCESS_REVOKED", "RETAKE_EXPIRED", "N/A"
                     )
 
                     finalUidsToUpdate = initialAffectedStudents
@@ -410,7 +411,7 @@ class QuizMonitoringActivity : BaseActivity() {
                     if (finalUidsToUpdate.isEmpty()) {
                         val statusCount = initialAffectedStudents.groupBy { it.status }.mapValues { it.value.size }
                         Toast.makeText(this,
-                            "No eligible students for RETAKE.\nCurrent statuses: $statusCount",
+                            "Something went wrong, Try again.",
                             Toast.LENGTH_LONG
                         ).show()
                         return@setOnClickListener
@@ -452,7 +453,7 @@ class QuizMonitoringActivity : BaseActivity() {
         }
 
         if (isQuizGloballyFinished &&
-            (studentData.status == "COMPLETED" || studentData.status == "TIME_EXPIRED" || studentData.status == "CHEATED_MAX" || studentData.status == "ACCESS_REVOKED")) {
+            (studentData.status == "COMPLETED" || studentData.status == "TIME_EXPIRED" || studentData.status == "CHEATED_MAX" || studentData.status == "ACCESS_REVOKED" || studentData.status == "N/A")) {
             actions.add("GRANT RETAKE")
         }
 

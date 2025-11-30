@@ -42,7 +42,7 @@ class GradeInputAdapter(
         gradeDataList.associateBy { it.studentDocId }.mapValues { (_, gradeData) -> gradeData.copy() }.toMutableMap()
 
     // List for display purposes
-    private val studentsForDisplay: List<GradeData> = gradeDataList
+    private val studentsForDisplay: List<GradeData> = gradeDataList.sortedBy { it.lastName }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): GradeViewHolder {
         val view = LayoutInflater.from(parent.context)
@@ -112,6 +112,7 @@ class GradeInputAdapter(
 
     inner class GradeViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val tvStudentName: TextView = itemView.findViewById(R.id.tvStudentName)
+        private val tvStudentId: TextView = itemView.findViewById(R.id.tvStudentId)
         private val tvAttendance: TextView = itemView.findViewById(R.id.tvAttendance)
         private val tvQuiz: TextView = itemView.findViewById(R.id.tvQuiz)
         private val tvRecitation: TextView = itemView.findViewById(R.id.tvRecitation)
@@ -121,6 +122,7 @@ class GradeInputAdapter(
 
         fun bind(gradeData: GradeData) {
             tvStudentName.text = "${gradeData.lastName}, ${gradeData.firstName}"
+            tvStudentId.text = gradeData.studentId
 
             val grades = studentGrades[gradeData.studentDocId]!! // Get using Doc ID
 
@@ -185,6 +187,7 @@ class GradeInputAdapter(
      */
     data class GradeData(
         val studentDocId: String = "",
+        val studentId: String = "",
         val firstName: String = "",
         val lastName: String = "",
         val subjectId: String = "",

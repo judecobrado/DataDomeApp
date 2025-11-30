@@ -17,9 +17,9 @@ import com.google.firebase.firestore.FirebaseFirestore
 class ManageGradesActivity : AppCompatActivity() {
 
     private lateinit var tvGradesHeader: TextView
-    private lateinit var btnPrelim: Button
-    private lateinit var btnMidterm: Button
-    private lateinit var btnFinals: Button
+    private lateinit var btnPrelim: android.view.View
+    private lateinit var btnMidterm: android.view.View
+    private lateinit var btnFinals: android.view.View
 
     private var assignmentId: String? = null
     private var subjectCode: String? = null
@@ -59,6 +59,7 @@ class ManageGradesActivity : AppCompatActivity() {
 
         tvGradesHeader.text = "Manage Grades for\n$className"
 
+
         // 🟢 CRITICAL: DISABLE ALL BUTTONS BY DEFAULT
         disableAllButtons()
 
@@ -77,6 +78,7 @@ class ManageGradesActivity : AppCompatActivity() {
 
         // 🔄 Load system settings or handle offline mode
         if (isNetworkAvailable()) {
+            loadCourseDetails() // DAGDAG ITO
             loadSystemSettings()
         } else {
             handleOfflineMode()
@@ -116,16 +118,16 @@ class ManageGradesActivity : AppCompatActivity() {
             // Reset background colors to indicate disabled state
             try {
                 val disabledColor = getColor(R.color.button_disabled_color)
-                btnPrelim.setBackgroundColor(disabledColor)
-                btnMidterm.setBackgroundColor(disabledColor)
-                btnFinals.setBackgroundColor(disabledColor)
+                (btnPrelim as? com.google.android.material.card.MaterialCardView)?.setCardBackgroundColor(disabledColor)
+                (btnMidterm as? com.google.android.material.card.MaterialCardView)?.setCardBackgroundColor(disabledColor)
+                (btnFinals as? com.google.android.material.card.MaterialCardView)?.setCardBackgroundColor(disabledColor)
             } catch (e: Exception) {
                 Log.e("ManageGrades", "Color not found, using fallback")
                 // Fallback disabled color
                 val disabledColor = getColor(android.R.color.darker_gray)
-                btnPrelim.setBackgroundColor(disabledColor)
-                btnMidterm.setBackgroundColor(disabledColor)
-                btnFinals.setBackgroundColor(disabledColor)
+                (btnPrelim as? com.google.android.material.card.MaterialCardView)?.setCardBackgroundColor(disabledColor)
+                (btnMidterm as? com.google.android.material.card.MaterialCardView)?.setCardBackgroundColor(disabledColor)
+                (btnFinals as? com.google.android.material.card.MaterialCardView)?.setCardBackgroundColor(disabledColor)
             }
         }
     }
@@ -253,12 +255,12 @@ class ManageGradesActivity : AppCompatActivity() {
                     val loadedSection = document.getString("section")
                     val loadedYearLevel = document.getString("yearLevel")
 
-                    // Only update if we got valid values
+                    // FIXED: Proper null checks
                     if (!loadedSection.isNullOrEmpty()) {
                         sectionName = loadedSection
                     }
                     if (!loadedYearLevel.isNullOrEmpty()) {
-                        yearLevel = loadedYearLevel
+                        yearLevel = loadedYearLevel // FIXED: Remove 'val'
                     }
 
                     Log.d("ManageGrades", "Loaded from Firestore - Year: $yearLevel, Section: $sectionName")
@@ -272,6 +274,52 @@ class ManageGradesActivity : AppCompatActivity() {
             }
             .addOnFailureListener { e ->
                 Log.e("ManageGrades", "Error loading class details: $e")
+            }
+    }
+
+    /**
+     * NEW: Load course details and update header
+     */
+    private fun loadCourseDetails() {
+        if (assignmentId.isNullOrEmpty()) {
+            return
+        }
+
+        firestore.collection("classAssignments").document(assignmentId!!)
+            .get()
+            .addOnSuccessListener { document ->
+                if (document.exists()) {
+                    // Get data from database
+                    val courseCode = document.getString("courseCode") ?: ""
+                    val yearLevel = document.getString("yearLevel") ?: ""
+                    val subjectCode = document.getString("subjectCode") ?: ""
+                    val subjectTitle = document.getString("subjectTitle") ?: ""
+                    val section = document.getString("section") ?: ""
+
+                    // Extract only the number from yearLevel (e.g., "1st Year" -> "1")
+                    val yearNumber = yearLevel.takeWhile { it.isDigit() }.ifEmpty { "" }
+
+                    // Build the display text
+                    val displayText = buildString {
+                        append("Manage Grades for\n")
+                        if (courseCode.isNotEmpty()) append("$courseCode ")
+                        if (yearNumber.isNotEmpty() && section.isNotEmpty()) append("$yearNumber$section")
+                        if (subjectCode.isNotEmpty()) append(" - $subjectCode")
+                        if (subjectTitle.isNotEmpty()) append(" - $subjectTitle")
+                    }
+
+                    // UPDATE THE HEADER
+                    tvGradesHeader.text = displayText
+
+                    Log.d("ManageGrades", "Header updated: $displayText")
+
+                } else {
+                    tvGradesHeader.text = "Manage Grades for\n$className"
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e("ManageGrades", "Error loading course details: ${e.message}")
+                tvGradesHeader.text = "Manage Grades for\n$className"
             }
     }
 
@@ -447,32 +495,33 @@ class ManageGradesActivity : AppCompatActivity() {
 
     private fun highlightCurrentTermButton() {
         try {
-            val normalColor = getColor(R.color.button_normal_color)
-            val highlightColor = getColor(R.color.button_highlight_color)
+            val normalColor = getColor(R.color.primary_red_dark)
+            val highlightColor = getColor(R.color.maroon_dark)
 
-            btnPrelim.setBackgroundColor(normalColor)
-            btnMidterm.setBackgroundColor(normalColor)
-            btnFinals.setBackgroundColor(normalColor)
+            // Gamitin ang cardBackgroundColor instead of setBackgroundColor
+            (btnPrelim as? com.google.android.material.card.MaterialCardView)?.setCardBackgroundColor(normalColor)
+            (btnMidterm as? com.google.android.material.card.MaterialCardView)?.setCardBackgroundColor(normalColor)
+            (btnFinals as? com.google.android.material.card.MaterialCardView)?.setCardBackgroundColor(normalColor)
 
             when (currentTerm) {
-                "Prelim" -> btnPrelim.setBackgroundColor(highlightColor)
-                "Midterm" -> btnMidterm.setBackgroundColor(highlightColor)
-                "Finals" -> btnFinals.setBackgroundColor(highlightColor)
+                "Prelim" -> (btnPrelim as? com.google.android.material.card.MaterialCardView)?.setCardBackgroundColor(highlightColor)
+                "Midterm" -> (btnMidterm as? com.google.android.material.card.MaterialCardView)?.setCardBackgroundColor(highlightColor)
+                "Finals" -> (btnFinals as? com.google.android.material.card.MaterialCardView)?.setCardBackgroundColor(highlightColor)
             }
         } catch (e: Exception) {
             Log.e("HighlightButton", "Color not found, using fallback colors")
             // Fallback colors
             val normalColor = getColor(android.R.color.darker_gray)
-            val highlightColor = getColor(android.R.color.holo_blue_light)
+            val highlightColor = getColor(R.color.primary_red_dark)
 
-            btnPrelim.setBackgroundColor(normalColor)
-            btnMidterm.setBackgroundColor(normalColor)
-            btnFinals.setBackgroundColor(normalColor)
+            (btnPrelim as? com.google.android.material.card.MaterialCardView)?.setCardBackgroundColor(normalColor)
+            (btnMidterm as? com.google.android.material.card.MaterialCardView)?.setCardBackgroundColor(normalColor)
+            (btnFinals as? com.google.android.material.card.MaterialCardView)?.setCardBackgroundColor(normalColor)
 
             when (currentTerm) {
-                "Prelim" -> btnPrelim.setBackgroundColor(highlightColor)
-                "Midterm" -> btnMidterm.setBackgroundColor(highlightColor)
-                "Finals" -> btnFinals.setBackgroundColor(highlightColor)
+                "Prelim" -> (btnPrelim as? com.google.android.material.card.MaterialCardView)?.setCardBackgroundColor(highlightColor)
+                "Midterm" -> (btnMidterm as? com.google.android.material.card.MaterialCardView)?.setCardBackgroundColor(highlightColor)
+                "Finals" -> (btnFinals as? com.google.android.material.card.MaterialCardView)?.setCardBackgroundColor(highlightColor)
             }
         }
     }

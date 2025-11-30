@@ -42,6 +42,14 @@ data class ActivityScoreData(
     val activityType: String
 )
 
+data class OriginalValues(
+    val attendancePresent: Int,
+    val attendanceTotal: Int,
+    val recitationPoints: Int,
+    val quizScores: List<ActivityScoreData>,
+    val assignmentScores: List<ActivityScoreData>
+)
+
 data class DetailedScores(
     val attendanceDetails: Pair<Int, Int>,
     val recitationDetails: Int,
@@ -53,7 +61,8 @@ data class DetailedScores(
 data class ActivityMetadata(
     val type: String,
     val maxPoints: Double,
-    val title: String
+    val title: String,
+    val isPublished: Boolean = true
 )
 
 interface OnStudentClickListener {
@@ -238,6 +247,49 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
             // Show the weights layout
             llGradeWeights.visibility = View.VISIBLE
         }
+    }
+
+    // REPLACE THE EXISTING hasChanges FUNCTION (around line 160) WITH:
+    private fun hasChanges(
+        originalValues: OriginalValues,
+        currentPresent: Int,
+        currentRecitation: Int,
+        rvQuiz: RecyclerView,
+        rvAssignment: RecyclerView
+    ): Boolean {
+        // Check attendance changes
+        if (currentPresent != originalValues.attendancePresent) return true
+
+        // Check recitation changes
+        if (currentRecitation != originalValues.recitationPoints) return true
+
+        // Check if any quiz scores changed
+        val quizAdapter = rvQuiz.adapter as? EditableActivityScoreAdapter
+        quizAdapter?.let { adapter ->
+            for (i in 0 until adapter.itemCount) {
+                val holder = rvQuiz.findViewHolderForAdapterPosition(i) as? EditableActivityScoreAdapter.EditableScoreViewHolder
+                holder?.let {
+                    val currentScore = it.etRawScore.text.toString().toDoubleOrNull() ?: 0.0
+                    val originalScore = originalValues.quizScores.getOrNull(i)?.rawScore ?: 0.0
+                    if (currentScore != originalScore) return true
+                }
+            }
+        }
+
+        // Check if any assignment scores changed
+        val assignmentAdapter = rvAssignment.adapter as? EditableActivityScoreAdapter
+        assignmentAdapter?.let { adapter ->
+            for (i in 0 until adapter.itemCount) {
+                val holder = rvAssignment.findViewHolderForAdapterPosition(i) as? EditableActivityScoreAdapter.EditableScoreViewHolder
+                holder?.let {
+                    val currentScore = it.etRawScore.text.toString().toDoubleOrNull() ?: 0.0
+                    val originalScore = originalValues.assignmentScores.getOrNull(i)?.rawScore ?: 0.0
+                    if (currentScore != originalScore) return true
+                }
+            }
+        }
+
+        return false
     }
 
     /**
@@ -628,6 +680,9 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
                 val activityPeriod = map["academicTerm"] as? String
                 if (activityPeriod != gradingPeriod) return@mapNotNull null
 
+                val isPublished = map["isPublished"] as? Boolean ?: false
+                if (!isPublished) return@mapNotNull null
+
                 val title = map["title"] as? String ?: "Quiz/Exam ($id)"
                 val rawType = map["quizType"] as? String ?: "Quiz"
                 val type = when (rawType.lowercase()) {
@@ -664,7 +719,7 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
                     else -> ""
                 }
 
-                if (type.isNotBlank() && maxPoints > 0.0) id to ActivityMetadata(type, maxPoints, title) else null
+                if (type.isNotBlank() && maxPoints > 0.0) id to ActivityMetadata(type, maxPoints, title, true) else null
             }.toMap()
         } catch (e: Exception) {
             Log.e("GradeDebug", "Error fetching assignment metadata: ${e.message}")
@@ -848,21 +903,26 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         val studentScores = mutableListOf<ActivityScoreData>()
 
         // Group activity IDs by type for batch querying
-        val quizIds = activityMetadata.filter { it.value.type == "Quiz" || it.value.type == "Exam" }.keys.toList()
-        val assignmentIds = activityMetadata.filter { it.value.type == "Assignment" }.keys.toList()
+        val publishedQuizIds = activityMetadata.filter {
+            (it.value.type == "Quiz" || it.value.type == "Exam") && it.value.isPublished
+        }.keys.toList()
+
+        val publishedAssignmentIds = activityMetadata.filter {
+            it.value.type == "Assignment" && it.value.isPublished
+        }.keys.toList()
 
         // Fetch scores in parallel
         val quizScoresDeferred = lifecycleScope.async {
-            if (quizIds.isNotEmpty()) {
-                fetchQuizScoresInBatches(quizIds, studentUserUid)
+            if (publishedQuizIds.isNotEmpty()) {
+                fetchQuizScoresInBatches(publishedQuizIds, studentUserUid)
             } else {
                 emptyList()
             }
         }
 
         val assignmentScoresDeferred = lifecycleScope.async {
-            if (assignmentIds.isNotEmpty()) {
-                fetchAssignmentScoresInBatches(assignmentIds, studentUserUid)
+            if (publishedAssignmentIds.isNotEmpty()) {
+                fetchAssignmentScoresInBatches(publishedAssignmentIds, studentUserUid)
             } else {
                 emptyList()
             }
@@ -873,18 +933,20 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
 
         // Add missing activities with 50% base score
         activityMetadata.forEach { (activityId, metadata) ->
-            val exists = studentScores.any { it.activityId == activityId }
-            if (!exists) {
-                studentScores.add(
-                    ActivityScoreData(
-                        title = metadata.title,
-                        score50Base = 50.0,
-                        rawScore = 0.0,
-                        maxPoints = metadata.maxPoints,
-                        activityId = activityId,
-                        activityType = metadata.type
+            if (metadata.isPublished) { // ✅ CHECK PUBLISH STATUS DITO
+                val exists = studentScores.any { it.activityId == activityId }
+                if (!exists) {
+                    studentScores.add(
+                        ActivityScoreData(
+                            title = metadata.title,
+                            score50Base = 50.0,
+                            rawScore = 0.0,
+                            maxPoints = metadata.maxPoints,
+                            activityId = activityId,
+                            activityType = metadata.type
+                        )
                     )
-                )
+                }
             }
         }
 
@@ -985,6 +1047,17 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         val inflater = LayoutInflater.from(this)
         val view = inflater.inflate(R.layout.dialog_editable_score_details, null)
 
+        val tvStudentId = view.findViewById<TextView>(R.id.tvStudentId)
+        tvStudentId.text = "Student ID: ${student.id}"
+
+        val originalValues = OriginalValues(
+            attendancePresent = detailedScores.attendanceDetails.first,
+            attendanceTotal = detailedScores.attendanceDetails.second,
+            recitationPoints = detailedScores.recitationDetails,
+            quizScores = detailedScores.quizScores,
+            assignmentScores = detailedScores.assignmentScores
+        )
+
         val tvDialogTitle = view.findViewById<TextView>(R.id.tvDialogTitle)
         val btnEdit = view.findViewById<Button>(R.id.btnEdit)
         val etAttendancePresent = view.findViewById<EditText>(R.id.etAttendancePresent)
@@ -1002,6 +1075,18 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         val originalAttendancePresent = detailedScores.attendanceDetails.first
         val originalAttendanceTotal = detailedScores.attendanceDetails.second
         val originalRecitationPoints = detailedScores.recitationDetails
+
+        // Track changes in real-time
+        var hasUnsavedChanges = false
+        var dialog: AlertDialog? = null
+
+        fun checkForChangesAndUpdateUI() {
+            val currentPresent = etAttendancePresent.text.toString().toIntOrNull() ?: 0
+            val currentRecitation = etRecitationPoints.text.toString().toIntOrNull() ?: 0
+
+            hasUnsavedChanges = hasChanges(originalValues, currentPresent, currentRecitation, rvQuizScores, rvAssignmentScores)
+            updateSaveButtonVisibility(dialog, hasUnsavedChanges)
+        }
 
         // FIXED: Show empty for zero values, not "1"
         etAttendancePresent.setText(if (originalAttendancePresent == 0) "" else originalAttendancePresent.toString())
@@ -1027,28 +1112,79 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
             btnEdit.visibility = View.VISIBLE
         }
 
-        // Setup RecyclerViews in view mode initially
-        setupEditableActivityRecyclerView(
+        // Helper function to update save button visibility
+        fun updateSaveButtonVisibility() {
+            dialog?.getButton(AlertDialog.BUTTON_POSITIVE)?.visibility =
+                if (hasUnsavedChanges && !areGradesPublished) View.VISIBLE else View.GONE
+        }
+
+        // Create text watchers for change tracking
+        val attendanceTextWatcher = object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                updateAttendancePercentage(etAttendancePresent, etAttendanceTotal, tvAttendancePercentage)
+                if (!areGradesPublished) {
+                    checkForChangesAndUpdateUI()
+                }
+            }
+        }
+
+        val recitationTextWatcher = object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                updateRecitationPercentage(
+                    etRecitationPoints.text.toString().toIntOrNull() ?: 0,
+                    tvRecitationPercentage
+                )
+                if (!areGradesPublished) {
+                    checkForChangesAndUpdateUI()
+                }
+            }
+        }
+
+        // Setup RecyclerViews with change tracking callbacks
+        setupEditableActivityRecyclerViewWithCallback(
             rvQuizScores,
             detailedScores.quizScores,
             student.id,
             "Quiz",
             isEditable = false
-        )
-        setupEditableActivityRecyclerView(
+        ) { updatedScore ->
+            if (!areGradesPublished) {
+                updateCachedScore(student.id, updatedScore, "Quiz")
+                recalculateStudentGrade(student.id)
+                checkForChangesAndUpdateUI()
+            }
+        }
+
+        setupEditableActivityRecyclerViewWithCallback(
             rvExamScores,
             detailedScores.examScores,
             student.id,
             "Exam",
             isEditable = false
-        )
-        setupEditableActivityRecyclerView(
+        ) { updatedScore ->
+            // Exam scores are not editable, but track changes if needed
+            if (!areGradesPublished) {
+                updateSaveButtonVisibility()
+            }
+        }
+
+        setupEditableActivityRecyclerViewWithCallback(
             rvAssignmentScores,
             detailedScores.assignmentScores,
             student.id,
             "Assignment",
             isEditable = false
-        )
+        ) { updatedScore ->
+            if (!areGradesPublished) {
+                updateCachedScore(student.id, updatedScore, "Assignment")
+                recalculateStudentGrade(student.id)
+                checkForChangesAndUpdateUI()
+            }
+        }
 
         // Initially set to view mode (not editable)
         setViewModeEnabledWithFixedTotal(
@@ -1080,6 +1216,11 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
                     rvExamScores = rvExamScores,
                     rvAssignmentScores = rvAssignmentScores
                 )
+
+                // Remove text watchers in view mode
+                etAttendancePresent.removeTextChangedListener(attendanceTextWatcher)
+                etRecitationPoints.removeTextChangedListener(recitationTextWatcher)
+
                 btnEdit.text = "Edit"
                 tvDialogTitle.text = "View Scores: ${student.lastName}, ${student.firstName}"
             } else {
@@ -1095,49 +1236,87 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
                     rvExamScores = rvExamScores,
                     rvAssignmentScores = rvAssignmentScores
                 )
+
+                // Add text watchers in edit mode
+                etAttendancePresent.addTextChangedListener(attendanceTextWatcher)
+                etRecitationPoints.addTextChangedListener(recitationTextWatcher)
+
                 btnEdit.text = "View"
                 tvDialogTitle.text = "Edit Scores: ${student.lastName}, ${student.firstName}"
             }
         }
 
         builder.setView(view)
+        builder.setPositiveButton("Save Changes", null)
+        builder.setNegativeButton("Close", null)
 
-        // Only show Save Changes button when not published
-        if (!areGradesPublished) {
-            builder.setPositiveButton("Save Changes") { dialog, _ ->
-                // VALIDATE ATTENDANCE AND RECITATION BEFORE SAVING
+        dialog = builder.create() // Assign the created dialog
+
+        dialog.setOnShowListener {
+            val saveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            val closeButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
+
+            // Initially hide save button
+            saveButton.visibility = View.GONE
+
+            // Save button click listener
+            saveButton.setOnClickListener {
                 val newPresent = etAttendancePresent.text.toString().toIntOrNull() ?: 0
-                val total = originalAttendanceTotal
+                val total = detailedScores.attendanceDetails.second
                 val newRecitation = etRecitationPoints.text.toString().toIntOrNull() ?: 0
 
-                if (!isValidAttendanceWithFixedTotal(newPresent, originalAttendanceTotal, originalAttendancePresent) ||
-                    !isValidRecitation(newRecitation, originalRecitationPoints)) {
+                if (!isValidAttendanceWithFixedTotal(newPresent, total, originalValues.attendancePresent) ||
+                    !isValidRecitation(newRecitation, originalValues.recitationPoints)) {
                     Toast.makeText(this@GradeInputActivity,
                         "Scores must be between 0 and maximum allowed!",
                         Toast.LENGTH_LONG).show()
-                    return@setPositiveButton
+                    return@setOnClickListener
                 }
 
-                // SAVE BOTH ACTIVITY SCORES AND ATTENDANCE/RECITATION
-                saveModifiedAttendanceRecitation(
-                    student.id,
-                    newPresent,
-                    total,
-                    newRecitation
-                )
+                // Save all changes
+                saveModifiedAttendanceRecitation(student.id, newPresent, total, newRecitation)
                 saveModifiedScores(student.id)
+
+                // Reset change tracking
+                hasUnsavedChanges = false
+                updateSaveButtonVisibility(dialog, false) // HIDE SAVE BUTTON AFTER SAVING
                 dialog.dismiss()
+
+                Toast.makeText(this@GradeInputActivity, "Scores updated successfully!", Toast.LENGTH_SHORT).show()
             }
         }
 
-        builder.setNegativeButton(if (areGradesPublished) "Close" else "Cancel") { dialog, _ ->
-            dialog.dismiss()
-        }
-
-        val dialog = builder.create()
         dialog.show()
     }
 
+    // New method for RecyclerView setup with callback
+    private fun setupEditableActivityRecyclerViewWithCallback(
+        recyclerView: RecyclerView,
+        scores: List<ActivityScoreData>,
+        studentId: String,
+        category: String,
+        isEditable: Boolean = false,
+        onScoreUpdate: (ActivityScoreData) -> Unit = {}
+    ) {
+        recyclerView.layoutManager = LinearLayoutManager(this)
+
+        val shouldBeEditable = when (category) {
+            "Exam" -> false
+            else -> isEditable && !areGradesPublished
+        }
+
+        recyclerView.adapter = EditableActivityScoreAdapter(
+            scores = scores,
+            studentId = studentId,
+            category = category,
+            isEditable = shouldBeEditable,
+            isPublished = areGradesPublished,
+            onScoreUpdate = onScoreUpdate
+        )
+        recyclerView.visibility = if (scores.isNotEmpty()) View.VISIBLE else View.GONE
+    }
+
+    // Keep your original setViewModeEnabledWithFixedTotal function as is:
     private fun setViewModeEnabledWithFixedTotal(
         enabled: Boolean,
         etAttendancePresent: EditText,
@@ -1149,6 +1328,43 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         rvExamScores: RecyclerView,
         rvAssignmentScores: RecyclerView
     ) {
+        // Set attendance fields - ONLY PRESENT CAN BE ENABLED
+        etAttendancePresent.isEnabled = enabled
+        etAttendanceTotal.isEnabled = false
+        etRecitationPoints.isEnabled = enabled
+
+        val alphaEnabled = if (enabled) 1.0f else 0.6f
+        val alphaDisabled = 0.5f
+
+        etAttendancePresent.alpha = alphaEnabled
+        etAttendanceTotal.alpha = alphaDisabled
+        etRecitationPoints.alpha = alphaEnabled
+
+        // Set RecyclerView adapters to editable mode
+        (rvQuizScores.adapter as? EditableActivityScoreAdapter)?.setEditable(enabled)
+        (rvExamScores.adapter as? EditableActivityScoreAdapter)?.setEditable(false)
+        (rvAssignmentScores.adapter as? EditableActivityScoreAdapter)?.setEditable(enabled)
+    }
+
+    // Helper function to update save button visibility
+    private fun updateSaveButtonVisibility(dialog: AlertDialog?, hasUnsavedChanges: Boolean) {
+        val saveButton = dialog?.getButton(AlertDialog.BUTTON_POSITIVE)
+        saveButton?.visibility = if (hasUnsavedChanges && !areGradesPublished) View.VISIBLE else View.GONE
+    }
+
+    // New method for RecyclerView setup with callback
+
+    private var setViewModeEnabledWithFixedTotal: (
+        enabled: Boolean,
+        etAttendancePresent: EditText,
+        etAttendanceTotal: EditText,
+        etRecitationPoints: EditText,
+        tvAttendancePercentage: TextView,
+        tvRecitationPercentage: TextView,
+        rvQuizScores: RecyclerView,
+        rvExamScores: RecyclerView,
+        rvAssignmentScores: RecyclerView
+    ) -> Unit = { enabled, etAttendancePresent, etAttendanceTotal, etRecitationPoints, tvAttendancePercentage, tvRecitationPercentage, rvQuizScores, rvExamScores, rvAssignmentScores ->
         // Set attendance fields - ONLY PRESENT CAN BE ENABLED
         etAttendancePresent.isEnabled = enabled
         etAttendanceTotal.isEnabled = false
@@ -1204,7 +1420,8 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         scores: List<ActivityScoreData>,
         studentId: String,
         category: String,
-        isEditable: Boolean = false
+        isEditable: Boolean = false,
+        onScoreUpdate: (ActivityScoreData) -> Unit = {} // Add callback parameter with default empty lambda
     ) {
         recyclerView.layoutManager = LinearLayoutManager(this)
 
@@ -1219,12 +1436,7 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
             category = category,
             isEditable = shouldBeEditable,
             isPublished = areGradesPublished,
-            onScoreUpdate = { updatedScore ->
-                if (!areGradesPublished && category != "Exam") {
-                    updateCachedScore(studentId, updatedScore, category)
-                    recalculateStudentGrade(studentId)
-                }
-            }
+            onScoreUpdate = onScoreUpdate // Pass the callback to adapter
         )
         recyclerView.visibility = if (scores.isNotEmpty()) View.VISIBLE else View.GONE
     }
@@ -1612,6 +1824,7 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
                 enrolledStudents.forEach { student ->
                     studentGradesData[student.id] = GradeInputAdapter.GradeData(
                         studentDocId = student.id,
+                        studentId = student.id,
                         firstName = student.firstName,
                         lastName = student.lastName,
                         subjectId = subjectId,
@@ -1977,6 +2190,8 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
     ) {
         val activityMetadata = metadataCache.getCache()
 
+        val publishedActivities = activityMetadata.filter { it.value.isPublished }
+
         if (activityMetadata.isEmpty()) {
             Log.d("GradeDebug", "No valid activities found. Cannot proceed to fetch scores.")
             // Set default scores for all students
@@ -1993,8 +2208,8 @@ class GradeInputActivity : AppCompatActivity(), OnStudentClickListener {
         val fetchJobs = mutableListOf<Deferred<List<DocumentSnapshot>>>()
         val allScoresDocuments = mutableListOf<DocumentSnapshot>()
 
-        val quizIds = activityMetadata.filter { it.value.type == "Quiz" || it.value.type == "Exam" }.keys.toList()
-        val assignmentIds = activityMetadata.filter { it.value.type == "Assignment" }.keys.toList()
+        val quizIds = publishedActivities.filter { it.value.type == "Quiz" || it.value.type == "Exam" }.keys.toList()
+        val assignmentIds = publishedActivities.filter { it.value.type == "Assignment" }.keys.toList()
 
         // Fetch Quiz Scores (Concurrent Chunking)
         if (quizIds.isNotEmpty()) {

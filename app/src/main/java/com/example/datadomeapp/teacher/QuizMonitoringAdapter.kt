@@ -17,7 +17,8 @@ import java.util.Locale
 class QuizMonitoringAdapter(
     private var dataList: List<StudentMonitoringData>,
     private val onIntegrityClick: (StudentMonitoringData) -> Unit,
-    private val onAccessControlClick: (StudentMonitoringData) -> Unit
+    private val onAccessControlClick: (StudentMonitoringData) -> Unit,
+    private val quizType: String = "Quiz"
 ) : RecyclerView.Adapter<QuizMonitoringAdapter.MonitorViewHolder>() {
 
     fun updateList(newList: List<StudentMonitoringData>) {
@@ -63,7 +64,7 @@ class QuizMonitoringAdapter(
                 data.status == "ACCESS_REVOKED") {
                 data.score.toString()
             } else {
-                "Q${data.score + 1}"
+                "Q${data.score}"
             }
 
             tvCheats.text = "Cheats: ${data.cheatCount}"
@@ -106,13 +107,14 @@ class QuizMonitoringAdapter(
 
         private fun setupAccessControlButton(data: StudentMonitoringData) {
             val context = itemView.context
+            val isExamType = quizType.equals("Exam", ignoreCase = true)
 
             val isManageable = data.status == "IN_PROGRESS" || data.status == "CHEATING" ||
                     data.status == "COMPLETED" || data.status == "TIME_EXPIRED" ||
                     data.status == "NOT_STARTED" || data.status == "EXAM_READY" ||
                     data.status == "UNATTEMPTED_TIME_EXPIRED" || data.status == "ACCESS_REVOKED"
 
-            val shouldShowButton = isManageable
+            val shouldShowButton = isManageable && isExamType
 
             if (shouldShowButton) {
                 btnAccessControl.visibility = View.VISIBLE
@@ -156,6 +158,7 @@ class QuizMonitoringAdapter(
                 "COMPLETED" -> "FINISHED"
                 "NOT_STARTED" -> "PENDING"
                 "RETAKE_GRANTED" -> "RETAKE ALLOWED"
+                "EXAM_READY" -> "READY" //changebr
                 "TIME_EXPIRED" -> "TIME UP!"
                 "UNATTEMPTED_TIME_EXPIRED" -> "MISSED!"
                 "ACCESS_REVOKED" -> "BLOCKED 🔒" // CRITICAL NEW STATUS DISPLAY

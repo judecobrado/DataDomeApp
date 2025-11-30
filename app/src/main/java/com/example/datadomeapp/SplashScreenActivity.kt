@@ -1,177 +1,164 @@
 package com.example.datadomeapp
 
-import android.animation.*
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ObjectAnimator
+import android.animation.ValueAnimator
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
-import android.view.animation.LinearInterpolator
-import android.view.animation.OvershootInterpolator
-import android.widget.FrameLayout
+import android.view.animation.DecelerateInterpolator
 import android.widget.ImageView
+import android.widget.ProgressBar
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import com.example.datadomeapp.MainActivity // Assuming MainActivity exists
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.animation.doOnEnd
 import kotlin.random.Random
 
 class SplashScreenActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_splash)
 
-        val logo = findViewById<ImageView>(R.id.imgLogo)
-        val particleContainer = findViewById<FrameLayout>(R.id.particleContainer)
-        val lightStreak = findViewById<View>(R.id.lightStreak)
-        val doorLeft = findViewById<View>(R.id.doorLeft)
-        val doorRight = findViewById<View>(R.id.doorRight)
+        val logoIcon = findViewById<ImageView>(R.id.logoIcon)
+        val appName = findViewById<TextView>(R.id.appName)
+        val appTagline = findViewById<TextView>(R.id.appTagline)
+        val loadingProgress = findViewById<ProgressBar>(R.id.loadingProgress)
 
-        // -------------------------
-        // Particles and Sparkle Trails
-        // -------------------------
-        repeat(20) { addParticle(particleContainer) }
-        repeat(15) { addSparkleTrail(particleContainer) }
+        // Hide elements initially
+        logoIcon.alpha = 0f
+        appName.alpha = 0f
+        appTagline.alpha = 0f
+        loadingProgress.alpha = 0f
 
-        // -------------------------
-        // Door Swing Animation with slight overshoot
-        // -------------------------
-        val doorLeftSwing = ObjectAnimator.ofFloat(doorLeft, View.ROTATION_Y, 0f, -95f, -90f)
-        val doorRightSwing = ObjectAnimator.ofFloat(doorRight, View.ROTATION_Y, 0f, 95f, 90f)
-        doorLeftSwing.duration = 1200
-        doorRightSwing.duration = 1200
-        doorLeftSwing.interpolator = AccelerateDecelerateInterpolator()
-        doorRightSwing.interpolator = AccelerateDecelerateInterpolator()
-
-        val doorsSet = AnimatorSet()
-        doorsSet.playTogether(doorLeftSwing, doorRightSwing)
-        doorsSet.start()
-
-        // -------------------------
-        // Logo Reveal + Springy Bounce
-        // -------------------------
-        doorsSet.addListener(object : AnimatorListenerAdapter() {
-            override fun onAnimationEnd(animation: Animator) {
-                val fadeIn = ObjectAnimator.ofFloat(logo, View.ALPHA, 0f, 1f)
-                val scaleX = ObjectAnimator.ofFloat(logo, View.SCALE_X, 0.5f, 1.3f, 1f)
-                val scaleY = ObjectAnimator.ofFloat(logo, View.SCALE_Y, 0.5f, 1.3f, 1f)
-                val rotate = ObjectAnimator.ofFloat(logo, View.ROTATION, -5f, 5f, 0f)
-
-                val logoSet = AnimatorSet()
-                logoSet.playTogether(fadeIn, scaleX, scaleY, rotate)
-                logoSet.duration = 2000
-                logoSet.interpolator = OvershootInterpolator(2f) // springy effect
-                logoSet.start()
-
-                // -------------------------
-                // Light streak animation
-                // -------------------------
-                val streakX = ObjectAnimator.ofFloat(lightStreak, View.TRANSLATION_X, -250f, 250f)
-                val streakAlpha = ObjectAnimator.ofFloat(lightStreak, View.ALPHA, 0f, 0.7f, 0f)
-                streakX.duration = 1500
-                streakAlpha.duration = 1500
-                streakX.repeatCount = 1
-                streakAlpha.repeatCount = 1
-                streakX.repeatMode = ValueAnimator.RESTART
-                streakAlpha.repeatMode = ValueAnimator.RESTART
-
-                val streakSet = AnimatorSet()
-                streakSet.playTogether(streakX, streakAlpha)
-                streakSet.startDelay = 500
-                streakSet.start()
-
-                // Navigate to MainActivity after animation
-                logoSet.addListener(object : AnimatorListenerAdapter() {
-                    override fun onAnimationEnd(animation: Animator) {
-                        startActivity(Intent(this@SplashScreenActivity, MainActivity::class.java))
-                        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
-                        finish()
-                    }
-                })
-            }
-        })
+        // Start animation sequence
+        startSplashAnimation(logoIcon, appName, appTagline, loadingProgress)
     }
 
-    // -------------------------
-    // Particle Functions
-    // -------------------------
-    private fun addParticle(container: FrameLayout) {
-        val particle = View(this).apply {
-            setBackgroundResource(R.drawable.particle_glow) // Make sure you have this drawable
-            alpha = 0f
-            layoutParams = FrameLayout.LayoutParams(6, 6)
-        }
-        container.addView(particle)
+    private fun startSplashAnimation(
+        logoIcon: ImageView,
+        appName: TextView,
+        appTagline: TextView,
+        loadingProgress: ProgressBar
+    ) {
+        // Sequence of animations
+        val handler = Handler(Looper.getMainLooper())
 
-        val screenWidth = resources.displayMetrics.widthPixels
-        val screenHeight = resources.displayMetrics.heightPixels
-        val startX = Random.nextInt(screenWidth)
-        val startY = Random.nextInt(screenHeight / 2, screenHeight / 2 + 50)
-        particle.translationX = startX.toFloat()
-        particle.translationY = startY.toFloat()
+        // 1. Logo entrance
+        handler.postDelayed({
+            animateLogoEntrance(logoIcon)
+        }, 300)
 
-        val deltaX = Random.nextInt(-50, 50)
-        val deltaY = Random.nextInt(-100, -50)
+        // 2. App name entrance
+        handler.postDelayed({
+            animateTextEntrance(appName)
+        }, 600)
 
-        // 🟢 INAYOS NA: Gumamit ng "translationX" String
-        val moveX = ObjectAnimator.ofFloat(particle, "translationX", startX.toFloat(), startX + deltaX.toFloat())
-        val moveY = ObjectAnimator.ofFloat(particle, "translationY", startY.toFloat(), startY + deltaY.toFloat())
+        // 3. Tagline entrance
+        handler.postDelayed({
+            animateTextEntrance(appTagline)
+        }, 900)
 
-        val fade = ObjectAnimator.ofFloat(particle, View.ALPHA, 0f, 1f, 0f)
-        val scaleX = ObjectAnimator.ofFloat(particle, View.SCALE_X, 0.5f, 1f)
-        val scaleY = ObjectAnimator.ofFloat(particle, View.SCALE_Y, 0.5f, 1f)
+        // 4. Progress bar entrance and loading simulation
+        handler.postDelayed({
+            animateProgressLoading(loadingProgress)
+        }, 1200)
 
-        val set = AnimatorSet()
-        set.playTogether(moveX, moveY, fade, scaleX, scaleY)
-        set.duration = Random.nextLong(1500, 2500)
-        set.interpolator = LinearInterpolator()
-        set.startDelay = Random.nextLong(0, 500)
-        set.start()
-
-        set.addListener(object : AnimatorListenerAdapter() {
-            override fun onAnimationEnd(animation: Animator) {
-                container.removeView(particle)
-                addParticle(container)
-            }
-        })
+        // 5. Navigate to main activity
+        handler.postDelayed({
+            navigateToMainActivity()
+        }, 3500)
     }
 
-    private fun addSparkleTrail(container: FrameLayout) {
-        val sparkle = View(this).apply {
-            setBackgroundResource(R.drawable.sparkle) // Make sure you have this drawable
-            alpha = 0f
-            layoutParams = FrameLayout.LayoutParams(4, 4)
+    private fun animateLogoEntrance(logoIcon: ImageView) {
+        // Scale up animation
+        val scaleX = ObjectAnimator.ofFloat(logoIcon, View.SCALE_X, 0f, 1f)
+        val scaleY = ObjectAnimator.ofFloat(logoIcon, View.SCALE_Y, 0f, 1f)
+        val alpha = ObjectAnimator.ofFloat(logoIcon, View.ALPHA, 0f, 1f)
+
+        scaleX.duration = 600
+        scaleY.duration = 600
+        alpha.duration = 600
+
+        scaleX.interpolator = DecelerateInterpolator()
+        scaleY.interpolator = DecelerateInterpolator()
+
+        scaleX.start()
+        scaleY.start()
+        alpha.start()
+
+        // Add subtle floating animation
+        startFloatingAnimation(logoIcon)
+    }
+
+    private fun animateTextEntrance(textView: TextView) {
+        val slideUp = ObjectAnimator.ofFloat(textView, View.TRANSLATION_Y, 50f, 0f)
+        val alpha = ObjectAnimator.ofFloat(textView, View.ALPHA, 0f, 1f)
+
+        slideUp.duration = 500
+        alpha.duration = 500
+
+        slideUp.interpolator = DecelerateInterpolator()
+
+        slideUp.start()
+        alpha.start()
+    }
+
+    private fun animateProgressLoading(progressBar: ProgressBar) {
+        // Fade in
+        val fadeIn = ObjectAnimator.ofFloat(progressBar, View.ALPHA, 0f, 1f)
+        fadeIn.duration = 400
+        fadeIn.start()
+
+        // Simulate loading progress
+        val progressAnimator = ValueAnimator.ofInt(0, 100)
+        progressAnimator.duration = 2000
+        progressAnimator.addUpdateListener { animation ->
+            val progress = animation.animatedValue as Int
+            progressBar.progress = progress
         }
-        container.addView(sparkle)
+        progressAnimator.start()
+    }
 
-        val screenWidth = resources.displayMetrics.widthPixels
-        val screenHeight = resources.displayMetrics.heightPixels
-        val startX = Random.nextInt(screenWidth)
-        val startY = Random.nextInt(screenHeight)
-        sparkle.translationX = startX.toFloat()
-        sparkle.translationY = startY.toFloat()
+    private fun startFloatingAnimation(view: View) {
+        val floatAnimator = ObjectAnimator.ofFloat(view, View.TRANSLATION_Y, 0f, -10f, 0f)
+        floatAnimator.duration = 2000
+        floatAnimator.repeatCount = ObjectAnimator.INFINITE
+        floatAnimator.repeatMode = ObjectAnimator.REVERSE
+        floatAnimator.interpolator = AccelerateDecelerateInterpolator()
+        floatAnimator.start()
+    }
 
-        val endX = startX + Random.nextInt(-100, 100)
-        val endY = startY - Random.nextInt(100, 200)
+    private fun navigateToMainActivity() {
+        val intent = Intent(this, MainActivity::class.java)
+        startActivity(intent)
+        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+        finish()
+    }
 
-        // 🟢 INAYOS NA: Gumamit ng "translationX" String
-        val moveX = ObjectAnimator.ofFloat(sparkle, "translationX", startX.toFloat(), endX.toFloat())
-        val moveY = ObjectAnimator.ofFloat(sparkle, "translationY", startY.toFloat(), endY.toFloat())
-
-        val fade = ObjectAnimator.ofFloat(sparkle, View.ALPHA, 0f, 1f, 0f)
-        val scaleX = ObjectAnimator.ofFloat(sparkle, View.SCALE_X, 0.3f, 1f)
-        val scaleY = ObjectAnimator.ofFloat(sparkle, View.SCALE_Y, 0.3f, 1f)
-
-        val set = AnimatorSet()
-        set.playTogether(moveX, moveY, fade, scaleX, scaleY)
-        set.duration = Random.nextLong(2000, 3500)
-        set.interpolator = LinearInterpolator()
-        set.startDelay = Random.nextLong(0, 500)
-        set.start()
-
-        set.addListener(object : AnimatorListenerAdapter() {
-            override fun onAnimationEnd(animation: Animator) {
-                container.removeView(sparkle)
-                addSparkleTrail(container)
-            }
-        })
+    // Optional: Add background color transition for more visual interest
+    private fun animateBackgroundTransition() {
+        val rootView = findViewById<View>(android.R.id.content)
+        val colorAnimation = ValueAnimator.ofArgb(
+            Color.parseColor("#2196F3"),
+            Color.parseColor("#1976D2"),
+            Color.parseColor("#2196F3")
+        )
+        colorAnimation.duration = 4000
+        colorAnimation.addUpdateListener { animator ->
+            rootView.setBackgroundColor(animator.animatedValue as Int)
+        }
+        colorAnimation.repeatCount = ValueAnimator.INFINITE
+        colorAnimation.repeatMode = ValueAnimator.REVERSE
+        colorAnimation.start()
     }
 }

@@ -22,7 +22,7 @@
         android:padding="20dp"
         android:background="@drawable/header_background"
         android:textColor="@color/white"
-        android:layout_marginBottom="20dp"
+        android:layout_marginBottom="15dp"
         android:elevation="4dp"/>
 
     <!-- Status Indicator -->
@@ -30,8 +30,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
+        android:visibility="gone"
         android:gravity="center_vertical"
-        android:layout_marginBottom="24dp"
+        android:layout_marginBottom="2dp"
         android:padding="16dp"
         android:background="@drawable/status_background"
         android:elevation="2dp">
@@ -45,6 +46,198 @@
             android:textColor="@color/maroon_dark"
             android:textStyle="normal"
             android:letterSpacing="0.02"/>
+    </LinearLayout>
+
+
+
+    <!-- Current Grade Weights Display -->
+    <LinearLayout
+        android:id="@+id/llGradeWeights"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/weights_background"
+        android:padding="10dp"
+        android:layout_marginBottom="15dp"
+        android:elevation="2dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="CURRENT GRADE WEIGHTS"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/maroon_primary"
+            android:gravity="center"
+            android:layout_marginBottom="10dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="5">
+
+            <!-- Attendance -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <TextView
+                    android:id="@+id/tvAttendanceWeight"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="10%"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/maroon_dark"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Attendance"
+                    android:textSize="12sp"
+                    android:textColor="@color/gray_dark"
+                    android:gravity="center"/>
+            </LinearLayout>
+
+            <!-- Recitation -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <TextView
+                    android:id="@+id/tvRecitationWeight"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="10%"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/maroon_dark"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Recitation"
+                    android:textSize="12sp"
+                    android:textColor="@color/gray_dark"
+                    android:gravity="center"/>
+            </LinearLayout>
+
+            <!-- Quiz -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <TextView
+                    android:id="@+id/tvQuizWeight"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="20%"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/maroon_dark"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Quiz"
+                    android:textSize="12sp"
+                    android:textColor="@color/gray_dark"
+                    android:gravity="center"/>
+            </LinearLayout>
+
+            <!-- Assignment -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <TextView
+                    android:id="@+id/tvAssignmentWeight"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="20%"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/maroon_dark"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Assessment"
+                    android:textSize="12sp"
+                    android:textColor="@color/gray_dark"
+                    android:gravity="center"/>
+            </LinearLayout>
+
+            <!-- Exam -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <TextView
+                    android:id="@+id/tvExamWeight"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="40%"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/maroon_dark"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Exam"
+                    android:textSize="12sp"
+                    android:textColor="@color/gray_dark"
+                    android:gravity="center"/>
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Total Percentage -->
+        <TextView
+            android:id="@+id/tvTotalWeight"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Total: 100%"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="@color/black"
+            android:gravity="center"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="2dp"
+            android:background="@color/good_green"
+            android:padding="4dp"
+            android:backgroundTint="@color/good_green"/>
+
+        <Button
+            android:id="@+id/btnConfigureWeights"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Configure Weights"
+            android:textSize="11sp"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="6dp"
+            android:minHeight="32dp"
+            android:layout_gravity="center"
+            android:layout_margin="3dp"
+            style="@style/Widget.MaterialComponents.Button.TextButton"/>
+
     </LinearLayout>
 
     <!-- Section Header -->
@@ -79,16 +272,34 @@
     </LinearLayout>
 
     <!-- Grades List -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerViewGrades"
+    <!-- Grades List with Loading -->
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:clipToPadding="false"
-        android:paddingVertical="8dp"
-        android:layout_marginBottom="20dp"
-        android:background="@drawable/recycler_background"
-        android:elevation="1dp"/>
+        android:layout_marginBottom="10dp">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerViewGrades"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingVertical="8dp"
+            android:background="@drawable/recycler_background"
+            android:elevation="1dp"/>
+
+        <ProgressBar
+            android:id="@+id/progressBarLoading"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_gravity="center"
+            android:indeterminate="true"
+            android:visibility="gone"
+            android:elevation="8dp"
+            android:indeterminateTint="@color/maroon_primary"
+            android:indeterminateTintMode="src_in"/>
+
+    </FrameLayout>
 
     <!-- Action Button -->
     <com.google.android.material.button.MaterialButton
@@ -109,6 +320,7 @@
         app:rippleColor="@color/maroon_dark"
         android:textColor="@color/white"
         android:elevation="6dp"
-        android:layout_marginTop="8dp"/>
+        android:layout_marginTop="5dp"/>
+
 
 </LinearLayout>

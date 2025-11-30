@@ -73,7 +73,7 @@ class TeacherDashboardActivity : AppCompatActivity() {
 
         // Set click listeners for cards - UPDATED WITH NEW DESIGN
         cardQuiz.setOnClickListener {
-            showEnhancedClassPickerDialog("Quiz")
+            showEnhancedClassPickerDialog("Quiz/Exam")
         }
 
         cardAssessment.setOnClickListener {
@@ -327,7 +327,7 @@ class TeacherDashboardActivity : AppCompatActivity() {
 
     private fun navigateToActivityWithDTO(classDTO: ClassSelectionDTO) {
         val intent = when (classDTO.activityType) {
-            "Quiz" -> Intent(this, ManageQuizzesActivity::class.java)
+            "Quiz/Exam" -> Intent(this, ManageQuizzesActivity::class.java)
             "Assessment" -> Intent(this, AssignmentListActivity::class.java)
             "Attendance" -> Intent(this, RecordAttendanceActivity::class.java)
             "Grades" -> Intent(this, ManageGradesActivity::class.java)
@@ -665,7 +665,7 @@ class TeacherDashboardActivity : AppCompatActivity() {
 
                 // Set different background color based on activity type
                 when (classDTO.activityType) {
-                    "Quiz" -> tvActivityType.setBackgroundColor(ContextCompat.getColor(this@TeacherDashboardActivity, R.color.quiz_color))
+                    "Quiz/Exam" -> tvActivityType.setBackgroundColor(ContextCompat.getColor(this@TeacherDashboardActivity, R.color.quiz_color))
                     "Assessment" -> tvActivityType.setBackgroundColor(ContextCompat.getColor(this@TeacherDashboardActivity, R.color.assessment_color))
                     "Attendance" -> tvActivityType.setBackgroundColor(ContextCompat.getColor(this@TeacherDashboardActivity, R.color.attendance_color))
                     "Grades" -> tvActivityType.setBackgroundColor(ContextCompat.getColor(this@TeacherDashboardActivity, R.color.grades_color))

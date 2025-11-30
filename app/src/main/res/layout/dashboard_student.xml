@@ -89,7 +89,7 @@
             android:layout_columnWeight="1"
             android:layout_margin="8dp"
             android:drawableTop="@android:drawable/ic_menu_edit"
-            android:text="Assignments"
+            android:text="Assessments"
             android:textSize="14sp" />
 
         <Button
