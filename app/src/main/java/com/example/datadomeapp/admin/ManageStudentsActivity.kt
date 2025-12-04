@@ -21,6 +21,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.core.widget.addTextChangedListener
 import androidx.recyclerview.widget.RecyclerView
 import com.example.datadomeapp.R
+import com.google.android.material.button.MaterialButton
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.storage.FirebaseStorage
@@ -84,6 +85,12 @@ class ManageStudentsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.admin_manage_students)
+
+        // BACK BUTTON FUNCTIONALITY - ADDED HERE
+        val btnBackToDashboard = findViewById<MaterialButton>(R.id.btnBackToDashboard)
+        btnBackToDashboard.setOnClickListener {
+            finish() // Close current activity and go back
+        }
 
         etSearch = findViewById(R.id.etSearchStudent)
         spinnerFilterCourse = findViewById(R.id.spinnerFilterCourse)

@@ -12,7 +12,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Header Section -->
+        <!-- Header Section WITH SMALL BACK BUTTON -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -21,12 +21,29 @@
             android:paddingBottom="24dp"
             android:paddingTop="10dp">
 
+            <!-- SMALL BACK BUTTON (FIXED CENTERED ARROW) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnBackToDashboard"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="12dp"
+                android:contentDescription="Back to Dashboard"
+                android:gravity="center"
+                app:backgroundTint="#7B1113"
+                app:cornerRadius="20dp"
+                app:icon="@drawable/ic_arrow_back"
+                app:iconTint="#FFFFFF"
+                app:iconSize="20dp"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                app:rippleColor="#9B1C1F" />
+
             <ImageView
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:src="@drawable/ic_students_professional"
                 android:layout_marginEnd="12dp"
-                app:tint="#7B1113" />
+                android:tint="#7B1113" />
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -50,8 +67,10 @@
                     android:textColor="#666666"
                     android:textSize="14sp" />
             </LinearLayout>
+
         </LinearLayout>
 
+        <!-- Rest of your layout remains the same -->
         <!-- Search Card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
@@ -81,12 +100,12 @@
                         android:layout_height="24dp"
                         android:src="@drawable/ic_search"
                         android:layout_marginEnd="12dp"
-                        app:tint="#7B1113" />
+                        android:tint="#7B1113" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/search_filter"
+                        android:text="Search &amp; Filter"
                         android:textColor="#7B1113"
                         android:textSize="18sp"
                         android:textStyle="bold" />
@@ -153,8 +172,7 @@
                                 android:layout_height="52dp"
                                 android:background="@android:color/transparent"
                                 android:paddingStart="16dp"
-                                android:paddingEnd="16dp"
-                                android:textColor="#333333" />
+                                android:paddingEnd="16dp" />
                         </com.google.android.material.card.MaterialCardView>
                     </LinearLayout>
 
@@ -188,8 +206,7 @@
                                 android:layout_height="52dp"
                                 android:background="@android:color/transparent"
                                 android:paddingStart="16dp"
-                                android:paddingEnd="16dp"
-                                android:textColor="#333333" />
+                                android:paddingEnd="16dp" />
                         </com.google.android.material.card.MaterialCardView>
                     </LinearLayout>
                 </LinearLayout>
@@ -225,7 +242,7 @@
                         android:layout_height="24dp"
                         android:src="@drawable/ic_group"
                         android:layout_marginEnd="12dp"
-                        app:tint="#7B1113" />
+                        android:tint="#7B1113" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -254,12 +271,26 @@
                 </LinearLayout>
 
                 <!-- Students RecyclerView -->
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/rvStudents"
+                <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="400dp"
-                    android:background="#F8F8F8"
-                    android:padding="4dp" />
+                    app:cardBackgroundColor="#FFFFFF"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="3dp"
+                    app:strokeColor="#7B1113"
+                    app:strokeWidth="2dp"
+                    android:layout_marginTop="4dp">
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rvStudents"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="#F8F8F8"
+                        android:padding="8dp"
+                        android:clipToPadding="false"
+                        android:scrollbars="vertical" />
+
+                </com.google.android.material.card.MaterialCardView>
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
