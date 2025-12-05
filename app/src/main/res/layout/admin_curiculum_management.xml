@@ -15,7 +15,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Header Section -->
+        <!-- Header Section WITH BACK BUTTON -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -23,6 +23,22 @@
             android:gravity="center_vertical"
             android:paddingBottom="20dp"
             android:paddingTop="40dp">
+
+            <!-- SMALL BACK BUTTON (40x40, round, MAROON) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnBackToDashboard"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="12dp"
+                android:contentDescription="Back to Dashboard"
+                android:gravity="center"
+                app:backgroundTint="#7B1113"
+                app:cornerRadius="20dp"
+                app:icon="@drawable/ic_arrow_back"
+                app:iconTint="#FFFFFF"
+                app:iconSize="20dp"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp" />
 
             <ImageView
                 android:layout_width="48dp"
@@ -356,16 +372,28 @@
                         android:paddingVertical="4dp"/>
                 </LinearLayout>
 
-                <!-- Subjects List -->
-                <LinearLayout
-                    android:id="@+id/llRequiredSubjectsContainer"
+                <!-- Subjects List - WITH ROUNDED CORNERS -->
+                <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:background="#F8F8F8"
-                    android:divider="#E8E8E8"
-                    android:showDividers="middle"
-                    android:dividerHeight="1dp"/>
+                    android:minHeight="300dp"
+                    app:cardBackgroundColor="#FFFFFF"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="3dp"
+                    app:strokeColor="#7B1113"
+                    app:strokeWidth="2dp"
+                    android:layout_marginTop="4dp">
+
+                    <LinearLayout
+                        android:id="@+id/llRequiredSubjectsContainer"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:background="#F8F8F8"
+                        android:padding="12dp"
+                        android:minHeight="300dp"/>
+
+                </com.google.android.material.card.MaterialCardView>
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -389,22 +417,6 @@
                 android:textSize="14sp"
                 android:textStyle="bold"
                 app:icon="@drawable/ic_delete"
-                app:iconTint="#FFFFFF"
-                app:iconPadding="4dp"/>
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnBackCurriculum"
-                android:layout_width="0dp"
-                android:layout_height="52dp"
-                android:layout_weight="1"
-                android:visibility="gone"
-                android:text="Back to Dashboard"
-                android:layout_marginStart="12dp"
-                app:backgroundTint="#666666"
-                app:cornerRadius="12dp"
-                android:textColor="#FFFFFF"
-                android:textSize="14sp"
-                app:icon="@drawable/ic_arrow_back"
                 app:iconTint="#FFFFFF"
                 app:iconPadding="4dp"/>
 

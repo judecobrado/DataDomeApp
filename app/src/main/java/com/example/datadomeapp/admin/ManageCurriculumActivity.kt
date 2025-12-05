@@ -10,6 +10,7 @@ import androidx.core.content.ContextCompat
 import com.example.datadomeapp.R
 import com.example.datadomeapp.models.Curriculum
 import com.example.datadomeapp.models.SubjectEntry
+import com.google.android.material.button.MaterialButton
 import com.google.firebase.firestore.FirebaseFirestore
 
 class ManageCurriculumActivity : AppCompatActivity() {
@@ -21,13 +22,13 @@ class ManageCurriculumActivity : AppCompatActivity() {
     // --- View Declarations ---
     private lateinit var spnCourse: Spinner
     private lateinit var spnYear: Spinner
-    // FIX: Corrected type from ListView to LinearLayout
     private lateinit var llSubjectsContainer: LinearLayout
     private lateinit var etCode: EditText
     private lateinit var etTitle: EditText
     private lateinit var btnAdd: Button
     private lateinit var btnDelete: Button
-    private lateinit var btnBack: Button
+    private lateinit var btnBackToDashboard: MaterialButton // 🟢 CHANGED: MaterialButton type
+    private lateinit var tvSubjectCount: TextView
 
     // --- Data & State ---
     private val yearLevels = arrayOf("1st Year")
@@ -45,15 +46,13 @@ class ManageCurriculumActivity : AppCompatActivity() {
         // 1. Initialize Views
         spnCourse = findViewById(R.id.spnCurriculumCourse)
         spnYear = findViewById(R.id.spnCurriculumYear)
-
-        // FIX: Correctly finds the LinearLayout by its ID
         llSubjectsContainer = findViewById(R.id.llRequiredSubjectsContainer)
-
         etCode = findViewById(R.id.etSubjectCode)
         etTitle = findViewById(R.id.etSubjectTitle)
         btnAdd = findViewById(R.id.btnAddSubjectToCurriculum)
         btnDelete = findViewById(R.id.btnDeleteCurriculumSubject)
-        btnBack = findViewById(R.id.btnBackCurriculum)
+        btnBackToDashboard = findViewById(R.id.btnBackToDashboard) // 🟢 CHANGED: ID matches XML
+        tvSubjectCount = findViewById(R.id.tvSubjectCount)
 
         // 2. Setup Spinners
         spnYear.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, yearLevels)
@@ -90,8 +89,10 @@ class ManageCurriculumActivity : AppCompatActivity() {
 
         btnAdd.setOnClickListener { addSubject() }
         btnDelete.setOnClickListener { removeSubject() }
-        btnBack.setOnClickListener {
-            finish()
+
+        // ============= BACK BUTTON FUNCTIONALITY =============
+        btnBackToDashboard.setOnClickListener {
+            finish() // Close current activity and return to previous screen
         }
     }
 
@@ -116,13 +117,12 @@ class ManageCurriculumActivity : AppCompatActivity() {
             }
     }
 
-    // FIX: Uses LinearLayout's addView() method to display subjects
     private fun updateSubjectListView() {
         llSubjectsContainer.removeAllViews()
         clearSelection()
 
-        val subjectCountText = findViewById<TextView>(R.id.tvSubjectCount)
-        subjectCountText.text = "${currentSubjectList.size} subjects"
+        // Update subject count
+        tvSubjectCount.text = "${currentSubjectList.size} subjects"
 
         // Calculate 1dp height for the divider on the fly
         val oneDpInPx = TypedValue.applyDimension(
