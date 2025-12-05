@@ -22,6 +22,7 @@ import androidx.core.widget.addTextChangedListener
 import androidx.recyclerview.widget.RecyclerView
 import com.example.datadomeapp.R
 import com.google.android.material.button.MaterialButton
+import com.example.datadomeapp.student.StudentProfileActivity
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.storage.FirebaseStorage
@@ -374,7 +375,6 @@ class ManageStudentsActivity : AppCompatActivity() {
         rfidDetectionDialog!!.show()
     }
 
-    // REST OF THE FUNCTIONS (loadAllStudents, setupFilters, applyFilters, etc.) remain the same as your working code
     private fun performRfidQuickSearch(rfidTag: String) {
         firestore.collection("students").whereEqualTo("rfidTag", rfidTag).get()
             .addOnSuccessListener { snapshot ->
@@ -560,7 +560,8 @@ class ManageStudentsActivity : AppCompatActivity() {
         val btnAddRfid = dialogView.findViewById<Button>(R.id.btnAddRfid)
         val btnResetRfid = dialogView.findViewById<Button>(R.id.btnResetRfid)
         val btnDisableRfid = dialogView.findViewById<Button>(R.id.btnDisableRfid)
-        val btnAddProfilePicture = dialogView.findViewById<Button>(R.id.btnAddProfilePicture) // ADD THIS BUTTON
+        val btnAddProfilePicture = dialogView.findViewById<Button>(R.id.btnAddProfilePicture)
+        val btnViewProfile = dialogView.findViewById<Button>(R.id.btnViewProfile)
 
         tvName.text = "${student.lastName}, ${student.firstName}"
         tvId.text = "ID: ${student.studentId}"
@@ -570,7 +571,8 @@ class ManageStudentsActivity : AppCompatActivity() {
         btnAddRfid.visibility = View.GONE
         btnResetRfid.visibility = View.GONE
         btnDisableRfid.visibility = View.GONE
-        btnAddProfilePicture.visibility = View.GONE // HIDE PROFILE PICTURE BUTTON INITIALLY
+        btnAddProfilePicture.visibility = View.GONE
+        btnViewProfile.visibility = View.VISIBLE // Always show View Profile button
 
         // 🛑 FINAL LOGIC PARA SA BUTTONS AT TEXT 🛑
         if (!student.rfidTag.isNullOrEmpty()) {
@@ -581,32 +583,32 @@ class ManageStudentsActivity : AppCompatActivity() {
                     btnResetRfid.visibility = View.VISIBLE
                     btnDisableRfid.visibility = View.VISIBLE
                     btnDisableRfid.text = "Disable RFID"
-                    btnAddProfilePicture.visibility = View.VISIBLE // SHOW PROFILE PICTURE BUTTON
+                    btnAddProfilePicture.visibility = View.VISIBLE
                 }
                 "DISABLED" -> {
                     tvRfid.text = "RFID Status: 🟡 DISABLED (${student.rfidTag})"
                     btnResetRfid.visibility = View.VISIBLE
                     btnDisableRfid.visibility = View.VISIBLE
                     btnDisableRfid.text = "Activate RFID"
-                    btnAddProfilePicture.visibility = View.VISIBLE // SHOW PROFILE PICTURE BUTTON
+                    btnAddProfilePicture.visibility = View.VISIBLE
                 }
                 else -> {
                     tvRfid.text = "RFID Status: ❓ UNKNOWN TAG STATUS (${student.rfidTag})"
                     btnResetRfid.visibility = View.VISIBLE
                     btnDisableRfid.visibility = View.VISIBLE
                     btnDisableRfid.text = "Disable RFID"
-                    btnAddProfilePicture.visibility = View.VISIBLE // SHOW PROFILE PICTURE BUTTON
+                    btnAddProfilePicture.visibility = View.VISIBLE
                 }
             }
         } else if (!isNfcSupported) {
             // Case 4: Walang tag AND walang NFC support ang phone.
             tvRfid.text = "RFID Status: ❌ NFC NOT AVAILABLE"
-            btnAddProfilePicture.visibility = View.VISIBLE // SHOW PROFILE PICTURE BUTTON EVEN WITHOUT NFC
+            btnAddProfilePicture.visibility = View.VISIBLE
         } else {
             // Case 5: Walang tag AND may NFC support ang phone (Not Registered/Ready for Registration).
             tvRfid.text = "RFID Status: 🔴 NOT REGISTERED"
             btnAddRfid.visibility = View.VISIBLE
-            btnAddProfilePicture.visibility = View.VISIBLE // SHOW PROFILE PICTURE BUTTON
+            btnAddProfilePicture.visibility = View.VISIBLE
         }
 
         val dialog = AlertDialog.Builder(this)
@@ -636,13 +638,34 @@ class ManageStudentsActivity : AppCompatActivity() {
             }
         }
 
-        // NEW: Profile Picture Button Click Listener
+        // Profile Picture Button Click Listener
         btnAddProfilePicture.setOnClickListener {
             dialog.dismiss()
             showProfilePictureDialog(student)
         }
 
+        // NEW: View Profile Button Click Listener
+        // NEW: View Profile Button Click Listener
+        btnViewProfile.setOnClickListener {
+            dialog.dismiss()
+            openStudentProfile(student.id)  // Pass document ID instead of studentId field
+        }
+
         dialog.show()
+    }
+
+    // NEW FUNCTION TO OPEN THE STUDENT PROFILE
+    private fun openStudentProfile(studentId: String) {
+        Log.d("PROFILE_DEBUG", "🔄 Opening profile for studentId: '$studentId'")
+        Log.d("PROFILE_DEBUG", "📏 ID length: ${studentId.length}")
+        Log.d("PROFILE_DEBUG", "🔠 Raw characters:")
+        studentId.forEachIndexed { index, char ->
+            Log.d("PROFILE_DEBUG", "  [$index] '$char' (${char.code})")
+        }
+
+        val intent = Intent(this, StudentProfileActivity::class.java)
+        intent.putExtra("STUDENT_ID", studentId)
+        startActivity(intent)
     }
 
     // ADD THIS NEW FUNCTION FOR PROFILE PICTURE ONLY
@@ -798,7 +821,17 @@ class StudentAdapter(
             "DISABLED" -> holder.tvRfid.text = "🟡 DISABLED"
             else -> holder.tvRfid.text = "🔴 Not Registered"
         }
+
+        // Regular click shows detail dialog
         holder.itemView.setOnClickListener { clickListener(student) }
+
+        // Long press opens full profile
+        holder.itemView.setOnLongClickListener {
+            val intent = Intent(holder.itemView.context, StudentProfileActivity::class.java)
+            intent.putExtra("STUDENT_ID", student.studentId)
+            holder.itemView.context.startActivity(intent)
+            true
+        }
     }
 
     override fun getItemCount(): Int = items.size

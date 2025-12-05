@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.*
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
@@ -43,7 +44,8 @@ class ManageTeachersActivity : AppCompatActivity() {
     private val teachersCollection = firestore.collection("teachers")
     private val teacherMap = mutableMapOf<String, String>()
     private val teacherList = ArrayList<String>()
-    private lateinit var adapter: ArrayAdapter<String>
+
+    private lateinit var adapter: ArrayAdapter<String> // ✅ ADDED: Adapter declaration
 
     // 🟢 NEW: Ito ang magiging master list, para hindi na kailangan mag-reload sa Firestore tuwing magfi-filter.
     private val allTeachersDisplayList = ArrayList<String>()
@@ -649,6 +651,28 @@ class ManageTeachersActivity : AppCompatActivity() {
                 val btnResetRfid = dialogView.findViewById<Button>(R.id.btnResetRfid)
                 val btnDisableRfid = dialogView.findViewById<Button>(R.id.btnDisableRfid)
 
+                // ✅ ADDED: Remove "View Full Profile" button for teachers
+                // Try to find the button by common IDs
+                val btnViewProfile1 = dialogView.findViewById<Button>(R.id.btnViewProfile)
+
+                // Try to find any button with "View Full Profile" text
+                var buttonToRemove: Button? = null
+                if (btnViewProfile1 != null) {
+                    buttonToRemove = btnViewProfile1
+                } else {
+                    // Search for button by text
+                    val allButtons = ArrayList<Button>()
+                    findButtonsByText(dialogView, "View Full Profile", allButtons)
+                    if (allButtons.isNotEmpty()) {
+                        buttonToRemove = allButtons[0]
+                    }
+                }
+
+                // Remove the button if found
+                if (buttonToRemove != null && buttonToRemove.parent is ViewGroup) {
+                    (buttonToRemove.parent as ViewGroup).removeView(buttonToRemove)
+                }
+
                 tvName.text = "Teacher: ${teacher.name}"
                 tvId.text = "ID: ${teacher.teacherId}"
                 tvCourse.text = "Department: ${teacher.department ?: "N/A"}"
@@ -718,6 +742,20 @@ class ManageTeachersActivity : AppCompatActivity() {
             .addOnFailureListener { e ->
                 Toast.makeText(this, "Error fetching teacher detail: ${e.message}", Toast.LENGTH_SHORT).show()
             }
+    }
+
+    // Helper function to find buttons by text
+    private fun findButtonsByText(view: View, text: String, results: ArrayList<Button>) {
+        if (view is Button && view.text.toString().contains(text, ignoreCase = true)) {
+            results.add(view)
+        }
+
+        if (view is ViewGroup) {
+            for (i in 0 until view.childCount) {
+                val child = view.getChildAt(i)
+                findButtonsByText(child, text, results)
+            }
+        }
     }
 
     // 🟢 FUNCTION: Show RFID Detection Dialog (for Teacher)
