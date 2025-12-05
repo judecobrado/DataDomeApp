@@ -80,6 +80,7 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
     private lateinit var functions: FirebaseFunctions
+    private lateinit var btnBack: com.google.android.material.button.MaterialButton // Added back button
 
     private lateinit var tvPendingCount: TextView
     private lateinit var tvApprovedCount: TextView
@@ -104,6 +105,12 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
         tvApprovedCount = findViewById(R.id.tvApprovedCount)
         tvRejectedCount = findViewById(R.id.tvRejectedCount)
         tvRequestCount = findViewById(R.id.tvRequestCount)
+        btnBack = findViewById(R.id.btnBackToDashboard) // Initialize back button
+
+        // Add back button functionality
+        btnBack.setOnClickListener {
+            onBackPressed() // Gumamit ng built-in back function
+        }
 
         // Tiyakin na tama ang region
         functions = FirebaseFunctions.getInstance("asia-southeast1")
@@ -147,6 +154,14 @@ class ManageEnrollmentsActivity : AppCompatActivity() {
                         }
                 }
         }
+    }
+
+    // Override onBackPressed para magkapareho ang behavior
+    override fun onBackPressed() {
+        // Pwede kang mag-add ng confirmation dialog dito kung gusto mo
+        // For now, diretso lang sa finish()
+        super.onBackPressed()
+        finish()
     }
 
     private fun loadEnrollmentCounts() {

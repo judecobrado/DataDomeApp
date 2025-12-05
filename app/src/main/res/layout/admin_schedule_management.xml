@@ -13,22 +13,36 @@
         android:orientation="vertical"
         android:padding="20dp">
 
-        <!-- Header Section -->
-        <com.google.android.material.card.MaterialCardView
+        <!-- Header Section WITH BACK BUTTON -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
             android:layout_marginBottom="20dp"
-            app:cardBackgroundColor="#FFFFFF"
-            app:strokeColor="#F0E6D6"
-            app:strokeWidth="1dp">
+            android:paddingTop="10dp">
+
+            <!-- SMALL BACK BUTTON (40x40, round, MAROON) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnBackToDashboard"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="12dp"
+                android:contentDescription="Back to Dashboard"
+                android:gravity="center"
+                app:backgroundTint="#7B1113"
+                app:cornerRadius="20dp"
+                app:icon="@drawable/ic_arrow_back"
+                app:iconTint="#FFFFFF"
+                app:iconSize="20dp"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp" />
 
             <LinearLayout
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="20dp">
+                android:layout_weight="1"
+                android:orientation="vertical">
 
                 <TextView
                     android:layout_width="match_parent"
@@ -37,7 +51,7 @@
                     android:textSize="22sp"
                     android:textStyle="bold"
                     android:textColor="#7B1113"
-                    android:gravity="center"
+                    android:gravity="start"
                     android:drawablePadding="8dp"
                     android:drawableStart="@drawable/ic_schedule"
                     android:layout_marginBottom="8dp"/>
@@ -48,9 +62,9 @@
                     android:text="Manage and organize class schedules efficiently"
                     android:textSize="14sp"
                     android:textColor="#666666"
-                    android:gravity="center"/>
+                    android:gravity="start"/>
             </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
 
         <!-- Filter Section -->
         <com.google.android.material.card.MaterialCardView

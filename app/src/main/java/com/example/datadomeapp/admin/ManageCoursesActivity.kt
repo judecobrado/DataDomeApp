@@ -40,6 +40,7 @@ class ManageCoursesActivity : AppCompatActivity() {
     private lateinit var btnManageRooms: Button
     private lateinit var etName: EditText
     private lateinit var etCode: EditText
+    private lateinit var btnBack: com.google.android.material.button.MaterialButton // Back button
 
     // Data Holders
     private val courseMap = mutableMapOf<String, String>()
@@ -62,10 +63,16 @@ class ManageCoursesActivity : AppCompatActivity() {
         val btnDelete = findViewById<Button>(R.id.btnDeleteCourse)
         btnManageSections = findViewById(R.id.btnManageSections)
         btnManageRooms = findViewById(R.id.btnManageRooms)
+        btnBack = findViewById(R.id.btnBackToDashboard) // Initialize back button
 
         adapter = ArrayAdapter(this, android.R.layout.simple_list_item_single_choice, courseList)
         listView.adapter = adapter
         listView.choiceMode = ListView.CHOICE_MODE_SINGLE
+
+        // Add back button functionality
+        btnBack.setOnClickListener {
+            onBackPressed() // Gumamit ng built-in back function
+        }
 
         loadCoursesOnce()
 
@@ -111,6 +118,14 @@ class ManageCoursesActivity : AppCompatActivity() {
         btnManageRooms.setOnClickListener {
             showRoomManagerDialog()
         }
+    }
+
+    // Override onBackPressed para magkapareho ang behavior
+    override fun onBackPressed() {
+        // Pwede kang mag-add ng confirmation dialog dito kung gusto mo
+        // For now, diretso lang sa finish()
+        super.onBackPressed()
+        finish()
     }
 
     // --- Course Management Functions (Unchanged) ---
