@@ -46,6 +46,7 @@ class ManageSchedulesActivity : AppCompatActivity() {
     private lateinit var spnDay: Spinner
     private lateinit var spnStartTime: Spinner
     private lateinit var spnEndTime: Spinner
+    private lateinit var btnBack: com.google.android.material.button.MaterialButton // Added back button
 
     // Data Holders
     private val courseList = mutableListOf<String>()
@@ -84,10 +85,8 @@ class ManageSchedulesActivity : AppCompatActivity() {
         spnCourse = findViewById(R.id.spnCourse)
         spnYear = findViewById(R.id.spnYear)
         spnSubject = findViewById(R.id.spnSubject)
-
         spnDepartment = findViewById(R.id.spnDepartment)
         actvTeacher = findViewById(R.id.actvTeacher)
-
         spnSectionBlock = findViewById(R.id.spnSectionBlock)
         spnRoom = findViewById(R.id.spnRoom)
         etCapacity = findViewById(R.id.etMaxCapacity)
@@ -97,6 +96,12 @@ class ManageSchedulesActivity : AppCompatActivity() {
         spnDay = findViewById(R.id.spnDay)
         spnStartTime = findViewById(R.id.spnStartTime)
         spnEndTime = findViewById(R.id.spnEndTime)
+        btnBack = findViewById(R.id.btnBackToDashboard) // Initialize back button
+
+        // Add back button functionality
+        btnBack.setOnClickListener {
+            onBackPressed() // Gumamit ng built-in back function
+        }
 
         // Setup Adapters
         spnYear.adapter =
@@ -129,6 +134,14 @@ class ManageSchedulesActivity : AppCompatActivity() {
 
         etCapacity.setText("50")
         btnSave.isEnabled = false
+    }
+
+    // Override onBackPressed para magkapareho ang behavior
+    override fun onBackPressed() {
+        // Pwede kang mag-add ng confirmation dialog dito kung gusto mo
+        // For now, diretso lang sa finish()
+        super.onBackPressed()
+        finish()
     }
 
     private fun loadCurrentAcademicTerm() {

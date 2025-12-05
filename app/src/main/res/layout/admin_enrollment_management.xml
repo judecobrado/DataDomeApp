@@ -8,7 +8,7 @@
     android:background="@drawable/gradient_background"
     tools:context=".admin.ManageEnrollmentsActivity">
 
-    <!-- Header Section -->
+    <!-- Header Section WITH BACK BUTTON -->
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -22,26 +22,57 @@
             android:orientation="vertical"
             android:padding="20dp">
 
-            <TextView
-                android:id="@+id/textViewTitle"
+            <!-- Back Button and Title Row -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Pending Enrollments"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:textColor="@android:color/white"
-                android:layout_marginBottom="8dp" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="8dp">
 
-            <TextView
-                android:id="@+id/textViewSubtitle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Review and manage student enrollment requests"
-                android:textSize="14sp"
-                android:gravity="center"
-                android:textColor="#E8E8E8"
-                android:layout_marginBottom="12dp" />
+                <!-- SMALL BACK BUTTON (40x40, round, WHITE) -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnBackToDashboard"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="12dp"
+                    android:contentDescription="Back to Dashboard"
+                    android:gravity="center"
+                    app:backgroundTint="#FFFFFF"
+                    app:cornerRadius="20dp"
+                    app:icon="@drawable/ic_arrow_back"
+                    app:iconTint="#7B1113"
+                    app:iconSize="20dp"
+                    app:iconGravity="textStart"
+                    app:iconPadding="0dp" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/textViewTitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Pending Enrollments"
+                        android:textSize="24sp"
+                        android:textStyle="bold"
+                        android:gravity="start"
+                        android:textColor="@android:color/white" />
+
+                    <TextView
+                        android:id="@+id/textViewSubtitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Review and manage student enrollment requests"
+                        android:textSize="14sp"
+                        android:gravity="start"
+                        android:textColor="#E8E8E8"
+                        android:layout_marginTop="4dp" />
+                </LinearLayout>
+            </LinearLayout>
 
             <!-- Stats Overview -->
             <LinearLayout
@@ -324,7 +355,6 @@
                 android:layout_height="wrap_content"
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
                 tools:listitem="@layout/admin_enrollment_item" />
-
 
         </LinearLayout>
 

@@ -16,7 +16,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.example.datadomeapp.R
 import androidx.appcompat.widget.SearchView
-import com.example.datadomeapp.models.AppUser
+import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -54,11 +54,12 @@ class ManageTeachersActivity : AppCompatActivity() {
     private lateinit var departmentAdapter: ArrayAdapter<String>
     private val departmentCodeMap = mutableMapOf<String, String>()
 
-    // UI Variables
-    private lateinit var etName: EditText
+    // UI Variables - FIXED: Removed duplicate declarations
     private lateinit var spDepartment: Spinner
     private lateinit var lvTeachers: ListView
-    private lateinit var searchView: SearchView // 🟢 NEW: SearchView variable
+    private lateinit var searchView: SearchView
+    private lateinit var btnBackTeacher: MaterialButton
+    private lateinit var tvTeacherCount: TextView // 🟢 ADDED: Teacher count TextView
 
     // 🟢 RFID/NFC Declarations for Teacher Management
     private var nfcAdapter: NfcAdapter? = null
@@ -80,14 +81,23 @@ class ManageTeachersActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.admin_manage_teachers)
 
-        // UI Initialization
+        // UI Initialization - FIXED: Added missing tvTeacherCount
         lvTeachers = findViewById(R.id.lvTeachers)
         searchView = findViewById(R.id.searchViewTeachers)
         spDepartment = findViewById(R.id.spDepartmentFilter)
+        btnBackTeacher = findViewById(R.id.btnBackTeacher)
+        tvTeacherCount = findViewById(R.id.tvTeacherCount) // 🟢 Initialize teacher count TextView
 
         val btnAdd = findViewById<Button>(R.id.btnAddTeacher)
         val btnDelete = findViewById<Button>(R.id.btnDeleteTeacher)
-        val btnBack = findViewById<Button>(R.id.btnBackTeacher)
+
+        // ============= BACK BUTTON FUNCTIONALITY =============
+        btnBackTeacher.setOnClickListener {
+            finish() // Closes current activity and returns to previous screen
+
+            // Optional: Add smooth animation
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+        }
 
         // Setup Teachers List View
         adapter = ArrayAdapter(this, android.R.layout.simple_list_item_single_choice, teacherList)
@@ -142,10 +152,6 @@ class ManageTeachersActivity : AppCompatActivity() {
             } else {
                 Toast.makeText(this, "Error: UID not found.", Toast.LENGTH_SHORT).show()
             }
-        }
-
-        btnBack.setOnClickListener {
-            finish()
         }
     }
 
@@ -296,6 +302,9 @@ class ManageTeachersActivity : AppCompatActivity() {
         teacherList.clear()
         teacherList.addAll(filteredList)
         adapter.notifyDataSetChanged()
+
+        // 🟢 UPDATE: Update teacher count display
+        tvTeacherCount.text = "${filteredList.size} teachers"
     }
 
     // 🟢 NEW FUNCTION: Wrapper para sa Department Filter
@@ -323,7 +332,6 @@ class ManageTeachersActivity : AppCompatActivity() {
             }
         })
     }
-
 
     // ------------------------------------------------
     //                 NFC FUNCTIONS
@@ -402,8 +410,6 @@ class ManageTeachersActivity : AppCompatActivity() {
     //               RFID CONFLICT LOGIC
     // ------------------------------------------------
 
-    // 🛑 REMOVED: Inalis ang resetGlobalRfidTagStatus function
-
     // 🟢 FUNCTION: Check for RFID tag conflict across Students and Teachers (GLOBAL CHECK)
     private suspend fun checkRfidConflict(rfidTag: String, currentTeacherId: String): Boolean {
         // 1. Check Teacher Collection (Dapat HINDI ang kasalukuyang teacher ang gumagamit)
@@ -451,8 +457,6 @@ class ManageTeachersActivity : AppCompatActivity() {
         }
     }
 
-
-
     private fun activateTeacherRfidTag(teacher: Teacher) {
         AlertDialog.Builder(this)
             .setTitle("Confirm RFID Activation")
@@ -495,7 +499,6 @@ class ManageTeachersActivity : AppCompatActivity() {
             try {
                 // 1. Safety Check (Kung nagkamali ang user at nag-scan ulit ng iba)
                 if (!teacher.rfidTag.isNullOrEmpty() && teacher.rfidTag != rfidTag) {
-                    // ... (Error handling remains the same) ...
                     Toast.makeText(this@ManageTeachersActivity, "🔴 ERROR: Teacher already has a registered RFID tag. Please reset first.", Toast.LENGTH_LONG).show()
                     currentTeacherForRfid = null
                     rfidDetectionDialog?.dismiss()
@@ -507,7 +510,6 @@ class ManageTeachersActivity : AppCompatActivity() {
                 val conflict = checkRfidConflict(rfidTag, teacher.teacherId)
 
                 if (conflict) {
-                    // ... (Conflict error handling remains the same) ...
                     val errorMessage = "❌ ERROR: RFID Tag **$rfidTag** is already registered to another user (Teacher or Student). Tag not assigned."
                     AlertDialog.Builder(this@ManageTeachersActivity)
                         .setTitle("RFID Registration Conflict")
@@ -679,7 +681,6 @@ class ManageTeachersActivity : AppCompatActivity() {
                 btnAddRfid.visibility = View.GONE
                 btnResetRfid.visibility = View.GONE
                 btnDisableRfid.visibility = View.GONE
-
 
                 // 🛑 FINAL LOGIC PARA SA BUTTONS AT TEXT 🛑
                 when (teacher.rfidStatus) {
@@ -874,7 +875,6 @@ class ManageTeachersActivity : AppCompatActivity() {
             }
     }
 
-
     // Function: Load Teachers (UPDATED to populate allTeachersDisplayList)
     private fun loadTeachersOnce() {
         usersCollection.whereEqualTo("role", "teacher").get()
@@ -922,6 +922,8 @@ class ManageTeachersActivity : AppCompatActivity() {
                             }
                         }
                         adapter.notifyDataSetChanged()
+                        // 🟢 UPDATE: Update teacher count after loading
+                        tvTeacherCount.text = "${teacherList.size} teachers"
                     }
                     .addOnFailureListener { e ->
                         Toast.makeText(this, "Error fetching teacher profiles: ${e.message}", Toast.LENGTH_SHORT).show()
