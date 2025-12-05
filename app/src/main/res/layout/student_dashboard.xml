@@ -156,61 +156,74 @@
                             android:letterSpacing="0.06"
                             android:paddingBottom="4dp" />
 
-
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="The future belongs to those who believe in the beauty of their dreams. - Eleanor Roosevelt"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:textColor="#9B1C1F"
-                        android:letterSpacing="0.1" />
-
-
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:textColor="#9B1C1F"
+                            android:letterSpacing="0.1" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <TableLayout
-                    android:id="@+id/tlDailySchedule"
+                <!-- Schedule Table with ROUND CORNERS and THIN BORDER -->
+                <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:stretchColumns="1,2">
+                    app:cardCornerRadius="10dp"
+                    app:strokeColor="#E0E0E0"
+                    app:strokeWidth="0.5dp"
+                    app:cardElevation="1dp">
 
-                    <TableRow
-                        android:background="#FBEFEF"
-                        android:padding="8dp">
-
-                        <TextView
-                            android:text="Time"
-                            android:textStyle="bold"
-                            android:padding="12dp"
-                            android:textSize="12sp"
-                            android:textColor="#7B1113"/>
-                        <TextView
-                            android:text="Subject"
-                            android:textStyle="bold"
-                            android:padding="12dp"
-                            android:textSize="14sp"
-                            android:textColor="#7B1113"/>
-                        <TextView
-                            android:text="Roon"
-                            android:textStyle="bold"
-                            android:padding="12dp"
-                            android:textSize="14sp"
-                            android:textColor="#7B1113"/>
-                    </TableRow>
-
-                    <TextView
-                        android:id="@+id/tvScheduleStatus"
+                    <TableLayout
+                        android:id="@+id/tlDailySchedule"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="No Class for Today!"
-                        android:gravity="center"
-                        android:padding="20dp"
-                        android:layout_span="3"
-                        android:textColor="#888888" />
+                        android:stretchColumns="1,2"
+                        android:background="#FFFFFF">
 
-                </TableLayout>
+                        <!-- Table Header -->
+                        <TableRow
+                            android:background="#FBEFEF"
+                            android:padding="12dp">
+
+                            <TextView
+                                android:text="Time"
+                                android:textStyle="bold"
+                                android:padding="12dp"
+                                android:textSize="12sp"
+                                android:textColor="#7B1113"
+                                android:gravity="center"/>
+                            <TextView
+                                android:text="Subject"
+                                android:textStyle="bold"
+                                android:padding="12dp"
+                                android:textSize="14sp"
+                                android:textColor="#7B1113"
+                                android:gravity="center"/>
+                            <TextView
+                                android:text="Room"
+                                android:textStyle="bold"
+                                android:padding="12dp"
+                                android:textSize="14sp"
+                                android:textColor="#7B1113"
+                                android:gravity="center"/>
+                        </TableRow>
+
+                        <!-- Table Content (will be added programmatically) -->
+                        <TextView
+                            android:id="@+id/tvScheduleStatus"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="No Class for Today!"
+                            android:gravity="center"
+                            android:padding="20dp"
+                            android:layout_span="3"
+                            android:textColor="#888888" />
+
+                    </TableLayout>
+                </com.google.android.material.card.MaterialCardView>
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
